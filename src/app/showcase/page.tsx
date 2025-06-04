@@ -1,6 +1,7 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Eye, Github } from "lucide-react";
+import { ExternalLink, Eye, Github, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -13,7 +14,9 @@ const mockShowcaseItems = [
     tags: ["UI/UX", "Web Design", "E-commerce"],
     liveLink: "#",
     sourceLink: "#",
-    imageHint: "website design"
+    imageHint: "website design",
+    isFree: false,
+    downloadLink: null,
   },
   {
     id: 2,
@@ -23,7 +26,9 @@ const mockShowcaseItems = [
     tags: ["Mobile App", "Fitness", "React Native"],
     liveLink: "#",
     sourceLink: "#",
-    imageHint: "mobile app"
+    imageHint: "mobile app",
+    isFree: false,
+    downloadLink: null,
   },
   {
     id: 3,
@@ -33,7 +38,21 @@ const mockShowcaseItems = [
     tags: ["AI", "Web App", "Genkit"],
     liveLink: "#",
     sourceLink: "#",
-    imageHint: "AI interface"
+    imageHint: "AI interface",
+    isFree: true,
+    downloadLink: "/downloads/ai-content-tool-source.zip", // Example download link
+  },
+   {
+    id: 4,
+    title: "Open Source Icon Set",
+    description: "A beautiful set of handcrafted icons, free for personal and commercial use. Provided as SVG and Figma files.",
+    imageUrl: "https://placehold.co/600x400.png",
+    tags: ["Icons", "Open Source", "Design"],
+    liveLink: "#", // Could link to a demo page
+    sourceLink: "https://github.com/example/icon-set", // Link to GitHub repo
+    imageHint: "icons collection",
+    isFree: true,
+    downloadLink: "/downloads/open-source-icons.zip",
   },
 ];
 
@@ -51,7 +70,7 @@ export default function ShowcasePage() {
 
       <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {mockShowcaseItems.map((item) => (
-          <Card key={item.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden">
+          <Card key={item.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
             <div className="aspect-[3/2] overflow-hidden">
               <Image
                 src={item.imageUrl}
@@ -73,17 +92,26 @@ export default function ShowcasePage() {
             <CardContent className="flex-grow">
               <p className="text-muted-foreground text-sm">{item.description}</p>
             </CardContent>
-            <CardFooter className="border-t pt-4 flex justify-between items-center">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={item.liveLink} target="_blank" rel="noopener noreferrer">
-                  <Eye className="mr-2 h-4 w-4" /> View Live
-                </Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={item.sourceLink} target="_blank" rel="noopener noreferrer">
-                  <Github className="mr-2 h-4 w-4" /> Source
-                </Link>
-              </Button>
+            <CardFooter className="border-t pt-4 flex flex-wrap justify-between items-center gap-2">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={item.liveLink || '#'} target="_blank" rel="noopener noreferrer">
+                    <Eye className="mr-2 h-4 w-4" /> View Live
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={item.sourceLink || '#'} target="_blank" rel="noopener noreferrer">
+                    <Github className="mr-2 h-4 w-4" /> Source
+                  </Link>
+                </Button>
+              </div>
+              {item.isFree && item.downloadLink && (
+                <Button variant="default" size="sm" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Link href={item.downloadLink} download>
+                    <Download className="mr-2 h-4 w-4" /> Download
+                  </Link>
+                </Button>
+              )}
             </CardFooter>
           </Card>
         ))}

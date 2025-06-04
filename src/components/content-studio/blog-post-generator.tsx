@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -11,8 +12,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Wand2 } from "lucide-react";
+import { Loader2, Wand2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
@@ -20,9 +22,18 @@ const formSchema = z.object({
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
 });
 
+// Helper function to create a slug (simplified)
+const createSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')          // Replace spaces with hyphens
+    .replace(/-+/g, '-');          // Replace multiple hyphens with single
+};
+
 export function BlogPostGenerator() {
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<GenerateBlogPostOutput | null>(null);
+  const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string } | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -39,7 +50,8 @@ export function BlogPostGenerator() {
     setResult(null);
     try {
       const output = await generateBlogPost(values as GenerateBlogPostInput);
-      setResult(output);
+      const slug = createSlug(output.title); // Generate slug from title
+      setResult({ ...output, slug });
       toast({
         title: "Blog Post Generated!",
         description: "Your AI-powered blog post is ready.",
@@ -134,8 +146,15 @@ export function BlogPostGenerator() {
 
       {result && (
         <Card className="shadow-lg animate-in fade-in-50 duration-500">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-2xl font-headline text-primary">{result.title}</CardTitle>
+            {result.slug && (
+               <Button variant="outline" asChild>
+                 <Link href={`/blog/${result.slug}`} target="_blank">
+                   <Eye className="mr-2 h-4 w-4" /> View Post
+                 </Link>
+               </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
