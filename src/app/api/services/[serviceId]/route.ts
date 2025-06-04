@@ -28,17 +28,24 @@ export async function PUT(
   try {
     const serviceId = params.serviceId;
     const body = await request.json();
-    const { name, price, duration, description } = body;
-
+    
+    // Construct the updates object carefully to ensure type safety
+    // and only include fields that are actually part of the Service model.
     const updates: Partial<Omit<Service, 'id'>> = {};
-    if (name) updates.name = name;
-    if (price) updates.price = price;
-    if (duration) updates.duration = duration;
-    if (description) updates.description = description;
+    if (body.name !== undefined) updates.name = body.name;
+    if (body.price !== undefined) updates.price = String(body.price); // Ensure price is string
+    if (body.duration !== undefined) updates.duration = body.duration;
+    if (body.description !== undefined) updates.description = body.description;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ message: "No update fields provided" }, { status: 400 });
     }
+    
+    // Validate required fields for update, if any (though PUT usually allows partial updates)
+    // For example, if name was mandatory for an update:
+    // if (updates.name !== undefined && typeof updates.name !== 'string') {
+    //   return NextResponse.json({ message: "Invalid name format" }, { status: 400 });
+    // }
 
     const updatedService = updateService(serviceId, updates);
 
@@ -47,9 +54,9 @@ export async function PUT(
     } else {
       return NextResponse.json({ message: "Service not found or update failed" }, { status: 404 });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Failed to update service ${params.serviceId}:`, error);
-    return NextResponse.json({ message: `Failed to update service ${params.serviceId}` }, { status: 500 });
+    return NextResponse.json({ message: error.message || `Failed to update service ${params.serviceId}` }, { status: 500 });
   }
 }
 

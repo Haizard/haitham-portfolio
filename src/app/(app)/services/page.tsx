@@ -6,17 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import Image from "next/image";
-import type { Service } from '@/lib/services-data'; // Import the Service interface
+import type { Service } from '@/lib/services-data'; 
 import { useToast } from '@/hooks/use-toast';
-
-// We will add a ServiceForm component later for Create/Edit
-// import { ServiceFormDialog } from '@/components/services/service-form-dialog';
+import { ServiceFormDialog } from '@/components/services/service-form-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // const [isFormOpen, setIsFormOpen] = useState(false);
-  // const [editingService, setEditingService] = useState<Service | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const { toast } = useToast();
 
   const fetchServices = async () => {
@@ -44,30 +56,37 @@ export default function ServicesPage() {
     fetchServices();
   }, []);
 
-  // Placeholder functions for CRUD operations - will be implemented fully with dialogs
   const handleCreateNewService = () => {
-    // setEditingService(null);
-    // setIsFormOpen(true);
-    toast({ title: "Coming Soon!", description: "Service creation form will be here."});
+    setEditingService(null);
+    setIsFormOpen(true);
   };
 
   const handleEditService = (service: Service) => {
-    // setEditingService(service);
-    // setIsFormOpen(true);
-    toast({ title: "Coming Soon!", description: `Editing for "${service.name}" will be here.`});
+    setEditingService(service);
+    setIsFormOpen(true);
+  };
+  
+  const confirmDeleteService = (service: Service) => {
+    setServiceToDelete(service);
   };
 
-  const handleDeleteService = async (serviceId: string) => {
-    // Add confirmation dialog here in a real app
-    toast({ title: "Coming Soon!", description: `Deletion for service ID ${serviceId} will be here.`});
-    // try {
-    //   const response = await fetch(`/api/services/${serviceId}`, { method: 'DELETE' });
-    //   if (!response.ok) throw new Error('Failed to delete service');
-    //   toast({ title: "Service Deleted", description: "The service has been removed." });
-    //   fetchServices(); // Refresh the list
-    // } catch (error) {
-    //   toast({ title: "Error", description: "Could not delete service.", variant: "destructive" });
-    // }
+  const handleDeleteService = async () => {
+    if (!serviceToDelete) return;
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/services/${serviceToDelete.id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete service');
+      }
+      toast({ title: "Service Deleted", description: `"${serviceToDelete.name}" has been removed.` });
+      fetchServices(); 
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Could not delete service.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+      setServiceToDelete(null); 
+    }
   };
 
 
@@ -116,21 +135,44 @@ export default function ServicesPage() {
                   <CardFooter className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Viewing details will be here."})}><Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View</span></Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditService(service)}><Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span></Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteService(service.id)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
+                      </AlertDialogTrigger>
                   </CardFooter>
               </Card>
           ))}
         </div>
       )}
+      
+      <ServiceFormDialog 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+        service={editingService}
+        onSuccess={() => {
+          fetchServices(); // Refresh list after save
+          setIsFormOpen(false); // Close dialog on success
+        }}
+      />
 
-      {/* 
-        <ServiceFormDialog 
-          isOpen={isFormOpen} 
-          onClose={() => setIsFormOpen(false)} 
-          service={editingService}
-          onSuccess={fetchServices} // To refresh list after save
-        /> 
-      */}
+      {serviceToDelete && (
+        <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the service "{serviceToDelete.name}".
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setServiceToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteService} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Delete
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       <Card className="shadow-xl mt-12">
         <CardHeader>
