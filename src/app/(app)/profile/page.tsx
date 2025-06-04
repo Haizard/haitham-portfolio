@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -57,23 +58,25 @@ export default function ProfilePage() {
   const handleSaveProfile = async () => {
     if (!profile) return;
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log("Saving profile:", profile); 
-    // In a real app, you would make a POST/PUT request to your API here:
-    // try {
-    //   const response = await fetch('/api/profile', {
-    //     method: 'POST', // or 'PUT'
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify(profile),
-    //   });
-    //   if (!response.ok) throw new Error('Failed to save profile');
-    //   toast({ title: "Success", description: "Profile updated successfully!" });
-    // } catch (error) {
-    //   toast({ title: "Error", description: "Could not save profile.", variant: "destructive" });
-    // }
-    toast({ title: "Profile Saved (Simulated)", description: "Your profile changes have been 'saved'." });
-    setIsSaving(false);
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save profile');
+      }
+      const updatedProfile = await response.json();
+      setProfile(updatedProfile); // Update state with response from API
+      toast({ title: "Success", description: "Profile updated successfully!" });
+    } catch (error: any) {
+      console.error("Error saving profile:", error);
+      toast({ title: "Error", description: error.message || "Could not save profile.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -88,6 +91,7 @@ export default function ProfilePage() {
     return (
       <div className="text-center py-10">
         <p className="text-xl text-muted-foreground">Could not load profile data.</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">Retry</Button>
       </div>
     );
   }
