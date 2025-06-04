@@ -5,25 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { CalendarDays, UserCircle } from "lucide-react";
-
-interface BlogPost {
-  slug: string;
-  title: string;
-  author: string;
-  authorAvatar: string;
-  date: string;
-  tags: string[];
-  imageUrl: string;
-  imageHint: string;
-  content: string;
-  comments?: { id: string; author: string; avatar: string; date: string; text: string }[];
-}
+import { CalendarDays } from "lucide-react"; // Removed UserCircle as it's not used here
+import type { BlogPost } from '@/lib/blog-data'; // Import BlogPost type from centralized location
 
 // Function to fetch all post slugs for generateStaticParams
-async function getAllPostSlugs(): Promise<{ slug: string }[]> {
+async function getAllPostSlugsForStaticParams(): Promise<{ slug: string }[]> {
   try {
-    // Fetch from the API route. Ensure your API route is accessible during build time.
     // Using an absolute URL is safer for server-side fetching during build.
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
     const res = await fetch(`${baseUrl}/api/blog`, { cache: 'no-store' });
@@ -31,20 +18,20 @@ async function getAllPostSlugs(): Promise<{ slug: string }[]> {
       console.error("Failed to fetch posts for static params:", res.status, await res.text());
       return [];
     }
-    const posts: BlogPost[] = await res.json();
+    const posts: Pick<BlogPost, 'slug'>[] = await res.json(); // Expect only slugs
     return posts.map((post) => ({ slug: post.slug }));
   } catch (error) {
-    console.error("Error in getAllPostSlugs:", error);
+    console.error("Error in getAllPostSlugsForStaticParams:", error);
     return [];
   }
 }
 
 export async function generateStaticParams() {
-  return getAllPostSlugs();
+  return getAllPostSlugsForStaticParams();
 }
 
 // Function to fetch a single post by slug
-async function getPostBySlug(slug: string): Promise<BlogPost | null> {
+async function getPostDataBySlug(slug: string): Promise<BlogPost | null> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
     const res = await fetch(`${baseUrl}/api/blog/${slug}`, { cache: 'no-store' });
@@ -68,7 +55,7 @@ interface BlogPostPageProps {
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = params;
-  const post = await getPostBySlug(slug);
+  const post = await getPostDataBySlug(slug);
 
   if (!post) {
     notFound();
@@ -123,5 +110,5 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   );
 }
 
-// Revalidate this page on demand or at an interval if posts change frequently
+// Revalidate this page on demand if posts change frequently
 // export const revalidate = 60; // Revalidate every 60 seconds
