@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Wand2, Eye } from "lucide-react";
+import { Loader2, Wand2, Eye, Send } from "lucide-react"; // Added Send icon
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
@@ -33,6 +33,7 @@ const createSlug = (title: string) => {
 
 export function BlogPostGenerator() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string } | null>(null);
   const { toast } = useToast();
 
@@ -50,11 +51,11 @@ export function BlogPostGenerator() {
     setResult(null);
     try {
       const output = await generateBlogPost(values as GenerateBlogPostInput);
-      const slug = createSlug(output.title); // Generate slug from title
+      const slug = createSlug(output.title);
       setResult({ ...output, slug });
       toast({
         title: "Blog Post Generated!",
-        description: "Your AI-powered blog post is ready.",
+        description: "Your AI-powered blog post is ready. You can now publish it.",
       });
     } catch (error) {
       console.error("Error generating blog post:", error);
@@ -65,6 +66,47 @@ export function BlogPostGenerator() {
       });
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handlePublishPost() {
+    if (!result || !result.slug) {
+      toast({ title: "Error", description: "No post content to publish.", variant: "destructive" });
+      return;
+    }
+    setIsPublishing(true);
+    try {
+      const response = await fetch('/api/blog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: result.title,
+          content: result.content, // Pass the HTML content directly
+          slug: result.slug,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to publish post. Status: ${response.status}`);
+      }
+
+      const publishedPost = await response.json();
+      toast({
+        title: "Post Published!",
+        description: `"${publishedPost.title}" is now live.`,
+      });
+      // Optionally, clear the result or disable publish button after success
+      // setResult(null); 
+    } catch (error: any) {
+      console.error("Error publishing post:", error);
+      toast({
+        title: "Publishing Error",
+        description: error.message || "Could not publish the post. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPublishing(false);
     }
   }
 
@@ -126,7 +168,7 @@ export function BlogPostGenerator() {
               />
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={isLoading} size="lg" className="w-full md:w-auto bg-primary hover:bg-primary/90">
+              <Button type="submit" disabled={isLoading || isPublishing} size="lg" className="w-full md:w-auto bg-primary hover:bg-primary/90">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -146,15 +188,28 @@ export function BlogPostGenerator() {
 
       {result && (
         <Card className="shadow-lg animate-in fade-in-50 duration-500">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <CardTitle className="text-2xl font-headline text-primary">{result.title}</CardTitle>
-            {result.slug && (
-               <Button variant="outline" asChild>
-                 <Link href={`/blog/${result.slug}`} target="_blank">
-                   <Eye className="mr-2 h-4 w-4" /> View Post
-                 </Link>
-               </Button>
-            )}
+            <div className="flex gap-2 mt-2 sm:mt-0">
+              {result.slug && (
+                 <Button variant="outline" asChild>
+                   <Link href={`/blog/${result.slug}`} target="_blank">
+                     <Eye className="mr-2 h-4 w-4" /> View Post
+                   </Link>
+                 </Button>
+              )}
+              <Button onClick={handlePublishPost} disabled={isPublishing || isLoading} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                {isPublishing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publishing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" /> Publish Post
+                  </>
+                )}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
