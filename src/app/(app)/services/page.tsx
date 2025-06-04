@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2, Link as LinkIcon } from "lucide-react";
+import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2, Link as LinkIcon, CheckCircle, XCircle } from "lucide-react";
 import Image from "next/image";
 import type { Service } from '@/lib/services-data'; 
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// Helper function to simulate an API call
+const simulateApiCall = (duration = 1000) => new Promise(resolve => setTimeout(resolve, duration));
+
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,6 +30,9 @@ export default function ServicesPage() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isGoogleCalendarConnected, setIsGoogleCalendarConnected] = useState(false);
+  const [isConnectingGoogleCalendar, setIsConnectingGoogleCalendar] = useState(false);
 
   const { toast } = useToast();
 
@@ -53,6 +59,9 @@ export default function ServicesPage() {
 
   useEffect(() => {
     fetchServices();
+    // In a real app, you'd fetch the connection status from your backend
+    // For now, we'll assume it's disconnected on load
+    setIsGoogleCalendarConnected(false); 
   }, []);
 
   const handleCreateNewService = () => {
@@ -85,6 +94,50 @@ export default function ServicesPage() {
     } finally {
       setIsDeleting(false);
       setServiceToDelete(null); 
+    }
+  };
+
+  const handleGoogleCalendarConnect = async () => {
+    setIsConnectingGoogleCalendar(true);
+    try {
+      // In a real app, this would redirect the user or open a popup to Google OAuth
+      // For now, we simulate the API call to our backend /api/auth/google/connect
+      const response = await fetch('/api/auth/google/connect');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to initiate Google Calendar connection.');
+      }
+      // const data = await response.json(); 
+      // If the connect endpoint redirects, you wouldn't get JSON back directly here.
+      // For simulation, we assume success and that the backend handles the redirect
+      // and the callback will eventually update the user's status.
+      // Here, we just simulate the frontend change.
+      await simulateApiCall(); // Simulate time taken for OAuth flow
+      setIsGoogleCalendarConnected(true);
+      toast({ title: "Google Calendar Connected (Simulated)", description: "You can now manage bookings with Google Calendar." });
+    } catch (error: any) {
+      toast({ title: "Connection Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsConnectingGoogleCalendar(false);
+    }
+  };
+
+  const handleGoogleCalendarDisconnect = async () => {
+    setIsConnectingGoogleCalendar(true); // Use the same loading state
+    try {
+      // Call your backend to invalidate tokens/session
+      const response = await fetch('/api/auth/google/disconnect');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to disconnect Google Calendar.');
+      }
+      await simulateApiCall();
+      setIsGoogleCalendarConnected(false);
+      toast({ title: "Google Calendar Disconnected (Simulated)", description: "Bookings will no longer sync with Google Calendar." });
+    } catch (error: any) {
+      toast({ title: "Disconnection Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsConnectingGoogleCalendar(false);
     }
   };
 
@@ -134,7 +187,7 @@ export default function ServicesPage() {
                   <CardFooter className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Viewing details will be here."})}><Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View</span></Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditService(service)}><Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span></Button>
-                       <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
+                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
                   </CardFooter>
               </Card>
           ))}
@@ -182,17 +235,38 @@ export default function ServicesPage() {
               This will enable automated booking confirmations, availability checks, and reminders for you and your clients.
             </p>
             <div className="space-y-3">
-                <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => toast({ title: "Coming Soon!", description: "Google Calendar integration is on the way."})}
-                >
-                  <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Google Calendar
-                </Button>
+                {isGoogleCalendarConnected ? (
+                    <div className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-500">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-medium text-green-700 dark:text-green-300">Google Calendar Connected</span>
+                        </div>
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleGoogleCalendarDisconnect}
+                            disabled={isConnectingGoogleCalendar}
+                        >
+                            {isConnectingGoogleCalendar ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Disconnect
+                        </Button>
+                    </div>
+                ) : (
+                    <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={handleGoogleCalendarConnect}
+                        disabled={isConnectingGoogleCalendar}
+                    >
+                        {isConnectingGoogleCalendar ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-5 w-5 text-primary" />}
+                        Connect Google Calendar
+                    </Button>
+                )}
                 <Button 
                     variant="outline" 
                     className="w-full justify-start"
                     onClick={() => toast({ title: "Coming Soon!", description: "Outlook Calendar integration is on the way."})}
+                    disabled // Placeholder
                 >
                   <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Outlook Calendar
                 </Button>
@@ -200,6 +274,7 @@ export default function ServicesPage() {
                     variant="outline" 
                     className="w-full justify-start"
                     onClick={() => toast({ title: "Coming Soon!", description: "Apple Calendar integration is on the way."})}
+                    disabled // Placeholder
                 >
                   <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Apple Calendar
                 </Button>
@@ -210,3 +285,4 @@ export default function ServicesPage() {
     </div>
   );
 }
+
