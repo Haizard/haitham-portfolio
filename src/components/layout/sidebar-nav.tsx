@@ -12,6 +12,7 @@ import {
   Share2,
   Briefcase,
   ShieldCheck,
+  UserCircle, // Added UserCircle for Profile
   Settings,
 } from "lucide-react";
 import {
@@ -23,6 +24,7 @@ import {
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/profile", label: "User Profile", icon: UserCircle }, // Added Profile Link
   { href: "/content-studio", label: "Content Studio", icon: Sparkles },
   { href: "/content-calendar", label: "Content Calendar", icon: CalendarDays },
   { href: "/social-media", label: "Social Media", icon: MessagesSquare },
