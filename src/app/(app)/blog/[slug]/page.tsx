@@ -5,20 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { CalendarDays } from "lucide-react"; // Removed UserCircle as it's not used here
-import type { BlogPost } from '@/lib/blog-data'; // Import BlogPost type from centralized location
+import { CalendarDays } from "lucide-react";
+import type { BlogPost } from '@/lib/blog-data';
+import { getPostSlugs, getPostBySlug } from '@/lib/blog-data'; // Import directly
 
 // Function to fetch all post slugs for generateStaticParams
 async function getAllPostSlugsForStaticParams(): Promise<{ slug: string }[]> {
   try {
-    // Using an absolute URL is safer for server-side fetching during build.
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
-    const res = await fetch(`${baseUrl}/api/blog`, { cache: 'no-store' });
-    if (!res.ok) {
-      console.error("Failed to fetch posts for static params:", res.status, await res.text());
-      return [];
-    }
-    const posts: Pick<BlogPost, 'slug'>[] = await res.json(); // Expect only slugs
+    const posts = getPostSlugs(); // Use direct import
     return posts.map((post) => ({ slug: post.slug }));
   } catch (error) {
     console.error("Error in getAllPostSlugsForStaticParams:", error);
@@ -31,16 +25,10 @@ export async function generateStaticParams() {
 }
 
 // Function to fetch a single post by slug
-async function getPostDataBySlug(slug: string): Promise<BlogPost | null> {
+async function getPostData(slug: string): Promise<BlogPost | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
-    const res = await fetch(`${baseUrl}/api/blog/${slug}`, { cache: 'no-store' });
-    if (!res.ok) {
-      if (res.status === 404) return null;
-      console.error(`Failed to fetch post ${slug}:`, res.status, await res.text());
-      return null;
-    }
-    return await res.json();
+    const post = getPostBySlug(slug); // Use direct import
+    return post || null; // Ensure null is returned if undefined
   } catch (error) {
     console.error(`Error fetching post ${slug}:`, error);
     return null;
@@ -55,7 +43,7 @@ interface BlogPostPageProps {
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = params;
-  const post = await getPostDataBySlug(slug);
+  const post = await getPostData(slug);
 
   if (!post) {
     notFound();
