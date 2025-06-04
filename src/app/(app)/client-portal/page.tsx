@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, History, MessageSquare, ShieldLock, FolderArchive } from "lucide-react";
+import { FileText, History, MessageSquare, Shield, FolderArchive } from "lucide-react";
 import Image from "next/image";
 
 const mockProjects = [
@@ -61,7 +61,7 @@ export default function ClientPortalPage() {
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-headline flex items-center gap-2">
-            <ShieldLock className="h-7 w-7 text-accent" /> Secure Client Communication
+            <Shield className="h-7 w-7 text-accent" /> Secure Client Communication
           </CardTitle>
           <CardDescription>A dedicated channel for client discussions and feedback.</CardDescription>
         </CardHeader>

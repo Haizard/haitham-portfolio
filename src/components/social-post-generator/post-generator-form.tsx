@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ShareNetwork } from "lucide-react";
+import { Loader2, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const socialPlatforms = ["Facebook", "Twitter", "Instagram", "LinkedIn", "TikTok"] as const;
@@ -63,7 +64,7 @@ export function PostGeneratorForm() {
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-headline">
-            <ShareNetwork className="h-7 w-7 text-primary" />
+            <Share2 className="h-7 w-7 text-primary" />
             AI Social Post Generator
           </CardTitle>
           <CardDescription>
@@ -148,7 +149,7 @@ export function PostGeneratorForm() {
                   </>
                 ) : (
                   <>
-                    <ShareNetwork className="mr-2 h-5 w-5" />
+                    <Share2 className="mr-2 h-5 w-5" />
                     Generate Posts
                   </>
                 )}
