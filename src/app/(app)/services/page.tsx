@@ -1,17 +1,76 @@
+
+"use client";
+
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2 } from "lucide-react";
+import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import Image from "next/image";
+import type { Service } from '@/lib/services-data'; // Import the Service interface
+import { useToast } from '@/hooks/use-toast';
 
-const mockServices = [
-  { id: 1, name: "1-on-1 Coaching Session", price: "150", duration: "60 min", description: "Personalized coaching to help you achieve your goals." },
-  { id: 2, name: "Content Strategy Blueprint", price: "499", duration: "Project", description: "A comprehensive content strategy tailored to your brand." },
-  { id: 3, name: "Video Editing Package", price: "250", duration: "Per Video", description: "Professional video editing for up to 10 mins of footage." },
-];
+// We will add a ServiceForm component later for Create/Edit
+// import { ServiceFormDialog } from '@/components/services/service-form-dialog';
 
 export default function ServicesPage() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  // const [isFormOpen, setIsFormOpen] = useState(false);
+  // const [editingService, setEditingService] = useState<Service | null>(null);
+  const { toast } = useToast();
+
+  const fetchServices = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/services');
+      if (!response.ok) {
+        throw new Error('Failed to fetch services');
+      }
+      const data: Service[] = await response.json();
+      setServices(data);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Could not load services.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  // Placeholder functions for CRUD operations - will be implemented fully with dialogs
+  const handleCreateNewService = () => {
+    // setEditingService(null);
+    // setIsFormOpen(true);
+    toast({ title: "Coming Soon!", description: "Service creation form will be here."});
+  };
+
+  const handleEditService = (service: Service) => {
+    // setEditingService(service);
+    // setIsFormOpen(true);
+    toast({ title: "Coming Soon!", description: `Editing for "${service.name}" will be here.`});
+  };
+
+  const handleDeleteService = async (serviceId: string) => {
+    // Add confirmation dialog here in a real app
+    toast({ title: "Coming Soon!", description: `Deletion for service ID ${serviceId} will be here.`});
+    // try {
+    //   const response = await fetch(`/api/services/${serviceId}`, { method: 'DELETE' });
+    //   if (!response.ok) throw new Error('Failed to delete service');
+    //   toast({ title: "Service Deleted", description: "The service has been removed." });
+    //   fetchServices(); // Refresh the list
+    // } catch (error) {
+    //   toast({ title: "Error", description: "Could not delete service.", variant: "destructive" });
+    // }
+  };
+
+
   return (
     <div className="container mx-auto py-8">
       <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -21,35 +80,59 @@ export default function ServicesPage() {
             Create, manage, and book your services seamlessly.
           </p>
         </div>
-        <Button size="lg" className="mt-4 md:mt-0 bg-primary hover:bg-primary/90">
+        <Button size="lg" className="mt-4 md:mt-0 bg-primary hover:bg-primary/90" onClick={handleCreateNewService}>
           <PlusCircle className="mr-2 h-5 w-5" /> Create New Service
         </Button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {mockServices.map(service => (
-            <Card key={service.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
-                <CardHeader>
-                    <CardTitle className="text-xl">{service.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-2 pt-1">
-                        <DollarSign className="h-4 w-4 text-green-600" /> ${service.price}
-                        <span className="text-muted-foreground/50">|</span>
-                        <CalendarPlus className="h-4 w-4 text-blue-600" /> {service.duration}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground">{service.description}</p>
-                </CardContent>
-                <CardFooter className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm"><Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View</span></Button>
-                    <Button variant="outline" size="sm"><Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span></Button>
-                    <Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
-                </CardFooter>
-            </Card>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      ) : services.length === 0 ? (
+        <Card className="shadow-lg text-center">
+            <CardHeader>
+                <CardTitle>No Services Yet</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground">Click "Create New Service" to add your first service offering.</p>
+            </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {services.map(service => (
+              <Card key={service.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
+                  <CardHeader>
+                      <CardTitle className="text-xl">{service.name}</CardTitle>
+                      <CardDescription className="flex items-center gap-2 pt-1">
+                          <DollarSign className="h-4 w-4 text-green-600" /> ${service.price}
+                          <span className="text-muted-foreground/50">|</span>
+                          <CalendarPlus className="h-4 w-4 text-blue-600" /> {service.duration}
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                      <p className="text-sm text-muted-foreground">{service.description}</p>
+                  </CardContent>
+                  <CardFooter className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Viewing details will be here."})}><Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View</span></Button>
+                      <Button variant="outline" size="sm" onClick={() => handleEditService(service)}><Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span></Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteService(service.id)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
+                  </CardFooter>
+              </Card>
+          ))}
+        </div>
+      )}
 
-      <Card className="shadow-xl">
+      {/* 
+        <ServiceFormDialog 
+          isOpen={isFormOpen} 
+          onClose={() => setIsFormOpen(false)} 
+          service={editingService}
+          onSuccess={fetchServices} // To refresh list after save
+        /> 
+      */}
+
+      <Card className="shadow-xl mt-12">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">Integrate Your Calendar</CardTitle>
           <CardDescription>Connect your calendar to manage bookings and availability effortlessly.</CardDescription>
