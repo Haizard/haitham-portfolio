@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2, Link as LinkIcon } from "lucide-react";
 import Image from "next/image";
 import type { Service } from '@/lib/services-data'; 
 import { useToast } from '@/hooks/use-toast';
@@ -134,7 +134,7 @@ export default function ServicesPage() {
                   <CardFooter className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Viewing details will be here."})}><Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View</span></Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditService(service)}><Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span></Button>
-                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
+                       <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
                   </CardFooter>
               </Card>
           ))}
@@ -146,12 +146,11 @@ export default function ServicesPage() {
         onClose={() => setIsFormOpen(false)} 
         service={editingService}
         onSuccess={() => {
-          fetchServices(); // Refresh list after save
-          setIsFormOpen(false); // Close dialog on success
+          fetchServices(); 
+          setIsFormOpen(false); 
         }}
       />
 
-      {/* AlertDialog for delete confirmation */}
       <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
@@ -177,14 +176,34 @@ export default function ServicesPage() {
         </CardHeader>
         <CardContent className="flex flex-col md:flex-row items-center gap-8 p-8">
           <Image src="https://placehold.co/400x300.png" alt="Calendar Integration Illustration" width={400} height={300} className="rounded-lg" data-ai-hint="calendar schedule" />
-          <div className="space-y-4">
+          <div className="space-y-6 flex-1">
             <p className="text-muted-foreground">
               CreatorOS will soon allow you to link Google Calendar, Outlook Calendar, and other popular calendar apps. 
               This will enable automated booking confirmations, availability checks, and reminders for you and your clients.
             </p>
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-              Learn More About Integrations (Coming Soon)
-            </Button>
+            <div className="space-y-3">
+                <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => toast({ title: "Coming Soon!", description: "Google Calendar integration is on the way."})}
+                >
+                  <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Google Calendar
+                </Button>
+                <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => toast({ title: "Coming Soon!", description: "Outlook Calendar integration is on the way."})}
+                >
+                  <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Outlook Calendar
+                </Button>
+                 <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => toast({ title: "Coming Soon!", description: "Apple Calendar integration is on the way."})}
+                >
+                  <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Apple Calendar
+                </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
