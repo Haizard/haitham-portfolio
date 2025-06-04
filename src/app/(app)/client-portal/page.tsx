@@ -1,15 +1,54 @@
+
+"use client";
+
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, History, MessageSquare, Shield, FolderArchive } from "lucide-react";
+import { FileText, History, Shield, FolderArchive, Loader2 } from "lucide-react";
 import Image from "next/image";
-
-const mockProjects = [
-    { id: 1, name: "Website Redesign Q3", status: "In Progress", client: "Acme Corp" },
-    { id: 2, name: "Social Media Campaign", status: "Completed", client: "Beta LLC" },
-    { id: 3, name: "Video Production Series", status: "Planning", client: "Gamma Inc" },
-];
+import type { ClientProject } from '@/lib/client-projects-data';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ClientPortalPage() {
+  const [projects, setProjects] = useState<ClientProject[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchProjects() {
+      setIsLoadingProjects(true);
+      try {
+        const response = await fetch('/api/client-projects');
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects');
+        }
+        const data: ClientProject[] = await response.json();
+        setProjects(data);
+      } catch (error) {
+        console.error(error);
+        toast({
+          title: "Error",
+          description: "Could not load client projects.",
+          variant: "destructive",
+        });
+        setProjects([]); // Set to empty array on error
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    }
+    fetchProjects();
+  }, [toast]);
+
+  const getStatusColor = (status: ClientProject['status']) => {
+    switch (status) {
+      case 'Completed': return 'text-green-600 dark:text-green-400';
+      case 'In Progress': return 'text-yellow-600 dark:text-yellow-400';
+      case 'Planning': return 'text-blue-600 dark:text-blue-400';
+      case 'On Hold': return 'text-orange-600 dark:text-orange-400';
+      default: return 'text-muted-foreground';
+    }
+  };
+
   return (
     <div className="container mx-auto py-8">
       <header className="mb-8">
@@ -26,14 +65,23 @@ export default function ClientPortalPage() {
             <CardDescription>Overview of active and past client projects.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-3">
-            {mockProjects.slice(0,2).map(project => (
-                <li key={project.id} className="p-3 bg-secondary/50 rounded-lg">
+            {isLoadingProjects ? (
+              <div className="flex justify-center items-center h-[150px]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : projects.length > 0 ? (
+              <ul className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                {projects.map(project => (
+                  <li key={project.id} className="p-3 bg-secondary/50 rounded-lg shadow-sm">
                     <h4 className="font-semibold">{project.name} <span className="text-xs text-muted-foreground">({project.client})</span></h4>
-                    <p className={`text-sm ${project.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'}`}>{project.status}</p>
-                </li>
-            ))}
-            </ul>
+                    <p className={`text-sm font-medium ${getStatusColor(project.status)}`}>{project.status}</p>
+                    {project.description && <p className="text-xs text-muted-foreground mt-1">{project.description}</p>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+               <p className="text-muted-foreground text-center py-4">No projects to display.</p>
+            )}
           </CardContent>
         </Card>
 
@@ -43,7 +91,7 @@ export default function ClientPortalPage() {
             <CardDescription>Client's past and upcoming service bookings.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-center h-[150px] bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground text-center">Booking history will be displayed here.</p>
+            <p className="text-muted-foreground text-center">Booking history will be displayed here. (Coming Soon)</p>
           </CardContent>
         </Card>
         
@@ -53,7 +101,7 @@ export default function ClientPortalPage() {
             <CardDescription>Access documents, assets, and deliverables.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-center h-[150px] bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground text-center">Shared files will be accessible here.</p>
+            <p className="text-muted-foreground text-center">Shared files will be accessible here. (Coming Soon)</p>
           </CardContent>
         </Card>
       </div>
@@ -72,7 +120,7 @@ export default function ClientPortalPage() {
               CreatorOS aims to provide a secure and centralized messaging system within the client portal. 
               This will help streamline communication, keep all project-related discussions in one place, and ensure privacy.
             </p>
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => toast({title: "Coming Soon!", description: "Secure messaging features are under development."})}>
               Explore Communication Features (Coming Soon)
             </Button>
           </div>
