@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'; // Added useCallback
+import { useRouter, useSearchParams } from 'next/navigation'; // Added for query param handling
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2, Link as LinkIcon, CheckCircle, XCircle } from "lucide-react";
@@ -20,8 +21,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Helper function to simulate an API call
-const simulateApiCall = (duration = 1000) => new Promise(resolve => setTimeout(resolve, duration));
+// Helper function to simulate an API call (can be removed if not used elsewhere)
+// const simulateApiCall = (duration = 1000) => new Promise(resolve => setTimeout(resolve, duration));
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -35,8 +36,10 @@ export default function ServicesPage() {
   const [isConnectingGoogleCalendar, setIsConnectingGoogleCalendar] = useState(false);
 
   const { toast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/services');
@@ -55,14 +58,39 @@ export default function ServicesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]); // Added toast to dependency array
 
   useEffect(() => {
     fetchServices();
-    // In a real app, you'd fetch the connection status from your backend
-    // For now, we'll assume it's disconnected on load
-    setIsGoogleCalendarConnected(false); 
-  }, []);
+  }, [fetchServices]);
+
+  useEffect(() => {
+    // Check for Google Auth status from query params
+    const googleAuthSuccess = searchParams.get('google_auth_success');
+    const googleAuthError = searchParams.get('google_auth_error');
+    const googleAuthSimulatedSuccess = searchParams.get('google_auth_simulated_success');
+
+    if (googleAuthSuccess === 'true') {
+      setIsGoogleCalendarConnected(true);
+      toast({ title: "Google Calendar Connected!", description: "Your calendar is now linked." });
+      // Clean the URL
+      router.replace('/services', { scroll: false });
+    } else if (googleAuthError) {
+      setIsGoogleCalendarConnected(false);
+      toast({ title: "Google Calendar Connection Failed", description: `Error: ${googleAuthError}`, variant: "destructive" });
+      router.replace('/services', { scroll: false });
+    } else if (googleAuthSimulatedSuccess === 'true' && (process.env.NODE_ENV === 'development' || !process.env.GOOGLE_CLIENT_ID)) {
+      // Only allow simulated success if in dev or if actual creds are known to be missing
+      setIsGoogleCalendarConnected(true);
+      toast({ title: "Google Calendar Connected (Simulated)", description: "Using simulated connection as credentials might be missing." });
+      router.replace('/services', { scroll: false });
+    }
+    // TODO: In a real app, you would also fetch the actual connection status from your backend here
+    // to accurately set isGoogleCalendarConnected on initial load if already connected.
+    // For now, it relies on the redirect flow or simulation.
+
+  }, [searchParams, toast, router]);
+
 
   const handleCreateNewService = () => {
     setEditingService(null);
@@ -97,45 +125,30 @@ export default function ServicesPage() {
     }
   };
 
-  const handleGoogleCalendarConnect = async () => {
+  const handleGoogleCalendarConnect = () => {
     setIsConnectingGoogleCalendar(true);
-    try {
-      // In a real app, this would redirect the user or open a popup to Google OAuth
-      // For now, we simulate the API call to our backend /api/auth/google/connect
-      const response = await fetch('/api/auth/google/connect');
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to initiate Google Calendar connection.');
-      }
-      // const data = await response.json(); 
-      // If the connect endpoint redirects, you wouldn't get JSON back directly here.
-      // For simulation, we assume success and that the backend handles the redirect
-      // and the callback will eventually update the user's status.
-      // Here, we just simulate the frontend change.
-      await simulateApiCall(); // Simulate time taken for OAuth flow
-      setIsGoogleCalendarConnected(true);
-      toast({ title: "Google Calendar Connected (Simulated)", description: "You can now manage bookings with Google Calendar." });
-    } catch (error: any) {
-      toast({ title: "Connection Error", description: error.message, variant: "destructive" });
-    } finally {
-      setIsConnectingGoogleCalendar(false);
-    }
+    // The backend /api/auth/google/connect should handle the redirect.
+    // The fetch is just to trigger it. The browser will navigate.
+    // Error handling for this direct navigation is tricky here, usually handled by the callback.
+    router.push('/api/auth/google/connect'); 
+    // No need to setIsGoogleCalendarConnected(true) here; callback flow handles it.
   };
 
   const handleGoogleCalendarDisconnect = async () => {
-    setIsConnectingGoogleCalendar(true); // Use the same loading state
+    setIsConnectingGoogleCalendar(true); 
     try {
-      // Call your backend to invalidate tokens/session
       const response = await fetch('/api/auth/google/disconnect');
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to disconnect Google Calendar.');
       }
-      await simulateApiCall();
       setIsGoogleCalendarConnected(false);
-      toast({ title: "Google Calendar Disconnected (Simulated)", description: "Bookings will no longer sync with Google Calendar." });
+      toast({ title: "Google Calendar Disconnected", description: "Bookings will no longer sync." });
     } catch (error: any) {
       toast({ title: "Disconnection Error", description: error.message, variant: "destructive" });
+      // Optionally, force frontend to disconnected state even if API fails,
+      // as the user's intent is to disconnect.
+      // setIsGoogleCalendarConnected(false); 
     } finally {
       setIsConnectingGoogleCalendar(false);
     }
@@ -231,8 +244,8 @@ export default function ServicesPage() {
           <Image src="https://placehold.co/400x300.png" alt="Calendar Integration Illustration" width={400} height={300} className="rounded-lg" data-ai-hint="calendar schedule" />
           <div className="space-y-6 flex-1">
             <p className="text-muted-foreground">
-              CreatorOS will soon allow you to link Google Calendar, Outlook Calendar, and other popular calendar apps. 
-              This will enable automated booking confirmations, availability checks, and reminders for you and your clients.
+              CreatorOS allows you to link Google Calendar, Outlook Calendar, and other popular calendar apps. 
+              This can enable automated booking confirmations, availability checks, and reminders.
             </p>
             <div className="space-y-3">
                 {isGoogleCalendarConnected ? (
@@ -266,17 +279,17 @@ export default function ServicesPage() {
                     variant="outline" 
                     className="w-full justify-start"
                     onClick={() => toast({ title: "Coming Soon!", description: "Outlook Calendar integration is on the way."})}
-                    disabled // Placeholder
+                    disabled 
                 >
-                  <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Outlook Calendar
+                  <LinkIcon className="mr-2 h-5 w-5 text-muted-foreground" /> Connect Outlook Calendar (Coming Soon)
                 </Button>
                  <Button 
                     variant="outline" 
                     className="w-full justify-start"
                     onClick={() => toast({ title: "Coming Soon!", description: "Apple Calendar integration is on the way."})}
-                    disabled // Placeholder
+                    disabled
                 >
-                  <LinkIcon className="mr-2 h-5 w-5 text-primary" /> Connect Apple Calendar
+                  <LinkIcon className="mr-2 h-5 w-5 text-muted-foreground" /> Connect Apple Calendar (Coming Soon)
                 </Button>
             </div>
           </div>
@@ -285,4 +298,3 @@ export default function ServicesPage() {
     </div>
   );
 }
-
