@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from 'react'; // Added useCallback
-import { useRouter, useSearchParams } from 'next/navigation'; // Added for query param handling
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarPlus, DollarSign, Edit3, Eye, PlusCircle, Trash2, Loader2, Link as LinkIcon, CheckCircle, XCircle } from "lucide-react";
@@ -21,9 +21,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Helper function to simulate an API call (can be removed if not used elsewhere)
-// const simulateApiCall = (duration = 1000) => new Promise(resolve => setTimeout(resolve, duration));
-
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +30,7 @@ export default function ServicesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isGoogleCalendarConnected, setIsGoogleCalendarConnected] = useState(false);
-  const [isConnectingGoogleCalendar, setIsConnectingGoogleCalendar] = useState(false);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false); // Renamed for clarity
 
   const { toast } = useToast();
   const router = useRouter();
@@ -58,36 +55,36 @@ export default function ServicesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]); // Added toast to dependency array
+  }, [toast]);
 
   useEffect(() => {
     fetchServices();
   }, [fetchServices]);
 
   useEffect(() => {
-    // Check for Google Auth status from query params
     const googleAuthSuccess = searchParams.get('google_auth_success');
     const googleAuthError = searchParams.get('google_auth_error');
     const googleAuthSimulatedSuccess = searchParams.get('google_auth_simulated_success');
+    const currentPath = '/services'; // Define current path to avoid using window.location directly if not needed
 
     if (googleAuthSuccess === 'true') {
       setIsGoogleCalendarConnected(true);
       toast({ title: "Google Calendar Connected!", description: "Your calendar is now linked." });
-      // Clean the URL
-      router.replace('/services', { scroll: false });
+      router.replace(currentPath, { scroll: false });
     } else if (googleAuthError) {
       setIsGoogleCalendarConnected(false);
       toast({ title: "Google Calendar Connection Failed", description: `Error: ${googleAuthError}`, variant: "destructive" });
-      router.replace('/services', { scroll: false });
+      router.replace(currentPath, { scroll: false });
     } else if (googleAuthSimulatedSuccess === 'true' && (process.env.NODE_ENV === 'development' || !process.env.GOOGLE_CLIENT_ID)) {
-      // Only allow simulated success if in dev or if actual creds are known to be missing
       setIsGoogleCalendarConnected(true);
       toast({ title: "Google Calendar Connected (Simulated)", description: "Using simulated connection as credentials might be missing." });
-      router.replace('/services', { scroll: false });
+      router.replace(currentPath, { scroll: false });
     }
+    
     // TODO: In a real app, you would also fetch the actual connection status from your backend here
+    // (e.g., check if valid tokens for the user exist in your database)
     // to accurately set isGoogleCalendarConnected on initial load if already connected.
-    // For now, it relies on the redirect flow or simulation.
+    // For now, it relies on the redirect flow, simulation, or manual disconnect.
 
   }, [searchParams, toast, router]);
 
@@ -126,31 +123,34 @@ export default function ServicesPage() {
   };
 
   const handleGoogleCalendarConnect = () => {
-    setIsConnectingGoogleCalendar(true);
-    // The backend /api/auth/google/connect should handle the redirect.
-    // The fetch is just to trigger it. The browser will navigate.
-    // Error handling for this direct navigation is tricky here, usually handled by the callback.
+    setIsProcessingAuth(true);
+    // If GOOGLE_CLIENT_ID is not set (e.g. in development without .env.local setup),
+    // the /api/auth/google/connect route will simulate success and redirect back with
+    // ?google_auth_simulated_success=true. This allows UI testing.
+    // Otherwise, it proceeds with the actual Google OAuth flow.
     router.push('/api/auth/google/connect'); 
-    // No need to setIsGoogleCalendarConnected(true) here; callback flow handles it.
+    // setIsGoogleCalendarConnected(true) will be handled by the useEffect reacting to callback.
+    // setIsProcessingAuth(false) will also be implicitly handled when page reloads or state changes from callback.
   };
 
   const handleGoogleCalendarDisconnect = async () => {
-    setIsConnectingGoogleCalendar(true); 
+    setIsProcessingAuth(true); 
     try {
-      const response = await fetch('/api/auth/google/disconnect');
+      const response = await fetch('/api/auth/google/disconnect'); // This should be a GET or POST as per your API route
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to disconnect Google Calendar.');
       }
+      const data = await response.json();
       setIsGoogleCalendarConnected(false);
-      toast({ title: "Google Calendar Disconnected", description: "Bookings will no longer sync." });
+      toast({ title: "Google Calendar Disconnected", description: data.message || "Bookings will no longer sync." });
     } catch (error: any) {
       toast({ title: "Disconnection Error", description: error.message, variant: "destructive" });
       // Optionally, force frontend to disconnected state even if API fails,
-      // as the user's intent is to disconnect.
+      // as the user's intent is to disconnect. Consider this based on your app's needs.
       // setIsGoogleCalendarConnected(false); 
     } finally {
-      setIsConnectingGoogleCalendar(false);
+      setIsProcessingAuth(false);
     }
   };
 
@@ -200,7 +200,7 @@ export default function ServicesPage() {
                   <CardFooter className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Viewing details will be here."})}><Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View</span></Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditService(service)}><Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span></Button>
-                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
+                       <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}><Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span></Button>
                   </CardFooter>
               </Card>
           ))}
@@ -258,9 +258,9 @@ export default function ServicesPage() {
                             variant="outline" 
                             size="sm"
                             onClick={handleGoogleCalendarDisconnect}
-                            disabled={isConnectingGoogleCalendar}
+                            disabled={isProcessingAuth}
                         >
-                            {isConnectingGoogleCalendar ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {isProcessingAuth ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Disconnect
                         </Button>
                     </div>
@@ -269,9 +269,9 @@ export default function ServicesPage() {
                         variant="outline" 
                         className="w-full justify-start"
                         onClick={handleGoogleCalendarConnect}
-                        disabled={isConnectingGoogleCalendar}
+                        disabled={isProcessingAuth}
                     >
-                        {isConnectingGoogleCalendar ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-5 w-5 text-primary" />}
+                        {isProcessingAuth ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-5 w-5 text-primary" />}
                         Connect Google Calendar
                     </Button>
                 )}

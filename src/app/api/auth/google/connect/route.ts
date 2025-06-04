@@ -8,7 +8,7 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI; // e.g., http://localhost:9002/api/auth/google/callback
 
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
-  console.warn("Google OAuth credentials are not fully configured. Connection will be simulated.");
+  console.warn("Google OAuth credentials are not fully configured. Connection will be simulated if initiated from UI.");
 }
 
 const oauth2Client = new google.auth.OAuth2(
@@ -18,13 +18,16 @@ const oauth2Client = new google.auth.OAuth2(
 );
 
 export async function GET(request: NextRequest) {
+  // If credentials are not configured, and this route is hit,
+  // it implies a direct attempt or a misconfiguration.
+  // The frontend services page simulates success if creds are missing when its button is clicked.
+  // This route will only proceed with real auth if creds are present.
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
-    // Simulate success if not configured, allows frontend to proceed with mock state
-    // In a real scenario with missing creds, you might redirect to an error page
-    // or show a message on the frontend before attempting connection.
-    // For now, to allow the frontend simulation to work if creds are missing:
     const servicesPageUrl = new URL('/services', request.nextUrl.origin);
+    // Fallback to simulated success if this route is hit without credentials,
+    // maintaining consistency with frontend simulation logic.
     servicesPageUrl.searchParams.set('google_auth_simulated_success', 'true');
+    console.error("Google OAuth connect route hit, but server credentials are not configured. Simulating success for redirect.");
     return NextResponse.redirect(servicesPageUrl.toString());
   }
 

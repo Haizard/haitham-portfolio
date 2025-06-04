@@ -5,21 +5,20 @@ import { google } from 'googleapis'; // Required for OAuth2Client
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-// Redirect URI is not strictly needed for revocation but OAuth2Client might require it.
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI; // Required by OAuth2Client constructor
 
 
 export async function GET(request: NextRequest) {
-  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-    console.warn("Google OAuth credentials not configured for disconnect. Simulating success.");
-    // Simulate success for frontend if credentials are not set
-    return NextResponse.json({ message: "Google Calendar disconnected successfully (simulated - credentials missing)." });
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+    console.warn("Google OAuth credentials not configured for disconnect. Simulating success for UI consistency.");
+    // Simulate success for frontend if credentials are not set, allows UI to update.
+    return NextResponse.json({ message: "Google Calendar disconnected successfully (simulated - server credentials missing)." });
   }
   
   const oauth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI // May not be strictly necessary for revoke but good practice
+    GOOGLE_REDIRECT_URI
   );
 
   try {
@@ -30,33 +29,38 @@ export async function GET(request: NextRequest) {
     // const userId = await getUserIdFromSession(request); // Example
     // const storedRefreshToken = await db.getUserGoogleRefreshToken(userId); // Example
     
-    const storedRefreshToken = "MOCK_REFRESH_TOKEN_TO_TEST_REVOKE_LOGIC"; // Replace with actual token retrieval
+    // For now, using a placeholder. Replace with actual token retrieval.
+    // If no refresh token is found for the user, you might skip revocation
+    // but should still clear any local session/data indicating a connection.
+    const storedRefreshToken: string | null = null; // Replace with: await db.getUserGoogleRefreshToken(userId);
 
-    if (storedRefreshToken && storedRefreshToken !== "MOCK_REFRESH_TOKEN_TO_TEST_REVOKE_LOGIC") { // Don't try to revoke the mock one
-      await oauth2Client.revokeToken(storedRefreshToken);
-      console.log('Google refresh token revoked successfully.');
-    } else if (storedRefreshToken === "MOCK_REFRESH_TOKEN_TO_TEST_REVOKE_LOGIC") {
-       console.log('Simulating token revocation as only a mock token was found.');
+    if (storedRefreshToken) {
+      try {
+        await oauth2Client.revokeToken(storedRefreshToken);
+        console.log('Google refresh token revoked successfully for user.');
+      } catch (revokeError: any) {
+        console.error('Failed to revoke Google token. It might have already been revoked or is invalid. Still proceeding with local disconnect.', revokeError.message || revokeError);
+        // It's often okay to proceed with local disconnect even if revocation fails,
+        // especially if the token was already invalid.
+      }
     } else {
-      console.log('No refresh token found for user to revoke.');
+      console.log('No Google refresh token found for user to revoke. Proceeding with local disconnect.');
     }
     // --- End TODO ---
 
-    // --- TODO: Delete Stored Tokens ---
-    // After successful revocation (or if no token was found),
+    // --- TODO: Delete Stored Tokens from Your Database ---
+    // After successful revocation (or if no token was found/revocation failed but you still want to disconnect locally),
     // delete any stored Google tokens (access, refresh, expiry) for this user from your database.
-    // await db.deleteUserGoogleTokens(userId); // Example
-    console.log('Placeholder: User Google tokens should be deleted from database here.');
+    // Example: await db.deleteUserGoogleTokens(userId);
+    console.log('Placeholder: User Google tokens should be deleted from your database here to complete disconnect.');
     // --- End TODO ---
 
     return NextResponse.json({ message: "Google Calendar disconnected successfully." });
 
   } catch (error: any) {
-    console.error("Error during Google Calendar disconnect/revoke:", error.message || error);
-    // Even if revocation fails (e.g., token already invalid), 
-    // you should still proceed to delete local tokens and inform the user of disconnection.
-    // --- TODO: Ensure local tokens are deleted even on revocation error ---
-    // await db.deleteUserGoogleTokens(userId); 
-    return NextResponse.json({ message: "Disconnected, but failed to revoke token with Google. Local tokens cleared." }, { status: 200 }); // status 200 as frontend should still reflect disconnect
+    console.error("Error during Google Calendar disconnect process:", error.message || error);
+    // Even if an unexpected error occurs, inform the client.
+    // Consider still attempting to clear local tokens if applicable.
+    return NextResponse.json({ message: "An error occurred during disconnection. Please try again." }, { status: 500 });
   }
 }
