@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, content, slug, author, authorAvatar, tags, imageUrl, imageHint, originalLanguage } = body;
+    const { title, content, slug, author, authorAvatar, tags, imageUrl, imageHint, originalLanguage, category, subcategory } = body;
 
-    if (!title || !content || !slug) {
-      return NextResponse.json({ message: "Missing required fields: title, content, slug" }, { status: 400 });
+    if (!title || !content || !slug || !category) {
+      return NextResponse.json({ message: "Missing required fields: title, content, slug, category" }, { status: 400 });
     }
 
     if (getExistingPostBySlug(slug)) {
@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
       tags: tags || ["AI Generated"],
       imageUrl: imageUrl || "https://placehold.co/800x400.png",
       imageHint: imageHint || "abstract content",
-      originalLanguage: originalLanguage || "en", // Default to English if not provided
+      originalLanguage: originalLanguage || "en",
+      category: category, // Ensure category is included
+      subcategory: subcategory || undefined, // Include subcategory if provided
       comments: [],
     };
 

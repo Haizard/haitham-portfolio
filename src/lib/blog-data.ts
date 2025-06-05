@@ -11,7 +11,9 @@ export interface BlogPost {
   imageUrl: string;
   imageHint: string;
   content: string;
-  originalLanguage: string; // Added: e.g., "en", "es"
+  originalLanguage: string;
+  category: string; // Added
+  subcategory?: string; // Added: optional
   comments?: { id: string; author: string; avatar: string; date: string; text: string }[];
 }
 
@@ -26,6 +28,8 @@ let posts: Record<string, BlogPost> = {
     imageUrl: "https://placehold.co/800x400.png",
     imageHint: "blog abstract technology",
     originalLanguage: "en",
+    category: "Tech",
+    subcategory: "General",
     content: `
       <p>This is the beginning of something great. Welcome to my first blog post powered by CreatorOS! I'm excited to share my thoughts and ideas with the world.</p>
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
@@ -54,6 +58,8 @@ let posts: Record<string, BlogPost> = {
     imageUrl: "https://placehold.co/800x400.png",
     imageHint: "artificial intelligence brain",
     originalLanguage: "en",
+    category: "AI",
+    subcategory: "Trends",
     content: `
       <p>Artificial Intelligence is rapidly changing the landscape of content creation. From automated writing assistants to generative art, the possibilities are endless.</p>
       <p>In this post, we explore some of the key trends and predictions for AI in the creative industries. How will it empower creators? What are the ethical considerations?</p>
@@ -84,4 +90,21 @@ export function addPost(post: BlogPost): BlogPost {
 
 export function getPostSlugs(): { slug: string }[] {
   return Object.keys(posts).map(slug => ({ slug }));
+}
+
+// New function to get posts by category (and optionally subcategory)
+export function getPostsByCategory(category: string, subcategory?: string, limit?: number, excludeSlug?: string): BlogPost[] {
+  let filteredPosts = Object.values(posts).filter(
+    (post) => post.category.toLowerCase() === category.toLowerCase() && post.slug !== excludeSlug
+  );
+
+  if (subcategory) {
+    filteredPosts = filteredPosts.filter(
+      (post) => post.subcategory?.toLowerCase() === subcategory.toLowerCase()
+    );
+  }
+  
+  filteredPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  return limit ? filteredPosts.slice(0, limit) : filteredPosts;
 }

@@ -34,7 +34,7 @@ const createSlug = (title: string) => {
 export function BlogPostGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string } | null>(null);
+  const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string; topic?: string } | null>(null);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -54,7 +54,7 @@ export function BlogPostGenerator() {
     try {
       const output = await generateBlogPost(values as GenerateBlogPostInput);
       const slug = createSlug(output.title);
-      setResult({ ...output, slug });
+      setResult({ ...output, slug, topic: values.topic }); // Store topic for category derivation
       toast({
         title: "Blog Post Generated!",
         description: "Your AI-powered blog post is ready. You can now publish it.",
@@ -72,25 +72,32 @@ export function BlogPostGenerator() {
   }
 
   async function handlePublishPost() {
-    if (!result || !result.slug) {
-      toast({ title: "Error", description: "No post content to publish.", variant: "destructive" });
+    if (!result || !result.slug || !result.topic) {
+      toast({ title: "Error", description: "No post content or topic to publish.", variant: "destructive" });
       return;
     }
     setIsPublishing(true);
+
+    // Simple category derivation (first word of topic, capitalized)
+    const derivedCategory = result.topic.split(' ')[0];
+    const capitalizedCategory = derivedCategory.charAt(0).toUpperCase() + derivedCategory.slice(1).toLowerCase();
+
     try {
       const response = await fetch('/api/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: result.title,
-          content: result.content, // Send the HTML content directly
+          content: result.content, 
           slug: result.slug,
-          author: "AI Content Studio", // Or get from user profile
+          author: "AI Content Studio", 
           authorAvatar: "https://placehold.co/100x100.png?text=AI",
-          tags: ["AI Generated", result.topic.substring(0,20)], // Example tags
+          tags: ["AI Generated", result.topic.substring(0,20)], 
           imageUrl: `https://placehold.co/800x400.png?text=${encodeURIComponent(result.title.substring(0,15))}`,
           imageHint: "abstract content topic",
-          originalLanguage: "en", // Defaulting to English for now
+          originalLanguage: "en",
+          category: capitalizedCategory, // Send derived category
+          subcategory: "", // Send empty subcategory for now
         }),
       });
 
@@ -105,8 +112,6 @@ export function BlogPostGenerator() {
         title: "Post Published!",
         description: `"${publishedPost.title}" is now live.`,
       });
-      // Optionally, clear the result or disable publish button after success
-      // setResult(null); 
     } catch (error: any) {
       console.error("Error publishing post:", error);
       toast({
