@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,16 +12,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Wand2, Eye, Send } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Wand2, Eye, Send, ListTree } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import type { CategoryNode } from '@/lib/categories-data';
 
 const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
-  category: z.string().min(1, "Category is required.").max(50, "Category must be 50 characters or less."),
-  subcategory: z.string().max(50, "Subcategory must be 50 characters or less.").optional(),
+  categoryId: z.string().min(1, "Category selection is required."),
 });
 
 // Helper function to create a slug (simplified)
@@ -33,11 +34,30 @@ const createSlug = (title: string) => {
     .replace(/-+/g, '-');          // Replace multiple hyphens with single
 };
 
+interface FlattenedCategory {
+  value: string;
+  label: string;
+}
+
+const flattenCategories = (categories: CategoryNode[], parentPath = ""): FlattenedCategory[] => {
+  let flatList: FlattenedCategory[] = [];
+  for (const category of categories) {
+    const currentPath = parentPath ? `${parentPath} > ${category.name}` : category.name;
+    flatList.push({ value: category.id, label: currentPath });
+    if (category.children && category.children.length > 0) {
+      flatList = flatList.concat(flattenCategories(category.children, currentPath));
+    }
+  }
+  return flatList;
+};
+
 export function BlogPostGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string } | null>(null);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
+  const [categories, setCategories] = useState<CategoryNode[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -46,17 +66,38 @@ export function BlogPostGenerator() {
       topic: "",
       seoKeywords: "",
       brandVoice: "",
-      category: "",
-      subcategory: "",
+      categoryId: "",
     },
   });
+
+  useEffect(() => {
+    async function fetchCategories() {
+      setIsLoadingCategories(true);
+      try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        const data: CategoryNode[] = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast({ title: "Error", description: "Could not load categories for selection.", variant: "destructive" });
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    }
+    fetchCategories();
+  }, [toast]);
+
+  const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setResult(null);
     setPublishedSlug(null);
     try {
-      // Prepare input for AI flow (without category/subcategory)
       const aiInput: GenerateBlogPostInput = {
         topic: values.topic,
         seoKeywords: values.seoKeywords,
@@ -67,7 +108,7 @@ export function BlogPostGenerator() {
       setResult({ ...output, slug });
       toast({
         title: "Blog Post Generated!",
-        description: "Your AI-powered blog post is ready. You can now publish it with a category.",
+        description: "Your AI-powered blog post is ready. Review and publish it with a category.",
       });
     } catch (error) {
       console.error("Error generating blog post:", error);
@@ -87,11 +128,11 @@ export function BlogPostGenerator() {
       return;
     }
     
-    const { category, subcategory, topic } = form.getValues();
+    const { categoryId, topic } = form.getValues();
 
-    if (!category) {
+    if (!categoryId) {
         toast({ title: "Validation Error", description: "Category is required to publish.", variant: "destructive" });
-        form.setError("category", { type: "manual", message: "Category is required." });
+        form.setError("categoryId", { type: "manual", message: "Category is required." });
         return;
     }
 
@@ -107,12 +148,11 @@ export function BlogPostGenerator() {
           slug: result.slug,
           author: "AI Content Studio",
           authorAvatar: "https://placehold.co/100x100.png?text=AI",
-          tags: ["AI Generated", topic.substring(0,20)],
+          tags: ["AI Generated", topic.substring(0,20).trim().replace(/\s+/g, '-').toLowerCase()],
           imageUrl: `https://placehold.co/800x400.png?text=${encodeURIComponent(result.title.substring(0,15))}`,
           imageHint: "abstract content topic",
           originalLanguage: "en",
-          category: category,
-          subcategory: subcategory || "",
+          categoryId: categoryId,
         }),
       });
 
@@ -148,7 +188,7 @@ export function BlogPostGenerator() {
             AI Blog Post Writer
           </CardTitle>
           <CardDescription>
-            Generate a complete blog post, then add category and subcategory before publishing.
+            Generate a complete blog post, then select a category before publishing.
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -195,33 +235,39 @@ export function BlogPostGenerator() {
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base">Category</FormLabel>
-                      <Input placeholder="e.g., Technology, Marketing" {...field} className="text-base p-3" />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="subcategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base">Subcategory (Optional)</FormLabel>
-                      <Input placeholder="e.g., AI, SEO Basics" {...field} className="text-base p-3" />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base flex items-center"><ListTree className="mr-2 h-5 w-5 text-muted-foreground"/>Blog Post Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories || flattenedCategoryOptions.length === 0}>
+                      <FormControl>
+                        <SelectTrigger className="text-base p-3">
+                          <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isLoadingCategories ? (
+                          <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : flattenedCategoryOptions.length === 0 ? (
+                           <SelectItem value="no-categories" disabled>No categories available. Create one in Admin.</SelectItem>
+                        ) : (
+                          flattenedCategoryOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value} className="text-sm">
+                              {option.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={isLoading || isPublishing} size="lg" className="w-full md:w-auto bg-primary hover:bg-primary/90">
+              <Button type="submit" disabled={isLoading || isPublishing || isLoadingCategories} size="lg" className="w-full md:w-auto bg-primary hover:bg-primary/90">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -251,7 +297,7 @@ export function BlogPostGenerator() {
                    </Link>
                  </Button>
               )}
-              <Button onClick={handlePublishPost} disabled={isPublishing || isLoading || !!publishedSlug} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button onClick={handlePublishPost} disabled={isPublishing || isLoading || !!publishedSlug || isLoadingCategories} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 {isPublishing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publishing...
