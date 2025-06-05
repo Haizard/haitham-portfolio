@@ -20,6 +20,8 @@ const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
+  category: z.string().min(1, "Category is required.").max(50, "Category must be 50 characters or less."),
+  subcategory: z.string().max(50, "Subcategory must be 50 characters or less.").optional(),
 });
 
 // Helper function to create a slug (simplified)
@@ -34,7 +36,7 @@ const createSlug = (title: string) => {
 export function BlogPostGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string; topic?: string } | null>(null);
+  const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string } | null>(null);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -44,6 +46,8 @@ export function BlogPostGenerator() {
       topic: "",
       seoKeywords: "",
       brandVoice: "",
+      category: "",
+      subcategory: "",
     },
   });
 
@@ -52,12 +56,18 @@ export function BlogPostGenerator() {
     setResult(null);
     setPublishedSlug(null);
     try {
-      const output = await generateBlogPost(values as GenerateBlogPostInput);
+      // Prepare input for AI flow (without category/subcategory)
+      const aiInput: GenerateBlogPostInput = {
+        topic: values.topic,
+        seoKeywords: values.seoKeywords,
+        brandVoice: values.brandVoice,
+      };
+      const output = await generateBlogPost(aiInput);
       const slug = createSlug(output.title);
-      setResult({ ...output, slug, topic: values.topic }); // Store topic for category derivation
+      setResult({ ...output, slug });
       toast({
         title: "Blog Post Generated!",
-        description: "Your AI-powered blog post is ready. You can now publish it.",
+        description: "Your AI-powered blog post is ready. You can now publish it with a category.",
       });
     } catch (error) {
       console.error("Error generating blog post:", error);
@@ -72,15 +82,20 @@ export function BlogPostGenerator() {
   }
 
   async function handlePublishPost() {
-    if (!result || !result.slug || !result.topic) {
-      toast({ title: "Error", description: "No post content or topic to publish.", variant: "destructive" });
+    if (!result || !result.slug) {
+      toast({ title: "Error", description: "No post content to publish.", variant: "destructive" });
       return;
     }
-    setIsPublishing(true);
+    
+    const { category, subcategory, topic } = form.getValues();
 
-    // Simple category derivation (first word of topic, capitalized)
-    const derivedCategory = result.topic.split(' ')[0];
-    const capitalizedCategory = derivedCategory.charAt(0).toUpperCase() + derivedCategory.slice(1).toLowerCase();
+    if (!category) {
+        toast({ title: "Validation Error", description: "Category is required to publish.", variant: "destructive" });
+        form.setError("category", { type: "manual", message: "Category is required." });
+        return;
+    }
+
+    setIsPublishing(true);
 
     try {
       const response = await fetch('/api/blog', {
@@ -88,16 +103,16 @@ export function BlogPostGenerator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: result.title,
-          content: result.content, 
+          content: result.content,
           slug: result.slug,
-          author: "AI Content Studio", 
+          author: "AI Content Studio",
           authorAvatar: "https://placehold.co/100x100.png?text=AI",
-          tags: ["AI Generated", result.topic.substring(0,20)], 
+          tags: ["AI Generated", topic.substring(0,20)],
           imageUrl: `https://placehold.co/800x400.png?text=${encodeURIComponent(result.title.substring(0,15))}`,
           imageHint: "abstract content topic",
           originalLanguage: "en",
-          category: capitalizedCategory, // Send derived category
-          subcategory: "", // Send empty subcategory for now
+          category: category,
+          subcategory: subcategory || "",
         }),
       });
 
@@ -133,7 +148,7 @@ export function BlogPostGenerator() {
             AI Blog Post Writer
           </CardTitle>
           <CardDescription>
-            Generate a complete blog post with SEO considerations and your unique brand voice.
+            Generate a complete blog post, then add category and subcategory before publishing.
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -180,18 +195,42 @@ export function BlogPostGenerator() {
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base">Category</FormLabel>
+                      <Input placeholder="e.g., Technology, Marketing" {...field} className="text-base p-3" />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subcategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base">Subcategory (Optional)</FormLabel>
+                      <Input placeholder="e.g., AI, SEO Basics" {...field} className="text-base p-3" />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={isLoading || isPublishing} size="lg" className="w-full md:w-auto bg-primary hover:bg-primary/90">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Generating...
+                    Generating Content...
                   </>
                 ) : (
                   <>
                     <Wand2 className="mr-2 h-5 w-5" />
-                    Generate Blog Post
+                    Generate Blog Content
                   </>
                 )}
               </Button>
@@ -242,3 +281,5 @@ export function BlogPostGenerator() {
     </div>
   );
 }
+
+    
