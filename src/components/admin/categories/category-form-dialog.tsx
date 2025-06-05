@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react'; // Added useState here
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -98,13 +98,6 @@ export function CategoryFormDialog({ isOpen, onClose, category, onSuccess }: Cat
     }
   };
   
-  // Need to import useState if it's not already
-  if (typeof useState === 'undefined' && typeof React !== 'undefined') {
-     const R = React; // Alias React to R to avoid "React must be in scope" error
-     // @ts-ignore
-     global.useState = R.useState; 
-  }
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
