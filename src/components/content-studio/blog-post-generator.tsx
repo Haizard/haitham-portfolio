@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import dynamic from 'next/dynamic';
 import { generateBlogPost, type GenerateBlogPostInput, type GenerateBlogPostOutput } from "@/ai/flows/generate-blog-post";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,11 +14,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, FileDown, Edit } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
 import { Separator } from "../ui/separator";
+
+// Dynamically import ReactQuill
+const ReactQuill = dynamic(() => import('react-quill'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-[300px] border rounded-md bg-muted"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="ml-2">Loading Editor...</p></div>,
+});
+
 
 const galleryImageSchema = z.object({
   url: z.string().url("Image URL must be a valid URL.").min(1, "URL is required."),
@@ -36,7 +44,7 @@ const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
-  editableContent: z.string().min(1, "Post content cannot be empty once generated."),
+  editableContent: z.string().min(1, "Post content cannot be empty once generated.").refine(value => value !== '<p><br></p>', { message: "Post content cannot be substantially empty."}),
   categoryId: z.string().min(1, "Category selection is required.").optional(),
   tags: z.string().optional().describe("Comma-separated list of tags"),
   featuredImageUrl: z.string().url("Featured image URL must be valid.").optional().or(z.literal('')),
@@ -75,6 +83,29 @@ const flattenCategories = (categories: CategoryNode[], level = 0): FlattenedCate
   return flatList;
 };
 
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, 4, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    ['blockquote', 'code-block'],
+    [{'list': 'ordered'}, {'list': 'bullet'}],
+    [{ 'script': 'sub'}, { 'script': 'super' }],
+    [{ 'indent': '-1'}, { 'indent': '+1' }],
+    [{ 'direction': 'rtl' }],
+    [{ 'align': [] }],
+    ['link', 'image', 'video'],
+    ['clean']
+  ],
+};
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block',
+  'list', 'bullet', 'script', 'indent', 'direction', 'align',
+  'link', 'image', 'video'
+];
+
+
 export function BlogPostGenerator() {
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -83,6 +114,12 @@ export function BlogPostGenerator() {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true); // Set isClient to true once component mounts
+  }, []);
+
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -129,12 +166,11 @@ export function BlogPostGenerator() {
   }, [toast]);
 
   const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
-  const watchedEditableContent = form.watch('editableContent');
 
   const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
     setIsLoadingAi(true);
     setGeneratedPost(null);
-    form.setValue('editableContent', ''); // Clear previous editable content
+    form.setValue('editableContent', ''); 
     setPublishedSlug(null);
     try {
       const aiInput: GenerateBlogPostInput = {
@@ -146,23 +182,23 @@ export function BlogPostGenerator() {
       if (!output || !output.title || !output.content) {
         toast({ title: "AI Error", description: "AI did not return a valid title or content. Please try again or refine your inputs.", variant: "destructive" });
         setGeneratedPost(null);
-        form.setValue('editableContent', 'Error: AI failed to generate content.');
+        form.setValue('editableContent', '<p>Error: AI failed to generate content. Please check inputs and try again.</p>');
         throw new Error("AI did not return a valid title or content.");
       }
       const slug = createSlug(output.title);
       setGeneratedPost({ ...output, slug });
-      form.setValue('editableContent', output.content); // Populate the editable field
+      form.setValue('editableContent', output.content); 
       toast({
         title: "Blog Post Content Generated!",
-        description: "Review and edit the content, add images/downloads, category, tags, and then publish.",
+        description: "Review and edit the content in the editor below, add images/downloads, category, tags, and then publish.",
       });
     } catch (error: any) {
       console.error("Error generating blog post content:", error);
-      if (!toast.toasts.find(t => t.title === "AI Error")) { // Avoid duplicate toasts if already set
+      if (!toast.toasts.find(t => t.title === "AI Error")) { 
         toast({ title: "Error generating content", description: error.message || "Failed to generate blog post content.", variant: "destructive" });
       }
       setGeneratedPost(null); 
-      form.setValue('editableContent', form.getValues('editableContent') || 'Error: AI failed to generate content.');
+      form.setValue('editableContent', '<p>Error: AI failed to generate content.</p>');
     } finally {
       setIsLoadingAi(false);
     }
@@ -194,7 +230,7 @@ export function BlogPostGenerator() {
       toast({ title: "Error", description: "No AI-generated base content to publish. Please generate content first.", variant: "destructive" });
       return;
     }
-     if (!values.editableContent) {
+     if (!values.editableContent || values.editableContent.trim() === '' || values.editableContent === '<p><br></p>') {
       form.setError("editableContent", { type: "manual", message: "Post content cannot be empty." });
       toast({ title: "Validation Error", description: "Post content cannot be empty.", variant: "destructive" });
       return;
@@ -213,8 +249,8 @@ export function BlogPostGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: generatedPost.title, // Use original AI title as source of truth for slug generation
-          content: values.editableContent, // Use the edited content
+          title: generatedPost.title,
+          content: values.editableContent, 
           slug: generatedPost.slug,
           author: "AI Content Studio", 
           authorAvatar: "https://placehold.co/100x100.png?text=AI", 
@@ -311,7 +347,7 @@ export function BlogPostGenerator() {
                 <CardTitle className="text-2xl font-headline text-primary flex items-center gap-2">
                   <Edit className="h-7 w-7" /> Review & Enhance Content
                 </CardTitle>
-                <CardDescription>Review the AI-generated content. Edit the HTML, add images, downloads, category, and tags before publishing.</CardDescription>
+                <CardDescription>Review the AI-generated content. Edit it below, add images, downloads, category, and tags before publishing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
                 <div>
@@ -329,30 +365,31 @@ export function BlogPostGenerator() {
                   name="editableContent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg font-semibold">Editable HTML Content</FormLabel>
+                      <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="AI-generated HTML content will appear here for editing..."
-                          className="min-h-[400px] font-code text-sm p-3"
-                          {...field}
-                        />
+                        {isClient && ReactQuill ? ( 
+                          <ReactQuill
+                            theme="snow"
+                            value={field.value}
+                            onChange={field.onChange}
+                            modules={quillModules}
+                            formats={quillFormats}
+                            placeholder="AI-generated HTML content will appear here for editing..."
+                          />
+                        ) : (
+                           <Textarea
+                            placeholder="Loading editor or AI content..."
+                            className="min-h-[300px] font-code text-sm p-3"
+                            value={field.value}
+                            readOnly
+                          />
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 mt-4">Live Content Preview:</h3>
-                  <ScrollArea className="h-[400px] border rounded-md p-4 bg-white dark:bg-background">
-                    <div
-                      className="prose prose-sm sm:prose lg:prose-lg max-w-none dark:prose-invert"
-                      dangerouslySetInnerHTML={{ __html: watchedEditableContent || '<p class="text-muted-foreground">Start editing HTML above to see a live preview...</p>' }}
-                    />
-                  </ScrollArea>
-                </div>
-
-
                 <Separator />
                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImagePlus className="h-6 w-6 text-primary" /> Images & Files</h3>
                 
@@ -432,7 +469,7 @@ export function BlogPostGenerator() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-base">Blog Post Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories || flattenedCategoryOptions.length === 0}>
+                        <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCategories || flattenedCategoryOptions.length === 0}>
                           <FormControl><SelectTrigger className="text-base p-3"><SelectValue placeholder={isLoadingCategories ? "Loading..." : "Select category"} /></SelectTrigger></FormControl>
                           <SelectContent>
                             {isLoadingCategories ? <SelectItem value="loading" disabled>Loading...</SelectItem> : 

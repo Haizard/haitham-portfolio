@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import React Quill CSS */
+@import 'react-quill/dist/quill.snow.css';
+
 @layer base {
   :root {
     --background: 0 0% 94%; /* Light Gray #F0F0F0 */
@@ -107,4 +110,59 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Custom styles for React Quill to better match ShadCN theme */
+.ql-toolbar {
+  @apply rounded-t-md border-input bg-card;
+}
+.ql-container {
+  @apply rounded-b-md border-input bg-card text-base;
+  min-height: 300px; /* Ensure a decent default height */
+}
+.ql-editor {
+  @apply text-base text-foreground;
+  min-height: 300px; /* Match container height */
+  padding: 12px; /* Add some padding */
+}
+.ql-editor.ql-blank::before {
+  @apply text-muted-foreground not-italic;
+  left: 12px; /* Align placeholder with padding */
+}
+
+.dark .ql-toolbar {
+  @apply border-input bg-card;
+}
+.dark .ql-container {
+  @apply border-input bg-card text-foreground;
+}
+.dark .ql-editor {
+  @apply text-foreground;
+}
+.dark .ql-editor.ql-blank::before {
+  @apply text-muted-foreground;
+}
+.dark .ql-stroke {
+    stroke: hsl(var(--muted-foreground));
+}
+.dark .ql-fill {
+    fill: hsl(var(--muted-foreground));
+}
+.dark .ql-picker-label {
+    color: hsl(var(--foreground));
+}
+.dark .ql-picker-options {
+    @apply bg-popover border-border;
+}
+.dark .ql-picker-item:hover {
+    color: hsl(var(--primary));
+}
+.dark .ql-picker-item.ql-selected {
+    color: hsl(var(--primary));
+}
+.dark .ql-snow .ql-active .ql-stroke {
+    stroke: hsl(var(--primary));
+}
+.dark .ql-snow .ql-active .ql-fill {
+    fill: hsl(var(--primary));
 }
