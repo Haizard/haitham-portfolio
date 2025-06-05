@@ -1,13 +1,16 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import LinkExtension from '@tiptap/extension-link';
+import Highlight from '@tiptap/extension-highlight';
 import { generateBlogPost, type GenerateBlogPostInput, type GenerateBlogPostOutput } from "@/ai/flows/generate-blog-post";
 import { generateImageForPost } from "@/ai/flows/generate-image-for-post";
 import { Button } from "@/components/ui/button";
@@ -16,7 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, RotateCcw, RotateCw } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, RotateCcw, RotateCw, Strikethrough, Code, MessageSquare, Minus, Link as LinkIcon, Baseline } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
@@ -84,17 +87,48 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
     return null;
   }
 
+  const setLink = useCallback(() => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    if (url === null) { // User cancelled
+      return;
+    }
+    if (url === '') { // User wants to remove link
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
+
   return (
     <div className="tiptap-toolbar">
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} disabled={!editor.can().chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}><Heading1 /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}><Heading2 /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}><Heading3 /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'is-active' : ''}><List /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'is-active' : ''}><ListOrdered /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><RotateCcw /></Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}><RotateCw /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''} title="Bold"><Bold /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} disabled={!editor.can().chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''} title="Italic"><Italic /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} disabled={!editor.can().chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''} title="Underline"><Baseline /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleStrike().run()} disabled={!editor.can().chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active' : ''} title="Strikethrough"><Strikethrough /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleCode().run()} disabled={!editor.can().chain().focus().toggleCode().run()} className={editor.isActive('code') ? 'is-active' : ''} title="Inline Code"><Code /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#FFF59D' }).run()} className={editor.isActive('highlight', { color: '#FFF59D' }) ? 'is-active' : ''} title="Highlight"><SparklesIcon /></Button> {/* Using Sparkles for Highlight */}
+      <Button type="button" variant="ghost" size="sm" onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''} title="Link"><LinkIcon /></Button>
+      
+      <Separator orientation="vertical" className="h-6 mx-1" />
+      
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''} title="Heading 1"><Heading1 /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''} title="Heading 2"><Heading2 /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''} title="Heading 3"><Heading3 /></Button>
+      
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'is-active' : ''} title="Bullet List"><List /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'is-active' : ''} title="Ordered List"><ListOrdered /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={editor.isActive('codeBlock') ? 'is-active' : ''} title="Code Block"><FileText /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={editor.isActive('blockquote') ? 'is-active' : ''} title="Blockquote"><MessageSquare /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule"><Minus /></Button>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo"><RotateCcw /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo"><RotateCw /></Button>
     </div>
   );
 };
@@ -132,38 +166,40 @@ export function BlogPostGenerator() {
     },
   });
 
-  const watchedEditableContent = form.watch('editableContent');
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // Configure heading levels if needed, e.g., heading: { levels: [1, 2, 3] }
-        // Disable/enable specific starter kit extensions here
-        // codeBlock: false, // Example
+        // StarterKit already includes:
+        // bold, italic, strike, code, codeBlock, heading, bulletList, orderedList, blockquote, horizontalRule
       }),
       Placeholder.configure({
         placeholder: 'AI-generated HTML content will appear here for editing...',
       }),
+      Underline,
+      LinkExtension.configure({
+        openOnClick: true,
+        autolink: true,
+        validate: href => /^https?:\/\//.test(href), // Allow http and https links
+      }),
+      Highlight.configure({ multicolor: false }), // Single color for simplicity
     ],
-    content: watchedEditableContent, // Initialize with form value
+    content: form.getValues('editableContent'), 
     editable: true,
     onUpdate: ({ editor: tiptapEditor }) => {
       const html = tiptapEditor.getHTML();
-      // Only update if the change is significant, to avoid potential loops if form.setValue itself triggers updates
+      // Only update if the change is significant and from user interaction
       if (html !== form.getValues('editableContent')) {
         form.setValue('editableContent', html, { shouldValidate: true, shouldDirty: true });
       }
     },
   });
 
-  // Effect to update TipTap when AI generates content (external change)
   useEffect(() => {
     if (editor && generatedPost?.content && editor.getHTML() !== generatedPost.content) {
-      editor.commands.setContent(generatedPost.content, false); // `false` to not emit update from this action
+      editor.commands.setContent(generatedPost.content, false); 
     }
   }, [generatedPost?.content, editor]);
   
-  // Cleanup editor instance on component unmount
   useEffect(() => {
     return () => {
       editor?.destroy();
@@ -206,8 +242,8 @@ export function BlogPostGenerator() {
   const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
     setIsLoadingAi(true);
     setGeneratedPost(null);
-    form.setValue('editableContent', ''); // Clear previous content
-    if (editor) editor.commands.clearContent(); // Clear TipTap editor
+    form.setValue('editableContent', ''); 
+    if (editor) editor.commands.clearContent(); 
     setPublishedSlug(null);
     try {
       const aiInput: GenerateBlogPostInput = {
@@ -227,8 +263,8 @@ export function BlogPostGenerator() {
       }
 
       const slug = createSlug(output.title);
-      setGeneratedPost({ ...output, slug }); // This will trigger useEffect to update editor
-      form.setValue('editableContent', output.content, {shouldValidate: true}); // Also set form value directly
+      setGeneratedPost({ ...output, slug }); 
+      form.setValue('editableContent', output.content, {shouldValidate: true}); 
 
       toast({
         title: "Blog Post Content Generated!",
@@ -433,28 +469,19 @@ export function BlogPostGenerator() {
                   <p className="text-sm text-muted-foreground p-4 bg-muted rounded-md">{generatedPost.reasoning}</p>
                 </div>
                 
-                <FormField
+                <Controller
                   control={form.control}
                   name="editableContent"
-                  render={({ field }) => ( // field contains value, onChange, onBlur, name, ref
+                  render={({ field: { name, onBlur, value }, fieldState: { error } }) => ( // Note: value and onChange are handled by editor state now
                     <FormItem>
                       <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
                        <FormControl>
                         <>
                           {isClient && editor && <TiptapToolbar editor={editor} />}
-                          <EditorContent editor={editor} />
-                          {/* Fallback for SSR or if editor fails to load, though unlikely with TipTap */}
-                          {!editor && isClient && (
-                            <Textarea
-                              placeholder="Loading editor..."
-                              className="min-h-[300px] font-code text-sm p-3"
-                              value={field.value}
-                              readOnly
-                            />
-                          )}
+                          <EditorContent editor={editor} className="ProseMirror-wrapper"/>
                         </>
                       </FormControl>
-                      <FormMessage />
+                      {error && <FormMessage>{error.message}</FormMessage>}
                     </FormItem>
                   )}
                 />
