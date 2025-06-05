@@ -90,6 +90,7 @@ export function BlogPostGenerator() {
           tags: ["AI Generated", result.topic.substring(0,20)], // Example tags
           imageUrl: `https://placehold.co/800x400.png?text=${encodeURIComponent(result.title.substring(0,15))}`,
           imageHint: "abstract content topic",
+          originalLanguage: "en", // Defaulting to English for now
         }),
       });
 
@@ -236,4 +237,3 @@ export function BlogPostGenerator() {
     </div>
   );
 }
-

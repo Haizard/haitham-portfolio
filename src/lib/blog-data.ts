@@ -11,6 +11,7 @@ export interface BlogPost {
   imageUrl: string;
   imageHint: string;
   content: string;
+  originalLanguage: string; // Added: e.g., "en", "es"
   comments?: { id: string; author: string; avatar: string; date: string; text: string }[];
 }
 
@@ -24,6 +25,7 @@ let posts: Record<string, BlogPost> = {
     tags: ["Introduction", "Tech", "CreatorOS"],
     imageUrl: "https://placehold.co/800x400.png",
     imageHint: "blog abstract technology",
+    originalLanguage: "en",
     content: `
       <p>This is the beginning of something great. Welcome to my first blog post powered by CreatorOS! I'm excited to share my thoughts and ideas with the world.</p>
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
@@ -51,6 +53,7 @@ let posts: Record<string, BlogPost> = {
     tags: ["AI", "Technology", "Future"],
     imageUrl: "https://placehold.co/800x400.png",
     imageHint: "artificial intelligence brain",
+    originalLanguage: "en",
     content: `
       <p>Artificial Intelligence is rapidly changing the landscape of content creation. From automated writing assistants to generative art, the possibilities are endless.</p>
       <p>In this post, we explore some of the key trends and predictions for AI in the creative industries. How will it empower creators? What are the ethical considerations?</p>
