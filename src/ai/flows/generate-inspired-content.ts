@@ -38,11 +38,11 @@ const LLMOutputSchema = z.union([BrainstormPayloadSchema, SynthesizePayloadSchem
 
 // This is the final output type of the flow, which includes analysisMode (discriminated union)
 // DO NOT EXPORT THE SCHEMA OBJECT ITSELF
-const GenerateInspiredContentOutputSchema = z.discriminatedUnion("analysisMode", [
+const GenerateInspiredContentOutputSchemaInternal = z.discriminatedUnion("analysisMode", [
   z.object({ analysisMode: z.literal('brainstormIdeas'), ...BrainstormPayloadSchema.shape }),
   z.object({ analysisMode: z.literal('synthesizeOutline'), ...SynthesizePayloadSchema.shape })
 ]);
-export type GenerateInspiredContentOutput = z.infer<typeof GenerateInspiredContentOutputSchema>;
+export type GenerateInspiredContentOutput = z.infer<typeof GenerateInspiredContentOutputSchemaInternal>;
 
 
 export async function generateInspiredContent(input: GenerateInspiredContentInput): Promise<GenerateInspiredContentOutput> {
@@ -68,9 +68,9 @@ They have not specified a particular target topic, so focus on the general theme
 {{/if}}
 
 IMPORTANT: You are NOT to directly copy or plagiarize content from the provided URLs. Your goal is to provide inspiration and structure for NEW, ORIGINAL content.
-Do NOT include the 'analysisMode' field in your direct JSON output. It will be added later.
+Your output MUST be a JSON object. Do NOT include the 'analysisMode' field in this JSON output.
 
-Based on the user's selected 'analysisMode' (which is '{{analysisMode}}'), perform ONE of the following tasks:
+Based on the user's selected 'analysisMode' (which is '{{analysisMode}}'), perform ONE of the following tasks and structure your JSON output accordingly:
 
 IF '{{analysisMode}}' is 'brainstormIdeas':
   - Analyze the themes, topics, and potential gaps in the provided article(s).
@@ -81,7 +81,16 @@ IF '{{analysisMode}}' is 'brainstormIdeas':
   {{/if}}
   - Identify 3-5 key themes or concepts from the source articles that are relevant to the generated topics.
   - Provide one catchy introduction hook (1-2 sentences) for one of the suggested topics.
-  - Structure your output according to the 'BrainstormPayloadSchema' (fields: suggestedTopics, keyThemes, introductionHook).
+  - The JSON object you output MUST contain the following keys:
+    - "suggestedTopics": An array of strings (the blog post topics/titles).
+    - "keyThemes": An array of strings (the key themes identified).
+    - "introductionHook": A string (the catchy introduction hook).
+  Example JSON structure for brainstormIdeas:
+  {
+    "suggestedTopics": ["Topic Example 1", "Another Great Topic Idea"],
+    "keyThemes": ["Core Concept A", "Important Theme B"],
+    "introductionHook": "Imagine a world where..."
+  }
 
 IF '{{analysisMode}}' is 'synthesizeOutline':
   - Synthesize the information from the provided article(s) to create a comprehensive outline for a NEW, ORIGINAL blog post.
@@ -94,10 +103,20 @@ IF '{{analysisMode}}' is 'synthesizeOutline':
   - Develop a structured outline (use markdown for headings #, ##, ### and bullet points - or *) for the new article. The outline should be detailed enough to guide the writing process.
   - List 3-5 key talking points that should be emphasized in the new article.
   - Write a brief originality statement (1-2 sentences) explaining how this synthesized article will offer a unique perspective, a novel combination of information, or address a gap not fully covered by the sources.
-  - Structure your output according to the 'SynthesizePayloadSchema' (fields: draftTitle, draftOutline, keyTalkingPoints, originalityStatement).
+  - The JSON object you output MUST contain the following keys:
+    - "draftTitle": A string (the draft title).
+    - "draftOutline": A string (the markdown outline, e.g., "# Section 1\\n- Point A\\n- Point B").
+    - "keyTalkingPoints": An array of strings (key talking points).
+    - "originalityStatement": A string (the originality statement).
+  Example JSON structure for synthesizeOutline:
+  {
+    "draftTitle": "My New Synthesized Article Title",
+    "draftOutline": "# Introduction\\n## Main Point 1\\n- Subpoint a\\n- Subpoint b\\n# Conclusion",
+    "keyTalkingPoints": ["Key Takeaway 1", "Essential Argument 2"],
+    "originalityStatement": "This article offers a novel synthesis by..."
+  }
 
-Ensure your output strictly matches the required Zod schema for the chosen 'analysisMode' (either BrainstormPayloadSchema or SynthesizePayloadSchema from above).
-Do NOT include the 'analysisMode' field in your direct JSON output.
+Ensure your output strictly adheres to ONE of these JSON structures based on the '{{analysisMode}}' and includes all specified fields.
 `,
 });
 
@@ -105,13 +124,13 @@ const generateInspiredContentFlow = ai.defineFlow(
   {
     name: 'generateInspiredContentFlow',
     inputSchema: GenerateInspiredContentInputSchema,
-    outputSchema: GenerateInspiredContentOutputSchema, // Flow's final output is the full discriminated union
+    outputSchema: GenerateInspiredContentOutputSchemaInternal, // Flow's final output is the full discriminated union
   },
   async (input: GenerateInspiredContentInput): Promise<GenerateInspiredContentOutput> => {
     const {output: llmOutput} = await prompt(input); // llmOutput is BrainstormPayloadSchema | SynthesizePayloadSchema | undefined
 
     if (!llmOutput) {
-        throw new Error("AI failed to generate inspired content.");
+        throw new Error("AI failed to generate inspired content. The output was empty.");
     }
 
     if (input.analysisMode === 'brainstormIdeas') {
