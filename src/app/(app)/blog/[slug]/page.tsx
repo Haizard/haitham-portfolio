@@ -297,22 +297,9 @@ export default function BlogPostPage() {
           />
         )}
 
-        {isTranslating && selectedLanguage !== post.originalLanguage ? (
-          <div className="prose prose-lg dark:prose-invert max-w-none mb-12 flex flex-col items-center justify-center min-h-[300px] bg-muted/50 rounded-md p-8">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Translating to {currentLanguageName}...</p>
-          </div>
-        ) : (
-          <div
-            className="prose prose-lg dark:prose-invert max-w-none mb-12"
-            dangerouslySetInnerHTML={{ __html: displayContent }}
-          />
-        )}
-        
         {post.galleryImages && post.galleryImages.length > 0 && (
           <>
-            <Separator className="my-12" />
-            <section className="mb-12">
+            <section className="mb-8"> {/* Changed margin from my-12 to mb-8 */}
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
                 <ImageIcon className="mr-3 h-7 w-7 text-primary" />
                 Image Gallery
@@ -339,9 +326,22 @@ export default function BlogPostPage() {
                 ))}
               </div>
             </section>
+            <Separator className="mb-12" /> {/* Separator now after gallery, before prose */}
           </>
         )}
 
+        {isTranslating && selectedLanguage !== post.originalLanguage ? (
+          <div className="prose prose-lg dark:prose-invert max-w-none mb-12 flex flex-col items-center justify-center min-h-[300px] bg-muted/50 rounded-md p-8">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Translating to {currentLanguageName}...</p>
+          </div>
+        ) : (
+          <div
+            className="prose prose-lg dark:prose-invert max-w-none mb-12"
+            dangerouslySetInnerHTML={{ __html: displayContent }}
+          />
+        )}
+        
       </article>
 
       {post.downloads && post.downloads.length > 0 && (
