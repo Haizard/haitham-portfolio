@@ -8,19 +8,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import dynamic from 'next/dynamic';
 import { generateBlogPost, type GenerateBlogPostInput, type GenerateBlogPostOutput } from "@/ai/flows/generate-blog-post";
-import { generateImageForPost, type GenerateImageForPostInput } from "@/ai/flows/generate-image-for-post"; // Added
+import { generateImageForPost } from "@/ai/flows/generate-image-for-post";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon } from "lucide-react"; // Added SparklesIcon
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
 import { Separator } from "../ui/separator";
-import Image from "next/image"; // Added for preview
+import Image from "next/image";
 
 // Dynamically import ReactQuill
 const ReactQuill = dynamic(() => import('react-quill'), {
@@ -110,7 +110,7 @@ const quillFormats = [
 
 export function BlogPostGenerator() {
   const [isLoadingAi, setIsLoadingAi] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false); // Added state for image generation
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<(GenerateBlogPostOutput & { slug?: string }) | null>(null);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -150,7 +150,7 @@ export function BlogPostGenerator() {
     name: "downloads",
   });
 
-  const watchedFeaturedImageUrl = form.watch("featuredImageUrl"); // For image preview
+  const watchedFeaturedImageUrl = form.watch("featuredImageUrl"); 
 
   useEffect(() => {
     async function fetchCategoriesData() {
@@ -172,7 +172,7 @@ export function BlogPostGenerator() {
 
   const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
 
- const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
+  const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
     setIsLoadingAi(true);
     setGeneratedPost(null);
     form.setValue('editableContent', '');
@@ -409,7 +409,7 @@ export function BlogPostGenerator() {
                           <div className="bg-card"> 
                             <ReactQuill
                               theme="snow"
-                              value={field.value}
+                              value={typeof field.value === 'string' ? field.value : ''}
                               onChange={field.onChange}
                               onBlur={field.onBlur}
                               modules={quillModules}
@@ -421,7 +421,7 @@ export function BlogPostGenerator() {
                            <Textarea
                             placeholder="Loading editor or AI content..."
                             className="min-h-[300px] font-code text-sm p-3"
-                            value={field.value}
+                            value={typeof field.value === 'string' ? field.value : ''}
                             readOnly
                           />
                         )}
@@ -576,4 +576,3 @@ export function BlogPostGenerator() {
     </div>
   );
 }
-
