@@ -185,7 +185,8 @@ export function BlogPostGenerator() {
     editable: true,
     onUpdate: ({ editor: tiptapEditor }) => {
       const html = tiptapEditor.getHTML();
-      if (html !== form.getValues('editableContent')) {
+      const currentFormValue = form.getValues('editableContent');
+      if (html !== currentFormValue) {
         form.setValue('editableContent', html, { shouldValidate: true, shouldDirty: true });
       }
     },
@@ -243,7 +244,10 @@ export function BlogPostGenerator() {
     setGeneratedPost(null);
     form.setValue('editableContent', ''); 
     if (editor) editor.commands.clearContent(); 
-    setPublishedSlug(null);
+    
+    // Reset publishedSlug when generating new content
+    setPublishedSlug(null); 
+
     try {
       const aiInput: GenerateBlogPostInput = {
         topic: values.topic,
@@ -297,6 +301,8 @@ export function BlogPostGenerator() {
       });
       return;
     }
+    // Reset publishedSlug because new content is being generated
+    setPublishedSlug(null); 
     const values = form.getValues();
     onAiSubmit({
       topic: values.topic,
@@ -375,36 +381,46 @@ export function BlogPostGenerator() {
     setIsPublishing(true);
     const tagsArray = values.tags ? values.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
 
+    const postPayload = {
+        title: generatedPost.title,
+        content: values.editableContent, 
+        slug: generatedPost.slug, // For POST, API uses this. For PUT, API uses slug from URL.
+        author: "AI Content Studio", 
+        authorAvatar: "https://placehold.co/100x100.png?text=AI", 
+        tags: tagsArray,
+        featuredImageUrl: values.featuredImageUrl,
+        featuredImageHint: values.featuredImageHint,
+        galleryImages: values.galleryImages,
+        downloads: values.downloads,
+        originalLanguage: "en", 
+        categoryId: values.categoryId,
+    };
+
+    const isUpdateOperation = !!publishedSlug;
+    const apiUrl = isUpdateOperation ? `/api/blog/${publishedSlug}` : '/api/blog';
+    const method = isUpdateOperation ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch('/api/blog', {
-        method: 'POST',
+      const response = await fetch(apiUrl, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: generatedPost.title,
-          content: values.editableContent, 
-          slug: generatedPost.slug,
-          author: "AI Content Studio", 
-          authorAvatar: "https://placehold.co/100x100.png?text=AI", 
-          tags: tagsArray,
-          featuredImageUrl: values.featuredImageUrl,
-          featuredImageHint: values.featuredImageHint,
-          galleryImages: values.galleryImages,
-          downloads: values.downloads,
-          originalLanguage: "en", 
-          categoryId: values.categoryId,
-        }),
+        body: JSON.stringify(postPayload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to publish post. Status: ${response.status}`);
+        throw new Error(errorData.message || `Failed to ${isUpdateOperation ? 'update' : 'publish'} post. Status: ${response.status}`);
       }
-      const publishedPostData = await response.json();
-      setPublishedSlug(publishedPostData.slug);
-      toast({ title: "Post Published!", description: `"${publishedPostData.title}" is now live.` });
+      const responseData = await response.json();
+      
+      if (!isUpdateOperation) { // Only set publishedSlug on initial creation
+        setPublishedSlug(responseData.slug);
+      }
+      
+      toast({ title: `Post ${isUpdateOperation ? 'Updated' : 'Published'}!`, description: `"${responseData.title}" is now live.` });
     } catch (error: any) {
-      console.error("Error publishing post:", error);
-      toast({ title: "Publishing Error", description: error.message, variant: "destructive" });
+      console.error(`Error ${isUpdateOperation ? 'updating' : 'publishing'} post:`, error);
+      toast({ title: `${isUpdateOperation ? 'Update' : 'Publishing'} Error`, description: error.message, variant: "destructive" });
     } finally {
       setIsPublishing(false);
     }
@@ -484,7 +500,7 @@ export function BlogPostGenerator() {
                 <div>
                   <h3 className="text-xl font-semibold mb-1">Original AI Title:</h3>
                   <p className="text-lg p-3 bg-muted rounded-md">{generatedPost.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Slug: <code className="bg-muted px-1 rounded">{generatedPost.slug}</code> (Generated from this title. Title for publishing will be this one.)</p>
+                  <p className="text-xs text-muted-foreground mt-1">Slug for publishing: <code className="bg-muted px-1 rounded">{publishedSlug || generatedPost.slug}</code> (Generated from title. Will remain constant after first publish.)</p>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">SEO Keyword Reasoning:</h3>
@@ -663,9 +679,9 @@ export function BlogPostGenerator() {
                     <Link href={`/blog/${publishedSlug}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Published Post</Link>
                   </Button>
                 )}
-                <Button type="submit" disabled={isPublishing || isLoadingAi || !!publishedSlug || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s)} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
+                <Button type="submit" disabled={isPublishing || isLoadingAi || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s)} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
                   {isPublishing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
-                  {publishedSlug ? "Post Published" : "Publish Post"}
+                  {publishedSlug ? "Update Post" : "Publish Post"}
                 </Button>
               </CardFooter>
             </Card>
@@ -675,4 +691,3 @@ export function BlogPostGenerator() {
     </div>
   );
 }
-

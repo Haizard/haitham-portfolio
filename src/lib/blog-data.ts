@@ -105,6 +105,31 @@ export async function addPost(postData: Omit<BlogPost, 'id' | '_id' | 'date'> & 
   return newPost;
 }
 
+export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' >>): Promise<BlogPost | null> {
+  if (!ObjectId.isValid(id)) {
+    console.log(`Invalid ObjectId for updatePost: ${id}`);
+    return null;
+  }
+  const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
+  
+  // Ensure `slug`, `date`, and `comments` are not part of the $set operation unless explicitly handled.
+  // The `updates` type already excludes slug, date, and comments.
+  
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updates },
+    { returnDocument: 'after' }
+  );
+
+  if (!result) {
+    console.warn(`[updatePost] Post with ID '${id}' not found for update.`);
+    return null;
+  }
+  console.log(`[updatePost] Post with ID '${id}' updated successfully.`);
+  return docToBlogPost(result);
+}
+
+
 export async function getPostsByCategoryId(categoryId: string, limit?: number, excludeSlug?: string): Promise<BlogPost[]> {
   if (!ObjectId.isValid(categoryId)) {
     console.warn(`getPostsByCategoryId: Invalid categoryId format: ${categoryId}`);
