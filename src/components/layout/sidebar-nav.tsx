@@ -16,7 +16,8 @@ import {
   UserCircle, 
   Lightbulb, 
   Settings,
-  FolderKanban, // Added for Category Management
+  FolderKanban,
+  Tags, // Added for Tag Management
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -35,7 +36,13 @@ const navItems = [
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
   { href: "/services", label: "Services", icon: Briefcase },
   { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
-  { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban }, // Changed icon and label
+  { 
+    group: "Admin",
+    items: [
+      { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
+      { href: "/admin/tags", label: "Manage Tags", icon: Tags },
+    ]
+  }
 ];
 
 export function SidebarNav() {
@@ -43,34 +50,68 @@ export function SidebarNav() {
   const { setOpenMobile } = useSidebar();
 
   const handleLinkClick = () => {
-    setOpenMobile(false); // Close mobile sidebar on link click
+    setOpenMobile(false); 
   };
 
   return (
     <SidebarMenu>
-      {navItems.map((item) => (
-        <SidebarMenuItem key={item.href}>
-          <Link href={item.href} passHref legacyBehavior>
-            <SidebarMenuButton
-              asChild
-              variant={pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                (pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-                !(pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href) && "hover:bg-muted"
-              )}
-              isActive={pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href}
-              tooltip={item.label}
-              onClick={handleLinkClick}
-            >
-              <a>
-                <item.icon className="h-5 w-5 mr-3" />
-                <span>{item.label}</span>
-              </a>
-            </SidebarMenuButton>
-          </Link>
-        </SidebarMenuItem>
-      ))}
+      {navItems.map((item, index) => {
+        if ('group' in item) {
+          return (
+            <SidebarMenuItem key={`group-${index}`} className="mt-2">
+              <span className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase">{item.group}</span>
+              <SidebarMenu className="mt-1">
+                {item.items.map(subItem => (
+                  <SidebarMenuItem key={subItem.href}>
+                    <Link href={subItem.href} passHref legacyBehavior>
+                      <SidebarMenuButton
+                        asChild
+                        variant={pathname.startsWith(subItem.href) ? "default" : "ghost"}
+                        className={cn(
+                          "w-full justify-start",
+                          pathname.startsWith(subItem.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                          !pathname.startsWith(subItem.href) && "hover:bg-muted"
+                        )}
+                        isActive={pathname.startsWith(subItem.href)}
+                        tooltip={subItem.label}
+                        onClick={handleLinkClick}
+                      >
+                        <a>
+                          <subItem.icon className="h-5 w-5 mr-3" />
+                          <span>{subItem.label}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarMenuItem>
+          );
+        }
+        return (
+          <SidebarMenuItem key={item.href}>
+            <Link href={item.href} passHref legacyBehavior>
+              <SidebarMenuButton
+                asChild
+                variant={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)) ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                  !(pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))) && "hover:bg-muted"
+                )}
+                isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))}
+                tooltip={item.label}
+                onClick={handleLinkClick}
+              >
+                <a>
+                  <item.icon className="h-5 w-5 mr-3" />
+                  <span>{item.label}</span>
+                </a>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+        );
+      })}
     </SidebarMenu>
   );
 }

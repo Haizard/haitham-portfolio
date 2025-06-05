@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function CategoryManagement() {
   const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([]);
@@ -80,7 +81,7 @@ export function CategoryManagement() {
 
   const handleEditNode = (node: CategoryNode) => {
     setEditingNode(node);
-    setParentForNewNode(null); // Not creating a child, but editing
+    setParentForNewNode(null); 
     setIsFormOpen(true);
   };
 
@@ -98,7 +99,7 @@ export function CategoryManagement() {
         throw new Error(errorData.message || `Failed to delete category`);
       }
       toast({ title: `Category Deleted`, description: `"${nodeToDelete.name}" and all its children have been removed.` });
-      fetchCategoryTree(); // Refresh the tree
+      fetchCategoryTree(); 
     } catch (error: any) {
       toast({ title: "Error", description: error.message || `Could not delete category.`, variant: "destructive" });
     } finally {
@@ -110,31 +111,61 @@ export function CategoryManagement() {
   const renderCategoryRowsRecursive = (nodes: CategoryNode[], level = 0): React.ReactNode[] => {
     return nodes.flatMap(node => [
       <TableRow key={node.id} className="hover:bg-muted/50">
-        <TableCell style={{ paddingLeft: `${level * 24 + 4}px` }}>
+        <TableCell style={{ paddingLeft: `${level * 24 + 16}px` }}> {/* Increased base padding */}
           <div className="flex items-center">
-            {node.children && node.children.length > 0 && (
+            {node.children && node.children.length > 0 ? (
               <Button variant="ghost" size="icon" onClick={() => toggleNodeOpen(node.id)} className="h-8 w-8 mr-1">
                 {openNodes[node.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
+            ) : (
+              <span className="inline-block w-8 mr-1"></span> // Placeholder for alignment
             )}
-            <span className="ml-2">{node.name}</span>
+            <span className="font-medium">{node.name}</span>
             {node.children && node.children.length > 0 && (
                <Badge variant="secondary" className="ml-2">{node.children.length} child{node.children.length === 1 ? '' : 'ren'}</Badge>
             )}
           </div>
         </TableCell>
-        <TableCell className="text-muted-foreground text-xs">{node.slug}</TableCell>
-        <TableCell className="text-sm text-muted-foreground truncate max-w-xs">{node.description || '-'}</TableCell>
+        <TableCell><code className="text-xs bg-muted/50 p-1 rounded">{node.slug}</code></TableCell>
+        <TableCell className="text-sm text-muted-foreground truncate max-w-[300px]">
+          {node.description && node.description.length > 70 ? (
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <span className="cursor-help">{node.description.substring(0, 70)}...</span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-xs p-2">
+                {node.description}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            node.description || '-'
+          )}
+        </TableCell>
         <TableCell className="text-right">
-          <Button variant="outline" size="sm" onClick={() => handleCreateChildCategory(node)} className="mr-2" title="Add Child Category">
-            <FolderPlus className="mr-1 h-4 w-4" /> Add Child
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handleEditNode(node)} className="mr-2" title="Edit Category">
-            <Edit3 className="mr-1 h-4 w-4" /> Edit
-          </Button>
-          <Button variant="destructive" size="sm" onClick={() => confirmDeleteNode(node)} title="Delete Category">
-            <Trash2 className="mr-1 h-4 w-4" /> Delete
-          </Button>
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" onClick={() => handleCreateChildCategory(node)} className="mr-2">
+                <FolderPlus className="mr-1 h-4 w-4" /> Add Child
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-xs p-1">Add Child Category</TooltipContent>
+          </Tooltip>
+           <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" onClick={() => handleEditNode(node)} className="mr-2">
+                <Edit3 className="mr-1 h-4 w-4" /> Edit
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-xs p-1">Edit Category</TooltipContent>
+          </Tooltip>
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <Button variant="destructive" size="sm" onClick={() => confirmDeleteNode(node)}>
+                <Trash2 className="mr-1 h-4 w-4" /> Delete
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-xs p-1">Delete Category</TooltipContent>
+          </Tooltip>
         </TableCell>
       </TableRow>,
       ...(node.children && node.children.length > 0 && openNodes[node.id]
@@ -152,11 +183,11 @@ export function CategoryManagement() {
   }
 
   return (
-    <>
+    <TooltipProvider>
       <Card className="shadow-xl mb-8">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-headline flex items-center"><ListTree className="mr-2 h-6 w-6 text-primary"/>Category Management</CardTitle>
+            <CardTitle className="text-2xl font-headline flex items-center"><ListTree className="mr-2 h-6 w-6 text-primary"/>Category Tree</CardTitle>
             <CardDescription>Manage your hierarchical blog categories.</CardDescription>
           </div>
           <Button onClick={handleCreateTopLevelCategory} className="bg-primary hover:bg-primary/90">
@@ -171,10 +202,10 @@ export function CategoryManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead className="w-[40%]">Name</TableHead>
                     <TableHead>Slug</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead className="text-right w-[320px]">Actions</TableHead>
+                    <TableHead className="text-right w-[300px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -216,6 +247,6 @@ export function CategoryManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 }

@@ -2,9 +2,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
-import { CalendarDays, Globe, Loader2, Tag, Folder } from "lucide-react";
+import Link from 'next/link';
+import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -19,10 +20,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { BlogPost } from '@/lib/blog-data';
 import type { CategoryNode } from '@/lib/categories-data';
+import type { Tag as TagType } from '@/lib/tags-data'; // Import Tag type
 import { getPostSlugs, getPostBySlug } from '@/lib/blog-data';
 import { translateBlogContent } from '@/ai/flows/translate-blog-content';
 import { CommentSection } from "@/components/blog/comment-section";
 import { RelatedPostsSection } from "@/components/blog/related-posts-section";
+import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 
 async function getAllPostSlugsForStaticParams(): Promise<{ slug: string }[]> {
   try {
@@ -48,12 +51,6 @@ async function getPostData(slug: string): Promise<BlogPost | null> {
   }
 }
 
-interface BlogPostPageProps {
-  params: {
-    slug: string;
-  };
-}
-
 const availableLanguages = [
   { code: "en", name: "English" },
   { code: "sw", name: "Swahili" },
@@ -65,48 +62,85 @@ const availableLanguages = [
   { code: "zh", name: "Chinese" },
 ];
 
-export default function BlogPostPage({ params }: BlogPostPageProps) {
-  const { slug } = params;
+export default function BlogPostPage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug;
+
   const [post, setPost] = useState<BlogPost | null>(null);
   const [isLoadingPost, setIsLoadingPost] = useState(true);
-  const [categoryName, setCategoryName] = useState<string | null>(null);
+  
+  const [categoryDetails, setCategoryDetails] = useState<(CategoryNode & { path?: CategoryNode[] }) | null>(null);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
+  
+  const [postTags, setPostTags] = useState<TagType[]>([]); // For storing resolved Tag objects
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
+
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   const fetchAndSetPost = useCallback(async () => {
+    if (!slug) return;
     setIsLoadingPost(true);
-    setCategoryName(null);
+    setCategoryDetails(null);
+    setPostTags([]);
+
     const fetchedPost = await getPostData(slug);
     if (fetchedPost) {
       setPost(fetchedPost);
       setSelectedLanguage(fetchedPost.originalLanguage);
       setTranslatedContent(null);
+
       if (fetchedPost.categoryId) {
         setIsLoadingCategory(true);
         try {
-          const catResponse = await fetch(`/api/categories/${fetchedPost.categoryId}`);
+          const catResponse = await fetch(`/api/categories/${fetchedPost.categoryId}?include_path=true`);
           if (catResponse.ok) {
-            const catData: CategoryNode = await catResponse.json();
-            // For now, just display the direct category name.
-            // A more complex solution could fetch parent path.
-            setCategoryName(catData.name);
+            const catData: CategoryNode & { path?: CategoryNode[] } = await catResponse.json();
+            setCategoryDetails(catData);
           } else {
             console.warn(`Could not fetch category details for ID: ${fetchedPost.categoryId}`);
-            setCategoryName("Unknown Category");
+            setCategoryDetails({ id: fetchedPost.categoryId, name: "Unknown Category", slug: "unknown", children: [] }); // Fallback
           }
         } catch (error) {
           console.error("Error fetching category:", error);
-          setCategoryName("Error loading category");
+           setCategoryDetails({ id: fetchedPost.categoryId, name: "Error loading category", slug: "error", children: [] }); // Error Fallback
         } finally {
           setIsLoadingCategory(false);
         }
       } else {
-        setCategoryName("Uncategorized");
+        setCategoryDetails({ id: 'uncategorized', name: "Uncategorized", slug: "uncategorized", children: [] });
         setIsLoadingCategory(false);
       }
+
+      // Fetch tag details if tagIds exist
+      if (fetchedPost.tagIds && fetchedPost.tagIds.length > 0) {
+        setIsLoadingTags(true);
+        try {
+          // This assumes an API endpoint that can take multiple IDs or we fetch one by one
+          // For simplicity, let's assume we fetch all tags and filter, or an endpoint like /api/tags?ids=id1,id2
+          // A more robust way: fetch each tag by ID if not too many, or have a dedicated batch endpoint.
+          // For now, we'll simulate by using a general GET /api/tags and filtering client-side (not ideal for many tags)
+          const tagsResponse = await fetch('/api/tags');
+          if (tagsResponse.ok) {
+            const allTags: TagType[] = await tagsResponse.json();
+            const resolvedTags = allTags.filter(t => fetchedPost.tagIds?.includes(t.id));
+            setPostTags(resolvedTags);
+          } else {
+            console.warn("Could not fetch all tags to resolve post tags.");
+          }
+        } catch (error) {
+            console.error("Error fetching tags for post:", error);
+        } finally {
+            setIsLoadingTags(false);
+        }
+      } else if (fetchedPost.tags && fetchedPost.tags.length > 0) {
+        // Fallback for older posts that might only have string tags
+        setPostTags(fetchedPost.tags.map(t_name => ({id: t_name, name: t_name, slug: t_name.toLowerCase().replace(/\s+/g, '-')})));
+      }
+
+
     } else {
       notFound();
     }
@@ -119,14 +153,11 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   const handleLanguageChange = async (newLangCode: string) => {
     if (!post || !post.content) return;
-
     setSelectedLanguage(newLangCode);
-
     if (newLangCode === post.originalLanguage) {
       setTranslatedContent(null);
       return;
     }
-
     setIsTranslating(true);
     try {
       const translationResult = await translateBlogContent({
@@ -160,6 +191,9 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <article>
+        {categoryDetails?.path && categoryDetails.path.length > 0 && (
+            <BreadcrumbDisplay path={categoryDetails.path} className="mb-4" />
+        )}
         <header className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-4">{post.title}</h1>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-muted-foreground mb-2">
@@ -197,18 +231,30 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             <Folder className="h-4 w-4 text-muted-foreground mr-1" />
             {isLoadingCategory ? (
               <Badge variant="outline" className="text-sm">Loading category...</Badge>
-            ) : categoryName ? (
-              <Badge variant="outline" className="text-sm">{categoryName}</Badge>
+            ) : categoryDetails?.name ? (
+               <Link href={`/blog/category/${categoryDetails.path ? categoryDetails.path.map(p=>p.slug).join('/') : categoryDetails.slug}`} className="hover:underline">
+                <Badge variant="outline" className="text-sm cursor-pointer hover:bg-secondary">{categoryDetails.name}</Badge>
+              </Link>
             ) : (
               <Badge variant="outline" className="text-sm">Uncategorized</Badge>
             )}
           </div>
-          <div className="flex flex-wrap gap-2 mt-2 items-center">
-             <Tag className="h-4 w-4 text-muted-foreground mr-1" />
-            {post.tags.map(tag => (
-              <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-            ))}
-          </div>
+          
+          {(isLoadingTags || postTags.length > 0) && (
+            <div className="flex flex-wrap gap-2 mt-2 items-center">
+              <Tag className="h-4 w-4 text-muted-foreground mr-1" />
+              {isLoadingTags ? (
+                 <Badge variant="secondary" className="text-xs">Loading tags...</Badge>
+              ) : (
+                postTags.map(tag => (
+                  <Link key={tag.id} href={`/blog/tag/${tag.slug}`} className="hover:underline">
+                    <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground">{tag.name}</Badge>
+                  </Link>
+                ))
+              )}
+            </div>
+          )}
+
         </header>
 
         {post.imageUrl && (
@@ -236,9 +282,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
       </article>
 
       <Separator className="my-12" />
-
       <CommentSection postId={post.slug} initialComments={post.comments || []} />
-
       <Separator className="my-12" />
       
       {post.categoryId && (

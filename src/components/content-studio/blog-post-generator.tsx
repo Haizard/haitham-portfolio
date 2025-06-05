@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
@@ -23,29 +23,31 @@ const formSchema = z.object({
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
   categoryId: z.string().min(1, "Category selection is required."),
+  tags: z.string().optional().describe("Comma-separated list of tags"), // For user input
 });
 
-// Helper function to create a slug (simplified)
 const createSlug = (title: string) => {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-')          // Replace spaces with hyphens
-    .replace(/-+/g, '-');          // Replace multiple hyphens with single
+    .replace(/[^a-z0-9\s-]/g, '') 
+    .replace(/\s+/g, '-')          
+    .replace(/-+/g, '-');          
 };
 
 interface FlattenedCategory {
   value: string;
   label: string;
+  level: number;
 }
 
-const flattenCategories = (categories: CategoryNode[], parentPath = ""): FlattenedCategory[] => {
+const flattenCategories = (categories: CategoryNode[], parentPath = "", level = 0): FlattenedCategory[] => {
   let flatList: FlattenedCategory[] = [];
+  const indent = "\u00A0\u00A0".repeat(level * 2); // Indentation using non-breaking spaces for visual hierarchy
   for (const category of categories) {
     const currentPath = parentPath ? `${parentPath} > ${category.name}` : category.name;
-    flatList.push({ value: category.id, label: currentPath });
+    flatList.push({ value: category.id, label: `${indent}${category.name}`, level }); // Store level for potential styling
     if (category.children && category.children.length > 0) {
-      flatList = flatList.concat(flattenCategories(category.children, currentPath));
+      flatList = flatList.concat(flattenCategories(category.children, currentPath, level + 1));
     }
   }
   return flatList;
@@ -67,6 +69,7 @@ export function BlogPostGenerator() {
       seoKeywords: "",
       brandVoice: "",
       categoryId: "",
+      tags: "",
     },
   });
 
@@ -108,7 +111,7 @@ export function BlogPostGenerator() {
       setResult({ ...output, slug });
       toast({
         title: "Blog Post Generated!",
-        description: "Your AI-powered blog post is ready. Review and publish it with a category.",
+        description: "Your AI-powered blog post is ready. Review, categorize, tag, and publish.",
       });
     } catch (error) {
       console.error("Error generating blog post:", error);
@@ -128,7 +131,7 @@ export function BlogPostGenerator() {
       return;
     }
     
-    const { categoryId, topic } = form.getValues();
+    const { categoryId, topic, tags: tagsString } = form.getValues();
 
     if (!categoryId) {
         toast({ title: "Validation Error", description: "Category is required to publish.", variant: "destructive" });
@@ -137,6 +140,7 @@ export function BlogPostGenerator() {
     }
 
     setIsPublishing(true);
+    const tagsArray = tagsString ? tagsString.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
 
     try {
       const response = await fetch('/api/blog', {
@@ -148,7 +152,7 @@ export function BlogPostGenerator() {
           slug: result.slug,
           author: "AI Content Studio",
           authorAvatar: "https://placehold.co/100x100.png?text=AI",
-          tags: ["AI Generated", topic.substring(0,20).trim().replace(/\s+/g, '-').toLowerCase()],
+          tags: tagsArray, // Send the string array of tag names
           imageUrl: `https://placehold.co/800x400.png?text=${encodeURIComponent(result.title.substring(0,15))}`,
           imageHint: "abstract content topic",
           originalLanguage: "en",
@@ -188,7 +192,7 @@ export function BlogPostGenerator() {
             AI Blog Post Writer
           </CardTitle>
           <CardDescription>
-            Generate a complete blog post, then select a category before publishing.
+            Generate a complete blog post, then select a category, add tags, and publish.
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -235,36 +239,50 @@ export function BlogPostGenerator() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base flex items-center"><ListTree className="mr-2 h-5 w-5 text-muted-foreground"/>Blog Post Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories || flattenedCategoryOptions.length === 0}>
-                      <FormControl>
-                        <SelectTrigger className="text-base p-3">
-                          <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {isLoadingCategories ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : flattenedCategoryOptions.length === 0 ? (
-                           <SelectItem value="no-categories" disabled>No categories available. Create one in Admin.</SelectItem>
-                        ) : (
-                          flattenedCategoryOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value} className="text-sm">
-                              {option.label}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base flex items-center"><ListTree className="mr-2 h-5 w-5 text-muted-foreground"/>Blog Post Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories || flattenedCategoryOptions.length === 0}>
+                        <FormControl>
+                          <SelectTrigger className="text-base p-3">
+                            <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {isLoadingCategories ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : flattenedCategoryOptions.length === 0 ? (
+                            <SelectItem value="no-categories" disabled>No categories available. Create one in Admin.</SelectItem>
+                          ) : (
+                            flattenedCategoryOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value} className="text-sm" style={{ paddingLeft: `${option.level * 1 + 0.5}rem`}}>
+                                {option.label}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base flex items-center"><Tags className="mr-2 h-5 w-5 text-muted-foreground"/>Tags</FormLabel>
+                      <Input placeholder="e.g., AI, React, Productivity" {...field} className="text-base p-3" />
+                      <FormMessage />
+                       <p className="text-xs text-muted-foreground">Comma-separated. New tags will be created if they don't exist.</p>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={isLoading || isPublishing || isLoadingCategories} size="lg" className="w-full md:w-auto bg-primary hover:bg-primary/90">
@@ -327,5 +345,3 @@ export function BlogPostGenerator() {
     </div>
   );
 }
-
-    

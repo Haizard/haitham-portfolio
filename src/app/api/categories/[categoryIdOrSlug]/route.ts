@@ -1,14 +1,10 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getCategoryById, getCategoryBySlug, updateCategory, deleteCategory, type CategoryNode } from '@/lib/categories-data';
+import { getCategoryById, getCategoryBySlug, updateCategory, deleteCategory, type CategoryNode, getCategoryPath } from '@/lib/categories-data';
 
-// Prefers ID, then falls back to slug if ID doesn't yield a result.
-// In a real-world scenario, you might have separate endpoints or a query param to distinguish.
 async function getCategory(idOrSlug: string): Promise<CategoryNode | undefined> {
     let category = getCategoryById(idOrSlug);
     if (!category) {
-      // For slug-based lookup, it's less precise for nested items without parent context.
-      // This will find the first matching slug in the tree.
       category = getCategoryBySlug(idOrSlug); 
     }
     return category;
@@ -19,10 +15,16 @@ export async function GET(
   { params }: { params: { categoryIdOrSlug: string } }
 ) {
   try {
-    // For GET, we can try ID then slug
+    const { searchParams } = new URL(request.url);
+    const includePath = searchParams.get('include_path') === 'true';
+
     const category = await getCategory(params.categoryIdOrSlug);
     if (category) {
-      return NextResponse.json(category);
+      let responseData: any = { ...category };
+      if (includePath) {
+        responseData.path = getCategoryPath(category.id);
+      }
+      return NextResponse.json(responseData);
     } else {
       return NextResponse.json({ message: "Category not found" }, { status: 404 });
     }
@@ -34,15 +36,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { categoryIdOrSlug: string } } // Assuming ID is used for PUT/DELETE
+  { params }: { params: { categoryIdOrSlug: string } }
 ) {
   try {
-    const categoryId = params.categoryIdOrSlug; // Treat this as ID for modifications
+    const categoryId = params.categoryIdOrSlug;
     const body = await request.json();
     const { name, description } = body;
 
-    // parentId is generally not updated via this specific endpoint to avoid complex tree restructuring.
-    // Moving a node would typically be a separate, more specialized operation.
     const updates: Partial<Omit<CategoryNode, 'id' | 'slug' | 'children' | 'parentId'>> = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
@@ -50,7 +50,7 @@ export async function PUT(
     if (Object.keys(updates).length === 0) {
         return NextResponse.json({ message: "No update fields provided" }, { status: 400 });
     }
-    if (updates.name === '') { // Ensure name is not empty if provided
+    if (updates.name === '') {
         return NextResponse.json({ message: "Category name cannot be empty" }, { status: 400 });
     }
 
@@ -71,10 +71,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { categoryIdOrSlug: string } } // Assuming ID is used for PUT/DELETE
+  { params }: { params: { categoryIdOrSlug: string } }
 ) {
   try {
-    const categoryId = params.categoryIdOrSlug; // Treat this as ID for modifications
+    const categoryId = params.categoryIdOrSlug;
     const success = deleteCategory(categoryId);
     if (success) {
       return NextResponse.json({ message: "Category (and its children) deleted successfully" });
