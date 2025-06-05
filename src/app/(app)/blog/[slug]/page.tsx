@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from 'next/link';
-import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink, Download, FileText, FileDown } from "lucide-react";
+import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink, Download, FileText, FileDown, Image as ImageIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -309,7 +309,38 @@ export default function BlogPostPage() {
           />
         )}
         
-        {/* TODO: Render Gallery Images if post.galleryImages exist */}
+        {post.galleryImages && post.galleryImages.length > 0 && (
+          <>
+            <Separator className="my-12" />
+            <section className="mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
+                <ImageIcon className="mr-3 h-7 w-7 text-primary" />
+                Image Gallery
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {post.galleryImages.map((image, index) => (
+                  <div key={index} className="overflow-hidden rounded-lg shadow-lg group">
+                    <div className="aspect-w-4 aspect-h-3 bg-muted">
+                      <Image
+                        src={image.url}
+                        alt={image.caption || `Gallery image ${index + 1}`}
+                        width={400}
+                        height={300}
+                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                        data-ai-hint={image.hint || "gallery photo"}
+                      />
+                    </div>
+                    {image.caption && (
+                      <p className="mt-2 p-2 text-xs text-center text-muted-foreground bg-card">
+                        {image.caption}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
       </article>
 
@@ -358,3 +389,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
+
