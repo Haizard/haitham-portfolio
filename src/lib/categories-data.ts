@@ -1,35 +1,81 @@
 
-export interface Category {
+export interface CategoryNode {
   id: string;
   name: string;
   slug: string;
   description?: string;
+  parentId?: string | null; // null or undefined for top-level
+  children: CategoryNode[];
 }
 
-export interface Subcategory {
-  id: string;
-  name: string;
-  slug: string;
-  parentCategoryId: string;
-  description?: string;
-}
-
-let categories: Category[] = [
-  { id: 'cat_1', name: 'Technology', slug: 'technology', description: 'All things tech.' },
-  { id: 'cat_2', name: 'Trading', slug: 'trading', description: 'Financial markets and trading strategies.' },
-  { id: 'cat_3', name: 'Automation', slug: 'automation', description: 'Automating tasks and processes.' },
-];
-
-let subcategories: Subcategory[] = [
-  { id: 'sub_1', name: 'Software Development', slug: 'software-development', parentCategoryId: 'cat_1', description: 'Coding, frameworks, and tools.' },
-  { id: 'sub_2', name: 'AI & Machine Learning', slug: 'ai-ml', parentCategoryId: 'cat_1', description: 'Artificial intelligence and machine learning concepts.' },
-  { id: 'sub_3', name: 'Indicators', slug: 'indicators', parentCategoryId: 'cat_2', description: 'Technical analysis indicators.' },
-  { id: 'sub_4', name: 'Trading Bots', slug: 'trading-bots', parentCategoryId: 'cat_2', description: 'Automated trading systems.' },
+// In-memory store for categories, representing a tree structure.
+// Only top-level categories are stored directly in this array.
+// Children are nested within their parent nodes.
+let categoriesStore: CategoryNode[] = [
+  {
+    id: 'cat_1',
+    name: 'Technology',
+    slug: 'technology',
+    description: 'All things tech.',
+    parentId: null,
+    children: [
+      {
+        id: 'sub_1_1',
+        name: 'Software Development',
+        slug: 'software-development',
+        parentId: 'cat_1',
+        description: 'Coding, frameworks, and tools.',
+        children: [
+          {
+            id: 'sub_1_1_1',
+            name: 'Web Frameworks',
+            slug: 'web-frameworks',
+            parentId: 'sub_1_1',
+            description: 'React, Vue, Angular, etc.',
+            children: [],
+          },
+        ],
+      },
+      {
+        id: 'sub_1_2',
+        name: 'AI & Machine Learning',
+        slug: 'ai-ml',
+        parentId: 'cat_1',
+        description: 'Artificial intelligence and machine learning concepts.',
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 'cat_2',
+    name: 'Trading',
+    slug: 'trading',
+    description: 'Financial markets and trading strategies.',
+    parentId: null,
+    children: [
+      {
+        id: 'sub_2_1',
+        name: 'Indicators',
+        slug: 'indicators',
+        parentId: 'cat_2',
+        description: 'Technical analysis indicators.',
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 'cat_3',
+    name: 'Automation',
+    slug: 'automation',
+    description: 'Automating tasks and processes.',
+    parentId: null,
+    children: [],
+  },
 ];
 
 // --- Helper Functions ---
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
+  return `node_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 function createSlug(name: string): string {
@@ -40,131 +86,137 @@ function createSlug(name: string): string {
     .replace(/-+/g, '-');
 }
 
-// --- Category CRUD ---
-export function getAllCategories(): Category[] {
-  return [...categories];
+function findNodeRecursive(nodes: CategoryNode[], idOrSlug: string, findBy: 'id' | 'slug'): CategoryNode | undefined {
+  for (const node of nodes) {
+    if ((findBy === 'id' && node.id === idOrSlug) || (findBy === 'slug' && node.slug === idOrSlug)) {
+      return node;
+    }
+    if (node.children && node.children.length > 0) {
+      const foundInChildren = findNodeRecursive(node.children, idOrSlug, findBy);
+      if (foundInChildren) {
+        return foundInChildren;
+      }
+    }
+  }
+  return undefined;
 }
 
-export function getCategoryById(id: string): Category | undefined {
-  return categories.find(cat => cat.id === id);
+function findNodeAndParentRecursive(
+  nodes: CategoryNode[],
+  id: string,
+  parent: CategoryNode | null = null
+): { node: CategoryNode; parent: CategoryNode | null } | null {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return { node, parent };
+    }
+    if (node.children && node.children.length > 0) {
+      const found = findNodeAndParentRecursive(node.children, id, node);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
 }
 
-export function getCategoryBySlug(slug: string): Category | undefined {
-  return categories.find(cat => cat.slug === slug);
+function isSlugUnique(nodes: CategoryNode[], slug: string, currentIdToExclude?: string): boolean {
+  return !nodes.some(node => node.slug === slug && node.id !== currentIdToExclude);
 }
 
-export function addCategory(categoryData: Omit<Category, 'id' | 'slug'>): Category {
-  const newCategory: Category = {
+// --- CategoryNode CRUD ---
+
+// Returns a deep clone of top-level categories with their children
+export function getAllCategories(): CategoryNode[] {
+  return JSON.parse(JSON.stringify(categoriesStore));
+}
+
+export function getCategoryById(id: string): CategoryNode | undefined {
+  const result = findNodeRecursive(categoriesStore, id, 'id');
+  return result ? JSON.parse(JSON.stringify(result)) : undefined;
+}
+
+// Get category by slug - note: slugs are only guaranteed unique among siblings.
+// This function will find the first match. For specific child slugs, use context.
+export function getCategoryBySlug(slug: string): CategoryNode | undefined {
+  const result = findNodeRecursive(categoriesStore, slug, 'slug');
+  return result ? JSON.parse(JSON.stringify(result)) : undefined;
+}
+
+export function addCategory(
+  categoryData: Omit<CategoryNode, 'id' | 'slug' | 'children'> & { parentId?: string | null }
+): CategoryNode {
+  const newNode: CategoryNode = {
     id: generateId(),
     slug: createSlug(categoryData.name),
-    ...categoryData,
+    name: categoryData.name,
+    description: categoryData.description,
+    parentId: categoryData.parentId || null,
+    children: [],
   };
-  // Check for duplicate slug/name before adding
-  if (categories.some(cat => cat.slug === newCategory.slug)) {
-    throw new Error(`Category with slug '${newCategory.slug}' already exists.`);
+
+  if (newNode.parentId) {
+    const parentNode = findNodeRecursive(categoriesStore, newNode.parentId, 'id');
+    if (!parentNode) {
+      throw new Error(`Parent category with ID '${newNode.parentId}' not found.`);
+    }
+    if (!isSlugUnique(parentNode.children, newNode.slug)) {
+      throw new Error(`Category with slug '${newNode.slug}' already exists under parent '${parentNode.name}'.`);
+    }
+    parentNode.children.push(newNode);
+  } else {
+    if (!isSlugUnique(categoriesStore, newNode.slug)) {
+      throw new Error(`Top-level category with slug '${newNode.slug}' already exists.`);
+    }
+    categoriesStore.push(newNode);
   }
-  categories.push(newCategory);
-  return newCategory;
+  return JSON.parse(JSON.stringify(newNode));
 }
 
-export function updateCategory(idOrSlug: string, updates: Partial<Omit<Category, 'id' | 'slug'>>): Category | undefined {
-  const findCategory = (cat: Category) => cat.id === idOrSlug || cat.slug === idOrSlug;
-  const categoryIndex = categories.findIndex(findCategory);
-
-  if (categoryIndex === -1) {
+export function updateCategory(
+  id: string,
+  updates: Partial<Omit<CategoryNode, 'id' | 'slug' | 'children' | 'parentId'>>
+): CategoryNode | undefined {
+  const foundResult = findNodeAndParentRecursive(categoriesStore, id);
+  if (!foundResult) {
     return undefined;
   }
 
-  const originalCategory = categories[categoryIndex];
-  const updatedCategoryFields = { ...originalCategory, ...updates };
+  const { node, parent } = foundResult;
+  const originalName = node.name;
+  
+  // Update properties
+  if (updates.name !== undefined) node.name = updates.name;
+  if (updates.description !== undefined) node.description = updates.description;
 
-  // If name is updated, slug should also be updated
-  if (updates.name && updates.name !== originalCategory.name) {
-    updatedCategoryFields.slug = createSlug(updates.name);
-    // Check if new slug conflicts with another category (excluding itself)
-    if (categories.some(cat => cat.slug === updatedCategoryFields.slug && cat.id !== originalCategory.id)) {
-      throw new Error(`Update failed: Category slug '${updatedCategoryFields.slug}' would conflict with an existing category.`);
+  // If name changed, update slug and check for uniqueness among siblings
+  if (updates.name && updates.name !== originalName) {
+    const newSlug = createSlug(updates.name);
+    const siblings = parent ? parent.children : categoriesStore;
+    if (!isSlugUnique(siblings, newSlug, node.id)) {
+      // Revert name change if slug conflicts
+      node.name = originalName; 
+      throw new Error(`Update failed: Category slug '${newSlug}' would conflict with an existing category at the same level.`);
     }
+    node.slug = newSlug;
   }
   
-  categories[categoryIndex] = updatedCategoryFields;
-  return categories[categoryIndex];
+  return JSON.parse(JSON.stringify(node));
 }
 
-export function deleteCategory(idOrSlug: string): boolean {
-  const categoryIndex = categories.findIndex(cat => cat.id === idOrSlug || cat.slug === idOrSlug);
-  if (categoryIndex === -1) {
+export function deleteCategory(id: string): boolean {
+  const foundResult = findNodeAndParentRecursive(categoriesStore, id);
+  if (!foundResult) {
     return false;
   }
-  const categoryToDelete = categories[categoryIndex];
-  categories.splice(categoryIndex, 1);
-  // Also delete associated subcategories
-  subcategories = subcategories.filter(sub => sub.parentCategoryId !== categoryToDelete.id);
-  return true;
-}
 
-// --- Subcategory CRUD ---
-export function getSubcategoriesByParentId(parentCategoryId: string): Subcategory[] {
-  return subcategories.filter(sub => sub.parentCategoryId === parentCategoryId);
-}
+  const { node, parent } = foundResult;
 
-export function getSubcategoryById(id: string): Subcategory | undefined {
-  return subcategories.find(sub => sub.id === id);
-}
-
-export function getSubcategoryBySlug(parentCategoryId: string, slug: string): Subcategory | undefined {
-    return subcategories.find(sub => sub.parentCategoryId === parentCategoryId && sub.slug === slug);
-}
-
-
-export function addSubcategory(parentCategoryId: string, subcategoryData: Omit<Subcategory, 'id' | 'slug' | 'parentCategoryId'>): Subcategory {
-  const parentCategory = getCategoryById(parentCategoryId);
-  if (!parentCategory) {
-    throw new Error(`Parent category with ID '${parentCategoryId}' not found.`);
+  if (parent) {
+    parent.children = parent.children.filter(child => child.id !== node.id);
+  } else {
+    // It's a top-level category
+    categoriesStore = categoriesStore.filter(n => n.id !== node.id);
   }
-  const newSubcategory: Subcategory = {
-    id: generateId(),
-    slug: createSlug(subcategoryData.name),
-    parentCategoryId: parentCategoryId,
-    ...subcategoryData,
-  };
-  // Check for duplicate slug/name within the same parent category
-  if (subcategories.some(sub => sub.parentCategoryId === parentCategoryId && sub.slug === newSubcategory.slug)) {
-    throw new Error(`Subcategory with slug '${newSubcategory.slug}' already exists under parent '${parentCategory.name}'.`);
-  }
-  subcategories.push(newSubcategory);
-  return newSubcategory;
-}
-
-export function updateSubcategory(idOrSlug: string, updates: Partial<Omit<Subcategory, 'id' | 'slug' | 'parentCategoryId'>>): Subcategory | undefined {
-  const findSubcategory = (sub: Subcategory) => sub.id === idOrSlug || sub.slug === idOrSlug;
-  const subcategoryIndex = subcategories.findIndex(findSubcategory);
-
-  if (subcategoryIndex === -1) {
-    return undefined;
-  }
-  
-  const originalSubcategory = subcategories[subcategoryIndex];
-  const updatedSubcategoryFields = { ...originalSubcategory, ...updates };
-
-  // If name is updated, slug should also be updated
-  if (updates.name && updates.name !== originalSubcategory.name) {
-    updatedSubcategoryFields.slug = createSlug(updates.name);
-     // Check if new slug conflicts with another subcategory under the same parent (excluding itself)
-    if (subcategories.some(sub => sub.parentCategoryId === originalSubcategory.parentCategoryId && sub.slug === updatedSubcategoryFields.slug && sub.id !== originalSubcategory.id)) {
-      throw new Error(`Update failed: Subcategory slug '${updatedSubcategoryFields.slug}' would conflict with an existing subcategory under the same parent.`);
-    }
-  }
-
-  subcategories[subcategoryIndex] = updatedSubcategoryFields;
-  return subcategories[subcategoryIndex];
-}
-
-export function deleteSubcategory(idOrSlug: string): boolean {
-  const subcategoryIndex = subcategories.findIndex(sub => sub.id === idOrSlug || sub.slug === idOrSlug);
-  if (subcategoryIndex === -1) {
-    return false;
-  }
-  subcategories.splice(subcategoryIndex, 1);
   return true;
 }
