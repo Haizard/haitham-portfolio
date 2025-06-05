@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Wand2, Eye, Send } from "lucide-react"; // Added Send icon
+import { Loader2, Wand2, Eye, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
@@ -35,6 +35,7 @@ export function BlogPostGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [result, setResult] = useState<GenerateBlogPostOutput & { slug?: string } | null>(null);
+  const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,6 +50,7 @@ export function BlogPostGenerator() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setResult(null);
+    setPublishedSlug(null);
     try {
       const output = await generateBlogPost(values as GenerateBlogPostInput);
       const slug = createSlug(output.title);
@@ -81,8 +83,13 @@ export function BlogPostGenerator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: result.title,
-          content: result.content, // Pass the HTML content directly
+          content: result.content, // Send the HTML content directly
           slug: result.slug,
+          author: "AI Content Studio", // Or get from user profile
+          authorAvatar: "https://placehold.co/100x100.png?text=AI",
+          tags: ["AI Generated", result.topic.substring(0,20)], // Example tags
+          imageUrl: `https://placehold.co/800x400.png?text=${encodeURIComponent(result.title.substring(0,15))}`,
+          imageHint: "abstract content topic",
         }),
       });
 
@@ -92,6 +99,7 @@ export function BlogPostGenerator() {
       }
 
       const publishedPost = await response.json();
+      setPublishedSlug(publishedPost.slug);
       toast({
         title: "Post Published!",
         description: `"${publishedPost.title}" is now live.`,
@@ -191,21 +199,21 @@ export function BlogPostGenerator() {
           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <CardTitle className="text-2xl font-headline text-primary">{result.title}</CardTitle>
             <div className="flex gap-2 mt-2 sm:mt-0">
-              {result.slug && (
+              {publishedSlug && (
                  <Button variant="outline" asChild>
-                   <Link href={`/blog/${result.slug}`} target="_blank">
+                   <Link href={`/blog/${publishedSlug}`} target="_blank">
                      <Eye className="mr-2 h-4 w-4" /> View Post
                    </Link>
                  </Button>
               )}
-              <Button onClick={handlePublishPost} disabled={isPublishing || isLoading} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button onClick={handlePublishPost} disabled={isPublishing || isLoading || !!publishedSlug} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 {isPublishing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publishing...
                   </>
                 ) : (
                   <>
-                    <Send className="mr-2 h-4 w-4" /> Publish Post
+                    <Send className="mr-2 h-4 w-4" /> {publishedSlug ? "Published" : "Publish Post"}
                   </>
                 )}
               </Button>
@@ -217,9 +225,9 @@ export function BlogPostGenerator() {
               <p className="text-sm text-muted-foreground p-4 bg-muted rounded-md">{result.reasoning}</p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-2">Blog Post Content:</h3>
+              <h3 className="text-lg font-semibold mb-2">Blog Post Content (HTML Preview):</h3>
               <ScrollArea className="h-[400px] border rounded-md p-4">
-                <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none whitespace-pre-wrap font-body" dangerouslySetInnerHTML={{ __html: result.content.replace(/\n/g, '<br />') }} />
+                <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none whitespace-pre-wrap font-body" dangerouslySetInnerHTML={{ __html: result.content }} />
               </ScrollArea>
             </div>
           </CardContent>
@@ -228,3 +236,4 @@ export function BlogPostGenerator() {
     </div>
   );
 }
+
