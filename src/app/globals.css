@@ -1,9 +1,9 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import React Quill CSS */
-@import 'react-quill/dist/quill.snow.css';
+/* Import React Quill CSS is now at the top -- REMOVED THIS, MOVED TO COMPONENT */
 
 @layer base {
   :root {

@@ -1,6 +1,7 @@
 
 "use client";
 
+import 'react-quill/dist/quill.snow.css'; // Import Quill CSS here
 import { useState, useEffect, useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
