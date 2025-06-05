@@ -1,31 +1,36 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllPosts, addPost, type BlogPost, getPostBySlug as getExistingPostBySlug, getPostsByCategoryId, getPostsByTagId } from '@/lib/blog-data';
-import { findOrCreateTagsByNames, type Tag } from '@/lib/tags-data'; // Import tag functions
+import { findOrCreateTagsByNames, type Tag } from '@/lib/tags-data';
+import { ObjectId } from 'mongodb';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
-    const tagId = searchParams.get('tagId'); // New: for fetching by tag
+    const tagId = searchParams.get('tagId');
     const limitStr = searchParams.get('limit');
     const excludeSlug = searchParams.get('excludeSlug');
     const limit = limitStr ? parseInt(limitStr, 10) : undefined;
 
+    let postsData: BlogPost[];
+
     if (categoryId) {
-      const relatedPosts = getPostsByCategoryId(categoryId, limit, excludeSlug || undefined);
-      return NextResponse.json(relatedPosts);
+      if (!ObjectId.isValid(categoryId)) {
+        return NextResponse.json({ message: "Invalid categoryId format" }, { status: 400 });
+      }
+      postsData = await getPostsByCategoryId(categoryId, limit, excludeSlug || undefined);
+    } else if (tagId) {
+      if (!ObjectId.isValid(tagId)) {
+        return NextResponse.json({ message: "Invalid tagId format" }, { status: 400 });
+      }
+      postsData = await getPostsByTagId(tagId, limit, excludeSlug || undefined);
+    } else {
+      postsData = await getAllPosts();
     }
-
-    if (tagId) { // New: handle fetching by tagId
-      const taggedPosts = getPostsByTagId(tagId, limit, excludeSlug || undefined);
-      return NextResponse.json(taggedPosts);
-    }
-
-    const allPosts = getAllPosts();
-    return NextResponse.json(allPosts);
+    return NextResponse.json(postsData);
   } catch (error) {
-    console.error("Failed to fetch posts:", error);
+    console.error("API - Failed to fetch posts:", error);
     return NextResponse.json({ message: "Failed to fetch posts" }, { status: 500 });
   }
 }
@@ -38,41 +43,40 @@ export async function POST(request: NextRequest) {
     if (!title || !content || !slug || !categoryId) {
       return NextResponse.json({ message: "Missing required fields: title, content, slug, categoryId are all mandatory." }, { status: 400 });
     }
+    if (!ObjectId.isValid(categoryId)) {
+        return NextResponse.json({ message: "Invalid categoryId format" }, { status: 400 });
+    }
 
-    if (getExistingPostBySlug(slug)) {
+    const existingPost = await getExistingPostBySlug(slug);
+    if (existingPost) {
       return NextResponse.json({ message: "Post with this slug already exists" }, { status: 409 });
     }
 
-    // Process tags: tags from body can be an array of strings (names)
     let tagIds: string[] = [];
     if (tags && Array.isArray(tags) && tags.length > 0) {
-      const createdOrFoundTags: Tag[] = findOrCreateTagsByNames(tags.filter(tag => typeof tag === 'string' && tag.trim() !== ''));
-      tagIds = createdOrFoundTags.map(t => t.id);
+      const createdOrFoundTags: Tag[] = await findOrCreateTagsByNames(tags.filter(tag => typeof tag === 'string' && tag.trim() !== ''));
+      tagIds = createdOrFoundTags.map(t => t.id!); // Use non-null assertion as findOrCreate returns tags with IDs
     }
 
-    const newPostData: BlogPost = {
+    const newPostData: Omit<BlogPost, 'id' | '_id' | 'date'> = {
       slug,
       title,
       content,
       author: author || "AI Assistant",
       authorAvatar: authorAvatar || "https://placehold.co/100x100.png?text=AI",
-      date: new Date().toISOString(),
-      tags: tags || [], // Keep original tags for now, or clear if fully migrated
-      tagIds: tagIds, // Store the resolved tag IDs
-      imageUrl: imageUrl || "https://placehold.co/800x400.png",
-      imageHint: imageHint || "abstract content",
+      // date will be set by addPost
+      tagIds: tagIds,
+      imageUrl: imageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(title.substring(0,20))}`,
+      imageHint: imageHint || "abstract content topic",
       originalLanguage: originalLanguage || "en",
-      categoryId: categoryId,
+      categoryId: categoryId, // This should be the string representation of ObjectId
       comments: [],
     };
 
-    const addedPost = addPost(newPostData);
+    const addedPost = await addPost(newPostData);
     return NextResponse.json(addedPost, { status: 201 });
-  } catch (error) {
-    console.error("Failed to create post:", error);
-    if (error instanceof Error) {
-        return NextResponse.json({ message: `Failed to create post: ${error.message}` }, { status: 500 });
-    }
-    return NextResponse.json({ message: "Failed to create post due to an unknown error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("API - Failed to create post:", error);
+    return NextResponse.json({ message: error.message || "Failed to create post" }, { status: error.message?.includes('already exists') ? 409 : 500 });
   }
 }

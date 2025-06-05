@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const slug = params.slug;
-    const post = getPostBySlug(slug);
+    const post = await getPostBySlug(slug);
 
     if (post) {
       return NextResponse.json(post);
@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
   } catch (error) {
-    console.error(`Failed to fetch post ${params.slug}:`, error);
+    console.error(`API - Failed to fetch post ${params.slug}:`, error);
     return NextResponse.json({ message: `Failed to fetch post ${params.slug}` }, { status: 500 });
   }
 }

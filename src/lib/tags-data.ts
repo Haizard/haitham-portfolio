@@ -1,20 +1,22 @@
 
+import { ObjectId, type Filter } from 'mongodb';
+import { getCollection } from './mongodb';
+
+const TAGS_COLLECTION = 'tags';
+
 export interface Tag {
-  id: string;
+  _id?: ObjectId;
+  id?: string; // String representation of _id
   name: string;
   slug: string;
   description?: string;
 }
 
-let tagsStore: Tag[] = [
-  { id: 'tag_1', name: 'AI', slug: 'ai', description: 'Artificial Intelligence topics' },
-  { id: 'tag_2', name: 'React', slug: 'react', description: 'Posts about the React library' },
-  { id: 'tag_3', name: 'Productivity', slug: 'productivity', description: 'Tips and tricks for being more productive' },
-  { id: 'tag_4', name: 'Next.js', slug: 'next-js', description: 'Content related to Next.js framework' },
-];
-
-function generateTagId(): string {
-  return `tag_${Math.random().toString(36).substring(2, 9)}`;
+// Helper to convert MongoDB document to Tag interface
+function docToTag(doc: any): Tag {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: _id?.toString(), ...rest } as Tag;
 }
 
 function createTagSlug(name: string): string {
@@ -25,85 +27,129 @@ function createTagSlug(name: string): string {
     .replace(/-+/g, '-');
 }
 
-export function getAllTags(): Tag[] {
-  return JSON.parse(JSON.stringify(tagsStore));
+async function isTagSlugUnique(slug: string, excludeId?: string): Promise<boolean> {
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
+  const query: Filter<Tag> = { slug };
+  if (excludeId && ObjectId.isValid(excludeId)) {
+    query._id = { $ne: new ObjectId(excludeId) };
+  }
+  const count = await collection.countDocuments(query);
+  return count === 0;
 }
 
-export function getTagById(id: string): Tag | undefined {
-  const tag = tagsStore.find(t => t.id === id);
-  return tag ? JSON.parse(JSON.stringify(tag)) : undefined;
+export async function getAllTags(): Promise<Tag[]> {
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
+  const tagsArray = await collection.find({}).sort({ name: 1 }).toArray();
+  return tagsArray.map(docToTag);
 }
 
-export function getTagBySlug(slug: string): Tag | undefined {
-  const tag = tagsStore.find(t => t.slug === slug);
-  return tag ? JSON.parse(JSON.stringify(tag)) : undefined;
+export async function getTagById(id: string): Promise<Tag | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
+  const doc = await collection.findOne({ _id: new ObjectId(id) });
+  return doc ? docToTag(doc) : null;
 }
 
-export function getTagsByIds(ids: string[]): Tag[] {
+export async function getTagBySlug(slug: string): Promise<Tag | null> {
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
+  const doc = await collection.findOne({ slug });
+  return doc ? docToTag(doc) : null;
+}
+
+export async function getTagsByIds(ids: string[]): Promise<Tag[]> {
   if (!ids || ids.length === 0) return [];
-  return JSON.parse(JSON.stringify(tagsStore.filter(tag => ids.includes(tag.id))));
+  const validObjectIds = ids.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+  if (validObjectIds.length === 0) return [];
+  
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
+  const tagsArray = await collection.find({ _id: { $in: validObjectIds } }).toArray();
+  return tagsArray.map(docToTag);
 }
 
-
-export function addTag(tagData: Omit<Tag, 'id' | 'slug'> & { name: string }): Tag {
+export async function addTag(tagData: Omit<Tag, 'id' | '_id' | 'slug'> & { name: string }): Promise<Tag> {
+  const collection = await getCollection<Omit<Tag, 'id' | '_id'>>(TAGS_COLLECTION);
   const slug = createTagSlug(tagData.name);
-  if (tagsStore.some(t => t.slug === slug)) {
+
+  if (!(await isTagSlugUnique(slug))) {
     throw new Error(`Tag with slug '${slug}' already exists.`);
   }
-  const newTag: Tag = {
-    id: generateTagId(),
+
+  const docToInsert = {
     name: tagData.name,
-    slug: slug,
+    slug,
     description: tagData.description,
   };
-  tagsStore.push(newTag);
-  return JSON.parse(JSON.stringify(newTag));
+
+  const result = await collection.insertOne(docToInsert as any);
+  return { id: result.insertedId.toString(), _id: result.insertedId, ...docToInsert };
 }
 
-export function findOrCreateTagsByNames(tagNames: string[]): Tag[] {
+export async function findOrCreateTagsByNames(tagNames: string[]): Promise<Tag[]> {
+  if (!tagNames || tagNames.length === 0) return [];
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
   const resultTags: Tag[] = [];
+
   for (const name of tagNames) {
+    if (typeof name !== 'string' || name.trim() === '') continue;
     const slug = createTagSlug(name);
-    let tag = tagsStore.find(t => t.slug === slug);
-    if (!tag) {
-      tag = {
-        id: generateTagId(),
+    let tagDoc = await collection.findOne({ slug });
+
+    if (!tagDoc) {
+      const newTagData = {
         name: name, // Use original name casing for display
         slug: slug,
         description: `Content related to ${name}`,
       };
-      tagsStore.push(tag);
+      const result = await collection.insertOne(newTagData as any);
+      tagDoc = { _id: result.insertedId, ...newTagData };
     }
-    resultTags.push(JSON.parse(JSON.stringify(tag)));
+    resultTags.push(docToTag(tagDoc));
   }
   return resultTags;
 }
 
+export async function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | '_id' | 'slug'>>): Promise<Tag | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
 
-export function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | 'slug'>>): Tag | undefined {
-  const tagIndex = tagsStore.findIndex(t => t.id === id);
-  if (tagIndex === -1) {
-    return undefined;
-  }
-  const originalName = tagsStore[tagIndex].name;
-  const updatedTag = { ...tagsStore[tagIndex], ...updates };
+  const existingTag = await collection.findOne({ _id: new ObjectId(id) });
+  if (!existingTag) return null;
+  
+  const updatePayload: any = {};
+  if (updates.name !== undefined) updatePayload.name = updates.name;
+  if (updates.description !== undefined) updatePayload.description = updates.description;
 
-  if (updates.name && updates.name !== originalName) {
+  if (updates.name && updates.name !== existingTag.name) {
     const newSlug = createTagSlug(updates.name);
-    if (tagsStore.some(t => t.slug === newSlug && t.id !== id)) {
+    if (!(await isTagSlugUnique(newSlug, id))) {
       throw new Error(`Update failed: Tag slug '${newSlug}' would conflict with an existing tag.`);
     }
-    updatedTag.slug = newSlug;
+    updatePayload.slug = newSlug;
   }
-  
-  tagsStore[tagIndex] = updatedTag;
-  return JSON.parse(JSON.stringify(updatedTag));
+
+  if (Object.keys(updatePayload).length === 0) {
+    return docToTag(existingTag); // No changes
+  }
+
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updatePayload },
+    { returnDocument: 'after' }
+  );
+  return result ? docToTag(result) : null;
 }
 
-export function deleteTag(id: string): boolean {
-  const initialLength = tagsStore.length;
-  tagsStore = tagsStore.filter(t => t.id !== id);
-  // In a real app, you'd also need to remove this tagId from all posts.
-  // For this in-memory example, we'll skip that step for simplicity.
-  return tagsStore.length < initialLength;
+export async function deleteTag(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const collection = await getCollection<Tag>(TAGS_COLLECTION);
+  
+  // Before deleting the tag, remove it from all posts' tagIds array
+  const postsCollection = await getCollection<import('./blog-data').BlogPost>('posts');
+  await postsCollection.updateMany(
+    { tagIds: id }, // Match posts that contain this tagId
+    { $pull: { tagIds: id } } // Remove this tagId from their tagIds array
+  );
+  
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
 }
