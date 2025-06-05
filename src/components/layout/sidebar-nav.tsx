@@ -14,8 +14,9 @@ import {
   Briefcase,
   ShieldCheck,
   UserCircle, 
-  Lightbulb, // Added Lightbulb for Content Inspirer
+  Lightbulb, 
   Settings,
+  FolderKanban, // Added for Category Management
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -28,12 +29,13 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/profile", label: "User Profile", icon: UserCircle }, 
   { href: "/content-studio", label: "Content Studio", icon: Sparkles },
-  { href: "/content-inspirer", label: "Content Inspirer", icon: Lightbulb }, // Added Content Inspirer
+  { href: "/content-inspirer", label: "Content Inspirer", icon: Lightbulb },
   { href: "/content-calendar", label: "Content Calendar", icon: CalendarDays },
   { href: "/social-media", label: "Social Media", icon: MessagesSquare },
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
   { href: "/services", label: "Services", icon: Briefcase },
   { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
+  { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban }, // Changed icon and label
 ];
 
 export function SidebarNav() {
@@ -51,13 +53,13 @@ export function SidebarNav() {
           <Link href={item.href} passHref legacyBehavior>
             <SidebarMenuButton
               asChild
-              variant={pathname === item.href ? "default" : "ghost"}
+              variant={pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href ? "default" : "ghost"}
               className={cn(
                 "w-full justify-start",
-                pathname === item.href && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-                pathname !== item.href && "hover:bg-muted"
+                (pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                !(pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href) && "hover:bg-muted"
               )}
-              isActive={pathname === item.href}
+              isActive={pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href}
               tooltip={item.label}
               onClick={handleLinkClick}
             >
