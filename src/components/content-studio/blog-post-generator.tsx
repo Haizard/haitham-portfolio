@@ -1,12 +1,13 @@
 
 "use client";
 
-import 'react-quill/dist/quill.snow.css'; // Import Quill CSS here
 import { useState, useEffect, useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import dynamic from 'next/dynamic';
+import { EditorContent, useEditor, type Editor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
 import { generateBlogPost, type GenerateBlogPostInput, type GenerateBlogPostOutput } from "@/ai/flows/generate-blog-post";
 import { generateImageForPost } from "@/ai/flows/generate-image-for-post";
 import { Button } from "@/components/ui/button";
@@ -15,19 +16,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, RotateCcw, RotateCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
 import { Separator } from "../ui/separator";
 import Image from "next/image";
-
-// Dynamically import ReactQuill
-const ReactQuill = dynamic(() => import('react-quill'), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center h-[300px] border rounded-md bg-muted"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="ml-2">Loading Editor...</p></div>,
-});
-
 
 const galleryImageSchema = z.object({
   url: z.string().url("Image URL must be a valid URL.").min(1, "URL is required."),
@@ -46,7 +40,7 @@ const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
-  editableContent: z.string().min(1, "Post content cannot be empty once generated.").refine(value => value !== '<p><br></p>' && value !== '<p></p>', { message: "Post content cannot be substantially empty."}),
+  editableContent: z.string().min(1, "Post content cannot be empty.").refine(value => value !== '<p></p>', { message: "Post content cannot be substantially empty."}),
   categoryId: z.string().min(1, "Category selection is required.").optional(),
   tags: z.string().optional().describe("Comma-separated list of tags"),
   featuredImageUrl: z.string().url("Featured image URL must be valid.").optional().or(z.literal('')),
@@ -85,27 +79,25 @@ const flattenCategories = (categories: CategoryNode[], level = 0): FlattenedCate
   return flatList;
 };
 
-const quillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, 4, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    ['blockquote', 'code-block'],
-    [{'list': 'ordered'}, {'list': 'bullet'}],
-    [{ 'script': 'sub'}, { 'script': 'super' }],
-    [{ 'indent': '-1'}, { 'indent': '+1' }],
-    [{ 'direction': 'rtl' }],
-    [{ 'align': [] }],
-    ['link', 'image', 'video'],
-    ['clean']
-  ],
-};
+const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
+  if (!editor) {
+    return null;
+  }
 
-const quillFormats = [
-  'header',
-  'bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block',
-  'list', 'bullet', 'script', 'indent', 'direction', 'align',
-  'link', 'image', 'video'
-];
+  return (
+    <div className="tiptap-toolbar">
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} disabled={!editor.can().chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}><Heading1 /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}><Heading2 /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}><Heading3 /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'is-active' : ''}><List /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'is-active' : ''}><ListOrdered /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><RotateCcw /></Button>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}><RotateCw /></Button>
+    </div>
+  );
+};
 
 
 export function BlogPostGenerator() {
@@ -140,6 +132,45 @@ export function BlogPostGenerator() {
     },
   });
 
+  const watchedEditableContent = form.watch('editableContent');
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        // Configure heading levels if needed, e.g., heading: { levels: [1, 2, 3] }
+        // Disable/enable specific starter kit extensions here
+        // codeBlock: false, // Example
+      }),
+      Placeholder.configure({
+        placeholder: 'AI-generated HTML content will appear here for editing...',
+      }),
+    ],
+    content: watchedEditableContent, // Initialize with form value
+    editable: true,
+    onUpdate: ({ editor: tiptapEditor }) => {
+      const html = tiptapEditor.getHTML();
+      // Only update if the change is significant, to avoid potential loops if form.setValue itself triggers updates
+      if (html !== form.getValues('editableContent')) {
+        form.setValue('editableContent', html, { shouldValidate: true, shouldDirty: true });
+      }
+    },
+  });
+
+  // Effect to update TipTap when AI generates content (external change)
+  useEffect(() => {
+    if (editor && generatedPost?.content && editor.getHTML() !== generatedPost.content) {
+      editor.commands.setContent(generatedPost.content, false); // `false` to not emit update from this action
+    }
+  }, [generatedPost?.content, editor]);
+  
+  // Cleanup editor instance on component unmount
+  useEffect(() => {
+    return () => {
+      editor?.destroy();
+    };
+  }, [editor]);
+
+
   const { fields: galleryImageFields, append: appendGalleryImage, remove: removeGalleryImage } = useFieldArray({
     control: form.control,
     name: "galleryImages",
@@ -151,7 +182,6 @@ export function BlogPostGenerator() {
   });
 
   const watchedFeaturedImageUrl = form.watch("featuredImageUrl"); 
-  const watchedEditableContent = form.watch("editableContent"); // Watch editableContent for ReactQuill
 
   useEffect(() => {
     async function fetchCategoriesData() {
@@ -176,7 +206,8 @@ export function BlogPostGenerator() {
   const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
     setIsLoadingAi(true);
     setGeneratedPost(null);
-    form.setValue('editableContent', '');
+    form.setValue('editableContent', ''); // Clear previous content
+    if (editor) editor.commands.clearContent(); // Clear TipTap editor
     setPublishedSlug(null);
     try {
       const aiInput: GenerateBlogPostInput = {
@@ -189,14 +220,16 @@ export function BlogPostGenerator() {
       if (!output || !output.title || !output.content) {
         const errorMsg = "AI did not return a valid title or content. Please try again or refine your inputs.";
         toast({ title: "AI Error", description: errorMsg, variant: "destructive" });
-        form.setValue('editableContent', `<p>Error: ${errorMsg}</p>`);
+        if (editor) editor.commands.setContent(`<p>Error: ${errorMsg}</p>`);
+        else form.setValue('editableContent', `<p>Error: ${errorMsg}</p>`);
         setGeneratedPost(null); 
         throw new Error(errorMsg);
       }
 
       const slug = createSlug(output.title);
-      setGeneratedPost({ ...output, slug });
-      form.setValue('editableContent', output.content); 
+      setGeneratedPost({ ...output, slug }); // This will trigger useEffect to update editor
+      form.setValue('editableContent', output.content, {shouldValidate: true}); // Also set form value directly
+
       toast({
         title: "Blog Post Content Generated!",
         description: "Review and edit the content in the editor below, add images/downloads, category, tags, and then publish.",
@@ -205,7 +238,8 @@ export function BlogPostGenerator() {
       console.error("Error generating blog post content:", error);
       const errorMessage = error.message || "AI failed to generate content.";
       setGeneratedPost(null);
-      form.setValue('editableContent', `<p>Error: ${errorMessage}</p>`);
+      if (editor) editor.commands.setContent(`<p>Error: ${errorMessage}</p>`);
+      else form.setValue('editableContent', `<p>Error: ${errorMessage}</p>`);
       if (!toast.toasts.find(t => t.title === "AI Error" && t.description === errorMessage)) {
          if (generatedPost === null) { 
              toast({ title: "Error generating content", description: errorMessage, variant: "destructive" });
@@ -269,7 +303,7 @@ export function BlogPostGenerator() {
       toast({ title: "Error", description: "No AI-generated base content to publish. Please generate content first.", variant: "destructive" });
       return;
     }
-     if (!values.editableContent || values.editableContent.trim() === '' || values.editableContent === '<p><br></p>' || values.editableContent === '<p></p>') {
+     if (!values.editableContent || values.editableContent.trim() === '' || values.editableContent === '<p></p>') {
       form.setError("editableContent", { type: "manual", message: "Post content cannot be empty." });
       toast({ title: "Validation Error", description: "Post content cannot be empty.", variant: "destructive" });
       return;
@@ -402,40 +436,27 @@ export function BlogPostGenerator() {
                 <FormField
                   control={form.control}
                   name="editableContent"
-                  render={({ field: { name, onBlur, ref } }) => { // Destructure to get name and onBlur, exclude value and onChange for manual handling
-                    return (
-                      <FormItem>
-                        <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
-                        <FormControl>
-                          {isClient && ReactQuill ? ( 
-                            <div className="bg-card"> 
-                              <ReactQuill
-                                theme="snow"
-                                value={typeof watchedEditableContent === 'string' ? watchedEditableContent : ''}
-                                onChange={(content, delta, source, editor) => {
-                                  if (source === 'user') { // Only update form state if change is from user interaction
-                                    form.setValue(name, content, { shouldValidate: true, shouldDirty: true });
-                                  }
-                                }}
-                                onBlur={onBlur} // Use onBlur from RHF
-                                modules={quillModules}
-                                formats={quillFormats}
-                                placeholder="AI-generated HTML content will appear here for editing..."
-                              />
-                            </div>
-                          ) : (
-                             <Textarea
-                              placeholder="Loading editor or AI content..."
+                  render={({ field }) => ( // field contains value, onChange, onBlur, name, ref
+                    <FormItem>
+                      <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
+                       <FormControl>
+                        <>
+                          {isClient && editor && <TiptapToolbar editor={editor} />}
+                          <EditorContent editor={editor} />
+                          {/* Fallback for SSR or if editor fails to load, though unlikely with TipTap */}
+                          {!editor && isClient && (
+                            <Textarea
+                              placeholder="Loading editor..."
                               className="min-h-[300px] font-code text-sm p-3"
-                              value={typeof watchedEditableContent === 'string' ? watchedEditableContent : ''}
+                              value={field.value}
                               readOnly
                             />
                           )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                        </>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 
                 <Separator />
@@ -583,4 +604,3 @@ export function BlogPostGenerator() {
     </div>
   );
 }
-
