@@ -38,7 +38,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, content, slug, author, authorAvatar, tags, imageUrl, imageHint, originalLanguage, categoryId } = body;
+    const { 
+      title, content, slug, author, authorAvatar, tags, 
+      featuredImageUrl, featuredImageHint, galleryImages, downloads, 
+      originalLanguage, categoryId 
+    } = body;
 
     if (!title || !content || !slug || !categoryId) {
       return NextResponse.json({ message: "Missing required fields: title, content, slug, categoryId are all mandatory." }, { status: 400 });
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
     let tagIds: string[] = [];
     if (tags && Array.isArray(tags) && tags.length > 0) {
       const createdOrFoundTags: Tag[] = await findOrCreateTagsByNames(tags.filter(tag => typeof tag === 'string' && tag.trim() !== ''));
-      tagIds = createdOrFoundTags.map(t => t.id!); // Use non-null assertion as findOrCreate returns tags with IDs
+      tagIds = createdOrFoundTags.map(t => t.id!);
     }
 
     const newPostData: Omit<BlogPost, 'id' | '_id' | 'date'> = {
@@ -64,12 +68,13 @@ export async function POST(request: NextRequest) {
       content,
       author: author || "AI Assistant",
       authorAvatar: authorAvatar || "https://placehold.co/100x100.png?text=AI",
-      // date will be set by addPost
       tagIds: tagIds,
-      imageUrl: imageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(title.substring(0,20))}`,
-      imageHint: imageHint || "abstract content topic",
+      featuredImageUrl: featuredImageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(title.substring(0,20))}`,
+      featuredImageHint: featuredImageHint || "abstract content topic",
+      galleryImages: galleryImages || [],
+      downloads: downloads || [],
       originalLanguage: originalLanguage || "en",
-      categoryId: categoryId, // This should be the string representation of ObjectId
+      categoryId: categoryId,
       comments: [],
     };
 

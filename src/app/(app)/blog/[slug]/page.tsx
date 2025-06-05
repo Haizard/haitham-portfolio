@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from 'next/link';
-import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink } from "lucide-react";
+import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink, Download, FileText } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -18,32 +18,38 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { BlogPost } from '@/lib/blog-data';
+import type { BlogPost, GalleryImage, DownloadLink } from '@/lib/blog-data';
 import type { CategoryNode } from '@/lib/categories-data';
 import type { Tag as TagType } from '@/lib/tags-data';
-// Removed direct import of: import { getPostBySlug } from '@/lib/blog-data';
 import { translateBlogContent } from '@/ai/flows/translate-blog-content';
 import { CommentSection } from "@/components/blog/comment-section";
 import { RelatedPostsSection } from "@/components/blog/related-posts-section";
 import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Updated getPostData to fetch from the API endpoint
 async function getPostData(slug: string): Promise<BlogPost | null> {
   try {
     const response = await fetch(`/api/blog/${slug}`);
     if (!response.ok) {
       if (response.status === 404) {
-        return null; // Post not found
+        return null; 
       }
-      throw new Error(`API request failed with status ${response.status}`);
+      // Construct error message for other non-ok statuses
+      const errorText = await response.text().catch(() => "Failed to read error response");
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
     const post = await response.json();
     return post || null;
   } catch (error) {
     console.error(`Error fetching post ${slug} from API:`, error);
-    return null;
+    // Rethrow or handle as appropriate. For now, rethrowing to be caught by calling logic.
+    if (error instanceof Error) {
+      throw new Error(error.message || `Unknown error fetching post ${slug}`);
+    }
+    throw new Error(`Unknown error fetching post ${slug}`);
   }
 }
+
 
 const availableLanguages = [
   { code: "en", name: "English" },
@@ -88,7 +94,7 @@ export default function BlogPostPage() {
       setIsLoadingCategory(false);
       setIsLoadingTags(false);
       setError("No post slug provided.");
-      notFound();
+      notFound(); // Call Next.js notFound for consistency
       return;
     }
 
@@ -125,7 +131,6 @@ export default function BlogPostPage() {
           if (fetchedPost.tagIds && fetchedPost.tagIds.length > 0) {
             setIsLoadingTags(true);
             try {
-              // Fetch all tags to resolve names - this could be optimized by a batch fetch API if needed
               const tagsResponse = await fetch('/api/tags');
               if (tagsResponse.ok) {
                 const allTags: TagType[] = await tagsResponse.json();
@@ -147,24 +152,23 @@ export default function BlogPostPage() {
           }
         } else {
           setError(`Post with slug "${slug}" not found.`);
-          notFound();
+          notFound(); // This is the correct way to trigger a 404
         }
       } catch (fetchError: any) {
-        console.error("Error fetching post data:", fetchError);
+        console.error("Error in fetchData for blog post:", fetchError);
         setError(fetchError.message || "An error occurred while trying to load the post.");
-        // notFound() might have already been called if post is null. 
-        // If an error happens before, ensure notFound() is called here or handled by error display.
-        if (!post) notFound();
+        // Don't call notFound() here if error is already set, let the error UI display.
+        // If fetchPostData itself threw because of a 404 from API, notFound() might have been called by it.
       } finally {
         setIsLoadingPost(false);
-        // Fallback ensures these are false if their specific finally blocks didn't run due to an earlier error
+        // These are fallbacks if their specific finally blocks didn't run due to an error before their try block.
         if (isLoadingCategory) setIsLoadingCategory(false); 
-        if (isLoadingTags) setIsLoadingTags(false);      
+        if (isLoadingTags) setIsLoadingTags(false);
       }
     }
 
     fetchData();
-  }, [slug]); // Simplified dependencies
+  }, [slug]); // Only slug and toast are direct dependencies here.
 
   const handleLanguageChange = async (newLangCode: string) => {
     if (!post || !post.content) return;
@@ -213,9 +217,10 @@ export default function BlogPostPage() {
   }
 
   if (!post) {
-    // This case should ideally be caught by the error state or Next.js notFound page.
-    // Returning null here helps prevent rendering if post is unexpectedly null after loading.
-    return null;
+    // This will be rendered by Next.js's notFound mechanism if notFound() was called.
+    // If an error occurred setting `post` to null before notFound() could be called, 
+    // the `error` state above should catch it. This is a fallback.
+    return null; 
   }
 
   const displayContent = translatedContent ?? post.content;
@@ -287,17 +292,16 @@ export default function BlogPostPage() {
               )}
             </div>
           )}
-
         </header>
 
-        {post.imageUrl && (
+        {post.featuredImageUrl && (
           <Image
-            src={post.imageUrl}
+            src={post.featuredImageUrl}
             alt={post.title}
             width={800}
             height={400}
             className="rounded-lg mb-8 shadow-lg w-full object-cover aspect-[2/1]"
-            data-ai-hint={post.imageHint}
+            data-ai-hint={post.featuredImageHint || "featured image"}
           />
         )}
 
@@ -312,7 +316,42 @@ export default function BlogPostPage() {
             dangerouslySetInnerHTML={{ __html: displayContent }}
           />
         )}
+        
+        {/* TODO: Render Gallery Images if post.galleryImages exist */}
+
       </article>
+
+      {post.downloads && post.downloads.length > 0 && (
+        <>
+          <Separator className="my-12" />
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-headline">
+                <FileDown className="h-6 w-6 text-primary" />
+                Downloadable Files
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                {post.downloads.map((download, index) => (
+                  <li key={index} className="p-3 bg-secondary/50 rounded-lg shadow-sm flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-base">{download.name}</h4>
+                      {download.description && <p className="text-xs text-muted-foreground mt-0.5">{download.description}</p>}
+                    </div>
+                    <Button asChild variant="outline" size="sm">
+                      <a href={download.url} download={download.fileName || true} target="_blank" rel="noopener noreferrer">
+                        <Download className="mr-2 h-4 w-4" /> Download
+                      </a>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
 
       <Separator className="my-12" />
       <CommentSection postId={post.slug} initialComments={post.comments || []} />
@@ -327,4 +366,3 @@ export default function BlogPostPage() {
     </div>
   );
 }
-
