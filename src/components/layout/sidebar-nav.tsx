@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -12,7 +13,8 @@ import {
   Share2,
   Briefcase,
   ShieldCheck,
-  UserCircle, // Added UserCircle for Profile
+  UserCircle, 
+  Lightbulb, // Added Lightbulb for Content Inspirer
   Settings,
 } from "lucide-react";
 import {
@@ -24,8 +26,9 @@ import {
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/profile", label: "User Profile", icon: UserCircle }, // Added Profile Link
+  { href: "/profile", label: "User Profile", icon: UserCircle }, 
   { href: "/content-studio", label: "Content Studio", icon: Sparkles },
+  { href: "/content-inspirer", label: "Content Inspirer", icon: Lightbulb }, // Added Content Inspirer
   { href: "/content-calendar", label: "Content Calendar", icon: CalendarDays },
   { href: "/social-media", label: "Social Media", icon: MessagesSquare },
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
