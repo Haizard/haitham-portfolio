@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from 'next/link';
-import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink, Download, FileText } from "lucide-react";
+import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink, Download, FileText, FileDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -34,7 +34,6 @@ async function getPostData(slug: string): Promise<BlogPost | null> {
       if (response.status === 404) {
         return null; 
       }
-      // Construct error message for other non-ok statuses
       const errorText = await response.text().catch(() => "Failed to read error response");
       throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
@@ -42,7 +41,6 @@ async function getPostData(slug: string): Promise<BlogPost | null> {
     return post || null;
   } catch (error) {
     console.error(`Error fetching post ${slug} from API:`, error);
-    // Rethrow or handle as appropriate. For now, rethrowing to be caught by calling logic.
     if (error instanceof Error) {
       throw new Error(error.message || `Unknown error fetching post ${slug}`);
     }
@@ -94,7 +92,7 @@ export default function BlogPostPage() {
       setIsLoadingCategory(false);
       setIsLoadingTags(false);
       setError("No post slug provided.");
-      notFound(); // Call Next.js notFound for consistency
+      notFound(); 
       return;
     }
 
@@ -151,24 +149,21 @@ export default function BlogPostPage() {
             setIsLoadingTags(false);
           }
         } else {
-          setError(`Post with slug "${slug}" not found.`);
-          notFound(); // This is the correct way to trigger a 404
+          setError(`Post with slug "${slug}" not found. NEXT_HTTP_ERROR_FALLBACK;404`);
+          notFound(); 
         }
       } catch (fetchError: any) {
         console.error("Error in fetchData for blog post:", fetchError);
         setError(fetchError.message || "An error occurred while trying to load the post.");
-        // Don't call notFound() here if error is already set, let the error UI display.
-        // If fetchPostData itself threw because of a 404 from API, notFound() might have been called by it.
       } finally {
         setIsLoadingPost(false);
-        // These are fallbacks if their specific finally blocks didn't run due to an error before their try block.
         if (isLoadingCategory) setIsLoadingCategory(false); 
         if (isLoadingTags) setIsLoadingTags(false);
       }
     }
 
     fetchData();
-  }, [slug]); // Only slug and toast are direct dependencies here.
+  }, [slug, toast]); 
 
   const handleLanguageChange = async (newLangCode: string) => {
     if (!post || !post.content) return;
@@ -217,9 +212,6 @@ export default function BlogPostPage() {
   }
 
   if (!post) {
-    // This will be rendered by Next.js's notFound mechanism if notFound() was called.
-    // If an error occurred setting `post` to null before notFound() could be called, 
-    // the `error` state above should catch it. This is a fallback.
     return null; 
   }
 
