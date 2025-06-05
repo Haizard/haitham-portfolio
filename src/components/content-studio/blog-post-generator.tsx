@@ -19,7 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, RotateCcw, RotateCw, Strikethrough, Code, MessageSquare, Minus, Link as LinkIcon, Baseline } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, RotateCcw, RotateCw, Strikethrough, Code, MessageSquare, Minus, Link as LinkIconUI, Baseline } from "lucide-react"; // Renamed Link to LinkIconUI
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
@@ -91,10 +91,10 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
     const previousUrl = editor.getAttributes('link').href;
     const url = window.prompt('URL', previousUrl);
 
-    if (url === null) { // User cancelled
+    if (url === null) { 
       return;
     }
-    if (url === '') { // User wants to remove link
+    if (url === '') { 
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
     }
@@ -108,8 +108,8 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
       <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} disabled={!editor.can().chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''} title="Underline"><Baseline /></Button>
       <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleStrike().run()} disabled={!editor.can().chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active' : ''} title="Strikethrough"><Strikethrough /></Button>
       <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleCode().run()} disabled={!editor.can().chain().focus().toggleCode().run()} className={editor.isActive('code') ? 'is-active' : ''} title="Inline Code"><Code /></Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#FFF59D' }).run()} className={editor.isActive('highlight', { color: '#FFF59D' }) ? 'is-active' : ''} title="Highlight"><SparklesIcon /></Button> {/* Using Sparkles for Highlight */}
-      <Button type="button" variant="ghost" size="sm" onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''} title="Link"><LinkIcon /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#FFF59D' }).run()} className={editor.isActive('highlight', { color: '#FFF59D' }) ? 'is-active' : ''} title="Highlight"><SparklesIcon /></Button>
+      <Button type="button" variant="ghost" size="sm" onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''} title="Link"><LinkIconUI /></Button>
       
       <Separator orientation="vertical" className="h-6 mx-1" />
       
@@ -137,6 +137,7 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
 export function BlogPostGenerator() {
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isGeneratingGalleryImage, setIsGeneratingGalleryImage] = useState<Record<number, boolean>>({});
   const [isPublishing, setIsPublishing] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<(GenerateBlogPostOutput & { slug?: string }) | null>(null);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -168,10 +169,7 @@ export function BlogPostGenerator() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        // StarterKit already includes:
-        // bold, italic, strike, code, codeBlock, heading, bulletList, orderedList, blockquote, horizontalRule
-      }),
+      StarterKit,
       Placeholder.configure({
         placeholder: 'AI-generated HTML content will appear here for editing...',
       }),
@@ -179,15 +177,14 @@ export function BlogPostGenerator() {
       LinkExtension.configure({
         openOnClick: true,
         autolink: true,
-        validate: href => /^https?:\/\//.test(href), // Allow http and https links
+        validate: href => /^https?:\/\//.test(href),
       }),
-      Highlight.configure({ multicolor: false }), // Single color for simplicity
+      Highlight.configure({ multicolor: false }),
     ],
     content: form.getValues('editableContent'), 
     editable: true,
     onUpdate: ({ editor: tiptapEditor }) => {
       const html = tiptapEditor.getHTML();
-      // Only update if the change is significant and from user interaction
       if (html !== form.getValues('editableContent')) {
         form.setValue('editableContent', html, { shouldValidate: true, shouldDirty: true });
       }
@@ -207,7 +204,7 @@ export function BlogPostGenerator() {
   }, [editor]);
 
 
-  const { fields: galleryImageFields, append: appendGalleryImage, remove: removeGalleryImage } = useFieldArray({
+  const { fields: galleryImageFields, append: appendGalleryImage, remove: removeGalleryImage, update: updateGalleryImage } = useFieldArray({
     control: form.control,
     name: "galleryImages",
   });
@@ -218,6 +215,8 @@ export function BlogPostGenerator() {
   });
 
   const watchedFeaturedImageUrl = form.watch("featuredImageUrl"); 
+  const watchedGalleryImages = form.watch("galleryImages");
+
 
   useEffect(() => {
     async function fetchCategoriesData() {
@@ -306,7 +305,7 @@ export function BlogPostGenerator() {
     });
   };
 
-  const handleGenerateAiImage = async () => {
+  const handleGenerateAiFeaturedImage = async () => {
     const topic = form.getValues("topic");
     const title = generatedPost?.title;
     const promptForImage = title || topic;
@@ -324,12 +323,35 @@ export function BlogPostGenerator() {
       const imageResult = await generateImageForPost({ prompt: promptForImage });
       form.setValue("featuredImageUrl", imageResult.imageDataUri);
       form.setValue("featuredImageHint", imageResult.suggestedHint);
-      toast({ title: "AI Image Generated!", description: "Featured image has been populated." });
+      toast({ title: "AI Featured Image Generated!", description: "Featured image has been populated." });
     } catch (error: any) {
       console.error("Error generating AI image:", error);
       toast({ title: "AI Image Error", description: error.message || "Could not generate image.", variant: "destructive" });
     } finally {
       setIsGeneratingImage(false);
+    }
+  };
+
+  const handleGenerateAiGalleryImage = async (index: number) => {
+    const topic = form.getValues("topic");
+    const title = generatedPost?.title;
+    const basePrompt = title || topic || "gallery image detail";
+    const promptForImage = `${basePrompt} - style variation ${index + 1}`;
+
+    setIsGeneratingGalleryImage(prev => ({ ...prev, [index]: true }));
+    try {
+      const imageResult = await generateImageForPost({ prompt: promptForImage });
+      updateGalleryImage(index, {
+        url: imageResult.imageDataUri,
+        caption: form.getValues(`galleryImages.${index}.caption`) || `AI Generated: ${imageResult.suggestedHint}`,
+        hint: imageResult.suggestedHint,
+      });
+      toast({ title: `AI Gallery Image ${index + 1} Generated!`, description: "Gallery image has been populated." });
+    } catch (error: any) {
+      console.error(`Error generating AI gallery image ${index}:`, error);
+      toast({ title: `AI Gallery Image ${index + 1} Error`, description: error.message || "Could not generate image.", variant: "destructive" });
+    } finally {
+      setIsGeneratingGalleryImage(prev => ({ ...prev, [index]: false }));
     }
   };
 
@@ -440,7 +462,7 @@ export function BlogPostGenerator() {
               <Button 
                 type="button" 
                 onClick={handleGenerateContent} 
-                disabled={isLoadingAi || isPublishing || isGeneratingImage} 
+                disabled={isLoadingAi || isPublishing || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s)} 
                 size="lg" 
                 className="w-full md:w-auto bg-primary hover:bg-primary/90"
               >
@@ -472,7 +494,7 @@ export function BlogPostGenerator() {
                 <Controller
                   control={form.control}
                   name="editableContent"
-                  render={({ field: { name, onBlur, value }, fieldState: { error } }) => ( // Note: value and onChange are handled by editor state now
+                  render={({ field: { name, onBlur, ref: fieldRef }, fieldState: { error } }) => ( 
                     <FormItem>
                       <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
                        <FormControl>
@@ -520,8 +542,8 @@ export function BlogPostGenerator() {
                             <Button 
                                 type="button" 
                                 variant="outline"
-                                onClick={handleGenerateAiImage} 
-                                disabled={isGeneratingImage || isLoadingAi || isPublishing}
+                                onClick={handleGenerateAiFeaturedImage} 
+                                disabled={isGeneratingImage || isLoadingAi || isPublishing || Object.values(isGeneratingGalleryImage).some(s => s)}
                                 className="w-full sm:w-auto"
                             >
                                 {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SparklesIcon className="mr-2 h-4 w-4" />}
@@ -541,16 +563,38 @@ export function BlogPostGenerator() {
                   <FormLabel className="text-base font-medium">Gallery Images (Optional)</FormLabel>
                   {galleryImageFields.map((item, index) => (
                     <Card key={item.id} className="p-4 space-y-3 bg-secondary/50">
-                      <FormField control={form.control} name={`galleryImages.${index}.url`} render={({ field }) => (
-                        <FormItem><FormLabel>Image URL</FormLabel><Input placeholder="https://example.com/gallery_image.jpg" {...field} /><FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name={`galleryImages.${index}.caption`} render={({ field }) => (
-                        <FormItem><FormLabel>Caption (Optional)</FormLabel><Input placeholder="Image caption" {...field} /><FormMessage /></FormItem>
-                      )}/>
-                       <FormField control={form.control} name={`galleryImages.${index}.hint`} render={({ field }) => (
-                        <FormItem><FormLabel>AI Hint (Optional, max 2 words)</FormLabel><Input placeholder="e.g., mountain landscape" {...field} /><FormMessage /></FormItem>
-                      )}/>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeGalleryImage(index)} className="text-destructive hover:text-destructive/90"><Trash2 className="mr-1 h-4 w-4"/>Remove Image</Button>
+                        <div className="flex flex-col sm:flex-row gap-4 items-start">
+                            <div className="flex-grow space-y-3">
+                                <FormField control={form.control} name={`galleryImages.${index}.url`} render={({ field }) => (
+                                    <FormItem><FormLabel>Image URL</FormLabel><Input placeholder="https://example.com/gallery_image.jpg" {...field} /><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`galleryImages.${index}.caption`} render={({ field }) => (
+                                    <FormItem><FormLabel>Caption (Optional)</FormLabel><Input placeholder="Image caption" {...field} /><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`galleryImages.${index}.hint`} render={({ field }) => (
+                                    <FormItem><FormLabel>AI Hint (Optional, max 2 words)</FormLabel><Input placeholder="e.g., mountain landscape" {...field} /><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+                            <div className="flex-shrink-0 space-y-2 sm:w-auto sm:text-right">
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => handleGenerateAiGalleryImage(index)} 
+                                    disabled={isGeneratingGalleryImage[index] || isGeneratingImage || isLoadingAi || isPublishing}
+                                    className="w-full sm:w-auto"
+                                >
+                                    {isGeneratingGalleryImage[index] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SparklesIcon className="mr-2 h-4 w-4" />}
+                                    Generate AI Image
+                                </Button>
+                                {watchedGalleryImages?.[index]?.url && (
+                                    <div className="mt-2 p-1 border rounded-md bg-muted max-w-[150px] mx-auto sm:mx-0">
+                                        <Image src={watchedGalleryImages[index].url} alt={`Gallery image ${index + 1} preview`} width={150} height={100} className="object-cover rounded" data-ai-hint="gallery preview"/>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeGalleryImage(index)} className="text-destructive hover:text-destructive/90 mt-2"><Trash2 className="mr-1 h-4 w-4"/>Remove Image</Button>
                     </Card>
                   ))}
                   <Button type="button" variant="outline" size="sm" onClick={() => appendGalleryImage({ url: "", caption: "", hint:"" })}><PlusCircle className="mr-2 h-4 w-4"/>Add Gallery Image</Button>
@@ -619,7 +663,7 @@ export function BlogPostGenerator() {
                     <Link href={`/blog/${publishedSlug}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Published Post</Link>
                   </Button>
                 )}
-                <Button type="submit" disabled={isPublishing || isLoadingAi || !!publishedSlug || isGeneratingImage} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
+                <Button type="submit" disabled={isPublishing || isLoadingAi || !!publishedSlug || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s)} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
                   {isPublishing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
                   {publishedSlug ? "Post Published" : "Publish Post"}
                 </Button>
@@ -631,3 +675,4 @@ export function BlogPostGenerator() {
     </div>
   );
 }
+
