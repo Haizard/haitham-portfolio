@@ -1,23 +1,20 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, FileText, ExternalLink } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
 import { Button } from '@/components/ui/button';
 
 interface RelatedPostsSectionProps {
-  category: string;
-  subcategory?: string;
+  categoryId: string; // Changed from category and subcategory
   currentPostSlug: string;
   limit?: number;
 }
 
 export function RelatedPostsSection({
-  category,
-  subcategory,
+  categoryId,
   currentPostSlug,
   limit = 3,
 }: RelatedPostsSectionProps) {
@@ -27,13 +24,18 @@ export function RelatedPostsSection({
 
   useEffect(() => {
     async function fetchRelatedPosts() {
+      if (!categoryId) {
+        setIsLoading(false);
+        setRelatedPosts([]);
+        // Optionally set an error or a message if categoryId is missing
+        // setError("Category ID is missing, cannot fetch related posts.");
+        return;
+      }
       setIsLoading(true);
       setError(null);
       try {
-        let apiUrl = `/api/blog?category=${encodeURIComponent(category)}&limit=${limit}&excludeSlug=${encodeURIComponent(currentPostSlug)}`;
-        if (subcategory) {
-          apiUrl += `&subcategory=${encodeURIComponent(subcategory)}`;
-        }
+        // API call now uses categoryId
+        const apiUrl = `/api/blog?categoryId=${encodeURIComponent(categoryId)}&limit=${limit}&excludeSlug=${encodeURIComponent(currentPostSlug)}`;
         const response = await fetch(apiUrl);
         if (!response.ok) {
           throw new Error('Failed to fetch related posts');
@@ -50,7 +52,7 @@ export function RelatedPostsSection({
     }
 
     fetchRelatedPosts();
-  }, [category, subcategory, currentPostSlug, limit]);
+  }, [categoryId, currentPostSlug, limit]);
 
   if (isLoading) {
     return (
@@ -95,11 +97,10 @@ export function RelatedPostsSection({
             </CardHeader>
             <CardContent className="flex-grow">
               <p className="text-sm text-muted-foreground line-clamp-3">
-                {/* Basic content stripping for preview - consider a more robust solution */}
                 {post.content.replace(/<[^>]+>/g, '').substring(0, 100)}...
               </p>
             </CardContent>
-            <CardContent className="pt-0"> {/* Changed from CardFooter to CardContent for tighter spacing */}
+            <CardContent className="pt-0">
                <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
                 <Link href={`/blog/${post.slug}`} className="flex items-center">
                   Read Post <ExternalLink className="ml-2 h-4 w-4" />

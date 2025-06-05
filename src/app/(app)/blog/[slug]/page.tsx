@@ -18,12 +18,12 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { BlogPost } from '@/lib/blog-data';
+import type { CategoryNode } from '@/lib/categories-data';
 import { getPostSlugs, getPostBySlug } from '@/lib/blog-data';
 import { translateBlogContent } from '@/ai/flows/translate-blog-content';
 import { CommentSection } from "@/components/blog/comment-section";
-import { RelatedPostsSection } from "@/components/blog/related-posts-section"; // Added import
+import { RelatedPostsSection } from "@/components/blog/related-posts-section";
 
-// Data fetching functions still outside the component for generateStaticParams
 async function getAllPostSlugsForStaticParams(): Promise<{ slug: string }[]> {
   try {
     const posts = getPostSlugs();
@@ -69,6 +69,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = params;
   const [post, setPost] = useState<BlogPost | null>(null);
   const [isLoadingPost, setIsLoadingPost] = useState(true);
+  const [categoryName, setCategoryName] = useState<string | null>(null);
+  const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string | undefined>(undefined);
@@ -76,11 +78,35 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   const fetchAndSetPost = useCallback(async () => {
     setIsLoadingPost(true);
+    setCategoryName(null);
     const fetchedPost = await getPostData(slug);
     if (fetchedPost) {
       setPost(fetchedPost);
       setSelectedLanguage(fetchedPost.originalLanguage);
-      setTranslatedContent(null); 
+      setTranslatedContent(null);
+      if (fetchedPost.categoryId) {
+        setIsLoadingCategory(true);
+        try {
+          const catResponse = await fetch(`/api/categories/${fetchedPost.categoryId}`);
+          if (catResponse.ok) {
+            const catData: CategoryNode = await catResponse.json();
+            // For now, just display the direct category name.
+            // A more complex solution could fetch parent path.
+            setCategoryName(catData.name);
+          } else {
+            console.warn(`Could not fetch category details for ID: ${fetchedPost.categoryId}`);
+            setCategoryName("Unknown Category");
+          }
+        } catch (error) {
+          console.error("Error fetching category:", error);
+          setCategoryName("Error loading category");
+        } finally {
+          setIsLoadingCategory(false);
+        }
+      } else {
+        setCategoryName("Uncategorized");
+        setIsLoadingCategory(false);
+      }
     } else {
       notFound();
     }
@@ -97,7 +123,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     setSelectedLanguage(newLangCode);
 
     if (newLangCode === post.originalLanguage) {
-      setTranslatedContent(null); 
+      setTranslatedContent(null);
       return;
     }
 
@@ -105,7 +131,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     try {
       const translationResult = await translateBlogContent({
         htmlContent: post.content,
-        targetLanguage: availableLanguages.find(l => l.code === newLangCode)?.name || newLangCode, 
+        targetLanguage: availableLanguages.find(l => l.code === newLangCode)?.name || newLangCode,
         originalLanguage: availableLanguages.find(l => l.code === post.originalLanguage)?.name || post.originalLanguage,
       });
       setTranslatedContent(translationResult.translatedHtmlContent);
@@ -113,8 +139,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     } catch (error) {
       console.error("Error translating content:", error);
       toast({ title: "Translation Error", description: "Could not translate content. Reverting to original.", variant: "destructive" });
-      setTranslatedContent(null); 
-      setSelectedLanguage(post.originalLanguage); 
+      setTranslatedContent(null);
+      setSelectedLanguage(post.originalLanguage);
     } finally {
       setIsTranslating(false);
     }
@@ -169,12 +195,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
           <div className="flex flex-wrap gap-2 mt-2 items-center">
             <Folder className="h-4 w-4 text-muted-foreground mr-1" />
-            <Badge variant="outline" className="text-sm">{post.category}</Badge>
-            {post.subcategory && (
-              <>
-                <span className="text-muted-foreground text-sm">/</span>
-                <Badge variant="outline" className="text-sm">{post.subcategory}</Badge>
-              </>
+            {isLoadingCategory ? (
+              <Badge variant="outline" className="text-sm">Loading category...</Badge>
+            ) : categoryName ? (
+              <Badge variant="outline" className="text-sm">{categoryName}</Badge>
+            ) : (
+              <Badge variant="outline" className="text-sm">Uncategorized</Badge>
             )}
           </div>
           <div className="flex flex-wrap gap-2 mt-2 items-center">
@@ -215,13 +241,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
       <Separator className="my-12" />
       
-      <RelatedPostsSection 
-        category={post.category} 
-        subcategory={post.subcategory} 
-        currentPostSlug={post.slug} 
-      />
-
+      {post.categoryId && (
+        <RelatedPostsSection 
+          categoryId={post.categoryId}
+          currentPostSlug={post.slug} 
+        />
+      )}
     </div>
   );
 }
-
