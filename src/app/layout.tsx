@@ -1,9 +1,10 @@
+
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Button } from '@/components/ui/button'; // Added for nav styling
-import { Layers } from 'lucide-react'; // Added for a simple logo
+import { Button } from '@/components/ui/button'; 
+import { Layers } from 'lucide-react'; 
 
 export const metadata: Metadata = {
   title: 'CreatorOS',
@@ -37,6 +38,9 @@ export default function RootLayout({
             <div className="space-x-2">
               <Button variant="ghost" asChild>
                 <Link href="/landing">Home</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/blog">Blog</Link>
               </Button>
               <Button variant="ghost" asChild>
                 <Link href="/showcase">Showcase</Link>

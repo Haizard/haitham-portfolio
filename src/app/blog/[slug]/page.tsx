@@ -299,7 +299,7 @@ export default function BlogPostPage() {
 
         {post.galleryImages && post.galleryImages.length > 0 && (
           <>
-            <section className="mb-8"> {/* Changed margin from my-12 to mb-8 */}
+            <section className="mb-8"> 
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
                 <ImageIcon className="mr-3 h-7 w-7 text-primary" />
                 Image Gallery
@@ -326,7 +326,7 @@ export default function BlogPostPage() {
                 ))}
               </div>
             </section>
-            <Separator className="mb-12" /> {/* Separator now after gallery, before prose */}
+            <Separator className="mb-8" /> 
           </>
         )}
 
@@ -389,4 +389,3 @@ export default function BlogPostPage() {
     </div>
   );
 }
-

@@ -12,104 +12,33 @@ import { Badge } from '@/components/ui/badge';
 import type { CategoryNode } from '@/lib/categories-data';
 import type { Tag as TagType } from '@/lib/tags-data';
 
-async function fetchAllPosts(): Promise<BlogPost[]> {
-  const response = await fetch('/api/blog');
-  if (!response.ok) {
-    throw new Error('Failed to fetch posts');
-  }
-  return response.json();
-}
-
 interface EnrichedPost extends BlogPost {
   categoryName?: string;
   categorySlugPath?: string;
   resolvedTags?: TagType[];
 }
 
+async function fetchAllPosts(): Promise<EnrichedPost[]> {
+  const response = await fetch('/api/blog?enriched=true');
+  if (!response.ok) {
+    throw new Error('Failed to fetch posts');
+  }
+  return response.json();
+}
+
+
 export default function BlogIndexPage() {
   const [posts, setPosts] = useState<EnrichedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [allCategories, setAllCategories] = useState<CategoryNode[]>([]);
-  // const [allTags, setAllTags] = useState<TagType[]>([]); // Not directly used in enrichment anymore, tags come from post.resolvedTags
 
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       setError(null);
       try {
-        const [postsData, categoriesData, tagsData] = await Promise.all([
-          fetchAllPosts(),
-          fetch('/api/categories').then(res => res.ok ? res.json() : []),
-          fetch('/api/tags').then(res => res.ok ? res.json() : []) // Keep fetching allTags for potential future use or direct display
-        ]);
-        
-        setAllCategories(categoriesData);
-        // setAllTags(tagsData); // If needed for other purposes
-
-        const findCategoryDetails = (categoryId: string, categories: CategoryNode[]): { name?: string; slugPath?: string } => {
-            const path: string[] = [];
-            let currentCat: CategoryNode | undefined;
-
-            const findRecursive = (nodes: CategoryNode[], targetId: string): CategoryNode | undefined => {
-                for (const node of nodes) {
-                    if (node.id === targetId) {
-                        currentCat = node;
-                        return node;
-                    }
-                    if (node.children) {
-                        const foundInChildren = findRecursive(node.children, targetId);
-                        if (foundInChildren) {
-                            currentCat = node; // This is a parent in the path
-                            return foundInChildren;
-                        }
-                    }
-                }
-                return undefined;
-            };
-
-            const targetCategory = findRecursive(categories, categoryId);
-
-            if (targetCategory) {
-                // Reconstruct path from target up to root
-                let tempCat: CategoryNode | undefined = targetCategory;
-                const pathSegments: string[] = [];
-                 while(tempCat) {
-                    pathSegments.unshift(tempCat.slug);
-                    const parentId = tempCat.parentId;
-                    if (parentId) {
-                        const findParentRecursive = (nodes: CategoryNode[], pId: string): CategoryNode | undefined => {
-                             for (const node of nodes) {
-                                if (node.id === pId) return node;
-                                if (node.children) {
-                                    const found = findParentRecursive(node.children, pId);
-                                    if (found) return found;
-                                }
-                            }
-                            return undefined;
-                        }
-                        tempCat = findParentRecursive(categories, parentId);
-                    } else {
-                        tempCat = undefined;
-                    }
-                }
-                return { name: targetCategory.name, slugPath: pathSegments.join('/') };
-            }
-            return {};
-        };
-        
-        const enrichedPosts = postsData.map(post => {
-            const categoryDetails = findCategoryDetails(post.categoryId, categoriesData);
-            return {
-                ...post,
-                categoryName: categoryDetails.name,
-                categorySlugPath: categoryDetails.slugPath,
-                resolvedTags: post.tagIds?.map(tagId => tagsData.find(t => t.id === tagId)).filter(Boolean) as TagType[] || []
-            };
-        });
-
-        setPosts(enrichedPosts);
+        const postsData = await fetchAllPosts();
+        setPosts(postsData);
       } catch (err: any) {
         console.error("Error in BlogIndexPage:", err);
         setError(err.message || "Could not load blog posts.");

@@ -2,66 +2,64 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, CalendarDays, FolderOpen } from 'lucide-react';
+import { Loader2, ExternalLink, CalendarDays, Tag as TagIcon } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
-import type { CategoryNode } from '@/lib/categories-data';
-import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display'; // Assuming this component exists
+import type { Tag } from '@/lib/tags-data';
 
-interface CategoryArchivePageProps {
-  params: {
-    categorySlug: string[]; // e.g., ['technology', 'web-development']
-  };
-}
 
-export default function CategoryArchivePage({ params }: CategoryArchivePageProps) {
-  const { categorySlug } = params;
-  const [category, setCategory] = useState<(CategoryNode & { path?: CategoryNode[] }) | null>(null);
+export default function TagArchivePage() {
+  const params = useParams<{ tagSlug: string }>();
+  const tagSlug = params.tagSlug;
+
+  const [tag, setTag] = useState<Tag | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!tagSlug) {
+        setIsLoading(false);
+        notFound();
+        return;
+    }
+
     async function fetchData() {
       setIsLoading(true);
       setError(null);
       try {
-        // 1. Fetch category details including its path
-        // We need an API endpoint or lib function to get category by full slug path
-        const categoryResponse = await fetch(`/api/categories/slugPath/${categorySlug.join('/')}?include_path=true`);
-
-        if (!categoryResponse.ok) {
-            if (categoryResponse.status === 404) notFound();
-            throw new Error('Failed to fetch category details');
+        const tagResponse = await fetch(`/api/tags/${tagSlug}`);
+        if (!tagResponse.ok) {
+          if (tagResponse.status === 404) notFound();
+          throw new Error('Failed to fetch tag details');
         }
-        const categoryData: CategoryNode & { path?: CategoryNode[] } = await categoryResponse.json();
-        setCategory(categoryData);
+        const tagData: Tag = await tagResponse.json();
+        setTag(tagData);
 
-        // 2. Fetch posts for this category
-        if (categoryData && categoryData.id) {
-          const postsResponse = await fetch(`/api/blog?categoryId=${categoryData.id}`);
+        if (tagData && tagData.id) {
+          const postsResponse = await fetch(`/api/blog?tagId=${tagData.id}`);
           if (!postsResponse.ok) {
-            throw new Error('Failed to fetch posts for this category');
+            throw new Error('Failed to fetch posts for this tag');
           }
           const postsData: BlogPost[] = await postsResponse.json();
           setPosts(postsData);
         } else {
-            notFound(); // Category data doesn't have ID
+            notFound(); 
         }
 
       } catch (err: any) {
-        console.error("Error in CategoryArchivePage:", err);
-        setError(err.message || "Could not load category content.");
+        console.error("Error in TagArchivePage:", err);
+        setError(err.message || "Could not load tag content.");
       } finally {
         setIsLoading(false);
       }
     }
     fetchData();
-  }, [categorySlug]);
+  }, [tagSlug]);
 
   if (isLoading) {
     return (
@@ -81,37 +79,40 @@ export default function CategoryArchivePage({ params }: CategoryArchivePageProps
     );
   }
   
-  if (!category) {
+  if (!tag) {
     notFound();
   }
-
 
   return (
     <div className="container mx-auto py-8 px-4">
       <header className="mb-8">
-        {category.path && <BreadcrumbDisplay path={category.path} className="mb-4" />}
+        <div className="mb-4">
+             <Link href="/blog" className="text-sm text-primary hover:underline">
+                &larr; Back to Blog
+            </Link>
+        </div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-2 flex items-center">
-            <FolderOpen className="mr-3 h-10 w-10 text-primary"/>
-            Category: {category.name}
+            <TagIcon className="mr-3 h-10 w-10 text-primary"/>
+            Posts tagged: {tag.name}
         </h1>
-        {category.description && <p className="text-lg text-muted-foreground">{category.description}</p>}
+        {tag.description && <p className="text-lg text-muted-foreground">{tag.description}</p>}
       </header>
 
       {posts.length === 0 ? (
-        <p className="text-center text-muted-foreground text-lg py-10">No posts found in this category yet.</p>
+        <p className="text-center text-muted-foreground text-lg py-10">No posts found with this tag yet.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
             <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
                 {post.imageUrl && (
-                    <div className="aspect-[16/9] overflow-hidden">
+                     <div className="aspect-[16/9] overflow-hidden">
                         <Image
                         src={post.imageUrl}
                         alt={post.title}
                         width={600}
-                        height={338} // Adjusted for 16:9
+                        height={338}
                         className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                        data-ai-hint={post.imageHint || 'category post'}
+                        data-ai-hint={post.imageHint || 'tag archive post'}
                         />
                     </div>
                 )}
@@ -119,7 +120,7 @@ export default function CategoryArchivePage({ params }: CategoryArchivePageProps
                 <CardTitle className="text-xl font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                   <Link href={`/blog/${post.slug}`}>{post.title}</Link>
                 </CardTitle>
-                 <div className="text-xs text-muted-foreground flex items-center mt-1">
+                <div className="text-xs text-muted-foreground flex items-center mt-1">
                     <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
                     {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </div>
@@ -143,13 +144,3 @@ export default function CategoryArchivePage({ params }: CategoryArchivePageProps
     </div>
   );
 }
-
-// We need a new API endpoint (or modify existing) to fetch category by slug path
-// For example: /api/categories/slugPath/technology/software-development
-// This is because the categorySlug param is an array.
-// For now, I'll assume such an endpoint will be created or logic adapted.
-// If not, the category fetching part will need to be client-side tree traversal
-// or a more complex API query if categories are not deeply nested.
-// The code above assumes an API endpoint /api/categories/slugPath/[...path] can resolve this.
-// Let's create this specific API endpoint:
-// Create /src/app/api/categories/slugPath/[...slugPath]/route.ts
