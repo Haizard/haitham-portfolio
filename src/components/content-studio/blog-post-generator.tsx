@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
@@ -44,8 +44,8 @@ const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
-  editableContent: z.string().min(1, "Post content cannot be empty once generated.").refine(value => value !== '<p><br></p>', { message: "Post content cannot be substantially empty."}),
-  categoryId: z.string().min(1, "Category selection is required.").optional(),
+  editableContent: z.string().min(1, "Post content cannot be empty once generated.").refine(value => value !== '<p><br></p>' && value !== '<p></p>', { message: "Post content cannot be substantially empty."}),
+  categoryId: z.string().min(1, "Category selection is required."),
   tags: z.string().optional().describe("Comma-separated list of tags"),
   featuredImageUrl: z.string().url("Featured image URL must be valid.").optional().or(z.literal('')),
   featuredImageHint: z.string().optional(),
@@ -190,16 +190,19 @@ export function BlogPostGenerator() {
 
       const slug = createSlug(output.title);
       setGeneratedPost({ ...output, slug });
-      form.setValue('editableContent', output.content);
+      form.setValue('editableContent', output.content); // Populate ReactQuill with AI content
       toast({
         title: "Blog Post Content Generated!",
         description: "Review and edit the content in the editor below, add images/downloads, category, tags, and then publish.",
       });
     } catch (error: any) {
       console.error("Error generating blog post content:", error);
-      if (!generatedPost && !toast.toasts.find(t => t.title === "AI Error" && t.description === error.message)) {
-         form.setValue('editableContent', `<p>Error: ${error.message || "AI failed to generate content."}</p>`);
-         toast({ title: "Error generating content", description: error.message || "Failed to generate blog post content.", variant: "destructive" });
+      const errorMessage = error.message || "AI failed to generate content.";
+      if (!toast.toasts.find(t => t.title === "AI Error" && t.description === errorMessage)) {
+         form.setValue('editableContent', `<p>Error: ${errorMessage}</p>`); // Show error in editor as well
+         if (generatedPost === null) { // Only toast if not already toasted for specific AI error
+             toast({ title: "Error generating content", description: errorMessage, variant: "destructive" });
+         }
       }
       setGeneratedPost(null);
     } finally {
@@ -233,7 +236,7 @@ export function BlogPostGenerator() {
       toast({ title: "Error", description: "No AI-generated base content to publish. Please generate content first.", variant: "destructive" });
       return;
     }
-     if (!values.editableContent || values.editableContent.trim() === '' || values.editableContent === '<p><br></p>') {
+     if (!values.editableContent || values.editableContent.trim() === '' || values.editableContent === '<p><br></p>' || values.editableContent === '<p></p>') {
       form.setError("editableContent", { type: "manual", message: "Post content cannot be empty." });
       toast({ title: "Validation Error", description: "Post content cannot be empty.", variant: "destructive" });
       return;
@@ -371,14 +374,17 @@ export function BlogPostGenerator() {
                       <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
                       <FormControl>
                         {isClient && ReactQuill ? ( 
-                          <ReactQuill
-                            theme="snow"
-                            value={field.value}
-                            onChange={field.onChange}
-                            modules={quillModules}
-                            formats={quillFormats}
-                            placeholder="AI-generated HTML content will appear here for editing..."
-                          />
+                          <div className="bg-card"> {/* Wrapper for ReactQuill */}
+                            <ReactQuill
+                              theme="snow"
+                              value={field.value}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              modules={quillModules}
+                              formats={quillFormats}
+                              placeholder="AI-generated HTML content will appear here for editing..."
+                            />
+                          </div>
                         ) : (
                            <Textarea
                             placeholder="Loading editor or AI content..."
