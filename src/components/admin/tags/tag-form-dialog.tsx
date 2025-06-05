@@ -66,7 +66,7 @@ export function TagFormDialog({ isOpen, onClose, tag, onSuccess }: TagFormDialog
   const handleSubmit = async (values: TagFormValues) => {
     setIsSaving(true);
     const isEditing = !!tag;
-    const apiUrl = isEditing ? `/api/tags/${tag.id}` : '/api/tags';
+    const apiUrl = isEditing && tag?.id ? `/api/tags/${tag.id}` : '/api/tags';
     const method = isEditing ? 'PUT' : 'POST';
 
     try {

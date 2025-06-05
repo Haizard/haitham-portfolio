@@ -144,6 +144,7 @@ export async function deleteTag(id: string): Promise<boolean> {
   const collection = await getCollection<Tag>(TAGS_COLLECTION);
   
   // Before deleting the tag, remove it from all posts' tagIds array
+  // Assuming BlogPost interface is available or adjust import path
   const postsCollection = await getCollection<import('./blog-data').BlogPost>('posts');
   await postsCollection.updateMany(
     { tagIds: id }, // Match posts that contain this tagId

@@ -73,7 +73,7 @@ export function TagManagement() {
   };
 
   const handleDeleteTag = async () => {
-    if (!tagToDelete) return;
+    if (!tagToDelete || !tagToDelete.id) return;
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/tags/${tagToDelete.id}`, { method: 'DELETE' });
@@ -102,12 +102,12 @@ export function TagManagement() {
   return (
     <TooltipProvider>
       <Card className="shadow-xl mb-8">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center"><TagsIcon className="mr-2 h-6 w-6 text-primary"/>Tag List</CardTitle>
             <CardDescription>Manage all content tags.</CardDescription>
           </div>
-          <Button onClick={handleCreateTag} className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleCreateTag} className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
             <PlusCircle className="mr-2 h-5 w-5" /> Create New Tag
           </Button>
         </CardHeader>
@@ -115,28 +115,28 @@ export function TagManagement() {
           {tags.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">No tags found. Get started by creating one!</p>
           ) : (
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right w-[200px]">Actions</TableHead>
+                    <TableHead className="min-w-[200px]">Name</TableHead>
+                    <TableHead className="min-w-[150px]">Slug</TableHead>
+                    <TableHead className="min-w-[250px]">Description</TableHead>
+                    <TableHead className="text-right min-w-[220px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {tags.map(tag => (
                     <TableRow key={tag.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">{tag.name}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs font-mono bg-muted/30 px-2 py-1 rounded w-fit">{tag.slug}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground truncate max-w-xs">
+                      <TableCell><code className="text-xs bg-muted/50 p-1 rounded">{tag.slug}</code></TableCell>
+                      <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-[300px]">
                         {tag.description && tag.description.length > 70 ? (
                             <Tooltip delayDuration={100}>
                                 <TooltipTrigger asChild>
                                     <span className="cursor-help">{tag.description.substring(0, 70)}...</span>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs text-xs p-2">
+                                <TooltipContent side="top" className="max-w-xs text-xs p-2 bg-popover text-popover-foreground border rounded-md shadow-sm">
                                     {tag.description}
                                 </TooltipContent>
                             </Tooltip>
@@ -144,13 +144,23 @@ export function TagManagement() {
                             tag.description || '-'
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => handleEditTag(tag)} className="mr-2" title="Edit Tag">
-                          <Edit3 className="mr-1 h-4 w-4" /> Edit
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => confirmDeleteTag(tag)} title="Delete Tag">
-                          <Trash2 className="mr-1 h-4 w-4" /> Delete
-                        </Button>
+                      <TableCell className="text-right space-x-1">
+                        <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={() => handleEditTag(tag)}>
+                                <Edit3 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Edit</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-xs p-1 bg-popover text-popover-foreground border rounded-md shadow-sm">Edit Tag</TooltipContent>
+                        </Tooltip>
+                        <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                                <Button variant="destructive" size="sm" onClick={() => confirmDeleteTag(tag)}>
+                                <Trash2 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Delete</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-xs p-1 bg-popover text-popover-foreground border rounded-md shadow-sm">Delete Tag</TooltipContent>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -168,6 +178,7 @@ export function TagManagement() {
         onSuccess={() => {
           fetchTags();
           setIsFormOpen(false);
+          setEditingTag(null);
         }}
       />
       
@@ -177,7 +188,7 @@ export function TagManagement() {
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the tag "<strong>{tagToDelete?.name}</strong>".
-              Posts using this tag will not be affected, but the tag will be unlinked.
+              Posts using this tag will have the tag unlinked.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
