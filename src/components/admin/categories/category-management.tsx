@@ -163,8 +163,8 @@ export function CategoryManagement() {
                 </TableHeader>
                 <TableBody>
                   {categories.map(category => (
-                    <>
-                      <TableRow key={category.id} className="hover:bg-muted/50">
+                    <React.Fragment key={category.id}>
+                      <TableRow className="hover:bg-muted/50">
                         <TableCell>
                           {category.subcategories.length > 0 && (
                             <Button variant="ghost" size="icon" onClick={() => toggleCategoryOpen(category.id)} className="h-8 w-8">
@@ -216,7 +216,7 @@ export function CategoryManagement() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
