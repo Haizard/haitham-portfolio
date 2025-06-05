@@ -151,6 +151,7 @@ export function BlogPostGenerator() {
   });
 
   const watchedFeaturedImageUrl = form.watch("featuredImageUrl"); 
+  const watchedEditableContent = form.watch("editableContent"); // Watch editableContent for ReactQuill
 
   useEffect(() => {
     async function fetchCategoriesData() {
@@ -401,34 +402,40 @@ export function BlogPostGenerator() {
                 <FormField
                   control={form.control}
                   name="editableContent"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
-                      <FormControl>
-                        {isClient && ReactQuill ? ( 
-                          <div className="bg-card"> 
-                            <ReactQuill
-                              theme="snow"
-                              value={typeof field.value === 'string' ? field.value : ''}
-                              onChange={field.onChange}
-                              onBlur={field.onBlur}
-                              modules={quillModules}
-                              formats={quillFormats}
-                              placeholder="AI-generated HTML content will appear here for editing..."
+                  render={({ field: { name, onBlur, ref } }) => { // Destructure to get name and onBlur, exclude value and onChange for manual handling
+                    return (
+                      <FormItem>
+                        <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
+                        <FormControl>
+                          {isClient && ReactQuill ? ( 
+                            <div className="bg-card"> 
+                              <ReactQuill
+                                theme="snow"
+                                value={typeof watchedEditableContent === 'string' ? watchedEditableContent : ''}
+                                onChange={(content, delta, source, editor) => {
+                                  if (source === 'user') { // Only update form state if change is from user interaction
+                                    form.setValue(name, content, { shouldValidate: true, shouldDirty: true });
+                                  }
+                                }}
+                                onBlur={onBlur} // Use onBlur from RHF
+                                modules={quillModules}
+                                formats={quillFormats}
+                                placeholder="AI-generated HTML content will appear here for editing..."
+                              />
+                            </div>
+                          ) : (
+                             <Textarea
+                              placeholder="Loading editor or AI content..."
+                              className="min-h-[300px] font-code text-sm p-3"
+                              value={typeof watchedEditableContent === 'string' ? watchedEditableContent : ''}
+                              readOnly
                             />
-                          </div>
-                        ) : (
-                           <Textarea
-                            placeholder="Loading editor or AI content..."
-                            className="min-h-[300px] font-code text-sm p-3"
-                            value={typeof field.value === 'string' ? field.value : ''}
-                            readOnly
-                          />
-                        )}
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                          )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 
                 <Separator />
@@ -576,3 +583,4 @@ export function BlogPostGenerator() {
     </div>
   );
 }
+
