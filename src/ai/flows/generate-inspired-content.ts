@@ -60,7 +60,7 @@ You have been provided with content from the following article URLs:
 - {{{this}}}
 {{/each}}
 
-The user wants to use these as inspiration. Their specific goal is: {{analysisMode}}.
+The user's selected 'analysisMode' is '{{analysisMode}}'.
 {{#if targetTopic}}
 Their desired target topic or angle for the new content is: "{{{targetTopic}}}"
 {{else}}
@@ -68,55 +68,43 @@ They have not specified a particular target topic, so focus on the general theme
 {{/if}}
 
 IMPORTANT: You are NOT to directly copy or plagiarize content from the provided URLs. Your goal is to provide inspiration and structure for NEW, ORIGINAL content.
-Your output MUST be a JSON object. Do NOT include the 'analysisMode' field in this JSON output.
+Your output MUST be a single JSON object. Do NOT include the 'analysisMode' field in this JSON output.
 
-Based on the user's selected 'analysisMode' (which is '{{analysisMode}}'), perform ONE of the following tasks and structure your JSON output accordingly:
+Your task is to generate a JSON object. The specific fields in this JSON object depend on the user's 'analysisMode'.
 
 IF '{{analysisMode}}' is 'brainstormIdeas':
-  - Analyze the themes, topics, and potential gaps in the provided article(s).
-  {{#if targetTopic}}
-  - Generate 5-7 unique and engaging blog post titles or topics that are inspired by the source articles AND align with or expand upon the user's target topic: "{{targetTopic}}".
-  {{else}}
-  - Generate 5-7 unique and engaging blog post titles or topics that are inspired by the source articles.
-  {{/if}}
-  - Identify 3-5 key themes or concepts from the source articles that are relevant to the generated topics.
-  - Provide one catchy introduction hook (1-2 sentences) for one of the suggested topics.
-  - The JSON object you output MUST contain the following keys:
-    - "suggestedTopics": An array of strings (the blog post topics/titles).
-    - "keyThemes": An array of strings (the key themes identified).
-    - "introductionHook": A string (the catchy introduction hook).
-  Example JSON structure for brainstormIdeas:
-  {
-    "suggestedTopics": ["Topic Example 1", "Another Great Topic Idea"],
-    "keyThemes": ["Core Concept A", "Important Theme B"],
-    "introductionHook": "Imagine a world where..."
-  }
+  Your JSON output MUST EXACTLY match the structure for 'brainstormIdeas' and include ALL of the following keys:
+  1.  "suggestedTopics": An array of 5-7 unique and engaging blog post titles or topics. These should be inspired by the source articles. {{#if targetTopic}}They MUST also align with or expand upon the user's target topic: "{{targetTopic}}".{{/if}}
+  2.  "keyThemes": An array of 3-5 key themes or concepts identified from the source articles that are relevant to the generated topics.
+  3.  "introductionHook": A string containing one catchy introduction hook (1-2 sentences) for one of the suggested topics.
 
-IF '{{analysisMode}}' is 'synthesizeOutline':
-  - Synthesize the information from the provided article(s) to create a comprehensive outline for a NEW, ORIGINAL blog post.
-  {{#if targetTopic}}
-  - This new post should focus on the user's target topic: "{{targetTopic}}", drawing inspiration and information selectively from the sources.
-  {{else}}
-  - This new post should synthesize key information from the sources into a cohesive new narrative or argument.
-  {{/if}}
-  - Create a compelling draft title for this new article.
-  - Develop a structured outline (use markdown for headings #, ##, ### and bullet points - or *) for the new article. The outline should be detailed enough to guide the writing process.
-  - List 3-5 key talking points that should be emphasized in the new article.
-  - Write a brief originality statement (1-2 sentences) explaining how this synthesized article will offer a unique perspective, a novel combination of information, or address a gap not fully covered by the sources.
-  - The JSON object you output MUST contain the following keys:
-    - "draftTitle": A string (the draft title).
-    - "draftOutline": A string (the markdown outline, e.g., "# Section 1\\n- Point A\\n- Point B").
-    - "keyTalkingPoints": An array of strings (key talking points).
-    - "originalityStatement": A string (the originality statement).
-  Example JSON structure for synthesizeOutline:
+  Example JSON structure for brainstormIdeas (ensure all fields are present):
   {
-    "draftTitle": "My New Synthesized Article Title",
-    "draftOutline": "# Introduction\\n## Main Point 1\\n- Subpoint a\\n- Subpoint b\\n# Conclusion",
-    "keyTalkingPoints": ["Key Takeaway 1", "Essential Argument 2"],
-    "originalityStatement": "This article offers a novel synthesis by..."
+    "suggestedTopics": ["Topic Example 1", "Another Great Topic Idea", "More Inspiration Here"],
+    "keyThemes": ["Core Concept A", "Important Theme B", "Key Insight C"],
+    "introductionHook": "Imagine a world where insightful content is just a click away..."
   }
+  Make sure your JSON output for 'brainstormIdeas' precisely follows this structure.
 
-Ensure your output strictly adheres to ONE of these JSON structures based on the '{{analysisMode}}' and includes all specified fields.
+ELSE IF '{{analysisMode}}' is 'synthesizeOutline':
+  Your JSON output MUST EXACTLY match the structure for 'synthesizeOutline' and include ALL of the following keys:
+  1.  "draftTitle": A string containing a compelling draft title for the new, synthesized article. {{#if targetTopic}}This new post should focus on the user's target topic: "{{targetTopic}}", drawing inspiration and information selectively from the sources.{{else}}This new post should synthesize key information from the sources into a cohesive new narrative or argument.{{/if}}
+  2.  "draftOutline": A string containing a detailed, structured outline (use markdown for headings like #, ##, ### and bullet points like - or *) for the new article.
+  3.  "keyTalkingPoints": An array of 3-5 key talking points that should be emphasized in the new article.
+  4.  "originalityStatement": A string (1-2 sentences) explaining how this synthesized article will offer a unique perspective, a novel combination of information, or address a gap not fully covered by the sources.
+
+  Example JSON structure for synthesizeOutline (ensure all fields are present):
+  {
+    "draftTitle": "My New Synthesized Article Title on {{{targetTopic}}}",
+    "draftOutline": "# Introduction\\n## Main Point 1\\n- Subpoint a\\n- Subpoint b\\n# Deeper Dive into {{{targetTopic}}}\\n## Angle X\\n# Conclusion",
+    "keyTalkingPoints": ["Key Takeaway 1 Regarding {{{targetTopic}}}", "Essential Argument 2", "Novel Perspective on Source Material"],
+    "originalityStatement": "This article offers a novel synthesis by combining insights from provided sources to specifically address {{{targetTopic}}}."
+  }
+  Make sure your JSON output for 'synthesizeOutline' precisely follows this structure.
+
+END IF
+
+CRITICAL REMINDER: Based on the 'analysisMode' of '{{analysisMode}}', ensure your output is a single JSON object that strictly adheres to ONE of the structures described above and includes ALL specified fields for that structure. Do not add any extra text before or after the JSON object.
 `,
 });
 
