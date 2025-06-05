@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react'; // Added useState here
+import { useEffect, useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Category } from '@/lib/categories-data';
+import type { CategoryNode } from '@/lib/categories-data';
 
 const categoryFormSchema = z.object({
   name: z.string().min(2, "Category name must be at least 2 characters.").max(50, "Category name must be 50 characters or less."),
@@ -31,11 +31,13 @@ type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 interface CategoryFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  category?: Category | null;
+  categoryNode?: CategoryNode | null; // For editing an existing node
+  parentId?: string | null;          // For creating a child node under this parent
+  parentName?: string | null;        // For UX in dialog title when creating a child
   onSuccess: () => void;
 }
 
-export function CategoryFormDialog({ isOpen, onClose, category, onSuccess }: CategoryFormDialogProps) {
+export function CategoryFormDialog({ isOpen, onClose, categoryNode, parentId, parentName, onSuccess }: CategoryFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -48,65 +50,79 @@ export function CategoryFormDialog({ isOpen, onClose, category, onSuccess }: Cat
   });
 
   useEffect(() => {
-    if (isOpen) { // Reset form only when dialog opens
-      if (category) {
+    if (isOpen) {
+      if (categoryNode) { // Editing existing node
         form.reset({
-          name: category.name,
-          description: category.description || "",
+          name: categoryNode.name,
+          description: categoryNode.description || "",
         });
-      } else {
+      } else { // Creating new node
         form.reset({
           name: "",
           description: "",
         });
       }
     }
-  }, [category, form, isOpen]);
+  }, [categoryNode, form, isOpen]);
 
   const handleSubmit = async (values: CategoryFormValues) => {
     setIsSaving(true);
-    const apiUrl = category ? `/api/categories/${category.id}` : '/api/categories';
-    const method = category ? 'PUT' : 'POST';
+    const isEditing = !!categoryNode;
+    const apiUrl = isEditing ? `/api/categories/${categoryNode.id}` : '/api/categories';
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const payload: any = { ...values };
+    if (!isEditing && parentId) {
+      payload.parentId = parentId;
+    }
 
     try {
       const response = await fetch(apiUrl, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${category ? 'update' : 'create'} category`);
+        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} category`);
       }
 
       toast({
-        title: `Category ${category ? 'Updated' : 'Created'}!`,
-        description: `The category "${values.name}" has been successfully ${category ? 'updated' : 'created'}.`,
+        title: `Category ${isEditing ? 'Updated' : 'Created'}!`,
+        description: `The category "${values.name}" has been successfully ${isEditing ? 'updated' : 'created'}.`,
       });
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error(`Error ${category ? 'updating' : 'creating'} category:`, error);
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} category:`, error);
       toast({
         title: "Error",
-        description: error.message || `Could not ${category ? 'update' : 'create'} category.`,
+        description: error.message || `Could not ${isEditing ? 'update' : 'create'} category.`,
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
+
+  const getDialogTitle = () => {
+    if (categoryNode) return "Edit Category";
+    if (parentName) return `Create New Category under "${parentName}"`;
+    return "Create New Top-Level Category";
+  };
   
+  const getDialogDescription = () => {
+    if (categoryNode) return "Update the details of this category.";
+    return "Fill in the details for your new category.";
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>{category ? "Edit Category" : "Create New Category"}</DialogTitle>
-          <DialogDescription>
-            {category ? "Update the details of this category." : "Fill in the details for your new category."}
-          </DialogDescription>
+          <DialogTitle>{getDialogTitle()}</DialogTitle>
+          <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
@@ -116,7 +132,7 @@ export function CategoryFormDialog({ isOpen, onClose, category, onSuccess }: Cat
               render={({ field }) => (
                 <FormItem>
                   <FormLabel htmlFor="name">Category Name</FormLabel>
-                  <Input id="name" placeholder="e.g., Technology" {...field} />
+                  <Input id="name" placeholder="e.g., Web Development" {...field} />
                   <FormMessage />
                 </FormItem>
               )}
@@ -132,7 +148,7 @@ export function CategoryFormDialog({ isOpen, onClose, category, onSuccess }: Cat
                     placeholder="Briefly describe the category..."
                     className="min-h-[100px]"
                     {...field}
-                    value={field.value ?? ''} // Ensure value is not undefined
+                    value={field.value ?? ''} 
                   />
                   <FormMessage />
                 </FormItem>
@@ -148,7 +164,7 @@ export function CategoryFormDialog({ isOpen, onClose, category, onSuccess }: Cat
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
                   </>
                 ) : (
-                  category ? "Save Changes" : "Create Category"
+                  categoryNode ? "Save Changes" : "Create Category"
                 )}
               </Button>
             </DialogFooter>

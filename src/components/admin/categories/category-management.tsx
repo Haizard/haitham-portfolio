@@ -3,12 +3,11 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Edit3, Trash2, Loader2, ChevronDown, ChevronRight, Eye, FolderPlus, ListTree } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, Edit3, Trash2, Loader2, ChevronDown, ChevronRight, FolderPlus, ListTree } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Category, Subcategory } from '@/lib/categories-data';
+import type { CategoryNode } from '@/lib/categories-data';
 import { CategoryFormDialog } from './category-form-dialog';
-import { SubcategoryFormDialog } from './subcategory-form-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,102 +27,120 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-
-type CategoryWithSubcategories = Category & { subcategories: Subcategory[], isOpen?: boolean };
 
 export function CategoryManagement() {
-  const [categories, setCategories] = useState<CategoryWithSubcategories[]>([]);
+  const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
-  const [isSubcategoryFormOpen, setIsSubcategoryFormOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
-  const [parentCategoryForSub, setParentCategoryForSub] = useState<Category | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<{ type: 'category' | 'subcategory', data: Category | Subcategory } | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  
+  const [editingNode, setEditingNode] = useState<CategoryNode | null>(null);
+  const [parentForNewNode, setParentForNewNode] = useState<{ id: string | null; name: string | null } | null>(null);
+  
+  const [nodeToDelete, setNodeToDelete] = useState<CategoryNode | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [openNodes, setOpenNodes] = useState<Record<string, boolean>>({});
 
   const { toast } = useToast();
 
-  const fetchCategoriesAndSubcategories = useCallback(async () => {
+  const fetchCategoryTree = useCallback(async () => {
     setIsLoading(true);
     try {
-      const categoriesResponse = await fetch('/api/categories');
-      if (!categoriesResponse.ok) throw new Error('Failed to fetch categories');
-      const fetchedCategories: Category[] = await categoriesResponse.json();
-
-      const categoriesWithData: CategoryWithSubcategories[] = await Promise.all(
-        fetchedCategories.map(async (cat) => {
-          const subcategoriesResponse = await fetch(`/api/categories/${cat.id}/subcategories`);
-          const fetchedSubcategories: Subcategory[] = subcategoriesResponse.ok ? await subcategoriesResponse.json() : [];
-          const currentCategoryState = categories.find(c => c.id === cat.id);
-          return { ...cat, subcategories: fetchedSubcategories, isOpen: currentCategoryState?.isOpen || false };
-        })
-      );
-      setCategories(categoriesWithData);
+      const response = await fetch('/api/categories');
+      if (!response.ok) throw new Error('Failed to fetch category tree');
+      const tree: CategoryNode[] = await response.json();
+      setCategoryTree(tree);
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Could not load categories or subcategories.", variant: "destructive" });
+      toast({ title: "Error", description: "Could not load category tree.", variant: "destructive" });
+      setCategoryTree([]);
     } finally {
       setIsLoading(false);
     }
-  }, [toast, categories]); // Added categories to dependency array for isOpen state persistence
+  }, [toast]);
 
   useEffect(() => {
-    fetchCategoriesAndSubcategories();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Initial fetch only
+    fetchCategoryTree();
+  }, [fetchCategoryTree]);
 
-  const toggleCategoryOpen = (categoryId: string) => {
-    setCategories(prev => prev.map(cat => cat.id === categoryId ? { ...cat, isOpen: !cat.isOpen } : cat));
+  const toggleNodeOpen = (nodeId: string) => {
+    setOpenNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
   };
 
-  const handleCreateCategory = () => {
-    setEditingCategory(null);
-    setIsCategoryFormOpen(true);
+  const handleCreateTopLevelCategory = () => {
+    setEditingNode(null);
+    setParentForNewNode(null);
+    setIsFormOpen(true);
   };
 
-  const handleEditCategory = (category: Category) => {
-    setEditingCategory(category);
-    setIsCategoryFormOpen(true);
+  const handleCreateChildCategory = (parentNode: CategoryNode) => {
+    setEditingNode(null);
+    setParentForNewNode({ id: parentNode.id, name: parentNode.name });
+    setIsFormOpen(true);
   };
 
-  const handleCreateSubcategory = (parentCategory: Category) => {
-    setParentCategoryForSub(parentCategory);
-    setEditingSubcategory(null);
-    setIsSubcategoryFormOpen(true);
+  const handleEditNode = (node: CategoryNode) => {
+    setEditingNode(node);
+    setParentForNewNode(null); // Not creating a child, but editing
+    setIsFormOpen(true);
   };
 
-  const handleEditSubcategory = (subcategory: Subcategory, parentCategory: Category) => {
-    setParentCategoryForSub(parentCategory);
-    setEditingSubcategory(subcategory);
-    setIsSubcategoryFormOpen(true);
+  const confirmDeleteNode = (node: CategoryNode) => {
+    setNodeToDelete(node);
   };
 
-  const confirmDeleteItem = (type: 'category' | 'subcategory', data: Category | Subcategory) => {
-    setItemToDelete({ type, data });
-  };
-
-  const handleDeleteItem = async () => {
-    if (!itemToDelete) return;
+  const handleDeleteNode = async () => {
+    if (!nodeToDelete) return;
     setIsDeleting(true);
-    const { type, data } = itemToDelete;
-    const url = type === 'category' ? `/api/categories/${data.id}` : `/api/categories/${(data as Subcategory).parentCategoryId}/subcategories/${data.id}`;
-    
     try {
-      const response = await fetch(url, { method: 'DELETE' });
+      const response = await fetch(`/api/categories/${nodeToDelete.id}`, { method: 'DELETE' });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to delete ${type}`);
+        throw new Error(errorData.message || `Failed to delete category`);
       }
-      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} Deleted`, description: `"${data.name}" has been removed.` });
-      fetchCategoriesAndSubcategories();
+      toast({ title: `Category Deleted`, description: `"${nodeToDelete.name}" and all its children have been removed.` });
+      fetchCategoryTree(); // Refresh the tree
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || `Could not delete ${type}.`, variant: "destructive" });
+      toast({ title: "Error", description: error.message || `Could not delete category.`, variant: "destructive" });
     } finally {
       setIsDeleting(false);
-      setItemToDelete(null);
+      setNodeToDelete(null);
     }
+  };
+
+  const renderCategoryRowsRecursive = (nodes: CategoryNode[], level = 0): React.ReactNode[] => {
+    return nodes.flatMap(node => [
+      <TableRow key={node.id} className="hover:bg-muted/50">
+        <TableCell style={{ paddingLeft: `${level * 24 + 4}px` }}>
+          <div className="flex items-center">
+            {node.children && node.children.length > 0 && (
+              <Button variant="ghost" size="icon" onClick={() => toggleNodeOpen(node.id)} className="h-8 w-8 mr-1">
+                {openNodes[node.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            )}
+            <span className="ml-2">{node.name}</span>
+            {node.children && node.children.length > 0 && (
+               <Badge variant="secondary" className="ml-2">{node.children.length} child{node.children.length === 1 ? '' : 'ren'}</Badge>
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="text-muted-foreground text-xs">{node.slug}</TableCell>
+        <TableCell className="text-sm text-muted-foreground truncate max-w-xs">{node.description || '-'}</TableCell>
+        <TableCell className="text-right">
+          <Button variant="outline" size="sm" onClick={() => handleCreateChildCategory(node)} className="mr-2" title="Add Child Category">
+            <FolderPlus className="mr-1 h-4 w-4" /> Add Child
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleEditNode(node)} className="mr-2" title="Edit Category">
+            <Edit3 className="mr-1 h-4 w-4" /> Edit
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => confirmDeleteNode(node)} title="Delete Category">
+            <Trash2 className="mr-1 h-4 w-4" /> Delete
+          </Button>
+        </TableCell>
+      </TableRow>,
+      ...(node.children && node.children.length > 0 && openNodes[node.id]
+        ? renderCategoryRowsRecursive(node.children, level + 1)
+        : [])
+    ]);
   };
   
   if (isLoading) {
@@ -139,85 +156,29 @@ export function CategoryManagement() {
       <Card className="shadow-xl mb-8">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-headline flex items-center"><ListTree className="mr-2 h-6 w-6 text-primary"/>Categories Overview</CardTitle>
-            <CardDescription>View, add, edit, or delete blog categories and their subcategories.</CardDescription>
+            <CardTitle className="text-2xl font-headline flex items-center"><ListTree className="mr-2 h-6 w-6 text-primary"/>Category Management</CardTitle>
+            <CardDescription>Manage your hierarchical blog categories.</CardDescription>
           </div>
-          <Button onClick={handleCreateCategory} className="bg-primary hover:bg-primary/90">
-            <PlusCircle className="mr-2 h-5 w-5" /> Create New Category
+          <Button onClick={handleCreateTopLevelCategory} className="bg-primary hover:bg-primary/90">
+            <PlusCircle className="mr-2 h-5 w-5" /> Create Top-Level Category
           </Button>
         </CardHeader>
         <CardContent>
-          {categories.length === 0 ? (
+          {categoryTree.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">No categories found. Get started by creating one!</p>
           ) : (
             <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Slug</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead className="text-right w-[250px]">Actions</TableHead>
+                    <TableHead className="text-right w-[320px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories.map(category => (
-                    <React.Fragment key={category.id}>
-                      <TableRow className="hover:bg-muted/50">
-                        <TableCell>
-                          {category.subcategories.length > 0 && (
-                            <Button variant="ghost" size="icon" onClick={() => toggleCategoryOpen(category.id)} className="h-8 w-8">
-                              {category.isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                            </Button>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">{category.name} <Badge variant="secondary" className="ml-2">{category.subcategories.length} sub</Badge></TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{category.slug}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground truncate max-w-xs">{category.description || '-'}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => handleCreateSubcategory(category)} className="mr-2">
-                            <FolderPlus className="mr-1 h-4 w-4" /> Add Sub
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleEditCategory(category)} className="mr-2">
-                            <Edit3 className="mr-1 h-4 w-4" /> Edit
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteItem('category', category)}>
-                            <Trash2 className="mr-1 h-4 w-4" /> Delete
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                      {category.isOpen && category.subcategories.length > 0 && (
-                        <TableRow className="bg-secondary/30 hover:bg-secondary/40">
-                          <TableCell colSpan={5} className="p-0">
-                            <div className="p-4 pl-12">
-                               <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Subcategories for "{category.name}"</h4>
-                                {category.subcategories.map(sub => (
-                                <Card key={sub.id} className="mb-2 shadow-sm bg-card">
-                                  <CardContent className="p-3 flex justify-between items-center">
-                                    <div>
-                                      <p className="font-medium text-sm">{sub.name}</p>
-                                      <p className="text-xs text-muted-foreground">{sub.slug}</p>
-                                      {sub.description && <p className="text-xs text-muted-foreground mt-1">{sub.description}</p>}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Button variant="outline" size="xs" onClick={() => handleEditSubcategory(sub, category)}>
-                                        <Edit3 className="mr-1 h-3 w-3" /> Edit
-                                      </Button>
-                                      <Button variant="destructive" size="xs" onClick={() => confirmDeleteItem('subcategory', sub)}>
-                                        <Trash2 className="mr-1 h-3 w-3" /> Delete
-                                      </Button>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                              {category.subcategories.length === 0 && <p className="text-xs text-muted-foreground">No subcategories yet.</p>}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  ))}
+                  {renderCategoryRowsRecursive(categoryTree)}
                 </TableBody>
               </Table>
             </div>
@@ -226,36 +187,29 @@ export function CategoryManagement() {
       </Card>
 
       <CategoryFormDialog
-        isOpen={isCategoryFormOpen}
-        onClose={() => setIsCategoryFormOpen(false)}
-        category={editingCategory}
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        categoryNode={editingNode}
+        parentId={parentForNewNode?.id}
+        parentName={parentForNewNode?.name}
         onSuccess={() => {
-          fetchCategoriesAndSubcategories();
-          setIsCategoryFormOpen(false);
+          fetchCategoryTree();
+          setIsFormOpen(false);
         }}
       />
-      <SubcategoryFormDialog
-        isOpen={isSubcategoryFormOpen}
-        onClose={() => setIsSubcategoryFormOpen(false)}
-        subcategory={editingSubcategory}
-        parentCategory={parentCategoryForSub}
-        onSuccess={() => {
-          fetchCategoriesAndSubcategories();
-          setIsSubcategoryFormOpen(false);
-        }}
-      />
-      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+      
+      <AlertDialog open={!!nodeToDelete} onOpenChange={(open) => !open && setNodeToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the {itemToDelete?.type} "<strong>{itemToDelete?.data.name}</strong>".
-              {itemToDelete?.type === 'category' && ' All its subcategories will also be deleted.'}
+              This action cannot be undone. This will permanently delete the category "<strong>{nodeToDelete?.name}</strong>"
+              and all of its descendant categories/subcategories.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setItemToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteItem} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogCancel onClick={() => setNodeToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteNode} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Delete
             </AlertDialogAction>
