@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, Link as LinkIcon, PlusCircle, Trash2, BookOpen, FileDown } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
@@ -36,7 +36,7 @@ const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
-  categoryId: z.string().min(1, "Category selection is required."),
+  categoryId: z.string().min(1, "Category selection is required.").optional(), // Optional initially, required for publish
   tags: z.string().optional().describe("Comma-separated list of tags"),
   featuredImageUrl: z.string().url("Featured image URL must be valid.").optional().or(z.literal('')),
   featuredImageHint: z.string().optional(),
@@ -47,6 +47,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const createSlug = (title: string) => {
+  if (!title) return `blog-post-${Date.now()}`;
   return title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '') 
@@ -64,7 +65,8 @@ const flattenCategories = (categories: CategoryNode[], level = 0): FlattenedCate
   let flatList: FlattenedCategory[] = [];
   const indent = "\u00A0\u00A0".repeat(level * 2); 
   for (const category of categories) {
-    flatList.push({ value: category.id!, label: `${indent}${category.name}`, level });
+    if (!category.id) continue; // Ensure category.id is defined
+    flatList.push({ value: category.id, label: `${indent}${category.name}`, level });
     if (category.children && category.children.length > 0) {
       flatList = flatList.concat(flattenCategories(category.children, level + 1));
     }
@@ -126,7 +128,7 @@ export function BlogPostGenerator() {
 
   const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
 
-  async function onAiSubmit(values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) {
+  const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
     setIsLoadingAi(true);
     setGeneratedPost(null);
     setPublishedSlug(null);
@@ -137,19 +139,44 @@ export function BlogPostGenerator() {
         brandVoice: values.brandVoice,
       };
       const output = await generateBlogPost(aiInput);
+      if (!output || !output.title) {
+        throw new Error("AI did not return a valid title or content.");
+      }
       const slug = createSlug(output.title);
       setGeneratedPost({ ...output, slug });
       toast({
         title: "Blog Post Content Generated!",
         description: "Review the content, add images/downloads, category, tags, and then publish.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating blog post content:", error);
-      toast({ title: "Error", description: "Failed to generate blog post content.", variant: "destructive" });
+      toast({ title: "Error generating content", description: error.message || "Failed to generate blog post content.", variant: "destructive" });
+      setGeneratedPost(null); 
     } finally {
       setIsLoadingAi(false);
     }
-  }
+  };
+
+  const handleGenerateContent = async () => {
+    const aiInputFields: Array<keyof Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>> = ['topic', 'seoKeywords', 'brandVoice'];
+    const allValid = await form.trigger(aiInputFields);
+
+    if (!allValid) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in Topic, SEO Keywords, and Brand Voice before generating content.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const values = form.getValues();
+    onAiSubmit({ // Call the actual AI submission logic
+      topic: values.topic,
+      seoKeywords: values.seoKeywords,
+      brandVoice: values.brandVoice,
+    });
+  };
+
 
   async function handlePublishPost(values: FormValues) {
     if (!generatedPost || !generatedPost.slug) {
@@ -173,14 +200,14 @@ export function BlogPostGenerator() {
           title: generatedPost.title,
           content: generatedPost.content,
           slug: generatedPost.slug,
-          author: "AI Content Studio", // Or get from user profile
-          authorAvatar: "https://placehold.co/100x100.png?text=AI", // Placeholder
+          author: "AI Content Studio", 
+          authorAvatar: "https://placehold.co/100x100.png?text=AI", 
           tags: tagsArray,
           featuredImageUrl: values.featuredImageUrl,
           featuredImageHint: values.featuredImageHint,
           galleryImages: values.galleryImages,
           downloads: values.downloads,
-          originalLanguage: "en", // Or make selectable
+          originalLanguage: "en", 
           categoryId: values.categoryId,
         }),
       });
@@ -251,7 +278,7 @@ export function BlogPostGenerator() {
             <CardFooter>
               <Button 
                 type="button" 
-                onClick={form.handleSubmit(data => onAiSubmit(data as Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>))} 
+                onClick={handleGenerateContent} 
                 disabled={isLoadingAi || isPublishing} 
                 size="lg" 
                 className="w-full md:w-auto bg-primary hover:bg-primary/90"

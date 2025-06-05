@@ -79,9 +79,12 @@ const generateBlogPostFlow = ai.defineFlow(
     inputSchema: GenerateBlogPostInputSchema,
     outputSchema: GenerateBlogPostOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input: GenerateBlogPostInput): Promise<GenerateBlogPostOutput> => {
+    const llmResponse = await prompt(input);
+    if (!llmResponse.output) {
+        console.error("AI failed to generate blog post content or parseable output from LLM.");
+        throw new Error("AI failed to generate blog post content. The output was empty or not in the expected format.");
+    }
+    return llmResponse.output;
   }
 );
-
