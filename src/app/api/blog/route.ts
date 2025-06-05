@@ -1,18 +1,18 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getAllPosts, addPost, type BlogPost, getPostBySlug as getExistingPostBySlug, getPostsByCategory } from '@/lib/blog-data';
+import { getAllPosts, addPost, type BlogPost, getPostBySlug as getExistingPostBySlug, getPostsByCategoryId } from '@/lib/blog-data';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const subcategory = searchParams.get('subcategory');
+    const categoryId = searchParams.get('categoryId'); // Changed from 'category'
     const limitStr = searchParams.get('limit');
     const excludeSlug = searchParams.get('excludeSlug');
 
-    if (category) {
+    if (categoryId) {
       const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-      const relatedPosts = getPostsByCategory(category, subcategory || undefined, limit, excludeSlug || undefined);
+      // Use getPostsByCategoryId - this function needs to be updated or created in blog-data.ts
+      const relatedPosts = getPostsByCategoryId(categoryId, limit, excludeSlug || undefined);
       return NextResponse.json(relatedPosts);
     }
 
@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, content, slug, author, authorAvatar, tags, imageUrl, imageHint, originalLanguage, category, subcategory } = body;
+    const { title, content, slug, author, authorAvatar, tags, imageUrl, imageHint, originalLanguage, categoryId } = body; // Changed from category/subcategory
 
-    if (!title || !content || !slug || !category) {
-      return NextResponse.json({ message: "Missing required fields: title, content, slug, category are all mandatory." }, { status: 400 });
+    if (!title || !content || !slug || !categoryId) { // Ensure categoryId is present
+      return NextResponse.json({ message: "Missing required fields: title, content, slug, categoryId are all mandatory." }, { status: 400 });
     }
 
     if (getExistingPostBySlug(slug)) {
@@ -48,8 +48,7 @@ export async function POST(request: NextRequest) {
       imageUrl: imageUrl || "https://placehold.co/800x400.png",
       imageHint: imageHint || "abstract content",
       originalLanguage: originalLanguage || "en",
-      category: category,
-      subcategory: subcategory || undefined,
+      categoryId: categoryId, // Assign categoryId
       comments: [],
     };
 
@@ -63,5 +62,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Failed to create post due to an unknown error" }, { status: 500 });
   }
 }
-
-    

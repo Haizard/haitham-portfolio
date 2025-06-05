@@ -1,5 +1,6 @@
 
 // In-memory store for blog posts
+import type { CategoryNode } from './categories-data'; // We might need this if we store full category objects later
 
 export interface BlogPost {
   slug: string;
@@ -12,10 +13,18 @@ export interface BlogPost {
   imageHint: string;
   content: string;
   originalLanguage: string;
-  category: string; // Added
-  subcategory?: string; // Added: optional
+  categoryId: string; // Changed from category/subcategory
   comments?: { id: string; author: string; avatar: string; date: string; text: string }[];
 }
+
+// Example category IDs from categories-data.ts:
+// 'cat_1' (Technology)
+// 'sub_1_1' (Software Development)
+// 'sub_1_1_1' (Web Frameworks)
+// 'sub_1_2' (AI & Machine Learning)
+// 'cat_2' (Trading)
+// 'sub_2_1' (Indicators)
+// 'cat_3' (Automation)
 
 let posts: Record<string, BlogPost> = {
   "my-first-blog-post": {
@@ -28,8 +37,7 @@ let posts: Record<string, BlogPost> = {
     imageUrl: "https://placehold.co/800x400.png",
     imageHint: "blog abstract technology",
     originalLanguage: "en",
-    category: "Tech",
-    subcategory: "General",
+    categoryId: "cat_1", // Example: Technology
     content: `
       <p>This is the beginning of something great. Welcome to my first blog post powered by CreatorOS! I'm excited to share my thoughts and ideas with the world.</p>
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
@@ -58,8 +66,7 @@ let posts: Record<string, BlogPost> = {
     imageUrl: "https://placehold.co/800x400.png",
     imageHint: "artificial intelligence brain",
     originalLanguage: "en",
-    category: "AI",
-    subcategory: "Trends",
+    categoryId: "sub_1_2", // Example: AI & Machine Learning (child of Technology)
     content: `
       <p>Artificial Intelligence is rapidly changing the landscape of content creation. From automated writing assistants to generative art, the possibilities are endless.</p>
       <p>In this post, we explore some of the key trends and predictions for AI in the creative industries. How will it empower creators? What are the ethical considerations?</p>
@@ -92,17 +99,11 @@ export function getPostSlugs(): { slug: string }[] {
   return Object.keys(posts).map(slug => ({ slug }));
 }
 
-// New function to get posts by category (and optionally subcategory)
-export function getPostsByCategory(category: string, subcategory?: string, limit?: number, excludeSlug?: string): BlogPost[] {
+// Updated function to get posts by categoryId
+export function getPostsByCategoryId(categoryId: string, limit?: number, excludeSlug?: string): BlogPost[] {
   let filteredPosts = Object.values(posts).filter(
-    (post) => post.category.toLowerCase() === category.toLowerCase() && post.slug !== excludeSlug
+    (post) => post.categoryId === categoryId && post.slug !== excludeSlug
   );
-
-  if (subcategory) {
-    filteredPosts = filteredPosts.filter(
-      (post) => post.subcategory?.toLowerCase() === subcategory.toLowerCase()
-    );
-  }
   
   filteredPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
