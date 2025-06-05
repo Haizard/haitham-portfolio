@@ -37,7 +37,8 @@ const SynthesizePayloadSchema = z.object({
 const LLMOutputSchema = z.union([BrainstormPayloadSchema, SynthesizePayloadSchema]);
 
 // This is the final output type of the flow, which includes analysisMode (discriminated union)
-export const GenerateInspiredContentOutputSchema = z.discriminatedUnion("analysisMode", [
+// DO NOT EXPORT THE SCHEMA OBJECT ITSELF
+const GenerateInspiredContentOutputSchema = z.discriminatedUnion("analysisMode", [
   z.object({ analysisMode: z.literal('brainstormIdeas'), ...BrainstormPayloadSchema.shape }),
   z.object({ analysisMode: z.literal('synthesizeOutline'), ...SynthesizePayloadSchema.shape })
 ]);
