@@ -8,17 +8,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import dynamic from 'next/dynamic';
 import { generateBlogPost, type GenerateBlogPostInput, type GenerateBlogPostOutput } from "@/ai/flows/generate-blog-post";
+import { generateImageForPost, type GenerateImageForPostInput } from "@/ai/flows/generate-image-for-post"; // Added
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon } from "lucide-react"; // Added SparklesIcon
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
 import { Separator } from "../ui/separator";
+import Image from "next/image"; // Added for preview
 
 // Dynamically import ReactQuill
 const ReactQuill = dynamic(() => import('react-quill'), {
@@ -45,7 +47,7 @@ const formSchema = z.object({
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
   editableContent: z.string().min(1, "Post content cannot be empty once generated.").refine(value => value !== '<p><br></p>' && value !== '<p></p>', { message: "Post content cannot be substantially empty."}),
-  categoryId: z.string().min(1, "Category selection is required."),
+  categoryId: z.string().min(1, "Category selection is required.").optional(),
   tags: z.string().optional().describe("Comma-separated list of tags"),
   featuredImageUrl: z.string().url("Featured image URL must be valid.").optional().or(z.literal('')),
   featuredImageHint: z.string().optional(),
@@ -108,6 +110,7 @@ const quillFormats = [
 
 export function BlogPostGenerator() {
   const [isLoadingAi, setIsLoadingAi] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false); // Added state for image generation
   const [isPublishing, setIsPublishing] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<(GenerateBlogPostOutput & { slug?: string }) | null>(null);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -146,6 +149,8 @@ export function BlogPostGenerator() {
     control: form.control,
     name: "downloads",
   });
+
+  const watchedFeaturedImageUrl = form.watch("featuredImageUrl"); // For image preview
 
   useEffect(() => {
     async function fetchCategoriesData() {
@@ -190,7 +195,7 @@ export function BlogPostGenerator() {
 
       const slug = createSlug(output.title);
       setGeneratedPost({ ...output, slug });
-      form.setValue('editableContent', output.content); // Populate ReactQuill with AI content
+      form.setValue('editableContent', output.content); 
       toast({
         title: "Blog Post Content Generated!",
         description: "Review and edit the content in the editor below, add images/downloads, category, tags, and then publish.",
@@ -198,13 +203,13 @@ export function BlogPostGenerator() {
     } catch (error: any) {
       console.error("Error generating blog post content:", error);
       const errorMessage = error.message || "AI failed to generate content.";
+      setGeneratedPost(null);
+      form.setValue('editableContent', `<p>Error: ${errorMessage}</p>`);
       if (!toast.toasts.find(t => t.title === "AI Error" && t.description === errorMessage)) {
-         form.setValue('editableContent', `<p>Error: ${errorMessage}</p>`); // Show error in editor as well
-         if (generatedPost === null) { // Only toast if not already toasted for specific AI error
+         if (generatedPost === null) { 
              toast({ title: "Error generating content", description: errorMessage, variant: "destructive" });
          }
       }
-      setGeneratedPost(null);
     } finally {
       setIsLoadingAi(false);
     }
@@ -228,6 +233,33 @@ export function BlogPostGenerator() {
       seoKeywords: values.seoKeywords,
       brandVoice: values.brandVoice,
     });
+  };
+
+  const handleGenerateAiImage = async () => {
+    const topic = form.getValues("topic");
+    const title = generatedPost?.title;
+    const promptForImage = title || topic;
+
+    if (!promptForImage) {
+      toast({
+        title: "Missing Prompt",
+        description: "Please provide a Topic or generate content (for a title) to create an image.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGeneratingImage(true);
+    try {
+      const imageResult = await generateImageForPost({ prompt: promptForImage });
+      form.setValue("featuredImageUrl", imageResult.imageDataUri);
+      form.setValue("featuredImageHint", imageResult.suggestedHint);
+      toast({ title: "AI Image Generated!", description: "Featured image has been populated." });
+    } catch (error: any) {
+      console.error("Error generating AI image:", error);
+      toast({ title: "AI Image Error", description: error.message || "Could not generate image.", variant: "destructive" });
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
 
@@ -337,7 +369,7 @@ export function BlogPostGenerator() {
               <Button 
                 type="button" 
                 onClick={handleGenerateContent} 
-                disabled={isLoadingAi || isPublishing} 
+                disabled={isLoadingAi || isPublishing || isGeneratingImage} 
                 size="lg" 
                 className="w-full md:w-auto bg-primary hover:bg-primary/90"
               >
@@ -374,7 +406,7 @@ export function BlogPostGenerator() {
                       <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
                       <FormControl>
                         {isClient && ReactQuill ? ( 
-                          <div className="bg-card"> {/* Wrapper for ReactQuill */}
+                          <div className="bg-card"> 
                             <ReactQuill
                               theme="snow"
                               value={field.value}
@@ -402,30 +434,53 @@ export function BlogPostGenerator() {
                 <Separator />
                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImagePlus className="h-6 w-6 text-primary" /> Images & Files</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="featuredImageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Featured Image URL</FormLabel>
-                        <Input placeholder="https://example.com/featured.jpg" {...field} />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="featuredImageHint"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Featured Image AI Hint</FormLabel>
-                        <Input placeholder="e.g., abstract technology" {...field} />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="space-y-2">
+                    <FormLabel>Featured Image</FormLabel>
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                        <div className="flex-grow space-y-4">
+                            <FormField
+                                control={form.control}
+                                name="featuredImageUrl"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-sm">URL</FormLabel>
+                                    <Input placeholder="https://example.com/featured.jpg" {...field} />
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="featuredImageHint"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-sm">AI Hint (max 2 words)</FormLabel>
+                                    <Input placeholder="e.g., abstract technology" {...field} />
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="flex-shrink-0 sm:w-auto sm:text-right space-y-2">
+                            <Button 
+                                type="button" 
+                                variant="outline"
+                                onClick={handleGenerateAiImage} 
+                                disabled={isGeneratingImage || isLoadingAi || isPublishing}
+                                className="w-full sm:w-auto"
+                            >
+                                {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SparklesIcon className="mr-2 h-4 w-4" />}
+                                Generate AI Image
+                            </Button>
+                             {watchedFeaturedImageUrl && (
+                                <div className="mt-2 p-2 border rounded-md bg-muted max-w-[200px] mx-auto sm:mx-0">
+                                    <Image src={watchedFeaturedImageUrl} alt="Featured image preview" width={200} height={100} className="object-cover rounded" data-ai-hint="image preview"/>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
 
                 <div className="space-y-4">
                   <FormLabel className="text-base font-medium">Gallery Images (Optional)</FormLabel>
@@ -438,7 +493,7 @@ export function BlogPostGenerator() {
                         <FormItem><FormLabel>Caption (Optional)</FormLabel><Input placeholder="Image caption" {...field} /><FormMessage /></FormItem>
                       )}/>
                        <FormField control={form.control} name={`galleryImages.${index}.hint`} render={({ field }) => (
-                        <FormItem><FormLabel>AI Hint (Optional)</FormLabel><Input placeholder="e.g., mountain landscape" {...field} /><FormMessage /></FormItem>
+                        <FormItem><FormLabel>AI Hint (Optional, max 2 words)</FormLabel><Input placeholder="e.g., mountain landscape" {...field} /><FormMessage /></FormItem>
                       )}/>
                       <Button type="button" variant="ghost" size="sm" onClick={() => removeGalleryImage(index)} className="text-destructive hover:text-destructive/90"><Trash2 className="mr-1 h-4 w-4"/>Remove Image</Button>
                     </Card>
@@ -509,7 +564,7 @@ export function BlogPostGenerator() {
                     <Link href={`/blog/${publishedSlug}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Published Post</Link>
                   </Button>
                 )}
-                <Button type="submit" disabled={isPublishing || isLoadingAi || !!publishedSlug} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
+                <Button type="submit" disabled={isPublishing || isLoadingAi || !!publishedSlug || isGeneratingImage} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
                   {isPublishing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
                   {publishedSlug ? "Post Published" : "Publish Post"}
                 </Button>
@@ -521,3 +576,4 @@ export function BlogPostGenerator() {
     </div>
   );
 }
+
