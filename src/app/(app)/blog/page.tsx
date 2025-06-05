@@ -22,6 +22,7 @@ async function fetchAllPosts(): Promise<BlogPost[]> {
 
 interface EnrichedPost extends BlogPost {
   categoryName?: string;
+  categorySlugPath?: string;
   resolvedTags?: TagType[];
 }
 
@@ -31,7 +32,7 @@ export default function BlogIndexPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [allCategories, setAllCategories] = useState<CategoryNode[]>([]);
-  const [allTags, setAllTags] = useState<TagType[]>([]);
+  // const [allTags, setAllTags] = useState<TagType[]>([]); // Not directly used in enrichment anymore, tags come from post.resolvedTags
 
   useEffect(() => {
     async function fetchData() {
@@ -41,31 +42,72 @@ export default function BlogIndexPage() {
         const [postsData, categoriesData, tagsData] = await Promise.all([
           fetchAllPosts(),
           fetch('/api/categories').then(res => res.ok ? res.json() : []),
-          fetch('/api/tags').then(res => res.ok ? res.json() : [])
+          fetch('/api/tags').then(res => res.ok ? res.json() : []) // Keep fetching allTags for potential future use or direct display
         ]);
         
         setAllCategories(categoriesData);
-        setAllTags(tagsData);
+        // setAllTags(tagsData); // If needed for other purposes
 
-        const findCategoryName = (categoryId: string, categories: CategoryNode[]): string | undefined => {
-            const findRecursive = (nodes: CategoryNode[]): CategoryNode | undefined => {
+        const findCategoryDetails = (categoryId: string, categories: CategoryNode[]): { name?: string; slugPath?: string } => {
+            const path: string[] = [];
+            let currentCat: CategoryNode | undefined;
+
+            const findRecursive = (nodes: CategoryNode[], targetId: string): CategoryNode | undefined => {
                 for (const node of nodes) {
-                    if (node.id === categoryId) return node;
+                    if (node.id === targetId) {
+                        currentCat = node;
+                        return node;
+                    }
                     if (node.children) {
-                        const found = findRecursive(node.children);
-                        if (found) return found;
+                        const foundInChildren = findRecursive(node.children, targetId);
+                        if (foundInChildren) {
+                            currentCat = node; // This is a parent in the path
+                            return foundInChildren;
+                        }
                     }
                 }
                 return undefined;
             };
-            return findRecursive(categories)?.name;
+
+            const targetCategory = findRecursive(categories, categoryId);
+
+            if (targetCategory) {
+                // Reconstruct path from target up to root
+                let tempCat: CategoryNode | undefined = targetCategory;
+                const pathSegments: string[] = [];
+                 while(tempCat) {
+                    pathSegments.unshift(tempCat.slug);
+                    const parentId = tempCat.parentId;
+                    if (parentId) {
+                        const findParentRecursive = (nodes: CategoryNode[], pId: string): CategoryNode | undefined => {
+                             for (const node of nodes) {
+                                if (node.id === pId) return node;
+                                if (node.children) {
+                                    const found = findParentRecursive(node.children, pId);
+                                    if (found) return found;
+                                }
+                            }
+                            return undefined;
+                        }
+                        tempCat = findParentRecursive(categories, parentId);
+                    } else {
+                        tempCat = undefined;
+                    }
+                }
+                return { name: targetCategory.name, slugPath: pathSegments.join('/') };
+            }
+            return {};
         };
         
-        const enrichedPosts = postsData.map(post => ({
-            ...post,
-            categoryName: findCategoryName(post.categoryId, categoriesData),
-            resolvedTags: post.tagIds?.map(tagId => tagsData.find(t => t.id === tagId)).filter(Boolean) as TagType[] || []
-        }));
+        const enrichedPosts = postsData.map(post => {
+            const categoryDetails = findCategoryDetails(post.categoryId, categoriesData);
+            return {
+                ...post,
+                categoryName: categoryDetails.name,
+                categorySlugPath: categoryDetails.slugPath,
+                resolvedTags: post.tagIds?.map(tagId => tagsData.find(t => t.id === tagId)).filter(Boolean) as TagType[] || []
+            };
+        });
 
         setPosts(enrichedPosts);
       } catch (err: any) {
@@ -114,15 +156,15 @@ export default function BlogIndexPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
             <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
-              {post.imageUrl && (
+              {post.featuredImageUrl && (
                 <div className="aspect-[16/9] overflow-hidden">
                   <Image
-                    src={post.imageUrl}
+                    src={post.featuredImageUrl}
                     alt={post.title}
                     width={600}
                     height={338}
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                    data-ai-hint={post.imageHint || 'blog index post'}
+                    data-ai-hint={post.featuredImageHint || 'blog index post'}
                   />
                 </div>
               )}
@@ -134,10 +176,10 @@ export default function BlogIndexPage() {
                   <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
                   {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
-                 {post.categoryName && (
+                 {post.categoryName && post.categorySlugPath && (
                     <div className="text-xs text-muted-foreground flex items-center mt-1">
                         <Folder className="h-3.5 w-3.5 mr-1.5"/>
-                        <Link href={`/blog/category/${allCategories.find(c=>c.id === post.categoryId)?.slug || '#'}`} className="hover:underline">
+                        <Link href={`/blog/category/${post.categorySlugPath}`} className="hover:underline">
                             {post.categoryName}
                         </Link>
                     </div>
