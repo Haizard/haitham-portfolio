@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, FileDown } from "lucide-react";
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, FileDown, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
@@ -36,7 +36,8 @@ const formSchema = z.object({
   topic: z.string().min(5, "Topic must be at least 5 characters."),
   seoKeywords: z.string().min(3, "SEO Keywords must be at least 3 characters."),
   brandVoice: z.string().min(5, "Brand Voice description must be at least 5 characters."),
-  categoryId: z.string().min(1, "Category selection is required.").optional(), // Optional initially, required for publish
+  editableContent: z.string().min(1, "Post content cannot be empty once generated."),
+  categoryId: z.string().min(1, "Category selection is required.").optional(),
   tags: z.string().optional().describe("Comma-separated list of tags"),
   featuredImageUrl: z.string().url("Featured image URL must be valid.").optional().or(z.literal('')),
   featuredImageHint: z.string().optional(),
@@ -65,7 +66,7 @@ const flattenCategories = (categories: CategoryNode[], level = 0): FlattenedCate
   let flatList: FlattenedCategory[] = [];
   const indent = "\u00A0\u00A0".repeat(level * 2); 
   for (const category of categories) {
-    if (!category.id) continue; // Ensure category.id is defined
+    if (!category.id) continue; 
     flatList.push({ value: category.id, label: `${indent}${category.name}`, level });
     if (category.children && category.children.length > 0) {
       flatList = flatList.concat(flattenCategories(category.children, level + 1));
@@ -89,6 +90,7 @@ export function BlogPostGenerator() {
       topic: "",
       seoKeywords: "",
       brandVoice: "",
+      editableContent: "",
       categoryId: "",
       tags: "",
       featuredImageUrl: "",
@@ -127,10 +129,12 @@ export function BlogPostGenerator() {
   }, [toast]);
 
   const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
+  const watchedEditableContent = form.watch('editableContent');
 
   const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
     setIsLoadingAi(true);
     setGeneratedPost(null);
+    form.setValue('editableContent', ''); // Clear previous editable content
     setPublishedSlug(null);
     try {
       const aiInput: GenerateBlogPostInput = {
@@ -139,19 +143,26 @@ export function BlogPostGenerator() {
         brandVoice: values.brandVoice,
       };
       const output = await generateBlogPost(aiInput);
-      if (!output || !output.title) {
+      if (!output || !output.title || !output.content) {
+        toast({ title: "AI Error", description: "AI did not return a valid title or content. Please try again or refine your inputs.", variant: "destructive" });
+        setGeneratedPost(null);
+        form.setValue('editableContent', 'Error: AI failed to generate content.');
         throw new Error("AI did not return a valid title or content.");
       }
       const slug = createSlug(output.title);
       setGeneratedPost({ ...output, slug });
+      form.setValue('editableContent', output.content); // Populate the editable field
       toast({
         title: "Blog Post Content Generated!",
-        description: "Review the content, add images/downloads, category, tags, and then publish.",
+        description: "Review and edit the content, add images/downloads, category, tags, and then publish.",
       });
     } catch (error: any) {
       console.error("Error generating blog post content:", error);
-      toast({ title: "Error generating content", description: error.message || "Failed to generate blog post content.", variant: "destructive" });
+      if (!toast.toasts.find(t => t.title === "AI Error")) { // Avoid duplicate toasts if already set
+        toast({ title: "Error generating content", description: error.message || "Failed to generate blog post content.", variant: "destructive" });
+      }
       setGeneratedPost(null); 
+      form.setValue('editableContent', form.getValues('editableContent') || 'Error: AI failed to generate content.');
     } finally {
       setIsLoadingAi(false);
     }
@@ -170,7 +181,7 @@ export function BlogPostGenerator() {
       return;
     }
     const values = form.getValues();
-    onAiSubmit({ // Call the actual AI submission logic
+    onAiSubmit({
       topic: values.topic,
       seoKeywords: values.seoKeywords,
       brandVoice: values.brandVoice,
@@ -179,8 +190,13 @@ export function BlogPostGenerator() {
 
 
   async function handlePublishPost(values: FormValues) {
-    if (!generatedPost || !generatedPost.slug) {
-      toast({ title: "Error", description: "No AI-generated content to publish.", variant: "destructive" });
+    if (!generatedPost || !generatedPost.slug || !generatedPost.title) {
+      toast({ title: "Error", description: "No AI-generated base content to publish. Please generate content first.", variant: "destructive" });
+      return;
+    }
+     if (!values.editableContent) {
+      form.setError("editableContent", { type: "manual", message: "Post content cannot be empty." });
+      toast({ title: "Validation Error", description: "Post content cannot be empty.", variant: "destructive" });
       return;
     }
     if (!values.categoryId) {
@@ -197,8 +213,8 @@ export function BlogPostGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: generatedPost.title,
-          content: generatedPost.content,
+          title: generatedPost.title, // Use original AI title as source of truth for slug generation
+          content: values.editableContent, // Use the edited content
           slug: generatedPost.slug,
           author: "AI Content Studio", 
           authorAvatar: "https://placehold.co/100x100.png?text=AI", 
@@ -293,25 +309,49 @@ export function BlogPostGenerator() {
             <Card className="shadow-lg animate-in fade-in-50 duration-500 mt-8">
               <CardHeader>
                 <CardTitle className="text-2xl font-headline text-primary flex items-center gap-2">
-                  <BookOpen className="h-7 w-7" /> Generated Content & Details
+                  <Edit className="h-7 w-7" /> Review & Enhance Content
                 </CardTitle>
-                <CardDescription>Review the AI-generated content. Add images, downloads, category, and tags before publishing.</CardDescription>
+                <CardDescription>Review the AI-generated content. Edit the HTML, add images, downloads, category, and tags before publishing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
                 <div>
-                  <h3 className="text-xl font-semibold mb-1">Title:</h3>
+                  <h3 className="text-xl font-semibold mb-1">Original AI Title:</h3>
                   <p className="text-lg p-3 bg-muted rounded-md">{generatedPost.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Slug: <code className="bg-muted px-1 rounded">{generatedPost.slug}</code> (Generated from this title. Title for publishing will be this one.)</p>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">SEO Keyword Reasoning:</h3>
                   <p className="text-sm text-muted-foreground p-4 bg-muted rounded-md">{generatedPost.reasoning}</p>
                 </div>
+                
+                <FormField
+                  control={form.control}
+                  name="editableContent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-lg font-semibold">Editable HTML Content</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="AI-generated HTML content will appear here for editing..."
+                          className="min-h-[400px] font-code text-sm p-3"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Generated HTML Content Preview:</h3>
-                  <ScrollArea className="h-[400px] border rounded-md p-4">
-                    <div className="prose prose-sm sm:prose lg:prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: generatedPost.content }} />
+                  <h3 className="text-lg font-semibold mb-2 mt-4">Live Content Preview:</h3>
+                  <ScrollArea className="h-[400px] border rounded-md p-4 bg-white dark:bg-background">
+                    <div
+                      className="prose prose-sm sm:prose lg:prose-lg max-w-none dark:prose-invert"
+                      dangerouslySetInnerHTML={{ __html: watchedEditableContent || '<p class="text-muted-foreground">Start editing HTML above to see a live preview...</p>' }}
+                    />
                   </ScrollArea>
                 </div>
+
 
                 <Separator />
                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImagePlus className="h-6 w-6 text-primary" /> Images & Files</h3>
@@ -435,3 +475,5 @@ export function BlogPostGenerator() {
     </div>
   );
 }
+
+    
