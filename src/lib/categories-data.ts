@@ -128,18 +128,42 @@ function isSlugUniqueAmongSiblings(siblings: CategoryNode[], slug: string, curre
   return !siblings.some(node => node.slug === slug && node.id !== currentIdToExclude);
 }
 
+// Manual deep cloning function for CategoryNode
+function deepCloneCategoryNode(node: CategoryNode): CategoryNode {
+  const clonedNode: CategoryNode = {
+    id: node.id,
+    name: node.name,
+    slug: node.slug,
+    children: [], // Initialize children before recursion
+  };
+  // Conditionally copy optional properties if they exist
+  if (node.parentId) clonedNode.parentId = node.parentId;
+  if (node.description) clonedNode.description = node.description;
+
+  // Recursively clone children
+  clonedNode.children = (node.children || []).map(child => deepCloneCategoryNode(child));
+  return clonedNode;
+}
+
 export function getAllCategories(): CategoryNode[] {
-  return JSON.parse(JSON.stringify(categoriesStore));
+  try {
+    // Using manual deep clone instead of JSON.parse(JSON.stringify())
+    return categoriesStore.map(node => deepCloneCategoryNode(node));
+  } catch (error) {
+    console.error("Error during manual deep clone in getAllCategories:", error);
+    // Re-throw the error to be caught by the API route's error handler
+    throw error;
+  }
 }
 
 export function getCategoryById(id: string): CategoryNode | undefined {
   const result = findNodeRecursive(categoriesStore, id, 'id');
-  return result ? JSON.parse(JSON.stringify(result)) : undefined;
+  return result ? deepCloneCategoryNode(result) : undefined;
 }
 
 export function getCategoryBySlug(slug: string): CategoryNode | undefined {
   const result = findNodeRecursive(categoriesStore, slug, 'slug');
-  return result ? JSON.parse(JSON.stringify(result)) : undefined;
+  return result ? deepCloneCategoryNode(result) : undefined;
 }
 
 export function addCategory(
@@ -169,7 +193,7 @@ export function addCategory(
     }
     categoriesStore.push(newNode);
   }
-  return JSON.parse(JSON.stringify(newNode));
+  return deepCloneCategoryNode(newNode);
 }
 
 export function updateCategory(
@@ -197,7 +221,7 @@ export function updateCategory(
     node.slug = newSlug;
   }
   
-  return JSON.parse(JSON.stringify(node));
+  return deepCloneCategoryNode(node);
 }
 
 export function deleteCategory(id: string): boolean {
@@ -216,14 +240,15 @@ export function deleteCategory(id: string): boolean {
 
 export function getCategoryPath(categoryId: string): CategoryNode[] {
   const path: CategoryNode[] = [];
-  let currentNode = findNodeRecursive(categoriesStore, categoryId, 'id');
+  let currentNodeInTree = findNodeRecursive(categoriesStore, categoryId, 'id');
 
-  while (currentNode) {
-    path.unshift(JSON.parse(JSON.stringify(currentNode))); // Add a clone to the beginning of the path
-    if (currentNode.parentId) {
-      currentNode = findNodeRecursive(categoriesStore, currentNode.parentId, 'id');
+  while (currentNodeInTree) {
+    // Clone the node before adding to path to avoid modifying original store if path nodes are changed
+    path.unshift(deepCloneCategoryNode(currentNodeInTree));
+    if (currentNodeInTree.parentId) {
+      currentNodeInTree = findNodeRecursive(categoriesStore, currentNodeInTree.parentId, 'id');
     } else {
-      currentNode = undefined;
+      currentNodeInTree = undefined;
     }
   }
   return path;
@@ -234,19 +259,18 @@ export function findCategoryBySlugPathRecursive(slugPath: string[], nodes: Categ
     return undefined;
   }
   const currentSlug = slugPath[0];
-  const foundNode = nodes.find(node => node.slug === currentSlug);
+  const foundNodeInTree = nodes.find(node => node.slug === currentSlug);
 
-  if (!foundNode) {
+  if (!foundNodeInTree) {
     return undefined;
   }
 
   if (slugPath.length === 1) {
-    return JSON.parse(JSON.stringify(foundNode)); // Found the target node
+    return deepCloneCategoryNode(foundNodeInTree); // Found the target node, return its clone
   }
 
-  // If there are more slugs in the path, search in children
-  if (foundNode.children && foundNode.children.length > 0) {
-    return findCategoryBySlugPathRecursive(slugPath.slice(1), foundNode.children);
+  if (foundNodeInTree.children && foundNodeInTree.children.length > 0) {
+    return findCategoryBySlugPathRecursive(slugPath.slice(1), foundNodeInTree.children);
   }
-  return undefined; // Path continues but no children to search
+  return undefined; 
 }
