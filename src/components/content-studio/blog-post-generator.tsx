@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -118,7 +117,7 @@ export function BlogPostGenerator() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true); // Set isClient to true once component mounts
+    setIsClient(true); 
   }, []);
 
 
@@ -168,10 +167,10 @@ export function BlogPostGenerator() {
 
   const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
 
-  const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
+ const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
     setIsLoadingAi(true);
     setGeneratedPost(null);
-    form.setValue('editableContent', ''); 
+    form.setValue('editableContent', '');
     setPublishedSlug(null);
     try {
       const aiInput: GenerateBlogPostInput = {
@@ -180,26 +179,29 @@ export function BlogPostGenerator() {
         brandVoice: values.brandVoice,
       };
       const output = await generateBlogPost(aiInput);
+
       if (!output || !output.title || !output.content) {
-        toast({ title: "AI Error", description: "AI did not return a valid title or content. Please try again or refine your inputs.", variant: "destructive" });
-        setGeneratedPost(null);
-        form.setValue('editableContent', '<p>Error: AI failed to generate content. Please check inputs and try again.</p>');
-        throw new Error("AI did not return a valid title or content.");
+        const errorMsg = "AI did not return a valid title or content. Please try again or refine your inputs.";
+        toast({ title: "AI Error", description: errorMsg, variant: "destructive" });
+        form.setValue('editableContent', `<p>Error: ${errorMsg}</p>`);
+        setGeneratedPost(null); 
+        throw new Error(errorMsg);
       }
+
       const slug = createSlug(output.title);
       setGeneratedPost({ ...output, slug });
-      form.setValue('editableContent', output.content); 
+      form.setValue('editableContent', output.content);
       toast({
         title: "Blog Post Content Generated!",
         description: "Review and edit the content in the editor below, add images/downloads, category, tags, and then publish.",
       });
     } catch (error: any) {
       console.error("Error generating blog post content:", error);
-      if (!toast.toasts.find(t => t.title === "AI Error")) { 
-        toast({ title: "Error generating content", description: error.message || "Failed to generate blog post content.", variant: "destructive" });
+      if (!generatedPost && !toast.toasts.find(t => t.title === "AI Error" && t.description === error.message)) {
+         form.setValue('editableContent', `<p>Error: ${error.message || "AI failed to generate content."}</p>`);
+         toast({ title: "Error generating content", description: error.message || "Failed to generate blog post content.", variant: "destructive" });
       }
-      setGeneratedPost(null); 
-      form.setValue('editableContent', '<p>Error: AI failed to generate content.</p>');
+      setGeneratedPost(null);
     } finally {
       setIsLoadingAi(false);
     }
@@ -513,5 +515,3 @@ export function BlogPostGenerator() {
     </div>
   );
 }
-
-    
