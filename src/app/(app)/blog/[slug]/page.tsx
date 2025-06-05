@@ -21,25 +21,13 @@ import { useToast } from "@/hooks/use-toast";
 import type { BlogPost } from '@/lib/blog-data';
 import type { CategoryNode } from '@/lib/categories-data';
 import type { Tag as TagType } from '@/lib/tags-data'; // Import Tag type
-import { getPostSlugs, getPostBySlug } from '@/lib/blog-data';
+import { getPostBySlug } from '@/lib/blog-data';
 import { translateBlogContent } from '@/ai/flows/translate-blog-content';
 import { CommentSection } from "@/components/blog/comment-section";
 import { RelatedPostsSection } from "@/components/blog/related-posts-section";
 import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 
-async function getAllPostSlugsForStaticParams(): Promise<{ slug: string }[]> {
-  try {
-    const posts = getPostSlugs();
-    return posts.map((post) => ({ slug: post.slug }));
-  } catch (error) {
-    console.error("Error in getAllPostSlugsForStaticParams:", error);
-    return [];
-  }
-}
-
-export async function generateStaticParams() {
-  return getAllPostSlugsForStaticParams();
-}
+// generateStaticParams and its helper removed as this is a Client Component
 
 async function getPostData(slug: string): Promise<BlogPost | null> {
   try {
