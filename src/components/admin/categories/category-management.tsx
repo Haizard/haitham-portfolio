@@ -75,7 +75,7 @@ export function CategoryManagement() {
 
   const handleCreateChildCategory = (parentNode: CategoryNode) => {
     setEditingNode(null);
-    setParentForNewNode({ id: parentNode.id, name: parentNode.name });
+    setParentForNewNode({ id: parentNode.id!, name: parentNode.name });
     setIsFormOpen(true);
   };
 
@@ -90,7 +90,7 @@ export function CategoryManagement() {
   };
 
   const handleDeleteNode = async () => {
-    if (!nodeToDelete) return;
+    if (!nodeToDelete || !nodeToDelete.id) return;
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/categories/${nodeToDelete.id}`, { method: 'DELETE' });
@@ -109,16 +109,18 @@ export function CategoryManagement() {
   };
 
   const renderCategoryRowsRecursive = (nodes: CategoryNode[], level = 0): React.ReactNode[] => {
-    return nodes.flatMap(node => [
+    return nodes.flatMap(node => {
+      if (!node.id) return []; // Ensure node has an ID
+      return [
       <TableRow key={node.id} className="hover:bg-muted/50">
-        <TableCell style={{ paddingLeft: `${level * 24 + 16}px` }}> {/* Increased base padding */}
+        <TableCell style={{ paddingLeft: `${level * 24 + 16}px` }}>
           <div className="flex items-center">
             {node.children && node.children.length > 0 ? (
-              <Button variant="ghost" size="icon" onClick={() => toggleNodeOpen(node.id)} className="h-8 w-8 mr-1">
-                {openNodes[node.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <Button variant="ghost" size="icon" onClick={() => toggleNodeOpen(node.id!)} className="h-8 w-8 mr-1">
+                {openNodes[node.id!] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
             ) : (
-              <span className="inline-block w-8 mr-1"></span> // Placeholder for alignment
+              <span className="inline-block w-8 mr-1"></span> 
             )}
             <span className="font-medium">{node.name}</span>
             {node.children && node.children.length > 0 && (
@@ -127,13 +129,13 @@ export function CategoryManagement() {
           </div>
         </TableCell>
         <TableCell><code className="text-xs bg-muted/50 p-1 rounded">{node.slug}</code></TableCell>
-        <TableCell className="text-sm text-muted-foreground truncate max-w-[300px]">
+        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-[300px]">
           {node.description && node.description.length > 70 ? (
             <Tooltip delayDuration={100}>
               <TooltipTrigger asChild>
                 <span className="cursor-help">{node.description.substring(0, 70)}...</span>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-xs p-2">
+              <TooltipContent side="top" className="max-w-xs text-xs p-2 bg-popover text-popover-foreground border rounded-md shadow-sm">
                 {node.description}
               </TooltipContent>
             </Tooltip>
@@ -141,37 +143,37 @@ export function CategoryManagement() {
             node.description || '-'
           )}
         </TableCell>
-        <TableCell className="text-right">
+        <TableCell className="text-right space-x-1">
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={() => handleCreateChildCategory(node)} className="mr-2">
-                <FolderPlus className="mr-1 h-4 w-4" /> Add Child
+              <Button variant="outline" size="sm" onClick={() => handleCreateChildCategory(node)}>
+                <FolderPlus className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Add Child</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="text-xs p-1">Add Child Category</TooltipContent>
+            <TooltipContent className="text-xs p-1 bg-popover text-popover-foreground border rounded-md shadow-sm">Add Child Category</TooltipContent>
           </Tooltip>
            <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={() => handleEditNode(node)} className="mr-2">
-                <Edit3 className="mr-1 h-4 w-4" /> Edit
+              <Button variant="outline" size="sm" onClick={() => handleEditNode(node)}>
+                <Edit3 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Edit</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="text-xs p-1">Edit Category</TooltipContent>
+            <TooltipContent className="text-xs p-1 bg-popover text-popover-foreground border rounded-md shadow-sm">Edit Category</TooltipContent>
           </Tooltip>
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               <Button variant="destructive" size="sm" onClick={() => confirmDeleteNode(node)}>
-                <Trash2 className="mr-1 h-4 w-4" /> Delete
+                <Trash2 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Delete</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="text-xs p-1">Delete Category</TooltipContent>
+            <TooltipContent className="text-xs p-1 bg-popover text-popover-foreground border rounded-md shadow-sm">Delete Category</TooltipContent>
           </Tooltip>
         </TableCell>
       </TableRow>,
-      ...(node.children && node.children.length > 0 && openNodes[node.id]
+      ...(node.children && node.children.length > 0 && openNodes[node.id!]
         ? renderCategoryRowsRecursive(node.children, level + 1)
         : [])
-    ]);
+    ]});
   };
   
   if (isLoading) {
@@ -185,12 +187,12 @@ export function CategoryManagement() {
   return (
     <TooltipProvider>
       <Card className="shadow-xl mb-8">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center"><ListTree className="mr-2 h-6 w-6 text-primary"/>Category Tree</CardTitle>
             <CardDescription>Manage your hierarchical blog categories.</CardDescription>
           </div>
-          <Button onClick={handleCreateTopLevelCategory} className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleCreateTopLevelCategory} className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
             <PlusCircle className="mr-2 h-5 w-5" /> Create Top-Level Category
           </Button>
         </CardHeader>
@@ -198,14 +200,14 @@ export function CategoryManagement() {
           {categoryTree.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">No categories found. Get started by creating one!</p>
           ) : (
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[40%]">Name</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right w-[300px]">Actions</TableHead>
+                    <TableHead className="min-w-[250px] sm:w-[40%]">Name</TableHead>
+                    <TableHead className="min-w-[150px]">Slug</TableHead>
+                    <TableHead className="min-w-[200px]">Description</TableHead>
+                    <TableHead className="text-right min-w-[280px] sm:w-[320px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -226,6 +228,8 @@ export function CategoryManagement() {
         onSuccess={() => {
           fetchCategoryTree();
           setIsFormOpen(false);
+          setEditingNode(null);
+          setParentForNewNode(null);
         }}
       />
       
@@ -235,7 +239,7 @@ export function CategoryManagement() {
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the category "<strong>{nodeToDelete?.name}</strong>"
-              and all of its descendant categories/subcategories.
+              and all of its descendant categories/subcategories. Any posts in these categories will need to be re-categorized manually.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -250,3 +254,5 @@ export function CategoryManagement() {
     </TooltipProvider>
   );
 }
+
+    

@@ -23,7 +23,7 @@ import type { CategoryNode } from '@/lib/categories-data';
 
 const categoryFormSchema = z.object({
   name: z.string().min(2, "Category name must be at least 2 characters.").max(50, "Category name must be 50 characters or less."),
-  description: z.string().max(200, "Description must be 200 characters or less.").optional(),
+  description: z.string().max(200, "Description must be 200 characters or less.").optional().default(""),
 });
 
 type CategoryFormValues = z.infer<typeof categoryFormSchema>;
@@ -31,9 +31,9 @@ type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 interface CategoryFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  categoryNode?: CategoryNode | null; // For editing an existing node
-  parentId?: string | null;          // For creating a child node under this parent
-  parentName?: string | null;        // For UX in dialog title when creating a child
+  categoryNode?: CategoryNode | null; 
+  parentId?: string | null;          
+  parentName?: string | null;        
   onSuccess: () => void;
 }
 
@@ -51,12 +51,12 @@ export function CategoryFormDialog({ isOpen, onClose, categoryNode, parentId, pa
 
   useEffect(() => {
     if (isOpen) {
-      if (categoryNode) { // Editing existing node
+      if (categoryNode) { 
         form.reset({
           name: categoryNode.name,
           description: categoryNode.description || "",
         });
-      } else { // Creating new node
+      } else { 
         form.reset({
           name: "",
           description: "",
@@ -68,7 +68,7 @@ export function CategoryFormDialog({ isOpen, onClose, categoryNode, parentId, pa
   const handleSubmit = async (values: CategoryFormValues) => {
     setIsSaving(true);
     const isEditing = !!categoryNode;
-    const apiUrl = isEditing ? `/api/categories/${categoryNode.id}` : '/api/categories';
+    const apiUrl = isEditing && categoryNode?.id ? `/api/categories/${categoryNode.id}` : '/api/categories';
     const method = isEditing ? 'PUT' : 'POST';
 
     const payload: any = { ...values };
@@ -92,8 +92,8 @@ export function CategoryFormDialog({ isOpen, onClose, categoryNode, parentId, pa
         title: `Category ${isEditing ? 'Updated' : 'Created'}!`,
         description: `The category "${values.name}" has been successfully ${isEditing ? 'updated' : 'created'}.`,
       });
-      onSuccess();
-      onClose();
+      onSuccess(); // This should trigger a re-fetch in the parent component
+      // onClose(); // Let parent handle closing if needed, or close directly. Kept for now.
     } catch (error: any) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} category:`, error);
       toast({
@@ -118,7 +118,7 @@ export function CategoryFormDialog({ isOpen, onClose, categoryNode, parentId, pa
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
@@ -148,7 +148,6 @@ export function CategoryFormDialog({ isOpen, onClose, categoryNode, parentId, pa
                     placeholder="Briefly describe the category..."
                     className="min-h-[100px]"
                     {...field}
-                    value={field.value ?? ''} 
                   />
                   <FormMessage />
                 </FormItem>
@@ -174,3 +173,5 @@ export function CategoryFormDialog({ isOpen, onClose, categoryNode, parentId, pa
     </Dialog>
   );
 }
+
+    
