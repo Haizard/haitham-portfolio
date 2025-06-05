@@ -1,5 +1,6 @@
 
 import type { Tag } from './tags-data';
+import { findOrCreateTagsByNames } from './tags-data'; // Ensure this is imported if used here, though ideally API handles it
 
 export interface BlogPost {
   slug: string;
@@ -91,23 +92,24 @@ let posts: Record<string, BlogPost> = {
 };
 
 export function getAllPosts(): BlogPost[] {
+  console.log("Current posts in memory (getAllPosts):", Object.keys(posts).length);
   return Object.values(posts);
 }
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
+  console.log(`Attempting to get post by slug: ${slug}. Found: ${!!posts[slug]}`);
   return posts[slug];
 }
 
 export function addPost(post: BlogPost): BlogPost {
-  // The 'tags' field (string array) from input is now processed to tagIds
-  // This logic should ideally be in the API route before calling addPost
-  // but for in-memory, we ensure post object matches the interface.
-  if (!post.tagIds && post.tags && post.tags.length > 0) {
-     // This is a placeholder; actual tag creation/retrieval would happen in API
-     // For mock data, we assume tagIds are pre-populated by the calling logic (API)
-     console.warn("addPost received tags string array, but tagIds is preferred. Ensure API layer handles tag to tagId conversion.");
+  if (posts[post.slug]) {
+    console.warn(`[addPost] Warning: Overwriting existing post with slug '${post.slug}'. This might happen if slug generation is not unique or if API allows updates via POST.`);
+    // Depending on desired behavior, you might throw an error here or allow overwrites.
+    // For now, allowing overwrite for easier testing of content studio without unique slug generation.
   }
   posts[post.slug] = post;
+  console.log(`[addPost] Post added/updated with slug '${post.slug}'. Total posts in memory: ${Object.keys(posts).length}`);
+  console.log(`[addPost] New post data:`, JSON.stringify(post, null, 2));
   return post;
 }
 
