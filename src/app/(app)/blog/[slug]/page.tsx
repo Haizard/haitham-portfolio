@@ -21,18 +21,26 @@ import { useToast } from "@/hooks/use-toast";
 import type { BlogPost } from '@/lib/blog-data';
 import type { CategoryNode } from '@/lib/categories-data';
 import type { Tag as TagType } from '@/lib/tags-data';
-import { getPostBySlug } from '@/lib/blog-data';
+// Removed direct import of: import { getPostBySlug } from '@/lib/blog-data';
 import { translateBlogContent } from '@/ai/flows/translate-blog-content';
 import { CommentSection } from "@/components/blog/comment-section";
 import { RelatedPostsSection } from "@/components/blog/related-posts-section";
 import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 
+// Updated getPostData to fetch from the API endpoint
 async function getPostData(slug: string): Promise<BlogPost | null> {
   try {
-    const post = getPostBySlug(slug);
+    const response = await fetch(`/api/blog/${slug}`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null; // Post not found
+      }
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    const post = await response.json();
     return post || null;
   } catch (error) {
-    console.error(`Error fetching post ${slug}:`, error);
+    console.error(`Error fetching post ${slug} from API:`, error);
     return null;
   }
 }
@@ -61,7 +69,7 @@ export default function BlogPostPage() {
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null); // Added error state
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,14 +81,14 @@ export default function BlogPostPage() {
     setPostTags([]);
     setTranslatedContent(null);
     setSelectedLanguage(undefined);
-    setError(null); // Reset error state
+    setError(null);
 
     if (!slug) {
       setIsLoadingPost(false);
       setIsLoadingCategory(false);
       setIsLoadingTags(false);
       setError("No post slug provided.");
-      notFound(); // Still call Next.js notFound for its routing behavior
+      notFound();
       return;
     }
 
@@ -117,10 +125,11 @@ export default function BlogPostPage() {
           if (fetchedPost.tagIds && fetchedPost.tagIds.length > 0) {
             setIsLoadingTags(true);
             try {
+              // Fetch all tags to resolve names - this could be optimized by a batch fetch API if needed
               const tagsResponse = await fetch('/api/tags');
               if (tagsResponse.ok) {
                 const allTags: TagType[] = await tagsResponse.json();
-                const resolvedTags = allTags.filter(t => fetchedPost.tagIds?.includes(t.id));
+                const resolvedTags = allTags.filter(t => fetchedPost.tagIds?.includes(t.id!));
                 setPostTags(resolvedTags);
               } else {
                 console.warn("Could not fetch all tags to resolve post tags.");
@@ -132,9 +141,6 @@ export default function BlogPostPage() {
             } finally {
               setIsLoadingTags(false);
             }
-          } else if (fetchedPost.tags && fetchedPost.tags.length > 0) {
-             setPostTags(fetchedPost.tags.map(t_name => ({id: t_name, name: t_name, slug: t_name.toLowerCase().replace(/\s+/g, '-')})));
-             setIsLoadingTags(false);
           } else {
             setPostTags([]);
             setIsLoadingTags(false);
@@ -146,12 +152,14 @@ export default function BlogPostPage() {
       } catch (fetchError: any) {
         console.error("Error fetching post data:", fetchError);
         setError(fetchError.message || "An error occurred while trying to load the post.");
-        notFound();
+        // notFound() might have already been called if post is null. 
+        // If an error happens before, ensure notFound() is called here or handled by error display.
+        if (!post) notFound();
       } finally {
         setIsLoadingPost(false);
-        // Ensure category/tag loading are false if not already set
-        if (isLoadingCategory) setIsLoadingCategory(false);
-        if (isLoadingTags) setIsLoadingTags(false);
+        // Fallback ensures these are false if their specific finally blocks didn't run due to an earlier error
+        if (isLoadingCategory) setIsLoadingCategory(false); 
+        if (isLoadingTags) setIsLoadingTags(false);      
       }
     }
 
@@ -319,3 +327,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
+
