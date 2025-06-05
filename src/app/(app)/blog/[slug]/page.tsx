@@ -21,6 +21,7 @@ import type { BlogPost } from '@/lib/blog-data';
 import { getPostSlugs, getPostBySlug } from '@/lib/blog-data';
 import { translateBlogContent } from '@/ai/flows/translate-blog-content';
 import { CommentSection } from "@/components/blog/comment-section";
+import { RelatedPostsSection } from "@/components/blog/related-posts-section"; // Added import
 
 // Data fetching functions still outside the component for generateStaticParams
 async function getAllPostSlugsForStaticParams(): Promise<{ slug: string }[]> {
@@ -212,13 +213,15 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
       <CommentSection postId={post.slug} initialComments={post.comments || []} />
 
-      {/* Placeholder for Related Posts - to be implemented in Phase 2 */}
-      {/* <Separator className="my-12" />
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Related Posts</h2>
-        <p className="text-muted-foreground">Related posts will appear here.</p>
-      </div> */}
+      <Separator className="my-12" />
+      
+      <RelatedPostsSection 
+        category={post.category} 
+        subcategory={post.subcategory} 
+        currentPostSlug={post.slug} 
+      />
 
     </div>
   );
 }
+

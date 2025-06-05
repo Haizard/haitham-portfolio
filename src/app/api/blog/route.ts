@@ -1,9 +1,21 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getAllPosts, addPost, type BlogPost, getPostBySlug as getExistingPostBySlug } from '@/lib/blog-data';
+import { getAllPosts, addPost, type BlogPost, getPostBySlug as getExistingPostBySlug, getPostsByCategory } from '@/lib/blog-data';
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const subcategory = searchParams.get('subcategory');
+    const limitStr = searchParams.get('limit');
+    const excludeSlug = searchParams.get('excludeSlug');
+
+    if (category) {
+      const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+      const relatedPosts = getPostsByCategory(category, subcategory || undefined, limit, excludeSlug || undefined);
+      return NextResponse.json(relatedPosts);
+    }
+
     const allPosts = getAllPosts();
     return NextResponse.json(allPosts);
   } catch (error) {
