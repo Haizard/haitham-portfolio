@@ -128,7 +128,7 @@ export default function ServicesPage() {
     // the /api/auth/google/connect route will simulate success and redirect back with
     // ?google_auth_simulated_success=true. This allows UI testing.
     // Otherwise, it proceeds with the actual Google OAuth flow.
-    router.push('/api/auth/google/connect'); 
+    window.location.href = '/api/auth/google/connect'; 
     // setIsGoogleCalendarConnected(true) will be handled by the useEffect reacting to callback.
     // setIsProcessingAuth(false) will also be implicitly handled when page reloads or state changes from callback.
   };
