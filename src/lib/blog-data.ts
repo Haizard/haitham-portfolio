@@ -1,6 +1,9 @@
 
 import { ObjectId } from 'mongodb';
 import { getCollection } from './mongodb';
+import type { CategoryNode, getCategoryPath as getCategoryPathType } from './categories-data'; // For enriched data
+import type { Tag, getTagsByIds as getTagsByIdsType } from './tags-data'; // For enriched data
+
 
 const POSTS_COLLECTION = 'posts';
 
@@ -44,6 +47,11 @@ export interface BlogPost {
   originalLanguage: string;
   categoryId: string;
   comments?: Comment[];
+
+  // Fields for enriched data, typically added by API resolvers
+  categoryName?: string;
+  categorySlugPath?: string; // e.g. "parent-slug/child-slug"
+  resolvedTags?: Tag[];
 }
 
 function docToBlogPost(doc: any): BlogPost {
@@ -62,21 +70,60 @@ function docToBlogPost(doc: any): BlogPost {
   } as BlogPost;
 }
 
-export async function getAllPosts(): Promise<BlogPost[]> {
+export async function getAllPosts(enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
   console.log("Attempting to fetch all posts from DB");
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
   const postsCursor = await collection.find({}).sort({ date: -1 });
-  const postsArray = await postsCursor.toArray();
+  let postsArray = await postsCursor.toArray();
   console.log(`Fetched ${postsArray.length} posts from DB`);
-  return postsArray.map(docToBlogPost);
+  
+  let results = postsArray.map(docToBlogPost);
+
+  if (enrich && categoryDataFetcher && tagDataFetcher) {
+    results = await Promise.all(results.map(async (post) => {
+      let categoryName: string | undefined;
+      let categorySlugPath: string | undefined;
+      let resolvedTags: Tag[] = [];
+
+      if (post.categoryId) {
+        const path = await categoryDataFetcher(post.categoryId);
+        if (path && path.length > 0) {
+          categoryName = path[path.length - 1].name;
+          categorySlugPath = path.map(p => p.slug).join('/');
+        }
+      }
+      if (post.tagIds && post.tagIds.length > 0) {
+        resolvedTags = await tagDataFetcher(post.tagIds);
+      }
+      return { ...post, categoryName, categorySlugPath, resolvedTags };
+    }));
+  }
+  return results;
 }
 
-export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
+
+export async function getPostBySlug(slug: string, enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost | null> {
   console.log(`Attempting to get post by slug: ${slug} from DB`);
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
   const postDoc = await collection.findOne({ slug });
   console.log(`Post found for slug ${slug}:`, !!postDoc);
-  return postDoc ? docToBlogPost(postDoc) : null;
+  if (!postDoc) return null;
+
+  let post = docToBlogPost(postDoc);
+
+  if (enrich && categoryDataFetcher && tagDataFetcher) {
+      if (post.categoryId) {
+        const path = await categoryDataFetcher(post.categoryId);
+        if (path && path.length > 0) {
+          post.categoryName = path[path.length - 1].name;
+          post.categorySlugPath = path.map(p => p.slug).join('/');
+        }
+      }
+      if (post.tagIds && post.tagIds.length > 0) {
+        post.resolvedTags = await tagDataFetcher(post.tagIds);
+      }
+  }
+  return post;
 }
 
 export async function getPostById(id: string): Promise<BlogPost | null> {
@@ -89,8 +136,8 @@ export async function getPostById(id: string): Promise<BlogPost | null> {
   return postDoc ? docToBlogPost(postDoc) : null;
 }
 
-export async function addPost(postData: Omit<BlogPost, 'id' | '_id' | 'date'> & { date?: string }): Promise<BlogPost> {
-  const collection = await getCollection<Omit<BlogPost, 'id' | '_id'>>(POSTS_COLLECTION);
+export async function addPost(postData: Omit<BlogPost, 'id' | '_id' | 'date' | 'categoryName' | 'categorySlugPath' | 'resolvedTags'> & { date?: string }): Promise<BlogPost> {
+  const collection = await getCollection<Omit<BlogPost, 'id' | '_id' | 'categoryName' | 'categorySlugPath' | 'resolvedTags'>>(POSTS_COLLECTION);
   
   const existingPost = await collection.findOne({ slug: postData.slug });
   if (existingPost) {
@@ -114,11 +161,11 @@ export async function addPost(postData: Omit<BlogPost, 'id' | '_id' | 'date'> & 
     id: result.insertedId.toString(),
     ...docToInsert
   };
-  console.log(`[addPost] Post added with slug '${newPost.slug}'. Total posts might require re-fetch to see updated count from DB.`);
+  console.log(`[addPost] Post added with slug '${newPost.slug}'.`);
   return newPost;
 }
 
-export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' >>): Promise<BlogPost | null> {
+export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' | 'categoryName' | 'categorySlugPath' | 'resolvedTags' >>): Promise<BlogPost | null> {
   if (!ObjectId.isValid(id)) {
     console.log(`Invalid ObjectId for updatePost: ${id}`);
     return null;
@@ -140,7 +187,7 @@ export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id
 }
 
 
-export async function getPostsByCategoryId(categoryId: string, limit?: number, excludeSlug?: string): Promise<BlogPost[]> {
+export async function getPostsByCategoryId(categoryId: string, limit?: number, excludeSlug?: string, enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
   if (!ObjectId.isValid(categoryId)) {
     console.warn(`getPostsByCategoryId: Invalid categoryId format: ${categoryId}`);
     return [];
@@ -155,10 +202,31 @@ export async function getPostsByCategoryId(categoryId: string, limit?: number, e
     cursor.limit(limit);
   }
   const postsArray = await cursor.toArray();
-  return postsArray.map(docToBlogPost);
+  let results = postsArray.map(docToBlogPost);
+
+  if (enrich && categoryDataFetcher && tagDataFetcher) {
+     results = await Promise.all(results.map(async (post) => {
+      let categoryName: string | undefined;
+      let categorySlugPath: string | undefined;
+      let resolvedTags: Tag[] = [];
+
+      if (post.categoryId) {
+        const path = await categoryDataFetcher(post.categoryId);
+        if (path && path.length > 0) {
+          categoryName = path[path.length - 1].name;
+          categorySlugPath = path.map(p => p.slug).join('/');
+        }
+      }
+      if (post.tagIds && post.tagIds.length > 0) {
+        resolvedTags = await tagDataFetcher(post.tagIds);
+      }
+      return { ...post, categoryName, categorySlugPath, resolvedTags };
+    }));
+  }
+  return results;
 }
 
-export async function getPostsByTagId(tagId: string, limit?: number, excludeSlug?: string): Promise<BlogPost[]> {
+export async function getPostsByTagId(tagId: string, limit?: number, excludeSlug?: string, enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
    if (!ObjectId.isValid(tagId)) {
     console.warn(`getPostsByTagId: Invalid tagId format: ${tagId}`);
     return [];
@@ -173,7 +241,28 @@ export async function getPostsByTagId(tagId: string, limit?: number, excludeSlug
     cursor.limit(limit);
   }
   const postsArray = await cursor.toArray();
-  return postsArray.map(docToBlogPost);
+  let results = postsArray.map(docToBlogPost);
+
+  if (enrich && categoryDataFetcher && tagDataFetcher) {
+     results = await Promise.all(results.map(async (post) => {
+      let categoryName: string | undefined;
+      let categorySlugPath: string | undefined;
+      let resolvedTags: Tag[] = [];
+
+      if (post.categoryId) {
+        const path = await categoryDataFetcher(post.categoryId);
+        if (path && path.length > 0) {
+          categoryName = path[path.length - 1].name;
+          categorySlugPath = path.map(p => p.slug).join('/');
+        }
+      }
+      if (post.tagIds && post.tagIds.length > 0) {
+        resolvedTags = await tagDataFetcher(post.tagIds);
+      }
+      return { ...post, categoryName, categorySlugPath, resolvedTags };
+    }));
+  }
+  return results;
 }
 
 export async function addCommentToPost(postSlug: string, commentData: Omit<Comment, 'id'>): Promise<Comment | null> {
@@ -201,5 +290,17 @@ export async function addCommentToPost(postSlug: string, commentData: Omit<Comme
   } else {
     console.warn(`[addCommentToPost] Failed to add comment to post '${postSlug}'.`);
     return null;
+  }
+}
+
+export async function deletePostBySlug(slug: string): Promise<boolean> {
+  const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
+  const result = await collection.deleteOne({ slug: slug });
+  if (result.deletedCount === 1) {
+    console.log(`[deletePostBySlug] Post with slug '${slug}' deleted successfully.`);
+    return true;
+  } else {
+    console.warn(`[deletePostBySlug] Post with slug '${slug}' not found or delete failed.`);
+    return false;
   }
 }

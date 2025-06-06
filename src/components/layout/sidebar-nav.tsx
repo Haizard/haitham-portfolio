@@ -17,7 +17,8 @@ import {
   Lightbulb, 
   Settings,
   FolderKanban,
-  Tags, // Added for Tag Management
+  Tags,
+  FileText, // Added for Manage Posts
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -39,6 +40,7 @@ const navItems = [
   { 
     group: "Admin",
     items: [
+      { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
     ]

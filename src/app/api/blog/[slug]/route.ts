@@ -1,8 +1,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getPostBySlug, updatePost } from '@/lib/blog-data';
+import { getPostBySlug, updatePost, deletePostBySlug } from '@/lib/blog-data';
 import type { BlogPost } from '@/lib/blog-data';
 import { findOrCreateTagsByNames, getTagsByIds, type Tag } from '@/lib/tags-data';
+import { getCategoryPath } from '@/lib/categories-data';
 import { ObjectId } from 'mongodb';
 
 export async function GET(
@@ -11,17 +12,10 @@ export async function GET(
 ) {
   try {
     const slug = params.slug;
-    const post = await getPostBySlug(slug);
+    const post = await getPostBySlug(slug, true, getCategoryPath, getTagsByIds); // Enrich data
 
     if (post) {
-      let enrichedPost: any = { ...post };
-      if (post.tagIds && post.tagIds.length > 0) {
-        const resolvedTags = await getTagsByIds(post.tagIds);
-        enrichedPost.resolvedTags = resolvedTags;
-      } else {
-        enrichedPost.resolvedTags = [];
-      }
-      return NextResponse.json(enrichedPost);
+      return NextResponse.json(post);
     } else {
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
@@ -51,7 +45,7 @@ export async function PUT(
         return NextResponse.json({ message: "Invalid categoryId format for update" }, { status: 400 });
     }
 
-    const existingPost = await getPostBySlug(slug);
+    const existingPost = await getPostBySlug(slug); // Don't need enriched data for update check
     if (!existingPost || !existingPost.id) {
       return NextResponse.json({ message: "Post to update not found" }, { status: 404 });
     }
@@ -62,7 +56,7 @@ export async function PUT(
       tagIds = createdOrFoundTags.map(t => t.id!);
     }
 
-    const updateData: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date'>> = {
+    const updateData: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'categoryName' | 'categorySlugPath' | 'resolvedTags'>> = {
       title,
       content,
       author: author || existingPost.author,
@@ -75,12 +69,7 @@ export async function PUT(
       originalLanguage: originalLanguage || existingPost.originalLanguage,
       categoryId: categoryId || existingPost.categoryId,
       // Comments are typically handled separately or appended, not overwritten wholesale by main post update.
-      // For simplicity, we're not updating comments here.
     };
-
-    // Ensure date is not accidentally overwritten if not provided in body
-    // In fact, date should typically not be updated unless explicitly intended
-    // For now, updatePost in blog-data.ts will preserve the original date.
 
     const updatedPost = await updatePost(existingPost.id, updateData);
     if (!updatedPost) {
@@ -90,5 +79,24 @@ export async function PUT(
   } catch (error: any) {
     console.error(`API - Failed to update post ${params.slug}:`, error);
     return NextResponse.json({ message: error.message || `Failed to update post ${params.slug}` }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    const slug = params.slug;
+    const success = await deletePostBySlug(slug);
+
+    if (success) {
+      return NextResponse.json({ message: "Post deleted successfully" });
+    } else {
+      return NextResponse.json({ message: "Post not found or delete failed" }, { status: 404 });
+    }
+  } catch (error: any) {
+    console.error(`API - Failed to delete post ${params.slug}:`, error);
+    return NextResponse.json({ message: error.message || `Failed to delete post ${params.slug}` }, { status: 500 });
   }
 }
