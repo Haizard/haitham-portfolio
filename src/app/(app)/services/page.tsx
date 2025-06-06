@@ -30,7 +30,7 @@ export default function ServicesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isGoogleCalendarConnected, setIsGoogleCalendarConnected] = useState(false);
-  const [isProcessingAuth, setIsProcessingAuth] = useState(false); // Renamed for clarity
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -41,17 +41,28 @@ export default function ServicesPage() {
     try {
       const response = await fetch('/api/services');
       if (!response.ok) {
-        throw new Error('Failed to fetch services');
+        throw new Error(`Failed to fetch services. Status: ${response.status}`);
       }
-      const data: Service[] = await response.json();
-      setServices(data);
-    } catch (error) {
-      console.error(error);
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setServices(data as Service[]);
+      } else {
+        console.error("API returned non-array data for services:", data);
+        toast({
+          title: "Data Error",
+          description: "Received unexpected data format for services.",
+          variant: "destructive",
+        });
+        setServices([]); 
+      }
+    } catch (error: any) {
+      console.error("Error in fetchServices:", error);
       toast({
         title: "Error",
-        description: "Could not load services.",
+        description: error.message || "Could not load services.",
         variant: "destructive",
       });
+      setServices([]); 
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +76,7 @@ export default function ServicesPage() {
     const googleAuthSuccess = searchParams.get('google_auth_success');
     const googleAuthError = searchParams.get('google_auth_error');
     const googleAuthSimulatedSuccess = searchParams.get('google_auth_simulated_success');
-    const currentPath = '/services'; // Define current path to avoid using window.location directly if not needed
+    const currentPath = '/services'; 
 
     if (googleAuthSuccess === 'true') {
       setIsGoogleCalendarConnected(true);
@@ -81,11 +92,6 @@ export default function ServicesPage() {
       router.replace(currentPath, { scroll: false });
     }
     
-    // TODO: In a real app, you would also fetch the actual connection status from your backend here
-    // (e.g., check if valid tokens for the user exist in your database)
-    // to accurately set isGoogleCalendarConnected on initial load if already connected.
-    // For now, it relies on the redirect flow, simulation, or manual disconnect.
-
   }, [searchParams, toast, router]);
 
 
@@ -104,7 +110,7 @@ export default function ServicesPage() {
   };
 
   const handleDeleteService = async () => {
-    if (!serviceToDelete) return;
+    if (!serviceToDelete || !serviceToDelete.id) return;
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/services/${serviceToDelete.id}`, { method: 'DELETE' });
@@ -124,19 +130,13 @@ export default function ServicesPage() {
 
   const handleGoogleCalendarConnect = () => {
     setIsProcessingAuth(true);
-    // If GOOGLE_CLIENT_ID is not set (e.g. in development without .env.local setup),
-    // the /api/auth/google/connect route will simulate success and redirect back with
-    // ?google_auth_simulated_success=true. This allows UI testing.
-    // Otherwise, it proceeds with the actual Google OAuth flow.
     window.location.href = '/api/auth/google/connect'; 
-    // setIsGoogleCalendarConnected(true) will be handled by the useEffect reacting to callback.
-    // setIsProcessingAuth(false) will also be implicitly handled when page reloads or state changes from callback.
   };
 
   const handleGoogleCalendarDisconnect = async () => {
     setIsProcessingAuth(true); 
     try {
-      const response = await fetch('/api/auth/google/disconnect'); // This should be a GET or POST as per your API route
+      const response = await fetch('/api/auth/google/disconnect'); 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to disconnect Google Calendar.');
@@ -146,9 +146,6 @@ export default function ServicesPage() {
       toast({ title: "Google Calendar Disconnected", description: data.message || "Bookings will no longer sync." });
     } catch (error: any) {
       toast({ title: "Disconnection Error", description: error.message, variant: "destructive" });
-      // Optionally, force frontend to disconnected state even if API fails,
-      // as the user's intent is to disconnect. Consider this based on your app's needs.
-      // setIsGoogleCalendarConnected(false); 
     } finally {
       setIsProcessingAuth(false);
     }
