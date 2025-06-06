@@ -4,17 +4,17 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const TIKTOK_CLIENT_ID = process.env.TIKTOK_CLIENT_ID;
 const TIKTOK_CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET;
-const TIKTOK_REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI; // e.g., http://localhost:9002/api/auth/tiktok/callback
+const TIKTOK_REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI;
 const TIKTOK_SCOPES = 'user.info.basic'; // Example scope, adjust as needed
 
 export async function GET(request: NextRequest) {
+  // Simulation should be true if ID or Secret are missing or are the exact placeholder strings
   const useSimulation =
     !TIKTOK_CLIENT_ID || TIKTOK_CLIENT_ID === "YOUR_TIKTOK_CLIENT_ID" ||
-    !TIKTOK_CLIENT_SECRET || TIKTOK_CLIENT_SECRET === "YOUR_TIKTOK_CLIENT_SECRET" ||
-    !TIKTOK_REDIRECT_URI;
+    !TIKTOK_CLIENT_SECRET || TIKTOK_CLIENT_SECRET === "YOUR_TIKTOK_CLIENT_SECRET";
 
   if (useSimulation) {
-    console.warn("TikTok OAuth Connect: Simulating connection due to missing/placeholder credentials. Redirecting directly to /social-media with simulation parameters.");
+    console.warn("TikTok OAuth Connect: Simulating connection due to missing/placeholder Client ID or Secret. Redirecting relatively to /social-media.");
     
     const simulationParams = new URLSearchParams();
     simulationParams.set('tiktok_auth_simulated_success', 'true');
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     
     // Use a relative path for the redirect.
     const redirectPath = `/social-media?${simulationParams.toString()}`;
-    return NextResponse.redirect(new URL(redirectPath, request.url).toString()); // Construct full URL for redirect
+    return NextResponse.redirect(new URL(redirectPath, request.url).toString());
   }
 
   // Proceed with real OAuth flow
@@ -37,18 +37,15 @@ export async function GET(request: NextRequest) {
   tikTokAuthUrl.searchParams.set('response_type', 'code');
   tikTokAuthUrl.searchParams.set('redirect_uri', TIKTOK_REDIRECT_URI!);
   tikTokAuthUrl.searchParams.set('state', state);
-  // TikTok specific: client_id is referred to as client_key by TikTok.
-  // Optional: You might need additional parameters like 'prompt' depending on TikTok's requirements.
 
   const response = NextResponse.redirect(tikTokAuthUrl.toString());
 
-  // Store the state in an HttpOnly cookie to verify it on callback
   response.cookies.set('tiktok_oauth_state', state, {
     path: '/',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Use Secure in production
-    sameSite: 'lax', // Lax is usually fine for OAuth redirects
-    maxAge: 60 * 10, // 10 minutes validity for the state cookie
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 10, // 10 minutes validity
   });
 
   return response;
