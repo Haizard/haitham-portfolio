@@ -1,16 +1,25 @@
 
 "use client";
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Loader2, ExternalLink, CalendarDays, Newspaper, Folder, Tag as TagIcon, Search, XCircle } from 'lucide-react';
+import { Loader2, ExternalLink, CalendarDays, Folder, Tag as TagIcon, User, MessageSquare } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
 import { Badge } from '@/components/ui/badge';
 import type { Tag as TagType } from '@/lib/tags-data';
+import { TrendingPostsCarousel } from '@/components/blog/TrendingPostsCarousel';
+import { AuthorCard } from '@/components/blog/sidebar/AuthorCard';
+import { SearchWidget } from '@/components/blog/sidebar/SearchWidget';
+import { RecentPostsWidget } from '@/components/blog/sidebar/RecentPostsWidget';
+import { CategoriesWidget } from '@/components/blog/sidebar/CategoriesWidget';
+import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
+import { InstagramWidget } from '@/components/blog/sidebar/InstagramWidget';
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 interface EnrichedPost extends BlogPost {
   categoryName?: string;
@@ -18,56 +27,66 @@ interface EnrichedPost extends BlogPost {
   resolvedTags?: TagType[];
 }
 
-async function fetchBlogPosts(searchQuery?: string): Promise<EnrichedPost[]> {
+async function fetchBlogData(searchQuery?: string, limit?: number, excludeSlug?: string): Promise<EnrichedPost[]> {
   let apiUrl = '/api/blog?enriched=true';
   if (searchQuery) {
     apiUrl += `&search=${encodeURIComponent(searchQuery)}`;
   }
+  if (limit) {
+    apiUrl += `&limit=${limit}`;
+  }
+  if (excludeSlug) {
+    apiUrl += `&excludeSlug=${encodeURIComponent(excludeSlug)}`;
+  }
   const response = await fetch(apiUrl);
   if (!response.ok) {
-    throw new Error('Failed to fetch posts');
+    throw new Error(`Failed to fetch posts: ${response.statusText}`);
   }
   return response.json();
 }
 
 
 export default function BlogIndexPage() {
-  const [posts, setPosts] = useState<EnrichedPost[]>([]);
+  const [trendingPosts, setTrendingPosts] = useState<EnrichedPost[]>([]);
+  const [mainPosts, setMainPosts] = useState<EnrichedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchInput, setSearchInput] = useState("");
   const [currentSearchQuery, setCurrentSearchQuery] = useState("");
 
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const postsData = await fetchBlogPosts(currentSearchQuery);
-        setPosts(postsData);
-      } catch (err: any) {
-        console.error("Error in BlogIndexPage:", err);
-        setError(err.message || "Could not load blog posts.");
-        setPosts([]);
-      } finally {
-        setIsLoading(false);
-      }
+  const loadBlogPosts = useCallback(async (query: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch trending posts (e.g., latest 3-5, ensure they are not duplicated in main list if possible)
+      // For simplicity, we'll fetch latest 5 for trending and then latest for main list, duplication might occur.
+      // A more advanced backend could handle "trending" flags or distinct fetching.
+      const fetchedTrendingPosts = await fetchBlogData(undefined, 5);
+      setTrendingPosts(fetchedTrendingPosts);
+
+      // Fetch main posts, excluding slugs from trending if necessary, or just fetch paginated
+      const fetchedMainPosts = await fetchBlogData(query, 10); // Example: fetch 10 main posts
+      setMainPosts(fetchedMainPosts);
+
+    } catch (err: any) {
+      console.error("Error in BlogIndexPage:", err);
+      setError(err.message || "Could not load blog content.");
+      setTrendingPosts([]);
+      setMainPosts([]);
+    } finally {
+      setIsLoading(false);
     }
-    fetchData();
-  }, [currentSearchQuery]);
+  }, []);
 
-  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setCurrentSearchQuery(searchInput);
+  useEffect(() => {
+    loadBlogPosts(currentSearchQuery);
+  }, [currentSearchQuery, loadBlogPosts]);
+
+  const handleSearch = (query: string) => {
+    setCurrentSearchQuery(query);
   };
 
-  const clearSearch = () => {
-    setSearchInput("");
-    setCurrentSearchQuery("");
-  };
-
-  if (isLoading) {
-    return (
+  if (error && isLoading) { // Show loader initially even if there's an error from previous attempt
+     return (
       <div className="container mx-auto py-8 px-4 flex justify-center items-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
@@ -77,124 +96,129 @@ export default function BlogIndexPage() {
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4 text-center">
-        <h1 className="text-2xl font-bold text-destructive mb-4">Error</h1>
+        <h1 className="text-2xl font-bold text-destructive mb-4">Error Loading Blog</h1>
         <p className="text-muted-foreground">{error}</p>
+        <Button onClick={() => loadBlogPosts(currentSearchQuery)} className="mt-4">Try Again</Button>
       </div>
     );
   }
-
+  
   return (
     <div className="container mx-auto py-8 px-4">
-      <header className="mb-10 text-center">
-        <h1 className="text-5xl font-bold tracking-tight font-headline mb-4 flex items-center justify-center">
-          <Newspaper className="mr-4 h-12 w-12 text-primary" />
-          CreatorOS Blog
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Latest articles, insights, and updates from our creators.
-        </p>
-      </header>
-
-      <div className="mb-10 max-w-xl mx-auto">
-        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 p-2 border rounded-lg shadow-sm bg-card">
-          <Search className="h-5 w-5 text-muted-foreground ml-2" />
-          <Input
-            type="text"
-            placeholder="Search blog posts..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="flex-grow border-0 focus:ring-0 focus-visible:ring-offset-0 text-base"
-          />
-          {searchInput && (
-            <Button type="button" variant="ghost" size="icon" onClick={clearSearch} className="h-8 w-8">
-              <XCircle className="h-5 w-5 text-muted-foreground" />
-            </Button>
+      <div className="lg:grid lg:grid-cols-12 lg:gap-12">
+        {/* Main Content Area */}
+        <main className="lg:col-span-8 xl:col-span-9">
+          {isLoading && trendingPosts.length === 0 ? (
+            <div className="flex justify-center items-center h-64 mb-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          ) : !isLoading && trendingPosts.length === 0 && !currentSearchQuery ? (
+             <div className="py-8 text-center text-muted-foreground">No trending posts available.</div>
+          ) : (
+            <TrendingPostsCarousel posts={trendingPosts} />
           )}
-          <Button type="submit" className="bg-primary hover:bg-primary/90">
-            Search
-          </Button>
-        </form>
-      </div>
-      
-      {currentSearchQuery && (
-        <div className="mb-8 text-center">
-          <p className="text-lg text-muted-foreground">
-            Showing results for: <span className="font-semibold text-primary">{currentSearchQuery}</span>
-          </p>
-          {posts.length === 0 && !isLoading && (
-             <p className="mt-2">No posts found matching your search.</p>
-          )}
-        </div>
-      )}
+          
+          <Separator className="my-8 md:my-12" />
 
-
-      {posts.length === 0 && !isLoading && !currentSearchQuery && (
-        <p className="text-center text-muted-foreground text-lg py-10">No blog posts found yet. Stay tuned!</p>
-      )}
-      
-      {posts.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map(post => (
-            <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
-              {post.featuredImageUrl && (
-                <div className="aspect-[16/9] overflow-hidden">
-                  <Image
-                    src={post.featuredImageUrl}
-                    alt={post.title}
-                    width={600}
-                    height={338}
-                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                    data-ai-hint={post.featuredImageHint || 'blog index post'}
-                  />
-                </div>
+          {currentSearchQuery && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold">
+                Search Results for: <span className="text-primary">{currentSearchQuery}</span>
+              </h2>
+              {mainPosts.length === 0 && !isLoading && (
+                <p className="mt-2 text-muted-foreground">No posts found matching your search.</p>
               )}
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                  <Link href={`/blog/${post.slug}`}>{post.title}</Link>
-                </CardTitle>
-                <div className="text-xs text-muted-foreground flex items-center mt-1 space-x-3">
-                  <div className="flex items-center">
-                    <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
-                    {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-                   {post.categoryName && post.categorySlugPath && (
-                    <div className="flex items-center">
-                        <Folder className="h-3.5 w-3.5 mr-1.5 text-primary/80"/>
-                        <Link href={`/blog/category/${post.categorySlugPath}`} className="hover:underline hover:text-primary transition-colors">
-                            {post.categoryName}
-                        </Link>
-                    </div>
+            </div>
+          )}
+          
+          {isLoading && mainPosts.length === 0 ? (
+             <div className="grid grid-cols-1 gap-8">
+                {[1,2,3].map(i => ( // Skeleton loaders
+                    <Card key={`skeleton-${i}`} className="shadow-lg flex flex-col md:flex-row overflow-hidden group">
+                        <div className="md:w-1/3 lg:w-2/5 xl:w-1/3 h-56 md:h-auto bg-muted animate-pulse"></div>
+                        <div className="p-6 flex flex-col justify-between md:w-2/3 lg:w-3/5 xl:w-2/3">
+                            <div>
+                                <div className="h-4 bg-muted animate-pulse rounded w-1/4 mb-2"></div>
+                                <div className="h-6 bg-muted animate-pulse rounded w-3/4 mb-3"></div>
+                                <div className="h-4 bg-muted animate-pulse rounded w-full mb-1"></div>
+                                <div className="h-4 bg-muted animate-pulse rounded w-5/6 mb-4"></div>
+                            </div>
+                            <div className="flex items-center space-x-3 mt-auto">
+                                <div className="h-8 w-8 bg-muted animate-pulse rounded-full"></div>
+                                <div className="h-4 bg-muted animate-pulse rounded w-1/3"></div>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+             </div>
+          ) : mainPosts.length === 0 && !currentSearchQuery ? (
+            <p className="text-center text-muted-foreground text-lg py-10">No blog posts found yet. Stay tuned!</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-8">
+              {mainPosts.map(post => (
+                <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col md:flex-row overflow-hidden group">
+                  {post.featuredImageUrl && (
+                    <Link href={`/blog/${post.slug}`} className="md:w-1/3 lg:w-2/5 xl:w-1/3 block h-56 md:h-auto relative overflow-hidden">
+                      <Image
+                        src={post.featuredImageUrl}
+                        alt={post.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 40vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        data-ai-hint={post.featuredImageHint || 'blog list item'}
+                      />
+                    </Link>
                   )}
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {post.content.replace(/<[^>]+>/g, '').substring(0, 120)}...
-                </p>
-                 {post.resolvedTags && post.resolvedTags.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5 items-center">
-                        <TagIcon className="h-3.5 w-3.5 mr-1 text-primary/80" />
-                        {post.resolvedTags.map(tag => (
-                             <Link key={tag.id} href={`/blog/tag/${tag.slug}`}>
-                                <Badge variant="secondary" className="text-xs hover:bg-accent hover:text-accent-foreground transition-colors">
-                                    {tag.name}
-                                </Badge>
-                            </Link>
-                        ))}
+                  <div className="p-5 md:p-6 flex flex-col justify-between md:w-2/3 lg:w-3/5 xl:w-2/3">
+                    <div>
+                      <div className="mb-2 flex flex-wrap gap-2 items-center">
+                        {post.categoryName && post.categorySlugPath && (
+                           <Link href={`/blog/category/${post.categorySlugPath}`}>
+                             <Badge variant="outline" className="text-xs uppercase tracking-wider text-primary border-primary hover:bg-primary/10">
+                               {post.categoryName}
+                             </Badge>
+                           </Link>
+                        )}
+                        {/* Add more tags here if needed from example */}
+                      </div>
+                      <CardTitle className="text-xl md:text-2xl font-semibold font-headline line-clamp-2 group-hover:text-primary transition-colors">
+                        <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+                      </CardTitle>
+                      <CardDescription className="mt-2 text-sm text-muted-foreground line-clamp-2 md:line-clamp-3">
+                        {post.content.replace(/<[^>]+>/g, '').substring(0, 120)}...
+                      </CardDescription>
                     </div>
-                )}
-              </CardContent>
-              <CardFooter>
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link href={`/blog/${post.slug}`} className="flex items-center">
-                    Read Post <ExternalLink className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
+                    <div className="mt-4 flex items-center space-x-3 text-xs text-muted-foreground">
+                      <Link href="#" className="flex items-center space-x-1.5 hover:text-primary">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={post.authorAvatar} alt={post.author} data-ai-hint="author avatar small"/>
+                          <AvatarFallback>{post.author.substring(0,1)}</AvatarFallback>
+                        </Avatar>
+                        <span>{post.author}</span>
+                      </Link>
+                      <span className="flex items-center"><CalendarDays className="h-3.5 w-3.5 mr-1" /> {new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      {/* <span className="flex items-center"><MessageSquare className="h-3.5 w-3.5 mr-1" /> {post.comments?.length || 0}</span> */}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+          {/* TODO: Add Pagination if mainPosts.length > limit */}
+        </main>
+
+        {/* Sidebar Area */}
+        <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">
+          <div className="sticky top-24 space-y-8"> {/* Sticky top with offset for nav */}
+            <AuthorCard />
+            <SearchWidget onSearch={handleSearch} initialQuery={currentSearchQuery} isLoading={isLoading && !!currentSearchQuery} />
+            <RecentPostsWidget limit={3}/>
+            <CategoriesWidget />
+            <InstagramWidget />
+            <TagsWidget />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
