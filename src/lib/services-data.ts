@@ -1,46 +1,94 @@
 
+import { ObjectId, type Filter } from 'mongodb';
+import { getCollection } from './mongodb';
+
+const SERVICES_COLLECTION = 'services';
+
 export interface Service {
-  id: string;
+  _id?: ObjectId; // MongoDB native ID
+  id?: string;    // String representation of _id, used in frontend/API
   name: string;
-  price: string;
+  price: string; // Keep as string as per current schema, can be parsed to number if needed
   duration: string;
   description: string;
 }
 
-let services: Service[] = [
-  { id: "1", name: "1-on-1 Coaching Session", price: "150", duration: "60 min", description: "Personalized coaching to help you achieve your goals." },
-  { id: "2", name: "Content Strategy Blueprint", price: "499", duration: "Project", description: "A comprehensive content strategy tailored to your brand." },
-  { id: "3", name: "Video Editing Package", price: "250", duration: "Per Video", description: "Professional video editing for up to 10 mins of footage." },
-];
-
-export function getAllServices(): Service[] {
-  return services;
+// Helper to convert MongoDB document to Service interface
+function docToService(doc: any): Service {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: _id?.toString(), ...rest } as Service;
 }
 
-export function getServiceById(id: string): Service | undefined {
-  return services.find(service => service.id === id);
+export async function getAllServices(): Promise<Service[]> {
+  const collection = await getCollection<Service>(SERVICES_COLLECTION);
+  const serviceDocs = await collection.find({}).sort({ name: 1 }).toArray();
+  return serviceDocs.map(docToService);
 }
 
-export function addService(service: Omit<Service, 'id'>): Service {
-  const newService: Service = { 
-    id: (Math.random() + 1).toString(36).substring(7), // simple unique id
-    ...service 
+export async function getServiceById(id: string): Promise<Service | null> {
+  if (!ObjectId.isValid(id)) {
+    console.warn(`getServiceById: Invalid ID format: ${id}`);
+    return null;
+  }
+  const collection = await getCollection<Service>(SERVICES_COLLECTION);
+  const serviceDoc = await collection.findOne({ _id: new ObjectId(id) });
+  return serviceDoc ? docToService(serviceDoc) : null;
+}
+
+export async function addService(serviceData: Omit<Service, 'id' | '_id'>): Promise<Service> {
+  const collection = await getCollection<Omit<Service, 'id' | '_id'>>(SERVICES_COLLECTION);
+  
+  // Optional: Check for existing service by name if names should be unique
+  // const existingService = await collection.findOne({ name: serviceData.name });
+  // if (existingService) {
+  //   throw new Error(`Service with name '${serviceData.name}' already exists.`);
+  // }
+
+  const result = await collection.insertOne(serviceData as any); // Cast to any to satisfy MongoDB driver if schema slightly differs
+  
+  // Construct the service object to return, including the new _id and its string version id
+  const newService: Service = {
+    _id: result.insertedId,
+    id: result.insertedId.toString(),
+    ...serviceData
   };
-  services.push(newService);
   return newService;
 }
 
-export function updateService(id: string, updates: Partial<Omit<Service, 'id'>>): Service | undefined {
-  const serviceIndex = services.findIndex(service => service.id === id);
-  if (serviceIndex === -1) {
-    return undefined;
+export async function updateService(id: string, updates: Partial<Omit<Service, 'id' | '_id'>>): Promise<Service | null> {
+  if (!ObjectId.isValid(id)) {
+    console.warn(`updateService: Invalid ID format: ${id}`);
+    return null;
   }
-  services[serviceIndex] = { ...services[serviceIndex], ...updates };
-  return services[serviceIndex];
+  const collection = await getCollection<Service>(SERVICES_COLLECTION);
+    
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updates },
+    { returnDocument: 'after' } // Ensures the updated document is returned
+  );
+
+  if (!result) { // MongoDB driver 4.x+ findOneAndUpdate returns the document itself or null
+    console.warn(`updateService: Service with ID '${id}' not found or update failed.`);
+    return null;
+  }
+  return docToService(result);
 }
 
-export function deleteService(id: string): boolean {
-  const initialLength = services.length;
-  services = services.filter(service => service.id !== id);
-  return services.length < initialLength;
+export async function deleteService(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) {
+    console.warn(`deleteService: Invalid ID format: ${id}`);
+    return false;
+  }
+  const collection = await getCollection<Service>(SERVICES_COLLECTION);
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  
+  if (result.deletedCount === 1) {
+    console.log(`Service with ID '${id}' deleted successfully.`);
+    return true;
+  } else {
+    console.warn(`Service with ID '${id}' not found or delete failed.`);
+    return false;
+  }
 }
