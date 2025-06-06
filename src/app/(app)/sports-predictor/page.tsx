@@ -6,34 +6,39 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { predictSportMatch, type PredictSportMatchInput, type PredictSportMatchOutput } from "@/ai/flows/predict-sport-match-flow";
-import { getUpcomingMatches, type GetUpcomingMatchesInput, type GetUpcomingMatchesOutput } from "@/ai/flows/get-upcoming-matches-flow";
+import { getUpcomingMatches, type GetUpcomingMatchesInput } from "@/ai/flows/get-upcoming-matches-flow"; // GetUpcomingMatchesOutput removed as it's not directly used for type here
 import type { UpcomingMatch } from "@/lib/sports-data-mock";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } // This was the line causing the previous error, fixed in a prior step
+from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Brain, Trophy, ShieldAlert, ListChecks, Info, BarChart3, Target, CalendarDays, MapPin, Search, Filter as FilterIcon } from "lucide-react";
+import { Loader2, Brain, Trophy, ShieldAlert, ListChecks, Info, BarChart3, Target, CalendarDays, MapPin, Search, Filter as FilterIcon, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 const predictionFormSchema = z.object({
-  sport: z.string().min(1, "Internal: Sport must be pre-filled."),
-  match: z.string().min(1, "Internal: Match description must be pre-filled."),
+  // These fields will be auto-filled from selectedMatchForPrediction
+  sport: z.string().min(1, "Internal: Sport must be pre-filled by match selection."),
+  teamA: z.string().min(1, "Internal: Team A must be pre-filled by match selection."),
+  teamB: z.string().min(1, "Internal: Team B must be pre-filled by match selection."),
+  matchDescription: z.string().min(1, "Internal: Match description must be pre-filled."),
   competition: z.string().optional(),
   date: z.string().optional(),
   location: z.string().optional(),
-  additionalContext: z.string().min(20, "Please provide substantial context (min 20 characters) like injuries, form, morale, etc.").max(5000, "Context is too long (max 5000 chars)."),
+  // User input is now primarily for truly *additional* context
+  additionalContext: z.string().max(5000, "Context is too long (max 5000 chars).").optional().describe("Optional: Provide specific insights or news the AI might not find via its tools (e.g., locker room rumors, unique tactical observations)."),
 });
 type PredictionFormValues = z.infer<typeof predictionFormSchema>;
 
-const availableSports = ["Football", "Basketball", "Tennis", "Rugby"]; // Could be fetched dynamically
+const availableSports = ["Football", "Basketball", "Tennis", "Rugby"]; 
 
 export default function SportsPredictorPage() {
   const [currentStep, setCurrentStep] = useState<"selectSport" | "selectMatch" | "predict">("selectSport");
@@ -54,7 +59,9 @@ export default function SportsPredictorPage() {
     resolver: zodResolver(predictionFormSchema),
     defaultValues: {
       sport: "",
-      match: "",
+      teamA: "",
+      teamB: "",
+      matchDescription: "",
       additionalContext: "",
     },
   });
@@ -82,11 +89,11 @@ export default function SportsPredictorPage() {
 
   const handleSportSelect = (sport: string) => {
     setSelectedSport(sport);
-    setCountryFilter(""); // Reset filters when sport changes
+    setCountryFilter(""); 
     setLeagueFilter("");
-    setSelectedMatchForPrediction(null); // Reset selected match
-    setPredictionResult(null); // Clear previous prediction
-    predictionForm.reset(); // Clear prediction form
+    setSelectedMatchForPrediction(null); 
+    setPredictionResult(null); 
+    predictionForm.reset(); 
     setCurrentStep("selectMatch");
     fetchMatchesForSport(sport);
   };
@@ -101,15 +108,16 @@ export default function SportsPredictorPage() {
     setSelectedMatchForPrediction(match);
     predictionForm.reset({
       sport: match.sport,
-      match: match.description,
+      teamA: match.teamA,
+      teamB: match.teamB,
+      matchDescription: match.description,
       competition: match.competition,
       date: new Date(match.date).toISOString().split('T')[0],
       location: match.location || "",
-      additionalContext: "", // User needs to fill this
+      additionalContext: "", // User needs to fill this if they have extra insights
     });
-    setPredictionResult(null); // Clear previous prediction result
+    setPredictionResult(null); 
     setCurrentStep("predict");
-    // Scroll to the prediction form for better UX
     document.getElementById('prediction-form-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -122,17 +130,21 @@ export default function SportsPredictorPage() {
       return;
     }
     try {
+      // Values from the form are already aligned with PredictSportMatchInput structure
+      // due to pre-filling and the schema definition.
       const predictionInput: PredictSportMatchInput = {
-        sport: selectedMatchForPrediction.sport,
-        match: selectedMatchForPrediction.description,
-        competition: selectedMatchForPrediction.competition,
-        date: new Date(selectedMatchForPrediction.date).toISOString().split('T')[0],
-        location: selectedMatchForPrediction.location,
-        additionalContext: values.additionalContext,
+        sport: values.sport,
+        teamA: values.teamA,
+        teamB: values.teamB,
+        matchDescription: values.matchDescription,
+        competition: values.competition,
+        date: values.date,
+        location: values.location,
+        additionalContext: values.additionalContext || undefined, // Pass as undefined if empty string
       };
       const output = await predictSportMatch(predictionInput);
       setPredictionResult(output);
-      toast({ title: "Prediction Generated!", description: "AI has analyzed the match." });
+      toast({ title: "Prediction Generated!", description: "AI has analyzed the match using its available data and your insights." });
     } catch (error: any) {
       toast({ title: "Prediction Error", description: error.message || "Failed to generate prediction.", variant: "destructive" });
     } finally {
@@ -147,7 +159,7 @@ export default function SportsPredictorPage() {
           <Target className="mr-3 h-10 w-10 text-primary" /> AI Sports Prediction Agent
         </h1>
         <p className="text-xl text-muted-foreground mt-2">
-          Select a sport, filter upcoming matches, and get AI-powered predictions.
+          Select a sport, find a match, and let AI predict the outcome using its knowledge and tools.
         </p>
       </header>
 
@@ -228,35 +240,30 @@ export default function SportsPredictorPage() {
               <form onSubmit={predictionForm.handleSubmit(onPredictionSubmit)}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl font-headline"><Info className="h-6 w-6 text-primary" />Match Details for Prediction</CardTitle>
-                  <CardDescription>Review details and provide context for: <strong className="text-accent">{selectedMatchForPrediction.description}</strong>.</CardDescription>
+                  <CardDescription>Review details for: <strong className="text-accent">{selectedMatchForPrediction.description}</strong>. AI will use its tools to gather primary context. Add any extra insights below.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField control={predictionForm.control} name="sport" render={({ field }) => (
-                    <FormItem><FormLabel>Sport</FormLabel><Input {...field} readOnly className="bg-muted/50" /><FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={predictionForm.control} name="match" render={({ field }) => (
-                    <FormItem><FormLabel>Match</FormLabel><Input {...field} readOnly className="bg-muted/50" /><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={predictionForm.control} name="competition" render={({ field }) => (
-                    <FormItem><FormLabel>Competition</FormLabel><Input {...field} readOnly className="bg-muted/50" /><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={predictionForm.control} name="date" render={({ field }) => (
-                    <FormItem><FormLabel>Date</FormLabel><Input {...field} type="date" readOnly className="bg-muted/50" /><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={predictionForm.control} name="location" render={({ field }) => (
-                    <FormItem><FormLabel>Location</FormLabel><Input {...field} readOnly className="bg-muted/50" /><FormMessage /></FormItem>
-                  )}/>
+                  {/* Fields like sport, match, competition, date, location are now hidden as they are part of selectedMatchForPrediction and passed to the flow */}
+                  <FormField control={predictionForm.control} name="sport" render={({ field }) => (<FormItem className="hidden"><Input {...field} /></FormItem> )}/>
+                  <FormField control={predictionForm.control} name="teamA" render={({ field }) => (<FormItem className="hidden"><Input {...field} /></FormItem> )}/>
+                  <FormField control={predictionForm.control} name="teamB" render={({ field }) => (<FormItem className="hidden"><Input {...field} /></FormItem> )}/>
+                  <FormField control={predictionForm.control} name="matchDescription" render={({ field }) => ( <FormItem className="hidden"><Input {...field} /></FormItem> )}/>
+                  <FormField control={predictionForm.control} name="competition" render={({ field }) => ( <FormItem className="hidden"><Input {...field} /></FormItem> )}/>
+                  <FormField control={predictionForm.control} name="date" render={({ field }) => ( <FormItem className="hidden"><Input {...field} type="date" /></FormItem> )}/>
+                  <FormField control={predictionForm.control} name="location" render={({ field }) => ( <FormItem className="hidden"><Input {...field} /></FormItem> )}/>
+                  
                   <FormField control={predictionForm.control} name="additionalContext" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Additional Context (Crucial!)</FormLabel>
-                      <Textarea placeholder="Team form, injuries, morale, H2H stats, weather, etc." className="min-h-[150px] text-sm" {...field}/>
+                      <FormLabel>Optional: Your Specific Insights / News</FormLabel>
+                      <Textarea placeholder="e.g., Heard a key player might be rested, specific tactical nuance from a less-known source..." className="min-h-[100px] text-sm" {...field} value={field.value ?? ''}/>
                       <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">The AI will use its tools for general form, H2H, and availability. Add info here that it wouldn't know.</p>
                     </FormItem>
                   )}/>
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" disabled={isLoadingPrediction} size="lg" className="w-full bg-primary hover:bg-primary/90">
-                    {isLoadingPrediction ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Analyzing...</> : <><Brain className="mr-2 h-5 w-5" />Predict Outcome</>}
+                    {isLoadingPrediction ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Analyzing with AI Tools...</> : <><Brain className="mr-2 h-5 w-5" />Predict Outcome</>}
                   </Button>
                 </CardFooter>
               </form>
@@ -268,7 +275,7 @@ export default function SportsPredictorPage() {
               <CardHeader><CardTitle className="text-xl font-headline text-primary">Generating Prediction...</CardTitle></CardHeader>
               <CardContent className="space-y-4 p-6 text-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto my-8" />
-                <p className="text-muted-foreground">AI processing... this might take a moment.</p>
+                <p className="text-muted-foreground">AI is gathering data with its tools and analyzing... this might take a few moments.</p>
               </CardContent>
             </Card>
           )}
@@ -286,6 +293,16 @@ export default function SportsPredictorPage() {
                 </div>
                 <div><h3 className="text-md font-semibold mb-1 flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-accent"/>Confidence: <span className="text-primary font-bold text-lg">{predictionResult.confidenceScore}%</span></h3><Progress value={predictionResult.confidenceScore} className="h-3 [&>div]:bg-primary" /></div>
                 <Separator />
+                 {predictionResult.dataUsedFromTools && predictionResult.dataUsedFromTools.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><Eye className="h-5 w-5 text-accent"/>Data Used From Tools</h3>
+                    <ScrollArea className="h-[100px] border rounded-md p-3 bg-muted/30">
+                        <ul className="space-y-1 text-xs">
+                            {predictionResult.dataUsedFromTools.map((data,i) => <li key={i}><strong>{data.toolName}:</strong> {data.summary}</li>)}
+                        </ul>
+                    </ScrollArea>
+                  </div>
+                )}
                 <div><h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><ListChecks className="h-5 w-5 text-accent"/>Key Reasons ({predictionResult.keyReasons.length})</h3><ScrollArea className="h-[200px] border rounded-md p-3 bg-muted/30"><ul className="space-y-2 text-sm list-disc list-inside">{predictionResult.keyReasons.map((r, i) => <li key={i}>{r}</li>)}</ul></ScrollArea></div>
                 <Separator />
                 <div><h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><Brain className="h-5 w-5 text-accent"/>Strategic Coaching Mindset</h3><p className="text-sm p-3 bg-muted/30 rounded-md whitespace-pre-line">{predictionResult.strategicCoachingMindset}</p></div>

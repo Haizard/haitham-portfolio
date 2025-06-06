@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A sports match prediction AI agent.
+ * @fileOverview A sports match prediction AI agent that uses tools to gather context.
  *
  * - predictSportMatch - A function that handles the sports match prediction process.
  * - PredictSportMatchInput - The input type for the predictSportMatch function.
@@ -10,14 +10,76 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { 
+  getMockTeamForm, type TeamForm,
+  getMockHeadToHeadStats, type HeadToHeadStats,
+  getMockPlayerAvailability, type PlayerAvailability
+} from '@/lib/sports-match-context-provider-mock';
 
+// Tool Schemas
+const TeamInputSchema = z.object({
+  teamName: z.string().describe("The name of the team."),
+  sport: z.string().describe("The sport (e.g., Football, Basketball)."),
+});
+
+const H2HInputSchema = z.object({
+  teamAName: z.string().describe("The name of the first team."),
+  teamBName: z.string().describe("The name of the second team."),
+  sport: z.string().describe("The sport (e.g., Football, Basketball)."),
+});
+
+// Genkit Tools (using mock data providers)
+const getTeamFormTool = ai.defineTool(
+  {
+    name: 'getTeamForm',
+    description: 'Fetches the recent form (last 5 matches) for a specific team.',
+    inputSchema: TeamInputSchema,
+    outputSchema: z.custom<TeamForm>(), // Using z.custom for complex interface
+  },
+  async ({ teamName, sport }) => {
+    console.log(`[Tool Call] getTeamForm for ${teamName} (${sport})`);
+    return getMockTeamForm(teamName, sport);
+  }
+);
+
+const getHeadToHeadStatsTool = ai.defineTool(
+  {
+    name: 'getHeadToHeadStats',
+    description: 'Fetches the head-to-head statistics between two teams.',
+    inputSchema: H2HInputSchema,
+    outputSchema: z.custom<HeadToHeadStats>(),
+  },
+  async ({ teamAName, teamBName, sport }) => {
+     console.log(`[Tool Call] getHeadToHeadStats for ${teamAName} vs ${teamBName} (${sport})`);
+    return getMockHeadToHeadStats(teamAName, teamBName, sport);
+  }
+);
+
+const getPlayerAvailabilityTool = ai.defineTool(
+  {
+    name: 'getPlayerAvailability',
+    description: 'Fetches player availability (injuries, suspensions) for a team.',
+    inputSchema: TeamInputSchema,
+    outputSchema: z.custom<PlayerAvailability>(),
+  },
+  async ({ teamName, sport }) => {
+    console.log(`[Tool Call] getPlayerAvailability for ${teamName} (${sport})`);
+    return getMockPlayerAvailability(teamName, sport);
+  }
+);
+
+
+// Main Flow Schemas
 const PredictSportMatchInputSchema = z.object({
   sport: z.string().describe('The type of sport (e.g., football, basketball, rugby, tennis).'),
-  match: z.string().describe('The match description (e.g., Liverpool vs Chelsea, Golden State Warriors @ Los Angeles Lakers).'),
+  teamA: z.string().describe('The name of Team A.'),
+  teamB: z.string().describe('The name of Team B.'),
+  matchDescription: z.string().describe('Full match description (e.g., Liverpool vs Chelsea).'),
   competition: z.string().optional().describe('The name of the competition or league (e.g., English Premier League, NBA Playoffs).'),
   date: z.string().optional().describe('The date of the match (e.g., YYYY-MM-DD).'),
   location: z.string().optional().describe('The venue or location of the match (e.g., Anfield, Liverpool).'),
-  additionalContext: z.string().describe('Crucial real-time information such as team form, injuries, player fatigue, weather, tactical news, team morale, head-to-head stats, etc. The more detailed and relevant, the better the prediction.'),
+  // User can still provide specific insights the AI might not find.
+  additionalContext: z.string().optional().describe('Optional: Any crucial real-time information or specific insights the user wants to add that tools might not cover (e.g., very recent dressing room news, specific tactical observations from a niche source).'),
 });
 export type PredictSportMatchInput = z.infer<typeof PredictSportMatchInputSchema>;
 
@@ -25,11 +87,12 @@ const PredictSportMatchOutputSchema = z.object({
   predictedWinner: z.string().describe('The predicted winner of the match (Team Name or "Draw").'),
   likelyScoreOrRange: z.string().describe('The likely score (e.g., 2-1) or a score range (e.g., 1-0 to 2-0, or 2-2 / 3-3 for a high-scoring draw).'),
   confidenceScore: z.number().min(0).max(100).describe('A percentage indicating the confidence in the prediction (0-100%).'),
-  keyReasons: z.array(z.string()).min(6).describe('At least 6 key reasons supporting the prediction, drawing from analytical factors.'),
+  keyReasons: z.array(z.string()).min(6).describe('At least 6 key reasons supporting the prediction, drawing from analytical factors and tool outputs.'),
   strategicCoachingMindset: z.string().describe('An analysis of how each coach might approach the match tactically, including potential strategies and adjustments.'),
   psychologicalEdge: z.string().describe('Which team/player(s) might have the psychological advantage and a brief explanation why (e.g., recent form, rivalry history, pressure).'),
   possibleShockFactors: z.array(z.string()).describe('Potential unexpected elements or upsets that could influence the match outcome (e.g., surprise lineup, early red card, underdog resilience).'),
   tacticalSummary: z.string().describe('A summary of the predicted tactical approaches, including likely formations or dominant playing styles for each team.'),
+  dataUsedFromTools: z.array(z.object({toolName: z.string(), summary: z.string()})).optional().describe("Summary of data points obtained from tools that influenced the prediction."),
 });
 export type PredictSportMatchOutput = z.infer<typeof PredictSportMatchOutputSchema>;
 
@@ -41,90 +104,35 @@ const prompt = ai.definePrompt({
   name: 'predictSportMatchPrompt',
   input: {schema: PredictSportMatchInputSchema},
   output: {schema: PredictSportMatchOutputSchema},
-  prompt: `You are a world-class Sports Prediction Agent powered by professional coaching intelligence, strategic analysis, and predictive modeling. Your role is to predict the outcome of a given sports match using over 50 layers of analysis, combined with the mindset of elite coaches, data scientists, and sports doctors.
+  tools: [getTeamFormTool, getHeadToHeadStatsTool, getPlayerAvailabilityTool], // Make tools available
+  prompt: `You are a world-class Sports Prediction Agent. Your goal is to predict the outcome of a given sports match by:
+1.  Using the available tools to gather essential context (team form, H2H stats, player availability).
+2.  Considering the user-provided 'additionalContext' for supplementary insights.
+3.  Applying deep analytical reasoning based on over 50 tactical and strategic factors.
+4.  Outputting a comprehensive prediction in the specified JSON format.
 
-Match Details:
+Match Details to Analyze:
 - Sport: {{{sport}}}
-- Match: {{{match}}}
+- Match: {{{matchDescription}}} (Team A: {{{teamA}}}, Team B: {{{teamB}}})
 {{#if competition}}- Competition: {{{competition}}}{{/if}}
 {{#if date}}- Date: {{{date}}}{{/if}}
 {{#if location}}- Location: {{{location}}}{{/if}}
-- Additional Context Provided by User: {{{additionalContext}}}
+{{#if additionalContext}}- User-Provided Context: {{{additionalContext}}}{{/if}}
 
-### 🧠 Your prediction must consider all aspects of the "Additional Context" along with these fundamental analytical layers:
+INSTRUCTIONS:
+1.  **Tool Usage (Crucial):**
+    *   For Team A ('{{{teamA}}}') and TeamB ('{{{teamB}}}'), use the 'getTeamForm' tool to understand their recent performance.
+    *   Use the 'getHeadToHeadStats' tool for '{{{teamA}}}' vs '{{{teamB}}}'.
+    *   Use the 'getPlayerAvailability' tool for both '{{{teamA}}}' and '{{{teamB}}}' to check for injuries/suspensions.
+    *   Synthesize the information obtained from these tools along with any 'User-Provided Context'.
+2.  **Analytical Layers:** After gathering data with tools, consider the following (among others from your knowledge base of 50+ factors) to inform your prediction:
+    Home vs Away dynamics, Tactical formations, Weather (if known from context), Style clash, Bench depth, Match pressure, Team morale (if deducible from context or tool hints), Key player dependencies.
+3.  **Output Generation:** Populate ALL fields in the 'PredictSportMatchOutputSchema' JSON structure.
+    *   For 'keyReasons', provide at least 6 distinct, detailed reasons. Explicitly mention if a tool's output strongly influenced a reason.
+    *   For 'dataUsedFromTools', briefly summarize key data points you obtained from using the tools (e.g., "Team A form: 3W, 1D, 1L", "H2H: Team B leads 3-2 in last 5"). This field is for transparency.
 
-1.  Team form in short (last 5 matches) and long term (last season)
-2.  Home vs Away dynamics (travel fatigue, fan advantage, stadium size, etc.)
-3.  Head-to-head historical performance between teams
-4.  Player injury reports, including subtle fitness concerns
-5.  Key player fatigue level & travel schedules
-6.  Tactical formations and matchday adaptations
-7.  Weather conditions and their effect on match tempo
-8.  Opponent defensive resilience vs attacking threat
-9.  Defensive line height and vulnerability to counters
-10. Pressing intensity vs build-up strategy
-11. Set-piece strength (corners, free kicks, penalty conversion)
-12. Goalkeeper form and clean sheet records
-13. Average shots per game vs xG (Expected Goals)
-14. Number of individual errors leading to goals
-15. Style clash (possession team vs counter-attacking team)
-16. Bench depth and substitution impact players
-17. Suspension of coaches, assistant staff, or key medical personnel
-18. Mental state of key players (rumors of conflict, pressure, transfers)
-19. Locker room harmony and recent reports of dressing room unrest
-20. Dependence on specific scorers (e.g. 80% goals by one striker)
-21. How opponents prepare to neutralize key scorers
-22. Key defenders’ 1v1 success rate against top attackers
-23. Team momentum surge (e.g., recent winning streak)
-24. Match pressure context (is it a do-or-die fixture?)
-25. League table pressure (top 4 chase, relegation battle, etc.)
-26. Player momentum graph (last 3 games, shot accuracy, goal involvement)
-27. Tactical flexibility of both managers (adaptive vs rigid)
-28. Matchday squad fitness % (e.g., only 70% match-fit)
-29. Influence of team captain (on-pitch leadership, cards)
-30. Tactical fouling patterns and discipline risks
-31. Ball retention % and transition management
-32. Match tempo tendencies (slow vs high-pressing)
-33. Previous comebacks under adversity
-34. Managerial style under pressure (defensive lock-in vs go-for-win)
-35. Opponent coach's history vs current manager
-36. Post-match objectives (draw is enough vs must-win)
-37. Specific player rivalries
-38. Media pressure on team morale
-39. Travel schedule intensity before the match
-40. Youth vs veteran balance in both squads
-41. Player birthday / motivation quirks / personal motivations
-42. Number of tactical drills performed before match
-43. Game plan leaks / training ground news
-44. Agents pushing transfers mid-season
-45. Whether key players are playing in their natural position
-46. Formation experiments in last 3 matches
-47. League vs Cup match mindset (rotate vs full squad)
-48. Players out of contract playing for their next deal
-49. Tactical subs impact from previous matches
-50. Match referee style (card-prone, VAR frequency)
-51. Home pitch dimensions affecting pressing shape
-52. Historical curse/jinx vs opponent (superstitious factors)
-53. Direct counter plans to star player (double-marking)
-54. Crowd hostility level and its impact on young players
-55. Style mimicry from last match of opponent vs strong team
-56. Possible red card risk based on prior conduct
-57. GK sweeping ability vs long ball threats
-58. Coaching psychology — how would top coaches approach this match
-59. Motivation boost after recent win/loss
-60. Predict possible tactical surprises or experimental lineups
-
-### 🔍 Your Output Must Include (strictly follow this JSON structure):
-- **predictedWinner**: (string - Team Name or "Draw")
-- **likelyScoreOrRange**: (string - e.g., "2-1", "1-1 or 2-2", "Score range 2-0 to 3-1 for Team X")
-- **confidenceScore**: (number - 0-100%)
-- **keyReasons**: (array of strings - At least 6 detailed reasons, derived from the analytical factors and provided context. Each reason should be a full sentence.)
-- **strategicCoachingMindset**: (string - How each coach might approach the match tactically. Discuss potential formations, key instructions, and in-game adjustments for both sides.)
-- **psychologicalEdge**: (string - Identify which team/player(s) might have a psychological advantage and explain why, considering factors like current morale, rivalry, pressure, or recent history.)
-- **possibleShockFactors**: (array of strings - List potential unexpected elements or game-changing events that could significantly alter the predicted outcome. Examples: an early red card, a key player underperforming, a tactical surprise from one coach, exceptional individual brilliance.)
-- **tacticalSummary**: (string - A concise overview of the predicted tactical battle, including likely formations (e.g., "Team A: 4-3-3, Team B: 3-5-2") and dominant playing styles (e.g., "Expect Team A to control possession while Team B looks to counter-attack rapidly.").)
-
-Be objective. Use strategic thinking like a coach preparing for a final. Prioritize logic over bias. Do not hallucinate information not present in the 'Additional Context'. This output will be used for real-world forecasting and strategic sports betting. Ensure all output fields are comprehensively filled.
+Prioritize objective analysis. If tool data is sparse or says "mocked", acknowledge this limitation if it significantly impacts confidence, but still attempt a prediction based on general knowledge and the provided details.
+The output will be used for real-world forecasting. Ensure accuracy and comprehensiveness.
 `,
 });
 
@@ -135,20 +143,24 @@ const predictSportMatchFlow = ai.defineFlow(
     outputSchema: PredictSportMatchOutputSchema,
   },
   async (input: PredictSportMatchInput) => {
-    const llmResponse = await prompt(input);
-    const output = llmResponse.output(); // Use .output() to get the structured JSON
+    console.log("[predictSportMatchFlow] Input received:", input);
+    const llmResponse = await prompt(input); // Genkit handles tool calls automatically here
+    const output = llmResponse.output(); 
 
     if (!output) {
       console.error("AI failed to generate a prediction or the output was not in the expected format.");
       throw new Error("AI failed to generate a prediction. The output was empty or not in the expected JSON format.");
     }
     
-    // Ensure keyReasons has at least 6 items, if not, pad with generic statements or re-evaluate prompt strategy.
-    // For now, we rely on the LLM to follow instructions.
-    // If output.keyReasons.length < 6, one might add placeholder reasons or throw a more specific error.
+    // Basic validation on output, e.g., ensuring keyReasons has enough items.
+    if (!output.keyReasons || output.keyReasons.length < 6) {
+        // You could pad with generic reasons or throw, here we just log a warning
+        console.warn("Warning: LLM returned fewer than 6 keyReasons. Consider refining the prompt for stricter adherence.");
+        // Pad if necessary, or let it pass:
+        // while(output.keyReasons.length < 6) { output.keyReasons.push("Additional analysis needed for more reasons."); }
+    }
 
+    console.log("[predictSportMatchFlow] Prediction output:", output);
     return output;
   }
 );
-
-    
