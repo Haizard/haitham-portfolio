@@ -19,12 +19,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, RotateCcw, RotateCw, Strikethrough, Code, MessageSquare, Minus, Link as LinkIconUI, Baseline } from "lucide-react"; // Renamed Link to LinkIconUI
+import { Loader2, Wand2, Eye, Send, ListTree, Tags, ImagePlus, PlusCircle, Trash2, BookOpen, Edit, FileText, Sparkles as SparklesIcon, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, RotateCcw, RotateCw, Strikethrough, Code, MessageSquare, Minus, Link as LinkIconUI, Baseline } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { CategoryNode } from '@/lib/categories-data';
 import { Separator } from "../ui/separator";
 import Image from "next/image";
+import { useSearchParams } from 'next/navigation';
+import type { BlogPost, GalleryImage, DownloadLink } from '@/lib/blog-data';
 
 const galleryImageSchema = z.object({
   url: z.string().url("Image URL must be a valid URL.").min(1, "URL is required."),
@@ -145,6 +147,10 @@ export function BlogPostGenerator() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isLoadingPostForEdit, setIsLoadingPostForEdit] = useState(false);
+
+  const searchParams = useSearchParams();
+  const editSlug = searchParams.get('editSlug');
 
   useEffect(() => {
     setIsClient(true); 
@@ -237,6 +243,51 @@ export function BlogPostGenerator() {
     fetchCategoriesData();
   }, [toast]);
 
+  useEffect(() => {
+    if (editSlug && editor) {
+      const loadPostForEditing = async () => {
+        setIsLoadingPostForEdit(true);
+        try {
+          const response = await fetch(`/api/blog/${editSlug}`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch post: ${response.statusText}`);
+          }
+          const postData: BlogPost = await response.json();
+
+          form.reset({
+            topic: postData.title || '', // Use post title for topic when editing
+            seoKeywords: postData.resolvedTags?.map(tag => tag.name).join(', ') || '',
+            brandVoice: '', // Brand voice is for AI generation, not stored with post
+            editableContent: postData.content || '',
+            categoryId: postData.categoryId || '',
+            tags: postData.resolvedTags?.map(tag => tag.name).join(', ') || '',
+            featuredImageUrl: postData.featuredImageUrl || '',
+            featuredImageHint: postData.featuredImageHint || '',
+            galleryImages: postData.galleryImages || [],
+            downloads: postData.downloads || [],
+          });
+          editor.commands.setContent(postData.content || '');
+          setGeneratedPost({
+            title: postData.title,
+            content: postData.content,
+            reasoning: '', // Reasoning is from AI generation, not stored
+            slug: postData.slug,
+          });
+          setPublishedSlug(postData.slug);
+          toast({ title: "Post Loaded", description: `"${postData.title}" is ready for editing.` });
+        } catch (error: any) {
+          console.error("Error loading post for editing:", error);
+          toast({ title: "Error Loading Post", description: error.message, variant: "destructive" });
+          // Optionally redirect or clear editSlug from URL
+        } finally {
+          setIsLoadingPostForEdit(false);
+        }
+      };
+      loadPostForEditing();
+    }
+  }, [editSlug, form, editor, toast]);
+
+
   const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
 
   const onAiSubmit = async (values: Pick<FormValues, 'topic' | 'seoKeywords' | 'brandVoice'>) => {
@@ -245,7 +296,6 @@ export function BlogPostGenerator() {
     form.setValue('editableContent', ''); 
     if (editor) editor.commands.clearContent(); 
     
-    // Reset publishedSlug when generating new content
     setPublishedSlug(null); 
 
     try {
@@ -301,8 +351,21 @@ export function BlogPostGenerator() {
       });
       return;
     }
-    // Reset publishedSlug because new content is being generated
+    
+    // Reset states related to a previously loaded/published post
     setPublishedSlug(null); 
+    setGeneratedPost(null); // Clear any previously generated/loaded post structure
+    form.setValue('editableContent', ''); // Clear editor content
+    if (editor) editor.commands.clearContent();
+    // Also clear other fields that might have been loaded from an existing post
+    form.setValue('featuredImageUrl', '');
+    form.setValue('featuredImageHint', '');
+    form.setValue('galleryImages', []);
+    form.setValue('downloads', []);
+    form.setValue('categoryId', '');
+    form.setValue('tags', '');
+
+
     const values = form.getValues();
     onAiSubmit({
       topic: values.topic,
@@ -363,10 +426,22 @@ export function BlogPostGenerator() {
 
 
   async function handlePublishPost(values: FormValues) {
-    if (!generatedPost || !generatedPost.slug || !generatedPost.title) {
-      toast({ title: "Error", description: "No AI-generated base content to publish. Please generate content first.", variant: "destructive" });
+    // Use generatedPost.title for the post title if available, otherwise fallback to form's topic
+    const postTitleToUse = generatedPost?.title || values.topic;
+    
+    if (!postTitleToUse) {
+         toast({ title: "Error", description: "Post title is missing. Please ensure a topic is set or content has been generated.", variant: "destructive" });
+        return;
+    }
+
+    // Use publishedSlug if available (editing), otherwise generate new slug from title/topic for a new post
+    const slugToUse = publishedSlug || (generatedPost?.slug || createSlug(postTitleToUse));
+
+    if (!slugToUse) {
+      toast({ title: "Error", description: "Could not determine slug for publishing.", variant: "destructive" });
       return;
     }
+
      if (!values.editableContent || values.editableContent.trim() === '' || values.editableContent === '<p></p>') {
       form.setError("editableContent", { type: "manual", message: "Post content cannot be empty." });
       toast({ title: "Validation Error", description: "Post content cannot be empty.", variant: "destructive" });
@@ -382,9 +457,9 @@ export function BlogPostGenerator() {
     const tagsArray = values.tags ? values.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
 
     const postPayload = {
-        title: generatedPost.title,
+        title: postTitleToUse,
         content: values.editableContent, 
-        slug: generatedPost.slug, // For POST, API uses this. For PUT, API uses slug from URL.
+        slug: slugToUse,
         author: "AI Content Studio", 
         authorAvatar: "https://placehold.co/100x100.png?text=AI", 
         tags: tagsArray,
@@ -396,7 +471,7 @@ export function BlogPostGenerator() {
         categoryId: values.categoryId,
     };
 
-    const isUpdateOperation = !!publishedSlug;
+    const isUpdateOperation = !!publishedSlug; // If publishedSlug is set, it's an update
     const apiUrl = isUpdateOperation ? `/api/blog/${publishedSlug}` : '/api/blog';
     const method = isUpdateOperation ? 'PUT' : 'POST';
 
@@ -413,8 +488,11 @@ export function BlogPostGenerator() {
       }
       const responseData = await response.json();
       
-      if (!isUpdateOperation) { // Only set publishedSlug on initial creation
+      if (!isUpdateOperation) { 
         setPublishedSlug(responseData.slug);
+         if (generatedPost) {
+            setGeneratedPost(prev => prev ? {...prev, slug: responseData.slug} : null);
+        }
       }
       
       toast({ title: `Post ${isUpdateOperation ? 'Updated' : 'Published'}!`, description: `"${responseData.title}" is now live.` });
@@ -426,6 +504,15 @@ export function BlogPostGenerator() {
     }
   }
 
+  if (isLoadingPostForEdit) {
+    return (
+      <div className="container mx-auto py-8 flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-muted-foreground text-lg">Loading post for editing...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <Form {...form}>
@@ -433,10 +520,10 @@ export function BlogPostGenerator() {
           <Card className="shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-2xl font-headline">
-                <Wand2 className="h-7 w-7 text-primary" /> AI Content Generation
+                <Wand2 className="h-7 w-7 text-primary" /> AI Content Generation {editSlug ? `(Editing: ${generatedPost?.title || editSlug})` : ''}
               </CardTitle>
               <CardDescription>
-                Provide initial details for the AI to generate blog post content.
+                {editSlug ? "Edit the loaded post or " : "Provide initial details for the AI to "}generate blog post content.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -445,7 +532,7 @@ export function BlogPostGenerator() {
                 name="topic"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">Blog Post Topic</FormLabel>
+                    <FormLabel className="text-base">Blog Post Topic / Title</FormLabel>
                     <Input placeholder="e.g., The Future of Remote Work" {...field} className="text-base p-3" />
                     <FormMessage />
                   </FormItem>
@@ -467,7 +554,7 @@ export function BlogPostGenerator() {
                 name="brandVoice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">Brand Voice</FormLabel>
+                    <FormLabel className="text-base">Brand Voice (for AI generation)</FormLabel>
                     <Textarea placeholder="e.g., Professional and informative, yet approachable." className="min-h-[80px] text-base p-3" {...field} />
                     <FormMessage />
                   </FormItem>
@@ -478,34 +565,36 @@ export function BlogPostGenerator() {
               <Button 
                 type="button" 
                 onClick={handleGenerateContent} 
-                disabled={isLoadingAi || isPublishing || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s)} 
+                disabled={isLoadingAi || isPublishing || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s) || isLoadingPostForEdit} 
                 size="lg" 
                 className="w-full md:w-auto bg-primary hover:bg-primary/90"
               >
                 {isLoadingAi ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
-                Generate Blog Content
+                {editSlug && !isLoadingAi ? 'Regenerate Content (Replaces Edits)' : 'Generate New Blog Content'}
               </Button>
             </CardFooter>
           </Card>
 
-          {generatedPost && (
+          {(generatedPost || editSlug) && ( 
             <Card className="shadow-lg animate-in fade-in-50 duration-500 mt-8">
               <CardHeader>
                 <CardTitle className="text-2xl font-headline text-primary flex items-center gap-2">
                   <Edit className="h-7 w-7" /> Review & Enhance Content
                 </CardTitle>
-                <CardDescription>Review the AI-generated content. Edit it below, add images, downloads, category, and tags before publishing.</CardDescription>
+                <CardDescription>Review the {editSlug ? 'loaded' : 'AI-generated'} content. Edit it below, add images, downloads, category, and tags before publishing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
                 <div>
-                  <h3 className="text-xl font-semibold mb-1">Original AI Title:</h3>
-                  <p className="text-lg p-3 bg-muted rounded-md">{generatedPost.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Slug for publishing: <code className="bg-muted px-1 rounded">{publishedSlug || generatedPost.slug}</code> (Generated from title. Will remain constant after first publish.)</p>
+                  <h3 className="text-xl font-semibold mb-1">Title:</h3>
+                  <p className="text-lg p-3 bg-muted rounded-md">{generatedPost?.title || form.getValues('topic')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Slug for publishing: <code className="bg-muted px-1 rounded">{publishedSlug || generatedPost?.slug || createSlug(form.getValues('topic'))}</code></p>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">SEO Keyword Reasoning:</h3>
-                  <p className="text-sm text-muted-foreground p-4 bg-muted rounded-md">{generatedPost.reasoning}</p>
-                </div>
+                {generatedPost?.reasoning && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">SEO Keyword Reasoning:</h3>
+                    <p className="text-sm text-muted-foreground p-4 bg-muted rounded-md">{generatedPost.reasoning}</p>
+                  </div>
+                )}
                 
                 <Controller
                   control={form.control}
@@ -679,7 +768,7 @@ export function BlogPostGenerator() {
                     <Link href={`/blog/${publishedSlug}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Published Post</Link>
                   </Button>
                 )}
-                <Button type="submit" disabled={isPublishing || isLoadingAi || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s)} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
+                <Button type="submit" disabled={isPublishing || isLoadingAi || isGeneratingImage || Object.values(isGeneratingGalleryImage).some(s => s) || isLoadingPostForEdit} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
                   {isPublishing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
                   {publishedSlug ? "Update Post" : "Publish Post"}
                 </Button>

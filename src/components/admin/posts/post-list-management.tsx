@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit3, Trash2, Loader2, FileText, Eye, CalendarDays, User, Folder } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { BlogPost } from '@/lib/blog-data'; // Ensure BlogPost includes categoryName if available
+import type { BlogPost } from '@/lib/blog-data'; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // For navigation
+import { useRouter } from 'next/navigation';
 
 export function PostListManagement() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -41,7 +41,6 @@ export function PostListManagement() {
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch enriched data to get categoryName
       const response = await fetch('/api/blog?enriched=true'); 
       if (!response.ok) throw new Error('Failed to fetch posts');
       const data: BlogPost[] = await response.json();
@@ -83,10 +82,7 @@ export function PostListManagement() {
   };
 
   const handleEditPost = (slug: string) => {
-    // TODO: Implement navigation to Content Studio with slug for editing
-    // For now, we can log or show a toast
-    toast({ title: "Edit Action", description: `Navigating to edit post: ${slug} (Feature coming soon)`});
-    // router.push(`/content-studio?editSlug=${slug}`); // Example navigation
+    router.push(`/content-studio?editSlug=${slug}`);
   };
   
   if (isLoading) {
@@ -125,12 +121,12 @@ export function PostListManagement() {
                       <TableCell className="font-medium">{post.title}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-xs">
-                           <User className="h-3.5 w-3.5 text-muted-foreground"/> {post.author}
+                           <User /> {post.author}
                         </div>
                       </TableCell>
                       <TableCell>
                          <div className="flex items-center gap-1 text-xs">
-                            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground"/> 
+                            <CalendarDays /> 
                             {new Date(post.date).toLocaleDateString()}
                         </div>
                       </TableCell>
@@ -138,7 +134,7 @@ export function PostListManagement() {
                         {post.categoryName ? (
                            <Link href={`/blog/category/${post.categorySlugPath || ''}`} target="_blank" className="hover:underline">
                             <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                <Folder className="h-3 w-3"/>{post.categoryName}
+                                <Folder />{post.categoryName}
                             </Badge>
                           </Link>
                         ) : (
