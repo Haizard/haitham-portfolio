@@ -19,6 +19,7 @@ import {
   FolderKanban,
   Tags,
   FileText, // Added for Manage Posts
+  Target, // Added for Sports Predictor
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -33,6 +34,7 @@ const navItems = [
   { href: "/content-studio", label: "Content Studio", icon: Sparkles },
   { href: "/content-inspirer", label: "Content Inspirer", icon: Lightbulb },
   { href: "/content-calendar", label: "Content Calendar", icon: CalendarDays },
+  { href: "/sports-predictor", label: "Sports Predictor", icon: Target },
   { href: "/social-media", label: "Social Media", icon: MessagesSquare },
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
   { href: "/services", label: "Services", icon: Briefcase },
@@ -117,3 +119,5 @@ export function SidebarNav() {
     </SidebarMenu>
   );
 }
+
+    
