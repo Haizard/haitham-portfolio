@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getPostBySlug, updatePost } from '@/lib/blog-data';
 import type { BlogPost } from '@/lib/blog-data';
-import { findOrCreateTagsByNames, type Tag } from '@/lib/tags-data';
+import { findOrCreateTagsByNames, getTagsByIds, type Tag } from '@/lib/tags-data';
 import { ObjectId } from 'mongodb';
 
 export async function GET(
@@ -14,7 +14,14 @@ export async function GET(
     const post = await getPostBySlug(slug);
 
     if (post) {
-      return NextResponse.json(post);
+      let enrichedPost: any = { ...post };
+      if (post.tagIds && post.tagIds.length > 0) {
+        const resolvedTags = await getTagsByIds(post.tagIds);
+        enrichedPost.resolvedTags = resolvedTags;
+      } else {
+        enrichedPost.resolvedTags = [];
+      }
+      return NextResponse.json(enrichedPost);
     } else {
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }

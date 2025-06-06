@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from 'next/link';
-import { CalendarDays, Globe, Loader2, Tag, Folder, ExternalLink, Download, FileText, FileDown, Image as ImageIcon } from "lucide-react";
+import { CalendarDays, Globe, Loader2, Tag as TagIcon, Folder, ExternalLink, Download, FileText, FileDown, Image as ImageIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +27,11 @@ import { RelatedPostsSection } from "@/components/blog/related-posts-section";
 import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-async function getPostData(slug: string): Promise<BlogPost | null> {
+interface EnrichedBlogPost extends BlogPost {
+  resolvedTags?: TagType[];
+}
+
+async function getPostData(slug: string): Promise<EnrichedBlogPost | null> {
   try {
     const response = await fetch(`/api/blog/${slug}`);
     if (!response.ok) {
@@ -64,12 +68,12 @@ export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
 
-  const [post, setPost] = useState<BlogPost | null>(null);
+  const [post, setPost] = useState<EnrichedBlogPost | null>(null);
   const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [categoryDetails, setCategoryDetails] = useState<(CategoryNode & { path?: CategoryNode[] }) | null>(null);
   const [isLoadingCategory, setIsLoadingCategory] = useState(true);
-  const [postTags, setPostTags] = useState<TagType[]>([]);
-  const [isLoadingTags, setIsLoadingTags] = useState(true);
+  // const [postTags, setPostTags] = useState<TagType[]>([]); // No longer needed as tags come resolved
+  // const [isLoadingTags, setIsLoadingTags] = useState(true); // No longer needed
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string | undefined>(undefined);
@@ -79,10 +83,10 @@ export default function BlogPostPage() {
   useEffect(() => {
     setIsLoadingPost(true);
     setIsLoadingCategory(true);
-    setIsLoadingTags(true);
+    // setIsLoadingTags(true); // No longer needed
     setPost(null);
     setCategoryDetails(null);
-    setPostTags([]);
+    // setPostTags([]); // No longer needed
     setTranslatedContent(null);
     setSelectedLanguage(undefined);
     setError(null);
@@ -90,7 +94,7 @@ export default function BlogPostPage() {
     if (!slug) {
       setIsLoadingPost(false);
       setIsLoadingCategory(false);
-      setIsLoadingTags(false);
+      // setIsLoadingTags(false); // No longer needed
       setError("No post slug provided.");
       notFound(); 
       return;
@@ -98,7 +102,7 @@ export default function BlogPostPage() {
 
     async function fetchData() {
       try {
-        const fetchedPost = await getPostData(slug);
+        const fetchedPost = await getPostData(slug); // Fetches EnrichedBlogPost now
 
         if (fetchedPost) {
           setPost(fetchedPost);
@@ -125,29 +129,9 @@ export default function BlogPostPage() {
             setCategoryDetails({ id: 'uncategorized', name: "Uncategorized", slug: "uncategorized", children: [] });
             setIsLoadingCategory(false);
           }
+          // Tags are now resolved in fetchedPost.resolvedTags
+          // setIsLoadingTags(false); // No longer needed here as tags come with the post
 
-          if (fetchedPost.tagIds && fetchedPost.tagIds.length > 0) {
-            setIsLoadingTags(true);
-            try {
-              const tagsResponse = await fetch('/api/tags');
-              if (tagsResponse.ok) {
-                const allTags: TagType[] = await tagsResponse.json();
-                const resolvedTags = allTags.filter(t => fetchedPost.tagIds?.includes(t.id!));
-                setPostTags(resolvedTags);
-              } else {
-                console.warn("Could not fetch all tags to resolve post tags.");
-                setPostTags([]);
-              }
-            } catch (tagError) {
-              console.error("Error fetching tags for post:", tagError);
-              setPostTags([]);
-            } finally {
-              setIsLoadingTags(false);
-            }
-          } else {
-            setPostTags([]);
-            setIsLoadingTags(false);
-          }
         } else {
           setError(`Post with slug "${slug}" not found. NEXT_HTTP_ERROR_FALLBACK;404`);
           notFound(); 
@@ -158,7 +142,7 @@ export default function BlogPostPage() {
       } finally {
         setIsLoadingPost(false);
         if (isLoadingCategory) setIsLoadingCategory(false); 
-        if (isLoadingTags) setIsLoadingTags(false);
+        // if (isLoadingTags) setIsLoadingTags(false); // No longer needed
       }
     }
 
@@ -270,18 +254,14 @@ export default function BlogPostPage() {
             )}
           </div>
           
-          {(isLoadingTags || (postTags && postTags.length > 0)) && (
+          {post.resolvedTags && post.resolvedTags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2 items-center">
-              <Tag className="h-4 w-4 text-muted-foreground mr-1" />
-              {isLoadingTags ? (
-                 <Badge variant="secondary" className="text-xs">Loading tags...</Badge>
-              ) : (
-                postTags.map(tag => (
+              <TagIcon className="h-4 w-4 text-muted-foreground mr-1" />
+              {post.resolvedTags.map(tag => (
                   <Link key={tag.id} href={`/blog/tag/${tag.slug}`} className="hover:underline">
                     <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground">{tag.name}</Badge>
                   </Link>
-                ))
-              )}
+              ))}
             </div>
           )}
         </header>
@@ -296,7 +276,7 @@ export default function BlogPostPage() {
             data-ai-hint={post.featuredImageHint || "featured image"}
           />
         )}
-
+        
         {post.galleryImages && post.galleryImages.length > 0 && (
           <>
             <section className="mb-8"> 
