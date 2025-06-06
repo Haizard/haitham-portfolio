@@ -57,14 +57,10 @@ export default function BlogIndexPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch trending posts (e.g., latest 3-5, ensure they are not duplicated in main list if possible)
-      // For simplicity, we'll fetch latest 5 for trending and then latest for main list, duplication might occur.
-      // A more advanced backend could handle "trending" flags or distinct fetching.
       const fetchedTrendingPosts = await fetchBlogData(undefined, 5);
       setTrendingPosts(fetchedTrendingPosts);
 
-      // Fetch main posts, excluding slugs from trending if necessary, or just fetch paginated
-      const fetchedMainPosts = await fetchBlogData(query, 10); // Example: fetch 10 main posts
+      const fetchedMainPosts = await fetchBlogData(query, 10); 
       setMainPosts(fetchedMainPosts);
 
     } catch (err: any) {
@@ -85,7 +81,7 @@ export default function BlogIndexPage() {
     setCurrentSearchQuery(query);
   };
 
-  if (error && isLoading) { // Show loader initially even if there's an error from previous attempt
+  if (error && isLoading) { 
      return (
       <div className="container mx-auto py-8 px-4 flex justify-center items-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -172,14 +168,13 @@ export default function BlogIndexPage() {
                   <div className="p-5 md:p-6 flex flex-col justify-between md:w-2/3 lg:w-3/5 xl:w-2/3">
                     <div>
                       <div className="mb-2 flex flex-wrap gap-2 items-center">
-                        {post.categoryName && post.categorySlugPath && (
+                        {post.categoryName && post.categorySlugPath && post.categorySlugPath.trim() !== '' && (
                            <Link href={`/blog/category/${post.categorySlugPath}`}>
                              <Badge variant="outline" className="text-xs uppercase tracking-wider text-primary border-primary hover:bg-primary/10">
                                {post.categoryName}
                              </Badge>
                            </Link>
                         )}
-                        {/* Add more tags here if needed from example */}
                       </div>
                       <CardTitle className="text-xl md:text-2xl font-semibold font-headline line-clamp-2 group-hover:text-primary transition-colors">
                         <Link href={`/blog/${post.slug}`}>{post.title}</Link>
@@ -197,19 +192,16 @@ export default function BlogIndexPage() {
                         <span>{post.author}</span>
                       </Link>
                       <span className="flex items-center"><CalendarDays className="h-3.5 w-3.5 mr-1" /> {new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                      {/* <span className="flex items-center"><MessageSquare className="h-3.5 w-3.5 mr-1" /> {post.comments?.length || 0}</span> */}
                     </div>
                   </div>
                 </Card>
               ))}
             </div>
           )}
-          {/* TODO: Add Pagination if mainPosts.length > limit */}
         </main>
 
-        {/* Sidebar Area */}
         <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">
-          <div className="sticky top-24 space-y-8"> {/* Sticky top with offset for nav */}
+          <div className="sticky top-24 space-y-8"> 
             <AuthorCard />
             <SearchWidget onSearch={handleSearch} initialQuery={currentSearchQuery} isLoading={isLoading && !!currentSearchQuery} />
             <RecentPostsWidget limit={3}/>

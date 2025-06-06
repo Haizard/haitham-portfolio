@@ -31,26 +31,34 @@ export function CategoriesWidget() {
     fetchCategories();
   }, []);
 
-  const renderCategoryList = (categoryNodes: CategoryNode[], level = 0) => {
-    return categoryNodes.map(category => (
-      <li key={category.id} style={{ paddingLeft: `${level * 1}rem` }}>
-        <Link 
-          href={`/blog/category/${category.slug}`} 
-          className="flex justify-between items-center py-2 text-sm text-muted-foreground hover:text-primary hover:font-medium transition-all"
-        >
-          <span className="flex items-center">
-            {level > 0 && <ChevronRight className="h-3 w-3 mr-1 opacity-50" />}
-            {category.name}
-          </span>
-          <span className="text-xs bg-secondary px-1.5 py-0.5 rounded">({category.postCount || 0})</span>
-        </Link>
-        {category.children && category.children.length > 0 && (
-          <ul className="pl-2">
-            {renderCategoryList(category.children, level + 1)}
-          </ul>
-        )}
-      </li>
-    ));
+  const renderCategoryList = (categoryNodes: CategoryNode[], currentPathSegments: string[] = []) => {
+    return categoryNodes.map(category => {
+      // Ensure category.slug is valid before using it
+      if (!category.slug || category.slug.trim() === '') return null;
+      
+      const newPathSegments = [...currentPathSegments, category.slug];
+      const linkPath = `/blog/category/${newPathSegments.join('/')}`;
+      
+      return (
+        <li key={category.id} style={{ paddingLeft: `${currentPathSegments.length * 1}rem` }}>
+          <Link 
+            href={linkPath} 
+            className="flex justify-between items-center py-2 text-sm text-muted-foreground hover:text-primary hover:font-medium transition-all"
+          >
+            <span className="flex items-center">
+              {currentPathSegments.length > 0 && <ChevronRight className="h-3 w-3 mr-1 opacity-50" />}
+              {category.name}
+            </span>
+            <span className="text-xs bg-secondary px-1.5 py-0.5 rounded">({category.postCount || 0})</span>
+          </Link>
+          {category.children && category.children.length > 0 && (
+            <ul className="pl-2">
+              {renderCategoryList(category.children, newPathSegments)}
+            </ul>
+          )}
+        </li>
+      );
+    }).filter(Boolean); // Filter out null items if any slug was invalid
   };
 
 

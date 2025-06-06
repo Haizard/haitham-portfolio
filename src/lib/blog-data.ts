@@ -85,8 +85,6 @@ export async function getAllPosts(
     query.$or = [
       { title: regex },
       { content: regex } 
-      // Note: Searching 'content' with regex can be slow on large datasets without text indexes.
-      // For production, consider MongoDB text indexes for better performance.
     ];
   }
 
@@ -106,7 +104,8 @@ export async function getAllPosts(
         const path = await categoryDataFetcher(post.categoryId);
         if (path && path.length > 0) {
           categoryName = path[path.length - 1].name;
-          categorySlugPath = path.map(p => p.slug).join('/');
+          // Ensure only valid slugs are joined
+          categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
         }
       }
       if (post.tagIds && post.tagIds.length > 0) {
@@ -133,7 +132,8 @@ export async function getPostBySlug(slug: string, enrich: boolean = false, categ
         const path = await categoryDataFetcher(post.categoryId);
         if (path && path.length > 0) {
           post.categoryName = path[path.length - 1].name;
-          post.categorySlugPath = path.map(p => p.slug).join('/');
+          // Ensure only valid slugs are joined
+          post.categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
         }
       }
       if (post.tagIds && post.tagIds.length > 0) {
@@ -231,7 +231,7 @@ export async function getPostsByCategoryId(categoryId: string, limit?: number, e
         const path = await categoryDataFetcher(post.categoryId);
         if (path && path.length > 0) {
           categoryName = path[path.length - 1].name;
-          categorySlugPath = path.map(p => p.slug).join('/');
+          categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
         }
       }
       if (post.tagIds && post.tagIds.length > 0) {
@@ -270,7 +270,7 @@ export async function getPostsByTagId(tagId: string, limit?: number, excludeSlug
         const path = await categoryDataFetcher(post.categoryId);
         if (path && path.length > 0) {
           categoryName = path[path.length - 1].name;
-          categorySlugPath = path.map(p => p.slug).join('/');
+          categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
         }
       }
       if (post.tagIds && post.tagIds.length > 0) {

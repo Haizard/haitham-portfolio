@@ -16,7 +16,9 @@ export function BreadcrumbDisplay({ path, className }: BreadcrumbDisplayProps) {
   }
 
   const buildCategoryLink = (currentPath: CategoryNode[]) => {
-    return `/blog/category/${currentPath.map(p => p.slug).join('/')}`;
+    const slugSegments = currentPath.map(p => p.slug).filter(s => s && s.trim() !== '');
+    if (slugSegments.length === 0) return "/blog"; // Fallback if path is somehow empty
+    return `/blog/category/${slugSegments.join('/')}`;
   };
 
   return (
@@ -30,8 +32,11 @@ export function BreadcrumbDisplay({ path, className }: BreadcrumbDisplayProps) {
         {path.map((segment, index) => {
           const isLast = index === path.length - 1;
           const linkPath = buildCategoryLink(path.slice(0, index + 1));
+          // Ensure segment.slug is valid before creating a link/span for it
+          if (!segment.slug || segment.slug.trim() === '') return null;
+
           return (
-            <li key={segment.id} className="flex items-center">
+            <li key={segment.id || index} className="flex items-center">
               <ChevronRight className="h-4 w-4 mx-1" />
               {isLast ? (
                 <span className="font-medium text-foreground">{segment.name}</span>

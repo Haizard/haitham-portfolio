@@ -22,11 +22,22 @@ function docToTag(doc: any): Tag {
 }
 
 function createTagSlug(name: string): string {
-  return name
+  let slug = name
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+    .replace(/[^a-z0-9\s-]/g, '') // remove special chars except space and hyphen
+    .trim() // remove leading/trailing whitespace
+    .replace(/\s+/g, '-') // replace spaces with -
+    .replace(/-+/g, '-'); // replace multiple - with single -
+
+  // Remove leading/trailing hyphens that might result from trimming
+  if (slug.startsWith('-')) {
+    slug = slug.substring(1);
+  }
+  if (slug.endsWith('-')) {
+    slug = slug.slice(0, -1);
+  }
+  
+  return slug || `tag-${Date.now()}`; // Default if empty
 }
 
 async function isTagSlugUnique(slug: string, excludeId?: string): Promise<boolean> {
@@ -47,15 +58,15 @@ export async function getAllTags(): Promise<Tag[]> {
 
   // Aggregate post counts for all tags
   const tagCountsCursor = postsCollection.aggregate([
-    { $match: { tagIds: { $exists: true, $ne: null, $not: { $size: 0 } } } }, // Ensure tagIds exist and is not empty
-    { $unwind: "$tagIds" }, // Deconstructs the tagIds array
-    { $group: { _id: "$tagIds", count: { $sum: 1 } } }, // Group by tagId and count
+    { $match: { tagIds: { $exists: true, $ne: null, $not: { $size: 0 } } } }, 
+    { $unwind: "$tagIds" }, 
+    { $group: { _id: "$tagIds", count: { $sum: 1 } } }, 
   ]);
   const tagCountsArray = await tagCountsCursor.toArray();
 
   const tagCountMap = new Map<string, number>();
   tagCountsArray.forEach(item => {
-    if (item._id) { // _id here is the tagId (string)
+    if (item._id) { 
       tagCountMap.set(item._id.toString(), item.count);
     }
   });
@@ -75,7 +86,6 @@ export async function getTagById(id: string): Promise<Tag | null> {
   if (!doc) return null;
 
   const tag = docToTag(doc);
-  // Optionally fetch post count for single tag view if needed, or decide if it's only for getAllTags
   const postsCollection = await getCollection<BlogPost>('posts');
   tag.postCount = await postsCollection.countDocuments({ tagIds: tag.id });
   return tag;
@@ -99,14 +109,15 @@ export async function getTagsByIds(ids: string[]): Promise<Tag[]> {
   
   const collection = await getCollection<Tag>(TAGS_COLLECTION);
   const tagsArray = await collection.find({ _id: { $in: validObjectIds } }).toArray();
-  // Post counts are not typically added here as it's for resolving tag names for posts.
-  // If needed, similar logic to getAllTags or getTagById could be added.
   return tagsArray.map(docToTag);
 }
 
 export async function addTag(tagData: Omit<Tag, 'id' | '_id' | 'slug' | 'postCount'> & { name: string }): Promise<Tag> {
   const collection = await getCollection<Omit<Tag, 'id' | '_id' | 'postCount'>>(TAGS_COLLECTION);
   const slug = createTagSlug(tagData.name);
+  if (!slug) { // Should not happen
+      throw new Error("Tag name resulted in an empty slug.");
+  }
 
   if (!(await isTagSlugUnique(slug))) {
     throw new Error(`Tag with slug '${slug}' already exists.`);
@@ -130,6 +141,8 @@ export async function findOrCreateTagsByNames(tagNames: string[]): Promise<Tag[]
   for (const name of tagNames) {
     if (typeof name !== 'string' || name.trim() === '') continue;
     const slug = createTagSlug(name);
+     if (!slug) continue; // Skip if slug is empty after creation
+
     let tagDoc = await collection.findOne({ slug });
 
     if (!tagDoc) {
@@ -142,8 +155,6 @@ export async function findOrCreateTagsByNames(tagNames: string[]): Promise<Tag[]
       tagDoc = { _id: result.insertedId, ...newTagData };
     }
     const tagWithCount = docToTag(tagDoc);
-    // Fetch count for newly created/found tag if needed here, or rely on full list fetch for counts
-    // For simplicity, findOrCreate doesn't add postCount by default as it's usually used in post saving context.
     resultTags.push(tagWithCount);
   }
   return resultTags;
@@ -162,6 +173,9 @@ export async function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | '_
 
   if (updates.name && updates.name !== existingTag.name) {
     const newSlug = createTagSlug(updates.name);
+    if (!newSlug) { // Should not happen
+        throw new Error("Updated tag name resulted in an empty slug.");
+    }
     if (!(await isTagSlugUnique(newSlug, id))) {
       throw new Error(`Update failed: Tag slug '${newSlug}' would conflict with an existing tag.`);
     }
@@ -169,7 +183,6 @@ export async function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | '_
   }
 
   if (Object.keys(updatePayload).length === 0) {
-    // If no actual data changes, just refetch with count if needed or return existing with its current count
     const currentTag = docToTag(existingTag);
     const postsCollection = await getCollection<BlogPost>('posts');
     currentTag.postCount = await postsCollection.countDocuments({ tagIds: currentTag.id });
@@ -202,4 +215,3 @@ export async function deleteTag(id: string): Promise<boolean> {
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }
-

@@ -24,11 +24,22 @@ function docToCategoryNode(doc: any): CategoryNode {
 }
 
 function createSlugFromName(name: string): string {
-  return name
+  let slug = name
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+    .replace(/[^a-z0-9\s-]/g, '') // remove special chars except space and hyphen
+    .trim() // remove leading/trailing whitespace
+    .replace(/\s+/g, '-') // replace spaces with -
+    .replace(/-+/g, '-'); // replace multiple - with single -
+  
+  // Remove leading/trailing hyphens that might result from trimming
+  if (slug.startsWith('-')) {
+    slug = slug.substring(1);
+  }
+  if (slug.endsWith('-')) {
+    slug = slug.slice(0, -1);
+  }
+  
+  return slug || `category-${Date.now()}`; // Default if empty
 }
 
 async function isSlugUnique(slug: string, parentId: string | null, excludeId?: string): Promise<boolean> {
@@ -47,7 +58,7 @@ export async function getAllCategories(): Promise<CategoryNode[]> {
   const postsCollection = await getCollection<BlogPost>('posts');
 
   // Step 1: Fetch all categories
-  const allCategoryDocs = await categoriesCollection.find({}).toArray();
+  const allCategoryDocs = await categoriesCollection.find({}).sort({ name: 1 }).toArray();
 
   // Step 2: Aggregate post counts for all categories
   const categoryCountsCursor = postsCollection.aggregate([
@@ -80,18 +91,6 @@ export async function getAllCategories(): Promise<CategoryNode[]> {
       tree.push(node); // Top-level node
     }
   });
-
-  // Optional: Sort children for consistent order if needed, e.g., by name
-  // function sortChildrenRecursive(nodes: CategoryNode[]): void {
-  //   nodes.sort((a, b) => a.name.localeCompare(b.name));
-  //   nodes.forEach(node => {
-  //     if (node.children && node.children.length > 0) {
-  //       sortChildrenRecursive(node.children);
-  //     }
-  //   });
-  // }
-  // sortChildrenRecursive(tree);
-
   return tree;
 }
 
@@ -128,6 +127,9 @@ export async function addCategory(
 ): Promise<CategoryNode> {
   const collection = await getCollection<Omit<CategoryNode, 'id' | '_id' | 'children' | 'postCount'>>(CATEGORIES_COLLECTION);
   const slug = createSlugFromName(categoryData.name);
+  if (!slug) { // Should not happen with the new createSlugFromName
+      throw new Error("Category name resulted in an empty slug.");
+  }
 
   if (!(await isSlugUnique(slug, categoryData.parentId || null))) {
     throw new Error(`Category with slug '${slug}' already exists at this level.`);
@@ -164,6 +166,9 @@ export async function updateCategory(
 
   if (updates.name && updates.name !== existingCategory.name) {
     const newSlug = createSlugFromName(updates.name);
+     if (!newSlug) { // Should not happen
+        throw new Error("Updated category name resulted in an empty slug.");
+    }
     if (!(await isSlugUnique(newSlug, existingCategory.parentId || null, id))) {
       throw new Error(`Update failed: Category slug '${newSlug}' would conflict with an existing category at the same level.`);
     }
@@ -199,10 +204,6 @@ export async function deleteCategory(id: string): Promise<boolean> {
     await deleteCategory(child._id.toString()); 
   }
   
-  // TODO: Handle posts in this category: re-assign to a default/uncategorized, or nullify categoryId.
-  // For now, we are just deleting the category. Posts will retain the old categoryId which will no longer resolve.
-  // Example: await getCollection<BlogPost>('posts').updateMany({ categoryId: id }, { $set: { categoryId: null } }); // or some default ID
-  
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }
@@ -231,8 +232,15 @@ export async function findCategoryBySlugPathRecursive(slugPath: string[]): Promi
   const postsCollection = await getCollection<BlogPost>('posts');
   let currentParentId: string | null = null;
   let foundNode: CategoryNode | null = null;
+  
+  const validSlugPath = slugPath.filter(s => s && s.trim() !== '');
+  if (validSlugPath.length === 0 && slugPath.length > 0) {
+      // Path contained only empty/whitespace slugs
+      return null;
+  }
 
-  for (const slug of slugPath) {
+
+  for (const slug of validSlugPath) {
     const query: Filter<CategoryNode> = { slug: slug, parentId: currentParentId };
     const nodeDoc = await collection.findOne(query);
     if (!nodeDoc) {
@@ -254,10 +262,11 @@ export async function findCategoryBySlugPathRecursive(slugPath: string[]): Promi
             node.children = await fetchChildrenWithCounts(node.id!); 
             childrenNodes.push(node);
         }
+        // Sort children by name for consistent order
+        childrenNodes.sort((a, b) => a.name.localeCompare(b.name));
         return childrenNodes;
     }
     foundNode.children = await fetchChildrenWithCounts(foundNode.id!);
   }
   return foundNode;
 }
-

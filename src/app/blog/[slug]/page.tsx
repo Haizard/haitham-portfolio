@@ -72,8 +72,6 @@ export default function BlogPostPage() {
   const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [categoryDetails, setCategoryDetails] = useState<(CategoryNode & { path?: CategoryNode[] }) | null>(null);
   const [isLoadingCategory, setIsLoadingCategory] = useState(true);
-  // const [postTags, setPostTags] = useState<TagType[]>([]); // No longer needed as tags come resolved
-  // const [isLoadingTags, setIsLoadingTags] = useState(true); // No longer needed
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string | undefined>(undefined);
@@ -83,10 +81,8 @@ export default function BlogPostPage() {
   useEffect(() => {
     setIsLoadingPost(true);
     setIsLoadingCategory(true);
-    // setIsLoadingTags(true); // No longer needed
     setPost(null);
     setCategoryDetails(null);
-    // setPostTags([]); // No longer needed
     setTranslatedContent(null);
     setSelectedLanguage(undefined);
     setError(null);
@@ -94,7 +90,6 @@ export default function BlogPostPage() {
     if (!slug) {
       setIsLoadingPost(false);
       setIsLoadingCategory(false);
-      // setIsLoadingTags(false); // No longer needed
       setError("No post slug provided.");
       notFound(); 
       return;
@@ -102,7 +97,7 @@ export default function BlogPostPage() {
 
     async function fetchData() {
       try {
-        const fetchedPost = await getPostData(slug); // Fetches EnrichedBlogPost now
+        const fetchedPost = await getPostData(slug); 
 
         if (fetchedPost) {
           setPost(fetchedPost);
@@ -129,8 +124,6 @@ export default function BlogPostPage() {
             setCategoryDetails({ id: 'uncategorized', name: "Uncategorized", slug: "uncategorized", children: [] });
             setIsLoadingCategory(false);
           }
-          // Tags are now resolved in fetchedPost.resolvedTags
-          // setIsLoadingTags(false); // No longer needed here as tags come with the post
 
         } else {
           setError(`Post with slug "${slug}" not found. NEXT_HTTP_ERROR_FALLBACK;404`);
@@ -142,7 +135,6 @@ export default function BlogPostPage() {
       } finally {
         setIsLoadingPost(false);
         if (isLoadingCategory) setIsLoadingCategory(false); 
-        // if (isLoadingTags) setIsLoadingTags(false); // No longer needed
       }
     }
 
@@ -201,6 +193,10 @@ export default function BlogPostPage() {
 
   const displayContent = translatedContent ?? post.content;
   const currentLanguageName = availableLanguages.find(l => l.code === selectedLanguage)?.name || selectedLanguage;
+  
+  const categoryLinkPath = categoryDetails?.path 
+    ? categoryDetails.path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/') 
+    : categoryDetails?.slug;
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -245,8 +241,8 @@ export default function BlogPostPage() {
             <Folder className="h-4 w-4 text-muted-foreground mr-1" />
             {isLoadingCategory ? (
               <Badge variant="outline" className="text-sm">Loading category...</Badge>
-            ) : categoryDetails?.name ? (
-               <Link href={`/blog/category/${categoryDetails.path ? categoryDetails.path.map(p=>p.slug).join('/') : categoryDetails.slug}`} className="hover:underline">
+            ) : categoryDetails?.name && categoryLinkPath ? (
+               <Link href={`/blog/category/${categoryLinkPath}`} className="hover:underline">
                 <Badge variant="outline" className="text-sm cursor-pointer hover:bg-secondary">{categoryDetails.name}</Badge>
               </Link>
             ) : (
@@ -258,9 +254,11 @@ export default function BlogPostPage() {
             <div className="flex flex-wrap gap-2 mt-2 items-center">
               <TagIcon className="h-4 w-4 text-muted-foreground mr-1" />
               {post.resolvedTags.map(tag => (
+                tag.slug && (
                   <Link key={tag.id} href={`/blog/tag/${tag.slug}`} className="hover:underline">
                     <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground">{tag.name}</Badge>
                   </Link>
+                )
               ))}
             </div>
           )}
