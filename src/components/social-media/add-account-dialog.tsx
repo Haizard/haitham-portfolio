@@ -19,7 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Link2, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from 'next/navigation';
+// Removed: import { useRouter } from 'next/navigation'; // No longer needed here for this specific change
 
 export const socialPlatformOptions = ["Instagram", "Twitter", "Facebook", "LinkedIn", "TikTok", "YouTube"] as const;
 export type SocialPlatformType = (typeof socialPlatformOptions)[number];
@@ -52,7 +52,7 @@ interface AddAccountDialogProps {
 
 export function AddAccountDialog({ isOpen, onClose, onAccountAdd, isProcessingAuth, setIsProcessingAuth }: AddAccountDialogProps) {
   const { toast } = useToast();
-  const router = useRouter();
+  // Removed: const router = useRouter(); // No longer needed here for this specific change
 
   const form = useForm<AddAccountFormValues>({
     resolver: zodResolver(addAccountFormSchema),
@@ -82,13 +82,10 @@ export function AddAccountDialog({ isOpen, onClose, onAccountAdd, isProcessingAu
   const handleTikTokConnect = () => {
     setIsProcessingAuth(true);
     // Redirect to our backend route that will initiate TikTok OAuth
-    router.push('/api/auth/tiktok/connect');
+    // This will cause a full page navigation, which is standard for OAuth external redirects.
+    window.location.href = '/api/auth/tiktok/connect';
     // No need to call onCloseDialog() here immediately, 
-    // page will reload or redirect; dialog state will be reset by parent.
-    // Parent should close dialog if needed or page re-renders.
-    // For a cleaner UX, we could call onClose and let the page show a global loader.
-    // Let's call onClose to hide the dialog during redirect.
-    onClose(); 
+    // page will reload or redirect; dialog state will be reset by parent or subsequent navigation.
   };
 
   const onCloseDialog = () => {
