@@ -9,32 +9,35 @@ const TIKTOK_REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI;
 const TIKTOK_SCOPES = 'user.info.basic'; 
 
 export async function GET(request: NextRequest) {
-  const socialMediaPageUrl = new URL('/social-media', request.nextUrl.origin);
+  // Base URL for redirects back to our app's social media page
+  const baseAppRedirectUrl = request.nextUrl.clone();
+  baseAppRedirectUrl.pathname = '/social-media';
+  // Clear all existing search params from the original request URL, as we'll set specific ones for the redirect
+  baseAppRedirectUrl.searchParams.forEach((_, key) => baseAppRedirectUrl.searchParams.delete(key));
+
 
   if (!TIKTOK_CLIENT_ID || TIKTOK_CLIENT_ID === "YOUR_TIKTOK_CLIENT_ID" || !TIKTOK_REDIRECT_URI) {
     console.warn("TikTok OAuth credentials (TIKTOK_CLIENT_ID, TIKTOK_REDIRECT_URI) are not fully configured. Simulating successful connection for UI development.");
-    // Simulate success redirect for UI testing if creds are missing/placeholders
-    socialMediaPageUrl.searchParams.set('tiktok_auth_simulated_success', 'true');
-    socialMediaPageUrl.searchParams.set('username', 'simulated_tiktok_user'); // Provide a simulated username
-    return NextResponse.redirect(socialMediaPageUrl.toString());
+    
+    baseAppRedirectUrl.searchParams.set('tiktok_auth_simulated_success', 'true');
+    baseAppRedirectUrl.searchParams.set('username', 'simulated_tiktok_user'); 
+    return NextResponse.redirect(baseAppRedirectUrl.toString());
   }
 
-  // --- TODO: Replace with TikTok's actual authorization endpoint and parameters ---
-  // This is a placeholder structure. Consult TikTok's developer documentation.
-  // Typically, you'd need:
-  // - client_key (your client ID)
-  // - scope (permissions you're requesting)
-  // - response_type=code
-  // - redirect_uri
-  // - state (a unique, unguessable string to prevent CSRF, which you should generate and verify in callback)
-  const state = Math.random().toString(36).substring(2); // Example CSRF token, store this in session/cookie to verify later
+  const state = Math.random().toString(36).substring(2); // Example CSRF token
   
-  // Store state in a cookie to verify in callback
-  const response = NextResponse.redirect(
-    `https://www.tiktok.com/v2/auth/authorize?client_key=${TIKTOK_CLIENT_ID}&scope=${TIKTOK_SCOPES}&response_type=code&redirect_uri=${encodeURIComponent(TIKTOK_REDIRECT_URI!)}&state=${state}`
-    // The above URL is a GUESS. You MUST use the official TikTok URL.
-  );
-  response.cookies.set('tiktok_oauth_state', state, { path: '/', httpOnly: true, maxAge: 60 * 10 }); // 10 min expiry
+  // IMPORTANT: The following URL is a GUESS for TikTok's authorization endpoint.
+  // You MUST replace this with the official TikTok authorization URL from their developer documentation.
+  const tikTokAuthUrl = new URL("https://www.tiktok.com/v2/auth/authorize"); // Placeholder base
+  tikTokAuthUrl.searchParams.set('client_key', TIKTOK_CLIENT_ID);
+  tikTokAuthUrl.searchParams.set('scope', TIKTOK_SCOPES);
+  tikTokAuthUrl.searchParams.set('response_type', 'code');
+  tikTokAuthUrl.searchParams.set('redirect_uri', TIKTOK_REDIRECT_URI);
+  tikTokAuthUrl.searchParams.set('state', state);
+  
+  const response = NextResponse.redirect(tikTokAuthUrl.toString());
+  response.cookies.set('tiktok_oauth_state', state, { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 60 * 10 }); // 10 min expiry
   
   return response;
 }
+
