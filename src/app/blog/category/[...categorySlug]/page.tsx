@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { notFound, useParams } from 'next/navigation'; // Import useParams
+import { notFound, useParams, useRouter } from 'next/navigation'; // Import useParams and useRouter
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,21 +12,25 @@ import type { BlogPost } from '@/lib/blog-data';
 import type { CategoryNode } from '@/lib/categories-data';
 import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 
-// Remove params from props interface if it's no longer passed directly
-// interface CategoryArchivePageProps {
-//   params: {
-//     categorySlug: string[]; 
-//   };
-// }
+// Sidebar Widgets
+import { AuthorCard } from '@/components/blog/sidebar/AuthorCard';
+import { SearchWidget } from '@/components/blog/sidebar/SearchWidget';
+import { RecentPostsWidget } from '@/components/blog/sidebar/RecentPostsWidget';
+import { CategoriesWidget } from '@/components/blog/sidebar/CategoriesWidget';
+import { InstagramWidget } from '@/components/blog/sidebar/InstagramWidget';
+import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
 
-export default function CategoryArchivePage(/*{ params }: CategoryArchivePageProps*/) { // Remove params from function signature
-  const params = useParams<{ categorySlug: string[] }>(); // Use the hook
-  const categorySlug = params.categorySlug; // Access categorySlug from the hook's return value
+
+export default function CategoryArchivePage() {
+  const params = useParams<{ categorySlug: string[] }>(); 
+  const categorySlug = params.categorySlug; 
+  const router = useRouter(); // For search redirection
 
   const [category, setCategory] = useState<(CategoryNode & { path?: CategoryNode[] }) | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentSearchQuery, setCurrentSearchQuery] = useState(""); // For SearchWidget
 
   useEffect(() => {
     async function fetchData() {
@@ -66,7 +70,12 @@ export default function CategoryArchivePage(/*{ params }: CategoryArchivePagePro
       }
     }
     fetchData();
-  }, [categorySlug]); // categorySlug from useParams is stable if params object identity is stable
+  }, [categorySlug]); 
+
+  const handleSearch = (query: string) => {
+    setCurrentSearchQuery(query);
+    router.push(`/blog?search=${encodeURIComponent(query)}`);
+  };
 
   if (isLoading) {
     return (
@@ -87,66 +96,78 @@ export default function CategoryArchivePage(/*{ params }: CategoryArchivePagePro
   }
   
   if (!category) {
-    // This check might be redundant if notFound() is called correctly in useEffect,
-    // but good as a safeguard.
     notFound();
   }
 
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <header className="mb-8">
-        {category.path && <BreadcrumbDisplay path={category.path} className="mb-4" />}
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-2 flex items-center">
-            <FolderOpen className="mr-3 h-10 w-10 text-primary"/>
-            Category: {category.name}
-        </h1>
-        {category.description && <p className="text-lg text-muted-foreground">{category.description}</p>}
-      </header>
+      <div className="lg:grid lg:grid-cols-12 lg:gap-12">
+        <main className="lg:col-span-8 xl:col-span-9">
+          <header className="mb-8">
+            {category.path && <BreadcrumbDisplay path={category.path} className="mb-4" />}
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-2 flex items-center">
+                <FolderOpen className="mr-3 h-10 w-10 text-primary"/>
+                Category: {category.name}
+            </h1>
+            {category.description && <p className="text-lg text-muted-foreground">{category.description}</p>}
+          </header>
 
-      {posts.length === 0 ? (
-        <p className="text-center text-muted-foreground text-lg py-10">No posts found in this category yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map(post => (
-            <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
-                {post.featuredImageUrl && ( // Changed from post.imageUrl and post.imageHint to match BlogPost type
-                    <div className="aspect-[16/9] overflow-hidden">
-                        <Image
-                        src={post.featuredImageUrl}
-                        alt={post.title}
-                        width={600}
-                        height={338} 
-                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                        data-ai-hint={post.featuredImageHint || 'category post'}
-                        />
-                    </div>
-                )}
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                  <Link href={`/blog/${post.slug}`}>{post.title}</Link>
-                </CardTitle>
-                 <div className="text-xs text-muted-foreground flex items-center mt-1">
-                    <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
-                    {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {post.content.replace(/<[^>]+>/g, '').substring(0, 120)}...
-                </p>
-              </CardContent>
-              <CardFooter>
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link href={`/blog/${post.slug}`} className="flex items-center">
-                    Read Post <ExternalLink className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
+          {posts.length === 0 ? (
+            <p className="text-center text-muted-foreground text-lg py-10">No posts found in this category yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8"> {/* Adjusted grid for main content area */}
+              {posts.map(post => (
+                <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
+                    {post.featuredImageUrl && ( 
+                        <div className="aspect-[16/9] overflow-hidden">
+                            <Image
+                            src={post.featuredImageUrl}
+                            alt={post.title}
+                            width={600}
+                            height={338} 
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                            data-ai-hint={post.featuredImageHint || 'category post'}
+                            />
+                        </div>
+                    )}
+                  <CardHeader>
+                    <CardTitle className="text-xl font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                      <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+                    </CardTitle>
+                     <div className="text-xs text-muted-foreground flex items-center mt-1">
+                        <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
+                        {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {post.content.replace(/<[^>]+>/g, '').substring(0, 120)}...
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                      <Link href={`/blog/${post.slug}`} className="flex items-center">
+                        Read Post <ExternalLink className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </main>
+        <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">
+          <div className="sticky top-24 space-y-8"> 
+            <AuthorCard />
+            <SearchWidget onSearch={handleSearch} initialQuery={currentSearchQuery} isLoading={isLoading && !!currentSearchQuery} />
+            <RecentPostsWidget limit={3}/>
+            <CategoriesWidget />
+            <InstagramWidget />
+            <TagsWidget />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

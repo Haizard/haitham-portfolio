@@ -5,10 +5,15 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ListChecks, CalendarDays } from "lucide-react"; // Updated icon
+import { Loader2, ListChecks, CalendarDays } from "lucide-react"; 
 import type { BlogPost } from '@/lib/blog-data';
 
-export function RecentPostsWidget({ limit = 4 }: { limit?: number }) {
+interface RecentPostsWidgetProps {
+  limit?: number;
+  excludeSlug?: string;
+}
+
+export function RecentPostsWidget({ limit = 4, excludeSlug }: RecentPostsWidgetProps) {
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -16,7 +21,11 @@ export function RecentPostsWidget({ limit = 4 }: { limit?: number }) {
     async function fetchPosts() {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/blog?enriched=true&limit=${limit}`);
+        let apiUrl = `/api/blog?enriched=true&limit=${limit}`;
+        if (excludeSlug) {
+          apiUrl += `&excludeSlug=${encodeURIComponent(excludeSlug)}`;
+        }
+        const response = await fetch(apiUrl);
         if (!response.ok) {
           throw new Error('Failed to fetch recent posts');
         }
@@ -30,7 +39,7 @@ export function RecentPostsWidget({ limit = 4 }: { limit?: number }) {
       }
     }
     fetchPosts();
-  }, [limit]);
+  }, [limit, excludeSlug]);
 
   return (
     <Card className="shadow-lg mb-8">

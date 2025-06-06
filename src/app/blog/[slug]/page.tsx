@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation"; // Added useRouter
 import Image from "next/image";
 import Link from 'next/link';
 import { CalendarDays, Globe, Loader2, Tag as TagIcon, Folder, ExternalLink, Download, FileText, FileDown, Image as ImageIcon } from "lucide-react";
@@ -26,6 +26,14 @@ import { CommentSection } from "@/components/blog/comment-section";
 import { RelatedPostsSection } from "@/components/blog/related-posts-section";
 import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Sidebar Widgets
+import { AuthorCard } from '@/components/blog/sidebar/AuthorCard';
+import { SearchWidget } from '@/components/blog/sidebar/SearchWidget';
+import { RecentPostsWidget } from '@/components/blog/sidebar/RecentPostsWidget';
+import { CategoriesWidget } from '@/components/blog/sidebar/CategoriesWidget';
+import { InstagramWidget } from '@/components/blog/sidebar/InstagramWidget';
+import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
 
 interface EnrichedBlogPost extends BlogPost {
   resolvedTags?: TagType[];
@@ -67,6 +75,7 @@ const availableLanguages = [
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
+  const router = useRouter(); // For search redirection
 
   const [post, setPost] = useState<EnrichedBlogPost | null>(null);
   const [isLoadingPost, setIsLoadingPost] = useState(true);
@@ -77,6 +86,7 @@ export default function BlogPostPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [currentSearchQuery, setCurrentSearchQuery] = useState(""); // For SearchWidget
 
   useEffect(() => {
     setIsLoadingPost(true);
@@ -167,7 +177,12 @@ export default function BlogPostPage() {
     }
   };
 
-  if (isLoadingPost) {
+  const handleSearch = (query: string) => {
+    setCurrentSearchQuery(query);
+    router.push(`/blog?search=${encodeURIComponent(query)}`);
+  };
+
+  if (isLoadingPost || (!post && !error)) { // Keep loading if post is null and no error yet
     return (
       <div className="container mx-auto py-8 px-4 max-w-4xl flex justify-center items-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -188,7 +203,17 @@ export default function BlogPostPage() {
   }
 
   if (!post) {
-    return null; 
+    // This case handles when notFound() might have been called or post is still null post-loading without explicit error
+    // It's a safeguard, as ideally notFound() would prevent rendering further.
+    return (
+       <div className="container mx-auto py-12 px-4 max-w-2xl text-center">
+        <h2 className="text-2xl font-semibold text-destructive mb-4">Post Not Found</h2>
+        <p className="text-muted-foreground">The post you are looking for does not exist or could not be loaded.</p>
+        <Button asChild className="mt-6">
+          <Link href="/blog">Back to Blog</Link>
+        </Button>
+      </div>
+    );
   }
 
   const displayContent = translatedContent ?? post.content;
@@ -199,171 +224,185 @@ export default function BlogPostPage() {
     : categoryDetails?.slug;
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <article>
-        {categoryDetails?.path && categoryDetails.path.length > 0 && (
-            <BreadcrumbDisplay path={categoryDetails.path} className="mb-4" />
-        )}
-        <header className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-4">{post.title}</h1>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-muted-foreground mb-2">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={post.authorAvatar} alt={post.author} data-ai-hint="author avatar" />
-                  <AvatarFallback>{post.author.substring(0,1)}</AvatarFallback>
-                </Avatar>
-                <span>{post.author}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <CalendarDays className="h-4 w-4" />
-                <time dateTime={post.date}>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</time>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-muted-foreground" />
-                <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={isTranslating}>
-                  <SelectTrigger className="w-[180px] h-9 text-sm">
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableLanguages.map(lang => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name} {lang.code === post.originalLanguage && "(Original)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isTranslating && <Loader2 className="h-5 w-5 animate-spin" />}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-2 items-center">
-            <Folder className="h-4 w-4 text-muted-foreground mr-1" />
-            {isLoadingCategory ? (
-              <Badge variant="outline" className="text-sm">Loading category...</Badge>
-            ) : categoryDetails?.name && categoryLinkPath ? (
-               <Link href={`/blog/category/${categoryLinkPath}`} className="hover:underline">
-                <Badge variant="outline" className="text-sm cursor-pointer hover:bg-secondary">{categoryDetails.name}</Badge>
-              </Link>
-            ) : (
-              <Badge variant="outline" className="text-sm">Uncategorized</Badge>
+    <div className="container mx-auto py-8 px-4">
+      <div className="lg:grid lg:grid-cols-12 lg:gap-12">
+        <main className="lg:col-span-8 xl:col-span-9">
+          <article>
+            {categoryDetails?.path && categoryDetails.path.length > 0 && (
+                <BreadcrumbDisplay path={categoryDetails.path} className="mb-4" />
             )}
-          </div>
-          
-          {post.resolvedTags && post.resolvedTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2 items-center">
-              <TagIcon className="h-4 w-4 text-muted-foreground mr-1" />
-              {post.resolvedTags.map(tag => (
-                tag.slug && (
-                  <Link key={tag.id} href={`/blog/tag/${tag.slug}`} className="hover:underline">
-                    <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground">{tag.name}</Badge>
-                  </Link>
-                )
-              ))}
-            </div>
-          )}
-        </header>
-
-        {post.featuredImageUrl && (
-          <Image
-            src={post.featuredImageUrl}
-            alt={post.title}
-            width={800}
-            height={400}
-            className="rounded-lg mb-8 shadow-lg w-full object-cover aspect-[2/1]"
-            data-ai-hint={post.featuredImageHint || "featured image"}
-          />
-        )}
-        
-        {post.galleryImages && post.galleryImages.length > 0 && (
-          <>
-            <section className="mb-8"> 
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
-                <ImageIcon className="mr-3 h-7 w-7 text-primary" />
-                Image Gallery
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {post.galleryImages.map((image, index) => (
-                  <div key={index} className="overflow-hidden rounded-lg shadow-lg group">
-                    <div className="aspect-w-4 aspect-h-3 bg-muted">
-                      <Image
-                        src={image.url}
-                        alt={image.caption || `Gallery image ${index + 1}`}
-                        width={400}
-                        height={300}
-                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                        data-ai-hint={image.hint || "gallery photo"}
-                      />
-                    </div>
-                    {image.caption && (
-                      <p className="mt-2 p-2 text-xs text-center text-muted-foreground bg-card">
-                        {image.caption}
-                      </p>
-                    )}
+            <header className="mb-8">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-4">{post.title}</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-muted-foreground mb-2">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={post.authorAvatar} alt={post.author} data-ai-hint="author avatar" />
+                      <AvatarFallback>{post.author.substring(0,1)}</AvatarFallback>
+                    </Avatar>
+                    <span>{post.author}</span>
                   </div>
-                ))}
+                  <div className="flex items-center space-x-1">
+                    <CalendarDays className="h-4 w-4" />
+                    <time dateTime={post.date}>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</time>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-muted-foreground" />
+                    <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={isTranslating}>
+                      <SelectTrigger className="w-[180px] h-9 text-sm">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableLanguages.map(lang => (
+                          <SelectItem key={lang.code} value={lang.code}>
+                            {lang.name} {lang.code === post.originalLanguage && "(Original)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isTranslating && <Loader2 className="h-5 w-5 animate-spin" />}
+                </div>
               </div>
-            </section>
-            <Separator className="mb-8" /> 
-          </>
-        )}
+              <div className="flex flex-wrap gap-2 mt-2 items-center">
+                <Folder className="h-4 w-4 text-muted-foreground mr-1" />
+                {isLoadingCategory ? (
+                  <Badge variant="outline" className="text-sm">Loading category...</Badge>
+                ) : categoryDetails?.name && categoryLinkPath && categoryLinkPath.trim() !== '' ? (
+                   <Link href={`/blog/category/${categoryLinkPath}`} className="hover:underline">
+                    <Badge variant="outline" className="text-sm cursor-pointer hover:bg-secondary">{categoryDetails.name}</Badge>
+                  </Link>
+                ) : (
+                  <Badge variant="outline" className="text-sm">Uncategorized</Badge>
+                )}
+              </div>
+              
+              {post.resolvedTags && post.resolvedTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2 items-center">
+                  <TagIcon className="h-4 w-4 text-muted-foreground mr-1" />
+                  {post.resolvedTags.map(tag => (
+                    tag.slug && (
+                      <Link key={tag.id} href={`/blog/tag/${tag.slug}`} className="hover:underline">
+                        <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground">{tag.name}</Badge>
+                      </Link>
+                    )
+                  ))}
+                </div>
+              )}
+            </header>
 
-        {isTranslating && selectedLanguage !== post.originalLanguage ? (
-          <div className="prose prose-lg dark:prose-invert max-w-none mb-12 flex flex-col items-center justify-center min-h-[300px] bg-muted/50 rounded-md p-8">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Translating to {currentLanguageName}...</p>
-          </div>
-        ) : (
-          <div
-            className="prose prose-lg dark:prose-invert max-w-none mb-12"
-            dangerouslySetInnerHTML={{ __html: displayContent }}
-          />
-        )}
-        
-      </article>
+            {post.featuredImageUrl && (
+              <Image
+                src={post.featuredImageUrl}
+                alt={post.title}
+                width={800}
+                height={400}
+                className="rounded-lg mb-8 shadow-lg w-full object-cover aspect-[2/1]"
+                data-ai-hint={post.featuredImageHint || "featured image"}
+              />
+            )}
+            
+            {post.galleryImages && post.galleryImages.length > 0 && (
+              <>
+                <section className="mb-8"> 
+                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
+                    <ImageIcon className="mr-3 h-7 w-7 text-primary" />
+                    Image Gallery
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {post.galleryImages.map((image, index) => (
+                      <div key={index} className="overflow-hidden rounded-lg shadow-lg group">
+                        <div className="aspect-w-4 aspect-h-3 bg-muted">
+                          <Image
+                            src={image.url}
+                            alt={image.caption || `Gallery image ${index + 1}`}
+                            width={400}
+                            height={300}
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                            data-ai-hint={image.hint || "gallery photo"}
+                          />
+                        </div>
+                        {image.caption && (
+                          <p className="mt-2 p-2 text-xs text-center text-muted-foreground bg-card">
+                            {image.caption}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <Separator className="mb-8" /> 
+              </>
+            )}
 
-      {post.downloads && post.downloads.length > 0 && (
-        <>
+            {isTranslating && selectedLanguage !== post.originalLanguage ? (
+              <div className="prose prose-lg dark:prose-invert max-w-none mb-12 flex flex-col items-center justify-center min-h-[300px] bg-muted/50 rounded-md p-8">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Translating to {currentLanguageName}...</p>
+              </div>
+            ) : (
+              <div
+                className="prose prose-lg dark:prose-invert max-w-none mb-12"
+                dangerouslySetInnerHTML={{ __html: displayContent }}
+              />
+            )}
+            
+          </article>
+
+          {post.downloads && post.downloads.length > 0 && (
+            <>
+              <Separator className="my-12" />
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl font-headline">
+                    <FileDown className="h-6 w-6 text-primary" />
+                    Downloadable Files
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {post.downloads.map((download, index) => (
+                      <li key={index} className="p-3 bg-secondary/50 rounded-lg shadow-sm flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold text-base">{download.name}</h4>
+                          {download.description && <p className="text-xs text-muted-foreground mt-0.5">{download.description}</p>}
+                        </div>
+                        <Button asChild variant="outline" size="sm">
+                          <a href={download.url} download={download.fileName || true} target="_blank" rel="noopener noreferrer">
+                            <Download className="mr-2 h-4 w-4" /> Download
+                          </a>
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+
           <Separator className="my-12" />
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl font-headline">
-                <FileDown className="h-6 w-6 text-primary" />
-                Downloadable Files
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {post.downloads.map((download, index) => (
-                  <li key={index} className="p-3 bg-secondary/50 rounded-lg shadow-sm flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-base">{download.name}</h4>
-                      {download.description && <p className="text-xs text-muted-foreground mt-0.5">{download.description}</p>}
-                    </div>
-                    <Button asChild variant="outline" size="sm">
-                      <a href={download.url} download={download.fileName || true} target="_blank" rel="noopener noreferrer">
-                        <Download className="mr-2 h-4 w-4" /> Download
-                      </a>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </>
-      )}
-
-
-      <Separator className="my-12" />
-      <CommentSection postId={post.slug} initialComments={post.comments || []} />
-      <Separator className="my-12" />
-      
-      {post.categoryId && (
-        <RelatedPostsSection 
-          categoryId={post.categoryId}
-          currentPostSlug={post.slug} 
-        />
-      )}
+          <CommentSection postId={post.slug} initialComments={post.comments || []} />
+          <Separator className="my-12" />
+          
+          {post.categoryId && (
+            <RelatedPostsSection 
+              categoryId={post.categoryId}
+              currentPostSlug={post.slug} 
+            />
+          )}
+        </main>
+        <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">
+          <div className="sticky top-24 space-y-8"> 
+            <AuthorCard />
+            <SearchWidget onSearch={handleSearch} initialQuery={currentSearchQuery} isLoading={isLoadingPost && !!currentSearchQuery} />
+            <RecentPostsWidget limit={3} excludeSlug={slug}/>
+            <CategoriesWidget />
+            <InstagramWidget />
+            <TagsWidget />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
