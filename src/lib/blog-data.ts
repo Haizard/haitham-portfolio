@@ -17,6 +17,14 @@ export interface DownloadLink {
   fileName?: string; // Suggested filename for the download attribute
 }
 
+export interface Comment {
+  id: string;
+  author: string;
+  avatar: string;
+  date: string;
+  text: string;
+}
+
 export interface BlogPost {
   _id?: ObjectId;
   id?: string;
@@ -35,17 +43,22 @@ export interface BlogPost {
   content: string; // HTML content
   originalLanguage: string;
   categoryId: string;
-  comments?: { id: string; author: string; avatar: string; date: string; text: string }[];
+  comments?: Comment[];
 }
 
 function docToBlogPost(doc: any): BlogPost {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
+  const commentsWithId = (rest.comments || []).map((comment: any) => ({
+    ...comment,
+    id: comment.id || new ObjectId().toString(), // Ensure comments always have an id
+  }));
   return { 
     id: _id?.toString(), 
     ...rest,
     galleryImages: rest.galleryImages || [],
     downloads: rest.downloads || [],
+    comments: commentsWithId,
   } as BlogPost;
 }
 
@@ -111,10 +124,7 @@ export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id
     return null;
   }
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
-  
-  // Ensure `slug`, `date`, and `comments` are not part of the $set operation unless explicitly handled.
-  // The `updates` type already excludes slug, date, and comments.
-  
+    
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updates },
@@ -164,4 +174,32 @@ export async function getPostsByTagId(tagId: string, limit?: number, excludeSlug
   }
   const postsArray = await cursor.toArray();
   return postsArray.map(docToBlogPost);
+}
+
+export async function addCommentToPost(postSlug: string, commentData: Omit<Comment, 'id'>): Promise<Comment | null> {
+  const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
+  const post = await collection.findOne({ slug: postSlug });
+
+  if (!post) {
+    console.warn(`[addCommentToPost] Post with slug '${postSlug}' not found.`);
+    return null;
+  }
+
+  const newComment: Comment = {
+    id: new ObjectId().toString(), // Generate a new unique ID for the comment
+    ...commentData,
+  };
+
+  const result = await collection.updateOne(
+    { slug: postSlug },
+    { $push: { comments: { $each: [newComment], $position: 0 } } } // Add to the beginning of the array
+  );
+
+  if (result.modifiedCount === 1) {
+    console.log(`[addCommentToPost] Comment added to post '${postSlug}'.`);
+    return newComment;
+  } else {
+    console.warn(`[addCommentToPost] Failed to add comment to post '${postSlug}'.`);
+    return null;
+  }
 }

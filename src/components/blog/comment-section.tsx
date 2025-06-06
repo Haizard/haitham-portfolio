@@ -18,7 +18,7 @@ const commentFormSchema = z.object({
 });
 
 interface CommentSectionProps {
-  postId: string;
+  postId: string; // This should be the post's slug
   initialComments?: Comment[];
 }
 
@@ -36,35 +36,35 @@ export function CommentSection({ postId, initialComments = [] }: CommentSectionP
 
   async function onSubmit(values: z.infer<typeof commentFormSchema>) {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch(`/api/blog/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentText: values.commentText }),
+      });
 
-    const newComment: Comment = {
-      id: Math.random().toString(36).substring(2, 15), // Generate a random ID
-      author: "Current User", // In a real app, get this from auth
-      avatar: "https://placehold.co/50x50.png?text=CU", // Placeholder
-      date: new Date().toISOString(),
-      text: values.commentText,
-    };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to post comment.");
+      }
 
-    setComments(prevComments => [newComment, ...prevComments]);
-    form.reset();
-    toast({
-      title: "Comment Added!",
-      description: "Your comment has been posted.",
-    });
-    setIsSubmitting(false);
-    // In a real app, you would call an API endpoint here:
-    // try {
-    //   await fetch(`/api/posts/${postId}/comments`, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ text: values.commentText }),
-    //   });
-    //   // Re-fetch comments or update optimistically
-    // } catch (error) {
-    //   toast({ title: "Error", description: "Failed to post comment.", variant: "destructive" });
-    // }
+      const newComment: Comment = await response.json();
+      setComments(prevComments => [newComment, ...prevComments]); // Add new comment to the top
+      form.reset();
+      toast({
+        title: "Comment Added!",
+        description: "Your comment has been posted successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error posting comment:", error);
+      toast({
+        title: "Error Posting Comment",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
