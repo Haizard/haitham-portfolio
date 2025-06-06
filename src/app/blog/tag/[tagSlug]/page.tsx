@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation'; // Import useParams
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +13,8 @@ import type { Tag } from '@/lib/tags-data';
 
 
 export default function TagArchivePage() {
-  const params = useParams<{ tagSlug: string }>();
-  const tagSlug = params.tagSlug;
+  const params = useParams<{ tagSlug: string }>(); // Use the hook
+  const tagSlug = params.tagSlug; // Access tagSlug from the hook's return value
 
   const [tag, setTag] = useState<Tag | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -59,7 +59,7 @@ export default function TagArchivePage() {
       }
     }
     fetchData();
-  }, [tagSlug]);
+  }, [tagSlug]); // tagSlug from useParams is stable
 
   if (isLoading) {
     return (
@@ -104,15 +104,15 @@ export default function TagArchivePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
             <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
-                {post.imageUrl && (
+                {post.featuredImageUrl && ( // Changed from post.imageUrl
                      <div className="aspect-[16/9] overflow-hidden">
                         <Image
-                        src={post.imageUrl}
+                        src={post.featuredImageUrl}
                         alt={post.title}
                         width={600}
                         height={338}
                         className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                        data-ai-hint={post.imageHint || 'tag archive post'}
+                        data-ai-hint={post.featuredImageHint || 'tag archive post'} // Changed from post.imageHint
                         />
                     </div>
                 )}
