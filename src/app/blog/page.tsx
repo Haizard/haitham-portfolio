@@ -6,10 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, CalendarDays, Newspaper, Tag as TagIcon, Folder } from 'lucide-react';
+import { Loader2, ExternalLink, CalendarDays, Newspaper, Folder, Tag as TagIcon } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
 import { Badge } from '@/components/ui/badge';
-import type { CategoryNode } from '@/lib/categories-data';
 import type { Tag as TagType } from '@/lib/tags-data';
 
 interface EnrichedPost extends BlogPost {
@@ -101,28 +100,31 @@ export default function BlogIndexPage() {
                 <CardTitle className="text-xl font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                   <Link href={`/blog/${post.slug}`}>{post.title}</Link>
                 </CardTitle>
-                <div className="text-xs text-muted-foreground flex items-center mt-1">
-                  <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
-                  {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </div>
-                 {post.categoryName && post.categorySlugPath && (
-                    <div className="text-xs text-muted-foreground flex items-center mt-1">
-                        <Folder className="h-3.5 w-3.5 mr-1.5"/>
-                        <Link href={`/blog/category/${post.categorySlugPath}`} className="hover:underline">
+                <div className="text-xs text-muted-foreground flex items-center mt-1 space-x-3">
+                  <div className="flex items-center">
+                    <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
+                    {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </div>
+                   {post.categoryName && post.categorySlugPath && (
+                    <div className="flex items-center">
+                        <Folder className="h-3.5 w-3.5 mr-1.5 text-primary/80"/>
+                        <Link href={`/blog/category/${post.categorySlugPath}`} className="hover:underline hover:text-primary transition-colors">
                             {post.categoryName}
                         </Link>
                     </div>
-                )}
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground line-clamp-3">
                   {post.content.replace(/<[^>]+>/g, '').substring(0, 120)}...
                 </p>
                  {post.resolvedTags && post.resolvedTags.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
+                    <div className="mt-3 flex flex-wrap gap-1.5 items-center">
+                        <TagIcon className="h-3.5 w-3.5 mr-1 text-primary/80" />
                         {post.resolvedTags.map(tag => (
                              <Link key={tag.id} href={`/blog/tag/${tag.slug}`}>
-                                <Badge variant="secondary" className="text-xs hover:bg-accent hover:text-accent-foreground">
+                                <Badge variant="secondary" className="text-xs hover:bg-accent hover:text-accent-foreground transition-colors">
                                     {tag.name}
                                 </Badge>
                             </Link>
