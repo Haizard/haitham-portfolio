@@ -148,14 +148,14 @@ export function PostListManagement() {
                       <TableCell className="text-right space-x-1">
                         <Button variant="outline" size="sm" asChild>
                           <Link href={`/blog/${post.slug}`} target="_blank">
-                            <Eye className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">View</span>
+                            <Eye /> <span className="hidden sm:inline">View</span>
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleEditPost(post.slug)}>
-                          <Edit3 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Edit</span>
+                          <Edit3 /> <span className="hidden sm:inline">Edit</span>
                         </Button>
                         <Button variant="destructive" size="sm" onClick={() => confirmDeletePost(post)}>
-                          <Trash2 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Delete</span>
+                          <Trash2 /> <span className="hidden sm:inline">Delete</span>
                         </Button>
                       </TableCell>
                     </TableRow>
