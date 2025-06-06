@@ -145,7 +145,7 @@ const predictSportMatchFlow = ai.defineFlow(
   async (input: PredictSportMatchInput) => {
     console.log("[predictSportMatchFlow] Input received:", input);
     const llmResponse = await prompt(input); // Genkit handles tool calls automatically here
-    const output = llmResponse.output(); 
+    const output = llmResponse.output; 
 
     if (!output) {
       console.error("AI failed to generate a prediction or the output was not in the expected format.");
@@ -164,3 +164,4 @@ const predictSportMatchFlow = ai.defineFlow(
     return output;
   }
 );
+
