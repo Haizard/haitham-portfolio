@@ -1,21 +1,29 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ExternalLink } from 'lucide-react';
+import { Loader2, ExternalLink, ThumbsUp } from 'lucide-react'; // Changed icon
 import type { BlogPost } from '@/lib/blog-data';
 import { Button } from '@/components/ui/button';
+import { Separator } from '../ui/separator';
 
 interface RelatedPostsSectionProps {
-  categoryId: string; // Changed from category and subcategory
-  currentPostSlug: string;
+  sectionTitle?: string;
+  categoryId?: string;
+  tagId?: string;
+  currentPostSlug?: string; // Slug of the post currently being viewed (to exclude it)
+  excludeSlugs?: string[]; // Additional slugs to exclude (e.g., already displayed posts)
   limit?: number;
 }
 
 export function RelatedPostsSection({
+  sectionTitle = "Related Posts",
   categoryId,
+  tagId,
   currentPostSlug,
+  excludeSlugs = [],
   limit = 3,
 }: RelatedPostsSectionProps) {
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
@@ -24,18 +32,34 @@ export function RelatedPostsSection({
 
   useEffect(() => {
     async function fetchRelatedPosts() {
-      if (!categoryId) {
-        setIsLoading(false);
-        setRelatedPosts([]);
-        // Optionally set an error or a message if categoryId is missing
-        // setError("Category ID is missing, cannot fetch related posts.");
-        return;
-      }
       setIsLoading(true);
       setError(null);
+
+      if (!categoryId && !tagId && !sectionTitle.toLowerCase().includes("further reading")) { // Only fetch general posts if specifically for "Further Reading" or if an ID is provided
+         setIsLoading(false);
+         setRelatedPosts([]);
+         // setError("Either categoryId or tagId must be provided for related posts, or title must indicate general fetching.");
+         return;
+      }
+      
+      let apiUrl = `/api/blog?enriched=true&limit=${limit}`;
+      const allExclusions = [...excludeSlugs];
+      if (currentPostSlug) {
+        allExclusions.push(currentPostSlug);
+      }
+
+      if (allExclusions.length > 0) {
+        apiUrl += `&excludeSlugs=${allExclusions.map(s => encodeURIComponent(s)).join(',')}`;
+      }
+
+      if (categoryId) {
+        apiUrl += `&categoryId=${encodeURIComponent(categoryId)}`;
+      } else if (tagId) {
+        apiUrl += `&tagId=${encodeURIComponent(tagId)}`;
+      }
+      // If neither categoryId nor tagId is provided, it will fetch general recent posts (respecting exclusions)
+
       try {
-        // API call now uses categoryId
-        const apiUrl = `/api/blog?categoryId=${encodeURIComponent(categoryId)}&limit=${limit}&excludeSlug=${encodeURIComponent(currentPostSlug)}`;
         const response = await fetch(apiUrl);
         if (!response.ok) {
           throw new Error('Failed to fetch related posts');
@@ -52,13 +76,13 @@ export function RelatedPostsSection({
     }
 
     fetchRelatedPosts();
-  }, [categoryId, currentPostSlug, limit]);
+  }, [categoryId, tagId, currentPostSlug, excludeSlugs, limit, sectionTitle]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-muted-foreground">Loading related posts...</p>
+        <p className="ml-2 text-muted-foreground">Loading posts...</p>
       </div>
     );
   }
@@ -79,15 +103,16 @@ export function RelatedPostsSection({
   if (relatedPosts.length === 0) {
     return (
         <div className="py-8 text-center">
-            <p className="text-muted-foreground">No related posts found in this category.</p>
+            <p className="text-muted-foreground">No more posts to display in this section.</p>
         </div>
     );
   }
 
   return (
-    <section>
-      <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6">
-        Related Posts
+    <section className="mt-12">
+      <Separator className="mb-8" />
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
+        <ThumbsUp className="mr-3 h-7 w-7 text-primary" /> {sectionTitle}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {relatedPosts.map((post) => (

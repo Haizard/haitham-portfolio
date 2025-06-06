@@ -74,21 +74,30 @@ export async function getAllPosts(
   enrich: boolean = false, 
   categoryDataFetcher?: typeof getCategoryPathType, 
   tagDataFetcher?: typeof getTagsByIdsType,
-  searchQuery?: string // Added for search functionality
+  searchQuery?: string,
+  limit?: number,
+  excludeSlugs?: string[] // Changed from excludeSlug: string to excludeSlugs: string[]
 ): Promise<BlogPost[]> {
-  console.log(`Attempting to fetch posts from DB. Search query: "${searchQuery || ''}"`);
+  console.log(`Attempting to fetch posts from DB. Search: "${searchQuery || ''}", Limit: ${limit}, ExcludeSlugs: ${excludeSlugs?.join(',')}`);
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
   
   const query: Filter<BlogPost> = {};
   if (searchQuery) {
-    const regex = { $regex: searchQuery, $options: 'i' }; // Case-insensitive regex
+    const regex = { $regex: searchQuery, $options: 'i' }; 
     query.$or = [
       { title: regex },
       { content: regex } 
     ];
   }
 
-  const postsCursor = await collection.find(query).sort({ date: -1 });
+  if (excludeSlugs && excludeSlugs.length > 0) {
+    query.slug = { $nin: excludeSlugs };
+  }
+
+  const postsCursor = collection.find(query).sort({ date: -1 });
+  if (limit) {
+    postsCursor.limit(limit);
+  }
   let postsArray = await postsCursor.toArray();
   console.log(`Fetched ${postsArray.length} posts from DB with current filters.`);
   
@@ -104,7 +113,6 @@ export async function getAllPosts(
         const path = await categoryDataFetcher(post.categoryId);
         if (path && path.length > 0) {
           categoryName = path[path.length - 1].name;
-          // Ensure only valid slugs are joined
           categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
         }
       }
@@ -132,7 +140,6 @@ export async function getPostBySlug(slug: string, enrich: boolean = false, categ
         const path = await categoryDataFetcher(post.categoryId);
         if (path && path.length > 0) {
           post.categoryName = path[path.length - 1].name;
-          // Ensure only valid slugs are joined
           post.categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
         }
       }
@@ -204,15 +211,15 @@ export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id
 }
 
 
-export async function getPostsByCategoryId(categoryId: string, limit?: number, excludeSlug?: string, enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
+export async function getPostsByCategoryId(categoryId: string, limit?: number, excludeSlugs?: string[], enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
   if (!ObjectId.isValid(categoryId)) {
     console.warn(`getPostsByCategoryId: Invalid categoryId format: ${categoryId}`);
     return [];
   }
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
   const query: any = { categoryId };
-  if (excludeSlug) {
-    query.slug = { $ne: excludeSlug };
+  if (excludeSlugs && excludeSlugs.length > 0) {
+    query.slug = { $nin: excludeSlugs };
   }
   const cursor = collection.find(query).sort({ date: -1 });
   if (limit) {
@@ -243,15 +250,15 @@ export async function getPostsByCategoryId(categoryId: string, limit?: number, e
   return results;
 }
 
-export async function getPostsByTagId(tagId: string, limit?: number, excludeSlug?: string, enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
+export async function getPostsByTagId(tagId: string, limit?: number, excludeSlugs?: string[], enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
    if (!ObjectId.isValid(tagId)) {
     console.warn(`getPostsByTagId: Invalid tagId format: ${tagId}`);
     return [];
   }
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
   const query: any = { tagIds: tagId };
-  if (excludeSlug) {
-    query.slug = { $ne: excludeSlug };
+  if (excludeSlugs && excludeSlugs.length > 0) {
+    query.slug = { $nin: excludeSlugs };
   }
   const cursor = collection.find(query).sort({ date: -1 });
   if (limit) {
@@ -292,13 +299,13 @@ export async function addCommentToPost(postSlug: string, commentData: Omit<Comme
   }
 
   const newComment: Comment = {
-    id: new ObjectId().toString(), // Generate a new unique ID for the comment
+    id: new ObjectId().toString(), 
     ...commentData,
   };
 
   const result = await collection.updateOne(
     { slug: postSlug },
-    { $push: { comments: { $each: [newComment], $position: 0 } } } // Add to the beginning of the array
+    { $push: { comments: { $each: [newComment], $position: 0 } } } 
   );
 
   if (result.modifiedCount === 1) {

@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { notFound, useParams, useRouter } from 'next/navigation'; // Import useParams and useRouter
+import { notFound, useParams, useRouter } from 'next/navigation'; 
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ExternalLink, CalendarDays, Tag as TagIcon } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
 import type { Tag } from '@/lib/tags-data';
+import { RelatedPostsSection } from '@/components/blog/related-posts-section';
+import { Separator } from '@/components/ui/separator';
 
 // Sidebar Widgets
 import { AuthorCard } from '@/components/blog/sidebar/AuthorCard';
@@ -22,13 +24,13 @@ import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
 export default function TagArchivePage() {
   const params = useParams<{ tagSlug: string }>(); 
   const tagSlug = params.tagSlug; 
-  const router = useRouter(); // For search redirection
+  const router = useRouter(); 
 
   const [tag, setTag] = useState<Tag | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentSearchQuery, setCurrentSearchQuery] = useState(""); // For SearchWidget
+  const [currentSearchQuery, setCurrentSearchQuery] = useState(""); 
 
   useEffect(() => {
     if (!tagSlug) {
@@ -50,7 +52,7 @@ export default function TagArchivePage() {
         setTag(tagData);
 
         if (tagData && tagData.id) {
-          const postsResponse = await fetch(`/api/blog?tagId=${tagData.id}`);
+          const postsResponse = await fetch(`/api/blog?tagId=${tagData.id}&enriched=true`);
           if (!postsResponse.ok) {
             throw new Error('Failed to fetch posts for this tag');
           }
@@ -95,6 +97,7 @@ export default function TagArchivePage() {
   
   if (!tag) {
     notFound();
+    return null; // Ensure notFound is called and component returns
   }
 
   return (
@@ -117,7 +120,7 @@ export default function TagArchivePage() {
           {posts.length === 0 ? (
             <p className="text-center text-muted-foreground text-lg py-10">No posts found with this tag yet.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8"> {/* Adjusted grid for main content area */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8"> 
               {posts.map(post => (
                 <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
                     {post.featuredImageUrl && ( 
@@ -156,6 +159,14 @@ export default function TagArchivePage() {
                 </Card>
               ))}
             </div>
+          )}
+          {tag.id && posts.length > 0 && (
+             <RelatedPostsSection 
+                sectionTitle={`More with tag "${tag.name}"`}
+                tagId={tag.id} 
+                excludeSlugs={posts.map(p => p.slug)}
+                limit={3}
+            />
           )}
         </main>
         <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">

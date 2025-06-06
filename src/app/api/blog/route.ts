@@ -11,10 +11,12 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const tagId = searchParams.get('tagId');
     const limitStr = searchParams.get('limit');
-    const excludeSlug = searchParams.get('excludeSlug');
+    const excludeSlugsStr = searchParams.get('excludeSlugs'); // Changed from excludeSlug
     const limit = limitStr ? parseInt(limitStr, 10) : undefined;
     const enriched = searchParams.get('enriched') === 'true';
-    const searchQuery = searchParams.get('search'); // Read search query parameter
+    const searchQuery = searchParams.get('search'); 
+
+    const excludeSlugsArray = excludeSlugsStr ? excludeSlugsStr.split(',').map(s => s.trim()).filter(s => s) : undefined;
 
     let postsData: BlogPost[];
 
@@ -22,15 +24,14 @@ export async function GET(request: NextRequest) {
       if (!ObjectId.isValid(categoryId)) {
         return NextResponse.json({ message: "Invalid categoryId format" }, { status: 400 });
       }
-      postsData = await getPostsByCategoryId(categoryId, limit, excludeSlug || undefined, enriched, getCategoryPath, getTagsByIds);
+      postsData = await getPostsByCategoryId(categoryId, limit, excludeSlugsArray, enriched, getCategoryPath, getTagsByIds);
     } else if (tagId) {
       if (!ObjectId.isValid(tagId)) {
         return NextResponse.json({ message: "Invalid tagId format" }, { status: 400 });
       }
-      postsData = await getPostsByTagId(tagId, limit, excludeSlug || undefined, enriched, getCategoryPath, getTagsByIds);
+      postsData = await getPostsByTagId(tagId, limit, excludeSlugsArray, enriched, getCategoryPath, getTagsByIds);
     } else {
-      // Pass searchQuery to getAllPosts
-      postsData = await getAllPosts(enriched, getCategoryPath, getTagsByIds, searchQuery || undefined);
+      postsData = await getAllPosts(enriched, getCategoryPath, getTagsByIds, searchQuery || undefined, limit, excludeSlugsArray);
     }
     return NextResponse.json(postsData);
   } catch (error) {
