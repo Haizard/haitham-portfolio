@@ -1,5 +1,5 @@
 
-import { ObjectId } from 'mongodb';
+import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { CategoryNode, getCategoryPath as getCategoryPathType } from './categories-data'; // For enriched data
 import type { Tag, getTagsByIds as getTagsByIdsType } from './tags-data'; // For enriched data
@@ -70,12 +70,29 @@ function docToBlogPost(doc: any): BlogPost {
   } as BlogPost;
 }
 
-export async function getAllPosts(enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
-  console.log("Attempting to fetch all posts from DB");
+export async function getAllPosts(
+  enrich: boolean = false, 
+  categoryDataFetcher?: typeof getCategoryPathType, 
+  tagDataFetcher?: typeof getTagsByIdsType,
+  searchQuery?: string // Added for search functionality
+): Promise<BlogPost[]> {
+  console.log(`Attempting to fetch posts from DB. Search query: "${searchQuery || ''}"`);
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
-  const postsCursor = await collection.find({}).sort({ date: -1 });
+  
+  const query: Filter<BlogPost> = {};
+  if (searchQuery) {
+    const regex = { $regex: searchQuery, $options: 'i' }; // Case-insensitive regex
+    query.$or = [
+      { title: regex },
+      { content: regex } 
+      // Note: Searching 'content' with regex can be slow on large datasets without text indexes.
+      // For production, consider MongoDB text indexes for better performance.
+    ];
+  }
+
+  const postsCursor = await collection.find(query).sort({ date: -1 });
   let postsArray = await postsCursor.toArray();
-  console.log(`Fetched ${postsArray.length} posts from DB`);
+  console.log(`Fetched ${postsArray.length} posts from DB with current filters.`);
   
   let results = postsArray.map(docToBlogPost);
 

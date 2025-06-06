@@ -1,7 +1,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllPosts, addPost, type BlogPost, getPostBySlug as getExistingPostBySlug, getPostsByCategoryId, getPostsByTagId } from '@/lib/blog-data';
-import { findOrCreateTagsByNames, type Tag } from '@/lib/tags-data';
+import { findOrCreateTagsByNames, getTagsByIds, type Tag } from '@/lib/tags-data';
+import { getCategoryPath, type CategoryNode } from '@/lib/categories-data';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request: NextRequest) {
@@ -12,6 +13,8 @@ export async function GET(request: NextRequest) {
     const limitStr = searchParams.get('limit');
     const excludeSlug = searchParams.get('excludeSlug');
     const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+    const enriched = searchParams.get('enriched') === 'true';
+    const searchQuery = searchParams.get('search'); // Read search query parameter
 
     let postsData: BlogPost[];
 
@@ -19,14 +22,15 @@ export async function GET(request: NextRequest) {
       if (!ObjectId.isValid(categoryId)) {
         return NextResponse.json({ message: "Invalid categoryId format" }, { status: 400 });
       }
-      postsData = await getPostsByCategoryId(categoryId, limit, excludeSlug || undefined);
+      postsData = await getPostsByCategoryId(categoryId, limit, excludeSlug || undefined, enriched, getCategoryPath, getTagsByIds);
     } else if (tagId) {
       if (!ObjectId.isValid(tagId)) {
         return NextResponse.json({ message: "Invalid tagId format" }, { status: 400 });
       }
-      postsData = await getPostsByTagId(tagId, limit, excludeSlug || undefined);
+      postsData = await getPostsByTagId(tagId, limit, excludeSlug || undefined, enriched, getCategoryPath, getTagsByIds);
     } else {
-      postsData = await getAllPosts();
+      // Pass searchQuery to getAllPosts
+      postsData = await getAllPosts(enriched, getCategoryPath, getTagsByIds, searchQuery || undefined);
     }
     return NextResponse.json(postsData);
   } catch (error) {

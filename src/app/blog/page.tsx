@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, CalendarDays, Newspaper, Folder, Tag as TagIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, ExternalLink, CalendarDays, Newspaper, Folder, Tag as TagIcon, Search, XCircle } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
 import { Badge } from '@/components/ui/badge';
 import type { Tag as TagType } from '@/lib/tags-data';
@@ -17,8 +18,12 @@ interface EnrichedPost extends BlogPost {
   resolvedTags?: TagType[];
 }
 
-async function fetchAllPosts(): Promise<EnrichedPost[]> {
-  const response = await fetch('/api/blog?enriched=true');
+async function fetchBlogPosts(searchQuery?: string): Promise<EnrichedPost[]> {
+  let apiUrl = '/api/blog?enriched=true';
+  if (searchQuery) {
+    apiUrl += `&search=${encodeURIComponent(searchQuery)}`;
+  }
+  const response = await fetch(apiUrl);
   if (!response.ok) {
     throw new Error('Failed to fetch posts');
   }
@@ -30,13 +35,15 @@ export default function BlogIndexPage() {
   const [posts, setPosts] = useState<EnrichedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [currentSearchQuery, setCurrentSearchQuery] = useState("");
 
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       setError(null);
       try {
-        const postsData = await fetchAllPosts();
+        const postsData = await fetchBlogPosts(currentSearchQuery);
         setPosts(postsData);
       } catch (err: any) {
         console.error("Error in BlogIndexPage:", err);
@@ -47,7 +54,17 @@ export default function BlogIndexPage() {
       }
     }
     fetchData();
-  }, []);
+  }, [currentSearchQuery]);
+
+  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setCurrentSearchQuery(searchInput);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setCurrentSearchQuery("");
+  };
 
   if (isLoading) {
     return (
@@ -68,7 +85,7 @@ export default function BlogIndexPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <header className="mb-12 text-center">
+      <header className="mb-10 text-center">
         <h1 className="text-5xl font-bold tracking-tight font-headline mb-4 flex items-center justify-center">
           <Newspaper className="mr-4 h-12 w-12 text-primary" />
           CreatorOS Blog
@@ -78,9 +95,44 @@ export default function BlogIndexPage() {
         </p>
       </header>
 
-      {posts.length === 0 ? (
+      <div className="mb-10 max-w-xl mx-auto">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 p-2 border rounded-lg shadow-sm bg-card">
+          <Search className="h-5 w-5 text-muted-foreground ml-2" />
+          <Input
+            type="text"
+            placeholder="Search blog posts..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="flex-grow border-0 focus:ring-0 focus-visible:ring-offset-0 text-base"
+          />
+          {searchInput && (
+            <Button type="button" variant="ghost" size="icon" onClick={clearSearch} className="h-8 w-8">
+              <XCircle className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          )}
+          <Button type="submit" className="bg-primary hover:bg-primary/90">
+            Search
+          </Button>
+        </form>
+      </div>
+      
+      {currentSearchQuery && (
+        <div className="mb-8 text-center">
+          <p className="text-lg text-muted-foreground">
+            Showing results for: <span className="font-semibold text-primary">{currentSearchQuery}</span>
+          </p>
+          {posts.length === 0 && !isLoading && (
+             <p className="mt-2">No posts found matching your search.</p>
+          )}
+        </div>
+      )}
+
+
+      {posts.length === 0 && !isLoading && !currentSearchQuery && (
         <p className="text-center text-muted-foreground text-lg py-10">No blog posts found yet. Stay tuned!</p>
-      ) : (
+      )}
+      
+      {posts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
             <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
