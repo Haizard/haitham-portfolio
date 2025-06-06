@@ -1,28 +1,26 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import type { BlogPost } from './blog-data'; // Import for post counts
 
 const CATEGORIES_COLLECTION = 'categories';
 
 export interface CategoryNode {
-  _id?: ObjectId; // MongoDB specific ID
-  id?: string; // String representation of _id
+  _id?: ObjectId; 
+  id?: string; 
   name: string;
   slug: string;
   description?: string;
-  parentId?: string | null; // Stores string representation of parent's ObjectId
-  // children are not stored directly in the document; they are resolved dynamically
-  // For simplicity in this refactor, children will be fetched separately if needed
-  // or category path logic will rely on parentId lookups.
-  children?: CategoryNode[]; // This will be populated dynamically if needed
+  parentId?: string | null; 
+  children?: CategoryNode[]; 
+  postCount?: number; // Added for post count
 }
 
 // Helper to convert MongoDB document to CategoryNode interface
 function docToCategoryNode(doc: any): CategoryNode {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
-  // Children are not directly stored, so don't expect them from DB doc unless explicitly joined/populated
-  return { id: _id?.toString(), ...rest, children: rest.children || [] } as CategoryNode;
+  return { id: _id?.toString(), ...rest, children: rest.children || [], postCount: rest.postCount || 0 } as CategoryNode;
 }
 
 function createSlugFromName(name: string): string {
@@ -36,7 +34,7 @@ function createSlugFromName(name: string): string {
 async function isSlugUnique(slug: string, parentId: string | null, excludeId?: string): Promise<boolean> {
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
   const query: Filter<CategoryNode> = { slug, parentId: parentId || null };
-  if (excludeId) {
+  if (excludeId && ObjectId.isValid(excludeId)) {
     query._id = { $ne: new ObjectId(excludeId) };
   }
   const count = await collection.countDocuments(query);
@@ -45,51 +43,90 @@ async function isSlugUnique(slug: string, parentId: string | null, excludeId?: s
 
 
 export async function getAllCategories(): Promise<CategoryNode[]> {
-  const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
-  const categories = await collection.find({ parentId: { $in: [null, undefined] } }).toArray(); // Get top-level
+  const categoriesCollection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
+  const postsCollection = await getCollection<BlogPost>('posts');
 
-  // Recursive function to fetch children
-  async function fetchChildren(parentId: string): Promise<CategoryNode[]> {
-    const childrenDocs = await collection.find({ parentId }).toArray();
-    const childrenNodes: CategoryNode[] = [];
-    for (const childDoc of childrenDocs) {
-      const node = docToCategoryNode(childDoc);
-      node.children = await fetchChildren(node.id!);
-      childrenNodes.push(node);
+  // Step 1: Fetch all categories
+  const allCategoryDocs = await categoriesCollection.find({}).toArray();
+
+  // Step 2: Aggregate post counts for all categories
+  const categoryCountsCursor = postsCollection.aggregate([
+    { $match: { categoryId: { $exists: true, $ne: null } } },
+    { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+  ]);
+  const categoryCountsArray = await categoryCountsCursor.toArray();
+  const categoryCountMap = new Map<string, number>();
+  categoryCountsArray.forEach(item => {
+    if (item._id) { // _id here is the categoryId (string)
+      categoryCountMap.set(item._id.toString(), item.count);
     }
-    return childrenNodes;
-  }
+  });
 
-  const categoryTree: CategoryNode[] = [];
-  for (const categoryDoc of categories) {
-    const node = docToCategoryNode(categoryDoc);
-    node.children = await fetchChildren(node.id!);
-    categoryTree.push(node);
-  }
-  return categoryTree;
+  // Step 3: Map docs to CategoryNode and attach post counts
+  const allNodesMap = new Map<string, CategoryNode>();
+  allCategoryDocs.forEach(doc => {
+    const node = docToCategoryNode(doc);
+    node.postCount = categoryCountMap.get(node.id!) || 0;
+    node.children = []; // Initialize children array
+    allNodesMap.set(node.id!, node);
+  });
+
+  // Step 4: Build the tree structure
+  const tree: CategoryNode[] = [];
+  allNodesMap.forEach(node => {
+    if (node.parentId && allNodesMap.has(node.parentId)) {
+      allNodesMap.get(node.parentId)!.children!.push(node);
+    } else {
+      tree.push(node); // Top-level node
+    }
+  });
+
+  // Optional: Sort children for consistent order if needed, e.g., by name
+  // function sortChildrenRecursive(nodes: CategoryNode[]): void {
+  //   nodes.sort((a, b) => a.name.localeCompare(b.name));
+  //   nodes.forEach(node => {
+  //     if (node.children && node.children.length > 0) {
+  //       sortChildrenRecursive(node.children);
+  //     }
+  //   });
+  // }
+  // sortChildrenRecursive(tree);
+
+  return tree;
 }
+
 
 export async function getCategoryById(id: string): Promise<CategoryNode | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
   const doc = await collection.findOne({ _id: new ObjectId(id) });
-  return doc ? docToCategoryNode(doc) : null;
+  if (!doc) return null;
+  
+  const category = docToCategoryNode(doc);
+  const postsCollection = await getCollection<BlogPost>('posts');
+  category.postCount = await postsCollection.countDocuments({ categoryId: category.id });
+  return category;
 }
 
 export async function getCategoryBySlug(slug: string, parentId?: string | null): Promise<CategoryNode | null> {
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
   const query: Filter<CategoryNode> = { slug };
-  if (parentId !== undefined) { // Allows finding top-level slug if parentId is null
+  if (parentId !== undefined) { 
     query.parentId = parentId;
   }
   const doc = await collection.findOne(query);
-  return doc ? docToCategoryNode(doc) : null;
+  if (!doc) return null;
+
+  const category = docToCategoryNode(doc);
+  const postsCollection = await getCollection<BlogPost>('posts');
+  category.postCount = await postsCollection.countDocuments({ categoryId: category.id });
+  return category;
 }
 
 export async function addCategory(
-  categoryData: Omit<CategoryNode, 'id' | '_id' | 'slug' | 'children'> & { name: string, parentId?: string | null }
+  categoryData: Omit<CategoryNode, 'id' | '_id' | 'slug' | 'children' | 'postCount'> & { name: string, parentId?: string | null }
 ): Promise<CategoryNode> {
-  const collection = await getCollection<Omit<CategoryNode, 'id' | '_id' | 'children'>>(CATEGORIES_COLLECTION);
+  const collection = await getCollection<Omit<CategoryNode, 'id' | '_id' | 'children' | 'postCount'>>(CATEGORIES_COLLECTION);
   const slug = createSlugFromName(categoryData.name);
 
   if (!(await isSlugUnique(slug, categoryData.parentId || null))) {
@@ -100,21 +137,20 @@ export async function addCategory(
     throw new Error(`Invalid parentId format: ${categoryData.parentId}`);
   }
 
-
   const docToInsert = {
     name: categoryData.name,
     slug,
     description: categoryData.description,
-    parentId: categoryData.parentId || null, // Store as string or null
+    parentId: categoryData.parentId || null, 
   };
 
   const result = await collection.insertOne(docToInsert as any);
-  return { id: result.insertedId.toString(), _id: result.insertedId, ...docToInsert, children: [] };
+  return { id: result.insertedId.toString(), _id: result.insertedId, ...docToInsert, children: [], postCount: 0 };
 }
 
 export async function updateCategory(
   id: string,
-  updates: Partial<Omit<CategoryNode, 'id' | '_id' | 'slug' | 'children' | 'parentId'>>
+  updates: Partial<Omit<CategoryNode, 'id' | '_id' | 'slug' | 'children' | 'parentId' | 'postCount'>>
 ): Promise<CategoryNode | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
@@ -135,7 +171,10 @@ export async function updateCategory(
   }
   
   if (Object.keys(updatePayload).length === 0) {
-    return docToCategoryNode(existingCategory); // No changes
+    const currentCategory = docToCategoryNode(existingCategory);
+    const postsCollection = await getCollection<BlogPost>('posts');
+    currentCategory.postCount = await postsCollection.countDocuments({ categoryId: currentCategory.id });
+    return currentCategory;
   }
 
   const result = await collection.findOneAndUpdate(
@@ -143,18 +182,26 @@ export async function updateCategory(
     { $set: updatePayload },
     { returnDocument: 'after' }
   );
-  return result ? docToCategoryNode(result) : null;
+  if(!result) return null;
+
+  const updatedCategory = docToCategoryNode(result);
+  const postsCollection = await getCollection<BlogPost>('posts');
+  updatedCategory.postCount = await postsCollection.countDocuments({ categoryId: updatedCategory.id });
+  return updatedCategory;
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
   
-  // Recursively delete children
   const children = await collection.find({ parentId: id }).toArray();
   for (const child of children) {
-    await deleteCategory(child._id.toString()); // child._id is ObjectId
+    await deleteCategory(child._id.toString()); 
   }
+  
+  // TODO: Handle posts in this category: re-assign to a default/uncategorized, or nullify categoryId.
+  // For now, we are just deleting the category. Posts will retain the old categoryId which will no longer resolve.
+  // Example: await getCollection<BlogPost>('posts').updateMany({ categoryId: id }, { $set: { categoryId: null } }); // or some default ID
   
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
@@ -163,6 +210,7 @@ export async function deleteCategory(id: string): Promise<boolean> {
 export async function getCategoryPath(categoryId: string): Promise<CategoryNode[]> {
   if (!ObjectId.isValid(categoryId)) return [];
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
+  const postsCollection = await getCollection<BlogPost>('posts');
   const path: CategoryNode[] = [];
   let currentId: string | null = categoryId;
 
@@ -170,7 +218,8 @@ export async function getCategoryPath(categoryId: string): Promise<CategoryNode[
     const categoryDoc = await collection.findOne({ _id: new ObjectId(currentId) });
     if (!categoryDoc) break;
     const categoryNode = docToCategoryNode(categoryDoc);
-    path.unshift(categoryNode); // Add to the beginning of the path
+    categoryNode.postCount = await postsCollection.countDocuments({ categoryId: categoryNode.id });
+    path.unshift(categoryNode); 
     currentId = categoryNode.parentId || null;
   }
   return path;
@@ -179,6 +228,7 @@ export async function getCategoryPath(categoryId: string): Promise<CategoryNode[
 
 export async function findCategoryBySlugPathRecursive(slugPath: string[]): Promise<CategoryNode | null> {
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
+  const postsCollection = await getCollection<BlogPost>('posts');
   let currentParentId: string | null = null;
   let foundNode: CategoryNode | null = null;
 
@@ -186,27 +236,28 @@ export async function findCategoryBySlugPathRecursive(slugPath: string[]): Promi
     const query: Filter<CategoryNode> = { slug: slug, parentId: currentParentId };
     const nodeDoc = await collection.findOne(query);
     if (!nodeDoc) {
-      return null; // Path segment not found
+      return null; 
     }
     foundNode = docToCategoryNode(nodeDoc);
-    currentParentId = foundNode.id!; // Use the ID of the found node as parent for the next segment
+    currentParentId = foundNode.id!; 
   }
   
-  // If foundNode is not null here, it's the category at the end of the path.
-  // We might want to fetch its children for the archive page.
-  if (foundNode) {
-     // Recursive function to fetch children, similar to getAllCategories
-    async function fetchChildren(parentId: string): Promise<CategoryNode[]> {
+  if (foundNode && foundNode.id) {
+    foundNode.postCount = await postsCollection.countDocuments({ categoryId: foundNode.id });
+    
+    async function fetchChildrenWithCounts(parentId: string): Promise<CategoryNode[]> {
         const childrenDocs = await collection.find({ parentId }).toArray();
         const childrenNodes: CategoryNode[] = [];
         for (const childDoc of childrenDocs) {
-        const node = docToCategoryNode(childDoc);
-        node.children = await fetchChildren(node.id!); // Recursively fetch grandchildren
-        childrenNodes.push(node);
+            const node = docToCategoryNode(childDoc);
+            node.postCount = await postsCollection.countDocuments({ categoryId: node.id! });
+            node.children = await fetchChildrenWithCounts(node.id!); 
+            childrenNodes.push(node);
         }
         return childrenNodes;
     }
-    foundNode.children = await fetchChildren(foundNode.id!);
+    foundNode.children = await fetchChildrenWithCounts(foundNode.id!);
   }
   return foundNode;
 }
+

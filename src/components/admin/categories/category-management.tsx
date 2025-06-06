@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Edit3, Trash2, Loader2, ChevronDown, ChevronRight, FolderPlus, ListTree } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Loader2, ChevronDown, ChevronRight, FolderPlus, ListTree, Package } from "lucide-react"; // Added Package
 import { useToast } from "@/hooks/use-toast";
 import type { CategoryNode } from '@/lib/categories-data';
 import { CategoryFormDialog } from './category-form-dialog';
@@ -110,7 +110,7 @@ export function CategoryManagement() {
 
   const renderCategoryRowsRecursive = (nodes: CategoryNode[], level = 0): React.ReactNode[] => {
     return nodes.flatMap(node => {
-      if (!node.id) return []; // Ensure node has an ID
+      if (!node.id) return []; 
       return [
       <TableRow key={node.id} className="hover:bg-muted/50">
         <TableCell style={{ paddingLeft: `${level * 24 + 16}px` }}>
@@ -129,11 +129,17 @@ export function CategoryManagement() {
           </div>
         </TableCell>
         <TableCell><code className="text-xs bg-muted/50 p-1 rounded">{node.slug}</code></TableCell>
-        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-[300px]">
-          {node.description && node.description.length > 70 ? (
+        <TableCell className="text-center">
+            <div className="flex items-center justify-center">
+                <Package className="h-4 w-4 mr-1.5 text-muted-foreground" />
+                {node.postCount ?? 0}
+            </div>
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground truncate max-w-[150px] md:max-w-[250px]">
+          {node.description && node.description.length > 50 ? (
             <Tooltip delayDuration={100}>
               <TooltipTrigger asChild>
-                <span className="cursor-help">{node.description.substring(0, 70)}...</span>
+                <span className="cursor-help">{node.description.substring(0, 50)}...</span>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs text-xs p-2 bg-popover text-popover-foreground border rounded-md shadow-sm">
                 {node.description}
@@ -204,8 +210,9 @@ export function CategoryManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[250px] sm:w-[40%]">Name</TableHead>
+                    <TableHead className="min-w-[250px] sm:w-[35%]">Name</TableHead>
                     <TableHead className="min-w-[150px]">Slug</TableHead>
+                    <TableHead className="min-w-[100px] text-center">Post Count</TableHead>
                     <TableHead className="min-w-[200px]">Description</TableHead>
                     <TableHead className="text-right min-w-[280px] sm:w-[320px]">Actions</TableHead>
                   </TableRow>

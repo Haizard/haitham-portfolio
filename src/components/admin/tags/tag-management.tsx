@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Edit3, Trash2, Loader2, Tags as TagsIcon } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Loader2, Tags as TagsIcon, Package } from "lucide-react"; // Added Package icon
 import { useToast } from "@/hooks/use-toast";
 import type { Tag } from '@/lib/tags-data';
 import { TagFormDialog } from './tag-form-dialog';
@@ -121,6 +121,7 @@ export function TagManagement() {
                   <TableRow>
                     <TableHead className="min-w-[200px]">Name</TableHead>
                     <TableHead className="min-w-[150px]">Slug</TableHead>
+                    <TableHead className="min-w-[100px] text-center">Post Count</TableHead>
                     <TableHead className="min-w-[250px]">Description</TableHead>
                     <TableHead className="text-right min-w-[220px]">Actions</TableHead>
                   </TableRow>
@@ -130,6 +131,12 @@ export function TagManagement() {
                     <TableRow key={tag.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">{tag.name}</TableCell>
                       <TableCell><code className="text-xs bg-muted/50 p-1 rounded">{tag.slug}</code></TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                           <Package className="h-4 w-4 mr-1.5 text-muted-foreground" />
+                           {tag.postCount ?? 0}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-[300px]">
                         {tag.description && tag.description.length > 70 ? (
                             <Tooltip delayDuration={100}>
@@ -203,3 +210,4 @@ export function TagManagement() {
     </TooltipProvider>
   );
 }
+

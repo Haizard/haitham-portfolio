@@ -1,6 +1,7 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import type { BlogPost } from './blog-data'; // Import BlogPost for posts collection type
 
 const TAGS_COLLECTION = 'tags';
 
@@ -10,6 +11,7 @@ export interface Tag {
   name: string;
   slug: string;
   description?: string;
+  postCount?: number; // Added for post count
 }
 
 // Helper to convert MongoDB document to Tag interface
@@ -38,22 +40,56 @@ async function isTagSlugUnique(slug: string, excludeId?: string): Promise<boolea
 }
 
 export async function getAllTags(): Promise<Tag[]> {
-  const collection = await getCollection<Tag>(TAGS_COLLECTION);
-  const tagsArray = await collection.find({}).sort({ name: 1 }).toArray();
-  return tagsArray.map(docToTag);
+  const tagsCollection = await getCollection<Tag>(TAGS_COLLECTION);
+  const postsCollection = await getCollection<BlogPost>('posts');
+  
+  const tagsArray = await tagsCollection.find({}).sort({ name: 1 }).toArray();
+
+  // Aggregate post counts for all tags
+  const tagCountsCursor = postsCollection.aggregate([
+    { $match: { tagIds: { $exists: true, $ne: null, $not: { $size: 0 } } } }, // Ensure tagIds exist and is not empty
+    { $unwind: "$tagIds" }, // Deconstructs the tagIds array
+    { $group: { _id: "$tagIds", count: { $sum: 1 } } }, // Group by tagId and count
+  ]);
+  const tagCountsArray = await tagCountsCursor.toArray();
+
+  const tagCountMap = new Map<string, number>();
+  tagCountsArray.forEach(item => {
+    if (item._id) { // _id here is the tagId (string)
+      tagCountMap.set(item._id.toString(), item.count);
+    }
+  });
+
+  // Map counts to tags
+  return tagsArray.map(doc => {
+    const tag = docToTag(doc);
+    tag.postCount = tagCountMap.get(tag.id!) || 0;
+    return tag;
+  });
 }
 
 export async function getTagById(id: string): Promise<Tag | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<Tag>(TAGS_COLLECTION);
   const doc = await collection.findOne({ _id: new ObjectId(id) });
-  return doc ? docToTag(doc) : null;
+  if (!doc) return null;
+
+  const tag = docToTag(doc);
+  // Optionally fetch post count for single tag view if needed, or decide if it's only for getAllTags
+  const postsCollection = await getCollection<BlogPost>('posts');
+  tag.postCount = await postsCollection.countDocuments({ tagIds: tag.id });
+  return tag;
 }
 
 export async function getTagBySlug(slug: string): Promise<Tag | null> {
   const collection = await getCollection<Tag>(TAGS_COLLECTION);
   const doc = await collection.findOne({ slug });
-  return doc ? docToTag(doc) : null;
+  if (!doc) return null;
+
+  const tag = docToTag(doc);
+  const postsCollection = await getCollection<BlogPost>('posts');
+  tag.postCount = await postsCollection.countDocuments({ tagIds: tag.id });
+  return tag;
 }
 
 export async function getTagsByIds(ids: string[]): Promise<Tag[]> {
@@ -63,11 +99,13 @@ export async function getTagsByIds(ids: string[]): Promise<Tag[]> {
   
   const collection = await getCollection<Tag>(TAGS_COLLECTION);
   const tagsArray = await collection.find({ _id: { $in: validObjectIds } }).toArray();
+  // Post counts are not typically added here as it's for resolving tag names for posts.
+  // If needed, similar logic to getAllTags or getTagById could be added.
   return tagsArray.map(docToTag);
 }
 
-export async function addTag(tagData: Omit<Tag, 'id' | '_id' | 'slug'> & { name: string }): Promise<Tag> {
-  const collection = await getCollection<Omit<Tag, 'id' | '_id'>>(TAGS_COLLECTION);
+export async function addTag(tagData: Omit<Tag, 'id' | '_id' | 'slug' | 'postCount'> & { name: string }): Promise<Tag> {
+  const collection = await getCollection<Omit<Tag, 'id' | '_id' | 'postCount'>>(TAGS_COLLECTION);
   const slug = createTagSlug(tagData.name);
 
   if (!(await isTagSlugUnique(slug))) {
@@ -81,7 +119,7 @@ export async function addTag(tagData: Omit<Tag, 'id' | '_id' | 'slug'> & { name:
   };
 
   const result = await collection.insertOne(docToInsert as any);
-  return { id: result.insertedId.toString(), _id: result.insertedId, ...docToInsert };
+  return { id: result.insertedId.toString(), _id: result.insertedId, ...docToInsert, postCount: 0 };
 }
 
 export async function findOrCreateTagsByNames(tagNames: string[]): Promise<Tag[]> {
@@ -96,19 +134,22 @@ export async function findOrCreateTagsByNames(tagNames: string[]): Promise<Tag[]
 
     if (!tagDoc) {
       const newTagData = {
-        name: name, // Use original name casing for display
+        name: name, 
         slug: slug,
         description: `Content related to ${name}`,
       };
       const result = await collection.insertOne(newTagData as any);
       tagDoc = { _id: result.insertedId, ...newTagData };
     }
-    resultTags.push(docToTag(tagDoc));
+    const tagWithCount = docToTag(tagDoc);
+    // Fetch count for newly created/found tag if needed here, or rely on full list fetch for counts
+    // For simplicity, findOrCreate doesn't add postCount by default as it's usually used in post saving context.
+    resultTags.push(tagWithCount);
   }
   return resultTags;
 }
 
-export async function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | '_id' | 'slug'>>): Promise<Tag | null> {
+export async function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | '_id' | 'slug' | 'postCount'>>): Promise<Tag | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<Tag>(TAGS_COLLECTION);
 
@@ -128,7 +169,11 @@ export async function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | '_
   }
 
   if (Object.keys(updatePayload).length === 0) {
-    return docToTag(existingTag); // No changes
+    // If no actual data changes, just refetch with count if needed or return existing with its current count
+    const currentTag = docToTag(existingTag);
+    const postsCollection = await getCollection<BlogPost>('posts');
+    currentTag.postCount = await postsCollection.countDocuments({ tagIds: currentTag.id });
+    return currentTag;
   }
 
   const result = await collection.findOneAndUpdate(
@@ -136,21 +181,25 @@ export async function updateTag(id: string, updates: Partial<Omit<Tag, 'id' | '_
     { $set: updatePayload },
     { returnDocument: 'after' }
   );
-  return result ? docToTag(result) : null;
+  
+  if (!result) return null;
+  const updatedTag = docToTag(result);
+  const postsCollection = await getCollection<BlogPost>('posts');
+  updatedTag.postCount = await postsCollection.countDocuments({ tagIds: updatedTag.id }); // Recalculate count
+  return updatedTag;
 }
 
 export async function deleteTag(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const collection = await getCollection<Tag>(TAGS_COLLECTION);
   
-  // Before deleting the tag, remove it from all posts' tagIds array
-  // Assuming BlogPost interface is available or adjust import path
-  const postsCollection = await getCollection<import('./blog-data').BlogPost>('posts');
+  const postsCollection = await getCollection<BlogPost>('posts');
   await postsCollection.updateMany(
-    { tagIds: id }, // Match posts that contain this tagId
-    { $pull: { tagIds: id } } // Remove this tagId from their tagIds array
+    { tagIds: id }, 
+    { $pull: { tagIds: id } } 
   );
   
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }
+
