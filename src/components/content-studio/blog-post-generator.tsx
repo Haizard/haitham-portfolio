@@ -603,10 +603,10 @@ export function BlogPostGenerator() {
                     <FormItem>
                       <FormLabel className="text-lg font-semibold">Editable Content</FormLabel>
                        <FormControl>
-                        <>
+                        <div>
                           {isClient && editor && <TiptapToolbar editor={editor} />}
                           <EditorContent editor={editor} className="ProseMirror-wrapper"/>
-                        </>
+                        </div>
                       </FormControl>
                       {error && <FormMessage>{error.message}</FormMessage>}
                     </FormItem>
@@ -780,3 +780,4 @@ export function BlogPostGenerator() {
     </div>
   );
 }
+
