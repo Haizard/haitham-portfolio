@@ -160,7 +160,7 @@ export default function TagArchivePage() {
               ))}
             </div>
           )}
-          {tag.id && posts.length > 0 && (
+          {tag?.id && (
              <RelatedPostsSection 
                 sectionTitle={`More with tag "${tag.name}"`}
                 tagId={tag.id} 

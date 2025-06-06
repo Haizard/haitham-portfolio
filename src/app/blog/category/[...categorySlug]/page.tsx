@@ -159,7 +159,7 @@ export default function CategoryArchivePage() {
               ))}
             </div>
           )}
-          {category.id && posts.length > 0 && (
+          {category?.id && (
             <RelatedPostsSection 
                 sectionTitle={`More in ${category.name}`}
                 categoryId={category.id} 

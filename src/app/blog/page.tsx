@@ -235,7 +235,7 @@ export default function BlogIndexPage() {
               ))}
             </div>
           )}
-          {(mainPosts.length > 0 || currentSearchQuery) && ( 
+          {(trendingPosts.length > 0 || mainPosts.length > 0 || currentSearchQuery) && ( 
             <RelatedPostsSection 
                 sectionTitle="Further Reading" 
                 excludeSlugs={getSlugsToExcludeForFurtherReading()}
