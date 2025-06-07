@@ -20,7 +20,8 @@ import {
   Tags,
   FileText,
   Target,
-  Layers, // Ensure Layers is imported
+  Layers,
+  Package, // Added Package for E-commerce
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -40,7 +41,8 @@ const navItems = [
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
   { href: "/services", label: "Services", icon: Briefcase },
   { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
-  { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers }, // This is the item
+  { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
+  { href: "/ecommerce", label: "E-commerce", icon: Package }, // New E-commerce link
   { 
     group: "Admin",
     items: [
@@ -121,3 +123,5 @@ export function SidebarNav() {
     </SidebarMenu>
   );
 }
+
+    
