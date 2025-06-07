@@ -85,7 +85,7 @@ let mockProductsRaw: AffiliateProductRaw[] = [
 ];
 
 // Process raw products to ensure they have string IDs
-// Changed from const to let to allow reassignment in deleteAffiliateProduct
+// Ensure mockProducts is declared with 'let' to allow reassignment
 let mockProducts: AffiliateProduct[] = mockProductsRaw.map((product, index) => ({
   id: product._id?.toString() || `mock-affiliate-${index + 1}`,
   ...product,
@@ -109,19 +109,20 @@ export function addAffiliateProduct(productData: Omit<AffiliateProduct, 'id'>): 
     id: `mock-affiliate-${mockProducts.length + 1}-${Date.now()}`,
     ...productData,
   };
-  mockProducts.push(newProduct);
+  mockProducts.push(newProduct); // This is okay as push mutates the array, not reassigns mockProducts
   return newProduct;
 }
 
 export function updateAffiliateProduct(id: string, updates: Partial<Omit<AffiliateProduct, 'id'>>): AffiliateProduct | undefined {
   const productIndex = mockProducts.findIndex(p => p.id === id);
   if (productIndex === -1) return undefined;
-  mockProducts[productIndex] = { ...mockProducts[productIndex], ...updates };
+  mockProducts[productIndex] = { ...mockProducts[productIndex], ...updates }; // This is okay, modifies an element
   return mockProducts[productIndex];
 }
 
 export function deleteAffiliateProduct(id: string): boolean {
   const initialLength = mockProducts.length;
+  // This is the line that requires mockProducts to be 'let'
   mockProducts = mockProducts.filter(p => p.id !== id);
   return mockProducts.length < initialLength;
 }
