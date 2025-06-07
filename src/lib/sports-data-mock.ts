@@ -50,6 +50,65 @@ export async function fetchUpcomingMatches(filters: FetchMatchesFilters): Promis
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
 
+  // --- Placeholder for Live API Integration (e.g., API-Football) ---
+  // const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY;
+  // const USE_LIVE_API = false; // Set to true to attempt live API call (requires proper setup)
+
+  // if (USE_LIVE_API && API_FOOTBALL_KEY && filters.sport.toLowerCase() === 'football') {
+  //   try {
+  //     console.log(`Attempting to fetch live football fixtures from API-Football for sport: ${filters.sport}`);
+  //     // Example: Construct API URL based on filters. API-Football might need a league ID or specific date range.
+  //     // This is a simplified example; refer to API-Football documentation for actual endpoints and parameters.
+  //     let apiUrl = `https://v3.football.api-sports.io/fixtures?live=all`; // Or specific league/date
+       // if (filters.league) apiUrl += `&league=${leagueIdFromLeagueName(filters.league)}`; // You'd need mapping
+       // if (filters.country) {} // API-Football often uses league ID which implies country
+
+  //     const response = await fetch(apiUrl, {
+  //       method: "GET",
+  //       headers: {
+  //         "x-rapidapi-host": "v3.football.api-sports.io",
+  //         "x-rapidapi-key": API_FOOTBALL_KEY
+  //       }
+  //     });
+
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(`API-Football request failed: ${response.status} ${response.statusText} - ${errorData?.message || JSON.stringify(errorData.errors)}`);
+  //     }
+
+  //     const data = await response.json();
+  //     // TODO: Map the 'data.response' (which is an array of fixture objects from API-Football)
+  //     // to our 'UpcomingMatch[]' structure. This involves:
+  //     // - Extracting team names, date, time, competition, league, country, location.
+  //     // - Generating a unique 'id' for each match if not directly provided.
+  //     // - Handling differences in sport naming if applicable.
+  //     // Example mapping (highly conceptual):
+  //     // const liveMatches: UpcomingMatch[] = data.response.map((fixture: any) => ({
+  //     //   id: fixture.fixture.id.toString(),
+  //     //   sport: "Football",
+  //     //   description: `${fixture.teams.home.name} vs ${fixture.teams.away.name}`,
+  //     //   teamA: fixture.teams.home.name,
+  //     //   teamB: fixture.teams.away.name,
+  //     //   date: fixture.fixture.date, // Ensure it's ISO string
+  //     //   time: new Date(fixture.fixture.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC',
+  //     //   competition: fixture.league.name,
+  //     //   league: fixture.league.name,
+  //     //   country: fixture.league.country,
+  //     //   location: fixture.fixture.venue.name,
+  //     // }));
+  //     // console.log(`Fetched ${liveMatches.length} live matches from API-Football.`);
+  //     // return liveMatches; // If live data is successfully fetched and mapped
+
+  //   } catch (error) {
+  //     console.error("Error fetching live data from API-Football:", error);
+  //     // Fallback to mock data if live API fails
+  //     console.warn("Falling back to mock data due to API-Football error.");
+  //   }
+  // }
+  // --- End Placeholder for Live API Integration ---
+
+
+  // Return Mock Data (current behavior)
   let filtered = mockMatches.filter(match => match.sport.toLowerCase() === filters.sport.toLowerCase());
 
   if (filters.country && filters.country.trim() !== "") {
