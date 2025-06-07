@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getAllProducts } from '@/lib/products-data'; // Updated import
+import { getAllProducts } from '@/lib/products-data';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,10 +10,10 @@ export async function GET(request: NextRequest) {
     // Simulate a network delay
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    const products = getAllProducts(category || undefined); // Updated function call
+    const products = getAllProducts(category || undefined);
     return NextResponse.json(products);
-  } catch (error) {
-    console.error("Failed to fetch products:", error); // Updated log message
-    return NextResponse.json({ message: "Failed to fetch products" }, { status: 500 }); // Updated error message
+  } catch (error: any) {
+    console.error("API Error in /api/products route:", error.message, error.stack); 
+    return NextResponse.json({ message: `Server error: ${error.message || "Failed to fetch products"}` }, { status: 500 });
   }
 }

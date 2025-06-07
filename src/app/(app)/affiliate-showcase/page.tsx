@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, ExternalLink, Loader2, Layers, Info } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { Product } from '@/lib/products-data'; // Updated import
+import type { Product } from '@/lib/products-data';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -25,19 +25,30 @@ export default function AffiliateShowcasePage() {
     async function fetchProducts() {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/products`); // Updated API endpoint
+        const response = await fetch(`/api/products`);
         if (!response.ok) {
-          throw new Error('Failed to fetch products');
+          let serverErrorMessage = 'Failed to fetch products from the server.';
+          try {
+            // Try to parse a JSON error response from the server
+            const errorData = await response.json();
+            if (errorData && errorData.message) {
+              serverErrorMessage = `Server error: ${errorData.message}`;
+            }
+          } catch (jsonError) {
+            // If JSON parsing fails, use status text or a generic message
+            serverErrorMessage = `Server error: ${response.status} ${response.statusText || 'Unknown error'}`;
+          }
+          throw new Error(serverErrorMessage); // Throw the more specific error
         }
         const data: Product[] = await response.json();
-        const affiliateOnly = data.filter(p => p.productType === 'affiliate'); // Filter for affiliate products
+        const affiliateOnly = data.filter(p => p.productType === 'affiliate');
         setAllAffiliateProducts(affiliateOnly);
-        setFilteredProducts(affiliateOnly); // Initially show all affiliate products
-      } catch (error) {
-        console.error(error);
+        setFilteredProducts(affiliateOnly);
+      } catch (error: any) {
+        console.error("Error fetching affiliate products:", error);
         toast({
-          title: "Error",
-          description: "Could not load affiliate products.",
+          title: "Error Loading Products",
+          description: error.message || "Could not load affiliate products. Check server logs for more details.",
           variant: "destructive",
         });
       } finally {
@@ -49,7 +60,11 @@ export default function AffiliateShowcasePage() {
 
   const uniqueCategories = useMemo(() => {
     const categories = new Set<string>();
-    allAffiliateProducts.forEach(product => categories.add(product.category));
+    allAffiliateProducts.forEach(product => {
+      if (product.category) { // Ensure category exists
+        categories.add(product.category);
+      }
+    });
     return [ALL_CATEGORIES_FILTER, ...Array.from(categories).sort()];
   }, [allAffiliateProducts]);
 
@@ -133,7 +148,7 @@ export default function AffiliateShowcasePage() {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start mb-1">
                     <CardTitle className="text-xl font-semibold line-clamp-2">{product.name}</CardTitle>
-                    <Badge variant="secondary" className="text-xs whitespace-nowrap shrink-0 ml-2">{product.category}</Badge>
+                    {product.category && <Badge variant="secondary" className="text-xs whitespace-nowrap shrink-0 ml-2">{product.category}</Badge>}
                 </div>
                 <CardDescription className="text-sm line-clamp-3 h-[3.75rem]">{product.description}</CardDescription> 
               </CardHeader>

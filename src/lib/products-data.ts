@@ -23,13 +23,12 @@ export interface Product {
 
   // For creator's own products
   price?: number; // Optional: only for creator products
-  // We can add more fields later like SKU, stock, variants etc. for creator products
 }
 
 // Raw data structure
 interface ProductRaw extends Omit<Product, 'id' | 'productType'> {
   _id?: any;
-  productTypeInput: ProductType; // Use a different key to avoid conflict during mapping
+  productTypeInput: ProductType;
   priceInput?: number;
   linksInput?: AffiliateLink[];
 }
@@ -96,7 +95,6 @@ let mockProductsRaw: ProductRaw[] = [
   }
 ];
 
-// Ensure mockProducts is declared with 'let' to allow reassignment
 let mockProducts: Product[] = mockProductsRaw.map((product, index) => ({
   id: product._id?.toString() || `mock-product-${index + 1}`,
   name: product.name,
@@ -111,18 +109,33 @@ let mockProducts: Product[] = mockProductsRaw.map((product, index) => ({
 }));
 
 export function getAllProducts(category?: string): Product[] {
+  if (!Array.isArray(mockProducts)) {
+    console.error("[products-data] CRITICAL: mockProducts is not an array. Type:", typeof mockProducts, ". Value:", mockProducts);
+    return [];
+  }
   let productsToReturn = mockProducts;
   if (category && category.toLowerCase() !== 'all') {
-    productsToReturn = mockProducts.filter(p => p.category.toLowerCase() === category.toLowerCase());
+    productsToReturn = mockProducts.filter(p => 
+      p.category && typeof p.category === 'string' && p.category.toLowerCase() === category.toLowerCase()
+    );
   }
   return productsToReturn;
 }
 
 export function getProductById(id: string): Product | undefined {
+  if (!Array.isArray(mockProducts)) {
+    console.error("[products-data] CRITICAL: mockProducts is not an array in getProductById.");
+    return undefined;
+  }
   return mockProducts.find(product => product.id === id);
 }
 
 export function addProduct(productData: Omit<Product, 'id'>): Product {
+  if (!Array.isArray(mockProducts)) {
+    console.error("[products-data] CRITICAL: mockProducts is not an array in addProduct.");
+    // Potentially initialize mockProducts if it's truly missing, though this indicates a deeper issue
+    mockProducts = []; 
+  }
   const newProduct: Product = {
     id: `mock-product-${mockProducts.length + 1}-${Date.now()}`,
     ...productData,
@@ -132,6 +145,10 @@ export function addProduct(productData: Omit<Product, 'id'>): Product {
 }
 
 export function updateProduct(id: string, updates: Partial<Omit<Product, 'id'>>): Product | undefined {
+  if (!Array.isArray(mockProducts)) {
+    console.error("[products-data] CRITICAL: mockProducts is not an array in updateProduct.");
+    return undefined;
+  }
   const productIndex = mockProducts.findIndex(p => p.id === id);
   if (productIndex === -1) return undefined;
   mockProducts[productIndex] = { ...mockProducts[productIndex], ...updates };
@@ -139,7 +156,11 @@ export function updateProduct(id: string, updates: Partial<Omit<Product, 'id'>>)
 }
 
 export function deleteProduct(id: string): boolean {
+  if (!Array.isArray(mockProducts)) {
+    console.error("[products-data] CRITICAL: mockProducts is not an array in deleteProduct.");
+    return false;
+  }
   const initialLength = mockProducts.length;
-  mockProducts = mockProducts.filter(p => p.id !== id); // This line requires mockProducts to be `let`
+  mockProducts = mockProducts.filter(p => p.id !== id);
   return mockProducts.length < initialLength;
 }
