@@ -8,15 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, ExternalLink, Loader2, Layers, Info } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { AffiliateProduct } from '@/lib/affiliate-products-data';
+import type { Product } from '@/lib/products-data'; // Updated import
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ALL_CATEGORIES_FILTER = "All";
 
 export default function AffiliateShowcasePage() {
-  const [allProducts, setAllProducts] = useState<AffiliateProduct[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<AffiliateProduct[]>([]);
+  const [allAffiliateProducts, setAllAffiliateProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES_FILTER);
   const { toast } = useToast();
@@ -25,13 +25,14 @@ export default function AffiliateShowcasePage() {
     async function fetchProducts() {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/affiliate-products`);
+        const response = await fetch(`/api/products`); // Updated API endpoint
         if (!response.ok) {
-          throw new Error('Failed to fetch affiliate products');
+          throw new Error('Failed to fetch products');
         }
-        const data: AffiliateProduct[] = await response.json();
-        setAllProducts(data);
-        setFilteredProducts(data); // Initially show all products
+        const data: Product[] = await response.json();
+        const affiliateOnly = data.filter(p => p.productType === 'affiliate'); // Filter for affiliate products
+        setAllAffiliateProducts(affiliateOnly);
+        setFilteredProducts(affiliateOnly); // Initially show all affiliate products
       } catch (error) {
         console.error(error);
         toast({
@@ -48,16 +49,16 @@ export default function AffiliateShowcasePage() {
 
   const uniqueCategories = useMemo(() => {
     const categories = new Set<string>();
-    allProducts.forEach(product => categories.add(product.category));
+    allAffiliateProducts.forEach(product => categories.add(product.category));
     return [ALL_CATEGORIES_FILTER, ...Array.from(categories).sort()];
-  }, [allProducts]);
+  }, [allAffiliateProducts]);
 
   const handleCategoryFilter = (category: string) => {
     setSelectedCategory(category);
     if (category === ALL_CATEGORIES_FILTER) {
-      setFilteredProducts(allProducts);
+      setFilteredProducts(allAffiliateProducts);
     } else {
-      setFilteredProducts(allProducts.filter(product => product.category === category));
+      setFilteredProducts(allAffiliateProducts.filter(product => product.category === category));
     }
   };
 
@@ -110,8 +111,8 @@ export default function AffiliateShowcasePage() {
             <CardContent>
                 <p className="text-muted-foreground">
                     {selectedCategory === ALL_CATEGORIES_FILTER 
-                        ? "There are no products in the showcase yet." 
-                        : `No products found in the "${selectedCategory}" category.`}
+                        ? "There are no affiliate products in the showcase yet." 
+                        : `No affiliate products found in the "${selectedCategory}" category.`}
                 </p>
             </CardContent>
         </Card>
@@ -124,7 +125,7 @@ export default function AffiliateShowcasePage() {
                   src={product.imageUrl}
                   alt={product.name}
                   width={600}
-                  height={375} // Adjusted for 16:10 aspect ratio
+                  height={375} 
                   className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                   data-ai-hint={product.imageHint}
                 />
@@ -137,7 +138,7 @@ export default function AffiliateShowcasePage() {
                 <CardDescription className="text-sm line-clamp-3 h-[3.75rem]">{product.description}</CardDescription> 
               </CardHeader>
               <CardContent className="flex-grow space-y-3 pt-0">
-                {product.links.map((link, index) => (
+                {product.links && product.links.map((link, index) => (
                   <Button key={index} asChild variant="outline" className="w-full justify-start hover:border-primary">
                     <Link href={link.url} target="_blank" rel="noopener noreferrer sponsored">
                       <ShoppingCart className="mr-2 h-4 w-4 text-primary" />
