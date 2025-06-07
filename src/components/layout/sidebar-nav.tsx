@@ -20,6 +20,7 @@ import {
   Tags,
   FileText, // Added for Manage Posts
   Target, // Added for Sports Predictor
+  Layers, // Added for Affiliate Showcase
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
   { href: "/services", label: "Services", icon: Briefcase },
   { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
+  { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
   { 
     group: "Admin",
     items: [
