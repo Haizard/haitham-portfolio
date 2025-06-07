@@ -96,6 +96,7 @@ let mockProductsRaw: ProductRaw[] = [
   }
 ];
 
+// Ensure mockProducts is declared with 'let' to allow reassignment
 let mockProducts: Product[] = mockProductsRaw.map((product, index) => ({
   id: product._id?.toString() || `mock-product-${index + 1}`,
   name: product.name,
@@ -139,6 +140,6 @@ export function updateProduct(id: string, updates: Partial<Omit<Product, 'id'>>)
 
 export function deleteProduct(id: string): boolean {
   const initialLength = mockProducts.length;
-  mockProducts = mockProducts.filter(p => p.id !== id);
+  mockProducts = mockProducts.filter(p => p.id !== id); // This line requires mockProducts to be `let`
   return mockProducts.length < initialLength;
 }
