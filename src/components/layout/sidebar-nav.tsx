@@ -18,9 +18,9 @@ import {
   Settings,
   FolderKanban,
   Tags,
-  FileText, // Added for Manage Posts
-  Target, // Added for Sports Predictor
-  Layers, // Added for Affiliate Showcase
+  FileText,
+  Target,
+  Layers, // Ensure Layers is imported
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -40,7 +40,7 @@ const navItems = [
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
   { href: "/services", label: "Services", icon: Briefcase },
   { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
-  { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
+  { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers }, // This is the item
   { 
     group: "Admin",
     items: [
@@ -121,5 +121,3 @@ export function SidebarNav() {
     </SidebarMenu>
   );
 }
-
-    

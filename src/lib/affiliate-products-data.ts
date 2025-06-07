@@ -85,7 +85,8 @@ let mockProductsRaw: AffiliateProductRaw[] = [
 ];
 
 // Process raw products to ensure they have string IDs
-const mockProducts: AffiliateProduct[] = mockProductsRaw.map((product, index) => ({
+// Changed from const to let to allow reassignment in deleteAffiliateProduct
+let mockProducts: AffiliateProduct[] = mockProductsRaw.map((product, index) => ({
   id: product._id?.toString() || `mock-affiliate-${index + 1}`,
   ...product,
 }));
