@@ -21,7 +21,8 @@ import {
   FileText,
   Target,
   Layers,
-  Package, // Added Package for E-commerce
+  Package, // For User E-commerce Storefront
+  BarChartHorizontalBig, // For Admin E-commerce Dashboard
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -42,13 +43,14 @@ const navItems = [
   { href: "/services", label: "Services", icon: Briefcase },
   { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
   { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
-  { href: "/ecommerce", label: "E-commerce", icon: Package }, // New E-commerce link
+  { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
   { 
     group: "Admin",
     items: [
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
+      { href: "/admin/ecommerce-dashboard", label: "E-commerce Dashboard", icon: BarChartHorizontalBig },
     ]
   }
 ];
