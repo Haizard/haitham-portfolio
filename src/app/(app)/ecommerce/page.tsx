@@ -122,6 +122,7 @@ export default function EcommerceStorePage() {
 
   const fetchAllData = useCallback(async () => {
       setIsLoading(true);
+      console.log("[EcommercePage] Starting to fetch all data...");
       try {
         const [productsResponse, articlesResponse] = await Promise.all([
           fetch(`/api/products`),
@@ -130,16 +131,20 @@ export default function EcommerceStorePage() {
 
         if (!productsResponse.ok) throw new Error('Failed to fetch products.');
         const productsData: Product[] = await productsResponse.json();
+        console.log("[EcommercePage] Fetched products:", productsData.length, "items.");
         setAllProducts(productsData);
 
         if (!articlesResponse.ok) throw new Error('Failed to fetch latest articles.');
         const articlesData: BlogPost[] = await articlesResponse.json();
+        console.log("[EcommercePage] Fetched articles:", articlesData.length, "items.");
         setLatestArticles(articlesData);
 
       } catch (error: any) {
+        console.error("[EcommercePage] Error fetching store data:", error);
         toast({ title: "Error Loading Store Data", description: error.message, variant: "destructive" });
       } finally {
         setIsLoading(false);
+        console.log("[EcommercePage] Finished fetching all data.");
       }
   }, [toast]);
 
@@ -148,8 +153,8 @@ export default function EcommerceStorePage() {
     fetchAllData();
   }, [fetchAllData]);
 
-  const featuredProducts = allProducts.slice(0, 10); // Increased count for better layout
-  const latestProducts = allProducts.slice(0, 4); // Assuming latest are at the start
+  const featuredProducts = allProducts.slice(0, 10); 
+  const latestProducts = allProducts.slice(0, 4); 
   const bestPickOfTheWeek = allProducts.length > 0 ? allProducts[Math.floor(Math.random() * Math.min(allProducts.length, 5))] : null;
 
 
@@ -229,6 +234,12 @@ export default function EcommerceStorePage() {
           </div>
         </section>
       )}
+      {!bestPickOfTheWeek && !isLoading && (
+        <section className="container mx-auto py-8 md:py-12 text-center">
+          <p className="text-muted-foreground">No products available to feature as Best Pick of the Week.</p>
+        </section>
+      )}
+
 
       {/* Featured Products Section */}
       <section className="container mx-auto py-6 md:py-10">
@@ -259,6 +270,11 @@ export default function EcommerceStorePage() {
               <ProductCard key={`latest-${product.id}`} product={product} size="small"/>
             ))}
           </div>
+        </section>
+      )}
+      {!isLoading && latestProducts.length === 0 && allProducts.length > 0 && (
+         <section className="container mx-auto py-6 md:py-10 text-center">
+          <p className="text-muted-foreground">No new products marked as latest arrivals from the current product list.</p>
         </section>
       )}
 
@@ -352,6 +368,11 @@ export default function EcommerceStorePage() {
               </Card>
             ))}
           </div>
+        </section>
+      )}
+       {!isLoading && latestArticles.length === 0 && (
+        <section className="container mx-auto py-6 md:py-10 text-center">
+          <p className="text-muted-foreground">No recent articles to display.</p>
         </section>
       )}
       
