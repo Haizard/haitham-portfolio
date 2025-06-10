@@ -1,7 +1,7 @@
 
 "use client";
 
-import { BarChartHorizontalBig, DollarSign, ListFilter, Package, Settings2, ShoppingCart, Users } from "lucide-react";
+import { BarChartHorizontalBig, DollarSign, ListFilter, Package, Settings2, ShoppingCart, Users, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +11,16 @@ import { ArrowUpRight, ArrowDownRight, MoreHorizontal, ExternalLink, TrendingUp 
 import Image from "next/image";
 import Link from "next/link";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Area, Line } from "recharts";
+import { useToast } from "@/hooks/use-toast"; // Added useToast
 
-// Placeholder Data from previous implementation
-const placeholderStats = [
-  { title: "Total Sales", value: "$12,345", trend: "+12.5%", trendDirection: "up" as "up" | "down", icon: DollarSign, color: "bg-green-500" },
-  { title: "Total Orders", value: "1,280", trend: "+8.2%", trendDirection: "up" as "up" | "down", icon: ShoppingCart, color: "bg-blue-500" },
-  { title: "Products", value: "750", trend: "-1.5%", trendDirection: "down" as "up" | "down", icon: Package, color: "bg-orange-500" },
-  { title: "Visitors", value: "35,678", trend: "+20.1%", trendDirection: "up" as "up" | "down", icon: Users, color: "bg-purple-500" },
+// Placeholder Data for some stats
+const initialStats = [
+  { id: "sales", title: "Total Sales", value: "$0", trend: "+0%", trendDirection: "up" as "up" | "down", icon: DollarSign, color: "bg-green-500", isLoading: true },
+  { id: "orders", title: "Total Orders", value: "0", trend: "+0%", trendDirection: "up" as "up" | "down", icon: ShoppingCart, color: "bg-blue-500", isLoading: true },
+  { id: "products", title: "Products", value: "0", trend: "", trendDirection: "up" as "up" | "down", icon: Package, color: "bg-orange-500", isLoading: true },
+  { id: "visitors", title: "Visitors", value: "0", trend: "+0%", trendDirection: "up" as "up" | "down", icon: Users, color: "bg-purple-500", isLoading: true },
 ];
 
 const placeholderSalesChartData = [
@@ -41,20 +42,16 @@ const salesChartConfig = {
 const placeholderRecentOrders = [
   { id: "ORD001", customer: "Alice Wonderland", avatar: "AW", date: "2024-07-28", total: "$125.50", status: "Processing" as "Processing" | "Shipped" | "Delivered" | "Cancelled", items: 3 },
   { id: "ORD002", customer: "Bob The Builder", avatar: "BB", date: "2024-07-28", total: "$45.00", status: "Shipped" as "Processing" | "Shipped" | "Delivered" | "Cancelled", items: 1 },
-  { id: "ORD003", customer: "Charlie Brown", avatar: "CB", date: "2024-07-27", total: "$210.00", status: "Delivered" as "Processing" | "Shipped" | "Delivered" | "Cancelled", items: 5 },
-  { id: "ORD004", customer: "Diana Prince", avatar: "DP", date: "2024-07-26", total: "$75.20", status: "Delivered" as "Processing" | "Shipped" | "Delivered" | "Cancelled", items: 2 },
-  { id: "ORD005", customer: "Edward Scissorhands", avatar: "ES", date: "2024-07-25", total: "$99.99", status: "Cancelled" as "Processing" | "Shipped" | "Delivered" | "Cancelled", items: 1 },
+  // ... more mock orders
 ];
 
 const placeholderTopProducts = [
   { id: "PROD001", name: "Premium Blend Coffee", category: "Groceries", price: "$18.99", sales: 120, revenue: "$2278.80", imageUrl: "https://placehold.co/80x80.png", imageHint:"coffee beans" },
   { id: "PROD002", name: "Wireless Ergonomic Mouse", category: "Electronics", price: "$49.99", sales: 85, revenue: "$4249.15", imageUrl: "https://placehold.co/80x80.png", imageHint:"computer mouse" },
-  { id: "PROD003", name: "Organic Cotton T-Shirt", category: "Apparel", price: "$25.00", sales: 250, revenue: "$6250.00", imageUrl: "https://placehold.co/80x80.png", imageHint:"tshirt fashion" },
-  { id: "PROD004", name: "Smart Home Speaker Mini", category: "Electronics", price: "$39.00", sales: 70, revenue: "$2730.00", imageUrl: "https://placehold.co/80x80.png", imageHint:"smart speaker" },
-  { id: "PROD005", name: "Yoga Mat Premium", category: "Sports", price: "$30.00", sales: 95, revenue: "$2850.00", imageUrl: "https://placehold.co/80x80.png", imageHint:"yoga mat" },
+  // ... more mock products
 ];
 
-const StatCard: React.FC<{ title: string; value: string; trend: string; trendDirection: "up" | "down"; icon: React.ElementType; color: string }> = ({ title, value, trend, trendDirection, icon: Icon, color }) => (
+const StatCard: React.FC<{ title: string; value: string; trend: string; trendDirection: "up" | "down"; icon: React.ElementType; color: string; isLoading: boolean }> = ({ title, value, trend, trendDirection, icon: Icon, color, isLoading }) => (
   <Card className="shadow-lg hover:shadow-xl transition-shadow">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
@@ -63,28 +60,74 @@ const StatCard: React.FC<{ title: string; value: string; trend: string; trendDir
       </div>
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-      <p className={`text-xs ${trendDirection === "up" ? "text-green-600" : "text-red-600"} flex items-center`}>
-        {trendDirection === "up" ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
-        {trend} vs last month
-      </p>
+      {isLoading ? (
+         <div className="h-[28px] w-1/2 bg-muted animate-pulse rounded-md my-1"></div>
+      ) : (
+        <div className="text-2xl font-bold">{value}</div>
+      )}
+      {isLoading ? (
+        <div className="h-[18px] w-3/4 bg-muted animate-pulse rounded-md mt-1"></div>
+      ) : (
+        trend && (
+            <p className={`text-xs ${trendDirection === "up" ? "text-green-600" : "text-red-600"} flex items-center`}>
+            {trendDirection === "up" ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
+            {trend} vs last month
+            </p>
+        )
+      )}
     </CardContent>
   </Card>
 );
 
 export default function EcommerceAdminDashboardPage() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [stats, setStats] = useState(initialStats);
+  const { toast } = useToast(); // Added toast
+
+  const fetchProductCount = useCallback(async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      const products: any[] = await response.json();
+      setStats(prevStats => prevStats.map(stat => 
+        stat.id === 'products' ? { ...stat, value: products.length.toString(), isLoading: false } : stat
+      ));
+    } catch (error: any) {
+      console.error("Error fetching product count:", error);
+      toast({ title: "Error", description: "Could not load product count.", variant: "destructive"});
+      setStats(prevStats => prevStats.map(stat => 
+        stat.id === 'products' ? { ...stat, value: "Error", isLoading: false } : stat
+      ));
+    }
+  }, [toast]);
+
+
+  useEffect(() => {
+    setMounted(true);
+    fetchProductCount();
+    // Simulate loading for other stats
+    setTimeout(() => {
+        setStats(prev => prev.map(s => {
+            if (s.id === 'products' && !s.isLoading) return s; // Don't overwrite if products loaded
+            if (s.id === 'sales') return {...s, value: "$12,345", trend: "+12.5%", isLoading: false};
+            if (s.id === 'orders') return {...s, value: "1,280", trend: "+8.2%", isLoading: false};
+            if (s.id === 'visitors') return {...s, value: "35,678", trend: "+20.1%", isLoading: false};
+            return s;
+        }))
+    }, 1500);
+  }, [fetchProductCount]);
 
   if (!mounted) {
-    return <div className="flex justify-center items-center h-screen"><Package className="h-12 w-12 animate-pulse text-primary"/></div>;
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-12 w-12 animate-pulse text-primary"/></div>;
   }
   
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
       case "Processing": return "default";
       case "Shipped": return "secondary";
-      case "Delivered": return "outline"; // Use a distinct visual for delivered
+      case "Delivered": return "outline"; 
       case "Cancelled": return "destructive";
       default: return "outline";
     }
@@ -107,8 +150,8 @@ export default function EcommerceAdminDashboardPage() {
       </header>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {placeholderStats.map((stat) => (
-          <StatCard key={stat.title} {...stat} icon={stat.icon} />
+        {stats.map((stat) => (
+          <StatCard key={stat.id} {...stat} />
         ))}
       </section>
 
@@ -249,5 +292,3 @@ export default function EcommerceAdminDashboardPage() {
     </div>
   );
 }
-
-    

@@ -1,4 +1,9 @@
 
+import { ObjectId, type Filter } from 'mongodb';
+import { getCollection } from './mongodb';
+
+const PRODUCTS_COLLECTION = 'products';
+
 export interface AffiliateLink {
   vendorName: string;
   url: string;
@@ -9,158 +14,166 @@ export interface AffiliateLink {
 export type ProductType = 'affiliate' | 'creator';
 
 export interface Product {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
+  slug: string;
   name: string;
   description: string;
-  category: string;
+  category: string; // Kept as string for now, can be categoryId later
   imageUrl: string;
   imageHint: string;
   productType: ProductType;
-  tags?: string[];
+  tags?: string[]; // Kept as string array for now, can be tagIds later
 
   // For affiliate products
-  links?: AffiliateLink[]; // Optional: only for affiliate products
+  links?: AffiliateLink[];
 
   // For creator's own products
-  price?: number; // Optional: only for creator products
+  price?: number;
+  stock?: number;
+  sku?: string;
 }
 
-// Raw data structure
-interface ProductRaw extends Omit<Product, 'id' | 'productType'> {
-  _id?: any;
-  productTypeInput: ProductType;
-  priceInput?: number;
-  linksInput?: AffiliateLink[];
+// For MongoDB document representation
+interface ProductDocument extends Omit<Product, 'id'> {
+  _id: ObjectId;
 }
 
-let mockProductsRaw: ProductRaw[] = [
-  {
-    name: "Super Product Alpha",
-    description: "The latest and greatest for boosting your productivity. Highly recommended for content creators who need to manage multiple projects.",
-    category: "Software",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "modern software interface",
-    productTypeInput: 'affiliate',
-    linksInput: [
-      { vendorName: "Vendor Alpha Store", url: "#alpha-link1", priceDisplay: "$49.99/month" },
-      { vendorName: "App Marketplace", url: "#alpha-link2", priceDisplay: "Check Price" },
-    ],
-    tags: ["Productivity", "SaaS"],
-  },
-  {
-    name: "Creator's Gadget Pro",
-    description: "An essential piece of hardware for any serious creator. Improves video quality and workflow significantly.",
-    category: "Hardware",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "sleek hardware gadget",
-    productTypeInput: 'affiliate',
-    linksInput: [
-      { vendorName: "GadgetPro Direct", url: "#gadget-link1", priceDisplay: "$299.00" },
-      { vendorName: "Amazon", url: "#gadget-link2", priceDisplay: "$295.99" },
-      { vendorName: "Best Buy", url: "#gadget-link3", priceDisplay: "See Current Deals" },
-    ],
-    tags: ["Video", "Audio", "Gear"],
-  },
-  {
-    name: "Online Course: Master Content Creation",
-    description: "A comprehensive online course covering everything from idea generation to advanced editing techniques.",
-    category: "Education",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "online course platform",
-    productTypeInput: 'affiliate',
-    linksInput: [
-      { vendorName: "LearnPlatform", url: "#course-link1", priceDisplay: "$199 Lifetime Access" },
-    ],
-    tags: ["Learning", "Skills", "Video Editing"],
-  },
-  {
-    name: "My Awesome Creator T-Shirt",
-    description: "High-quality branded t-shirt, designed by me! Show your support.",
-    category: "Merchandise",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "cool t-shirt design",
-    productTypeInput: 'creator',
-    priceInput: 25.99,
-    tags: ["Apparel", "Creator Merch"],
-  },
-  {
-    name: "Digital Guide: Productivity Hacks",
-    description: "My exclusive e-book packed with tips to boost your creative output.",
-    category: "Digital Products",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "ebook cover",
-    productTypeInput: 'creator',
-    priceInput: 9.99,
-    tags: ["Ebook", "Productivity", "Guide"],
-  }
-];
+function docToProduct(doc: any): Product {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: _id?.toString(), ...rest } as Product;
+}
 
-let mockProducts: Product[] = mockProductsRaw.map((product, index) => ({
-  id: product._id?.toString() || `mock-product-${index + 1}`,
-  name: product.name,
-  description: product.description,
-  category: product.category,
-  imageUrl: product.imageUrl,
-  imageHint: product.imageHint,
-  productType: product.productTypeInput,
-  tags: product.tags,
-  links: product.productTypeInput === 'affiliate' ? product.linksInput : undefined,
-  price: product.productTypeInput === 'creator' ? product.priceInput : undefined,
-}));
+function createProductSlug(name: string): string {
+  if (!name) return `product-${Date.now()}`;
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 70); // Max length for slug
+}
 
-export function getAllProducts(category?: string): Product[] {
-  if (!Array.isArray(mockProducts)) {
-    console.error("[products-data] CRITICAL: mockProducts is not an array. Type:", typeof mockProducts, ". Value:", mockProducts);
-    return [];
+async function isProductSlugUnique(slug: string, excludeId?: string): Promise<boolean> {
+  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const query: Filter<ProductDocument> = { slug };
+  if (excludeId && ObjectId.isValid(excludeId)) {
+    query._id = { $ne: new ObjectId(excludeId) };
   }
-  let productsToReturn = mockProducts;
+  const count = await collection.countDocuments(query);
+  return count === 0;
+}
+
+export async function getAllProducts(category?: string, productType?: ProductType): Promise<Product[]> {
+  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const query: Filter<ProductDocument> = {};
   if (category && category.toLowerCase() !== 'all') {
-    productsToReturn = mockProducts.filter(p => 
-      p.category && typeof p.category === 'string' && p.category.toLowerCase() === category.toLowerCase()
-    );
+    query.category = { $regex: new RegExp(`^${category}$`, 'i') }; // Case-insensitive match
   }
-  return productsToReturn;
+  if (productType) {
+    query.productType = productType;
+  }
+  const productDocs = await collection.find(query).sort({ name: 1 }).toArray();
+  return productDocs.map(docToProduct);
 }
 
-export function getProductById(id: string): Product | undefined {
-  if (!Array.isArray(mockProducts)) {
-    console.error("[products-data] CRITICAL: mockProducts is not an array in getProductById.");
-    return undefined;
+export async function getProductById(id: string): Promise<Product | null> {
+  if (!ObjectId.isValid(id)) {
+    console.warn(`getProductById: Invalid ID format: ${id}`);
+    return null;
   }
-  return mockProducts.find(product => product.id === id);
+  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const productDoc = await collection.findOne({ _id: new ObjectId(id) });
+  return productDoc ? docToProduct(productDoc) : null;
 }
 
-export function addProduct(productData: Omit<Product, 'id'>): Product {
-  if (!Array.isArray(mockProducts)) {
-    console.error("[products-data] CRITICAL: mockProducts is not an array in addProduct.");
-    // Potentially initialize mockProducts if it's truly missing, though this indicates a deeper issue
-    mockProducts = []; 
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const productDoc = await collection.findOne({ slug });
+  return productDoc ? docToProduct(productDoc) : null;
+}
+
+export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug'>): Promise<Product> {
+  const collection = await getCollection<Omit<ProductDocument, '_id'>>(PRODUCTS_COLLECTION);
+  let slug = createProductSlug(productData.name);
+  let counter = 1;
+  while (!(await isProductSlugUnique(slug))) {
+    slug = `${createProductSlug(productData.name)}-${counter}`;
+    counter++;
   }
-  const newProduct: Product = {
-    id: `mock-product-${mockProducts.length + 1}-${Date.now()}`,
+
+  const docToInsert: Omit<ProductDocument, '_id'> = {
     ...productData,
+    slug,
+    // Ensure default values for optional fields if not provided
+    tags: productData.tags || [],
+    links: productData.productType === 'affiliate' ? (productData.links || []) : undefined,
+    price: productData.productType === 'creator' ? (productData.price || 0) : undefined,
+    stock: productData.productType === 'creator' ? (productData.stock || 0) : undefined,
+    sku: productData.productType === 'creator' ? (productData.sku || '') : undefined,
   };
-  mockProducts.push(newProduct);
+
+  const result = await collection.insertOne(docToInsert as any);
+  
+  const newProduct: Product = {
+    _id: result.insertedId,
+    id: result.insertedId.toString(),
+    ...docToInsert
+  };
   return newProduct;
 }
 
-export function updateProduct(id: string, updates: Partial<Omit<Product, 'id'>>): Product | undefined {
-  if (!Array.isArray(mockProducts)) {
-    console.error("[products-data] CRITICAL: mockProducts is not an array in updateProduct.");
-    return undefined;
+export async function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | '_id' | 'slug'>>): Promise<Product | null> {
+  if (!ObjectId.isValid(id)) {
+    console.warn(`updateProduct: Invalid ID format: ${id}`);
+    return null;
   }
-  const productIndex = mockProducts.findIndex(p => p.id === id);
-  if (productIndex === -1) return undefined;
-  mockProducts[productIndex] = { ...mockProducts[productIndex], ...updates };
-  return mockProducts[productIndex];
+  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  
+  const existingProduct = await collection.findOne({ _id: new ObjectId(id) });
+  if (!existingProduct) {
+    console.warn(`updateProduct: Product with ID ${id} not found.`);
+    return null;
+  }
+
+  const updatePayload = { ...updates };
+
+  if (updates.name && updates.name !== existingProduct.name) {
+    let newSlug = createProductSlug(updates.name);
+    let counter = 1;
+    while (!(await isProductSlugUnique(newSlug, id))) {
+      newSlug = `${createProductSlug(updates.name)}-${counter}`;
+      counter++;
+    }
+    (updatePayload as Product).slug = newSlug;
+  }
+  
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updatePayload },
+    { returnDocument: 'after' }
+  );
+
+  if (!result) {
+    console.warn(`updateProduct: Product with ID '${id}' not found or update failed post-operation.`);
+    return null;
+  }
+  return docToProduct(result);
 }
 
-export function deleteProduct(id: string): boolean {
-  if (!Array.isArray(mockProducts)) {
-    console.error("[products-data] CRITICAL: mockProducts is not an array in deleteProduct.");
+export async function deleteProduct(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) {
+    console.warn(`deleteProduct: Invalid ID format: ${id}`);
     return false;
   }
-  const initialLength = mockProducts.length;
-  mockProducts = mockProducts.filter(p => p.id !== id);
-  return mockProducts.length < initialLength;
+  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  
+  return result.deletedCount === 1;
+}
+
+export async function countProducts(): Promise<number> {
+  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  return collection.countDocuments();
 }
