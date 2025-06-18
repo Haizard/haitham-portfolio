@@ -45,6 +45,9 @@ export default function RootLayout({
               <Button variant="ghost" asChild>
                 <Link href="/showcase">Showcase</Link>
               </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/our-services">Our Services</Link>
+              </Button>
               <Button variant="default" asChild>
                 <Link href="/">Dashboard</Link>
               </Button>
