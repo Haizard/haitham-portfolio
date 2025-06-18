@@ -21,8 +21,9 @@ import {
   FileText,
   Target,
   Layers,
-  Package, // For User E-commerce Storefront
-  BarChartHorizontalBig, // For Admin E-commerce Dashboard
+  Package, 
+  BarChartHorizontalBig, 
+  PackageSearch // Added for Manage Products
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -50,7 +51,8 @@ const navItems = [
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
-      { href: "/admin/ecommerce-dashboard", label: "E-commerce Dashboard", icon: BarChartHorizontalBig },
+      { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig }, // Renamed for clarity
+      { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch }, // New item
     ]
   }
 ];

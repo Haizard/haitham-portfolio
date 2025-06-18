@@ -5,33 +5,33 @@ import { z } from 'zod';
 
 // Schema for creating a new product
 const affiliateLinkSchema = z.object({
-  vendorName: z.string().min(1),
-  url: z.string().url(),
-  priceDisplay: z.string().min(1),
+  vendorName: z.string().min(1, "Vendor name is required").max(100),
+  url: z.string().url("Invalid URL format"),
+  priceDisplay: z.string().min(1, "Price display is required").max(50),
   icon: z.string().optional(),
 });
 
 const baseProductSchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  category: z.string().min(1, "Category is required"),
+  name: z.string().min(3, "Name must be at least 3 characters").max(150),
+  description: z.string().min(10, "Description must be at least 10 characters").max(5000),
+  category: z.string().min(1, "Category is required").max(50),
   imageUrl: z.string().url("Image URL must be valid"),
-  imageHint: z.string().min(1, "Image hint is required"),
-  tags: z.array(z.string()).optional(),
+  imageHint: z.string().min(1, "Image hint is required").max(50),
+  tags: z.array(z.string().max(30)).optional(),
 });
 
 const creatorProductSchema = baseProductSchema.extend({
   productType: z.literal('creator'),
   price: z.number().min(0, "Price must be non-negative"),
-  stock: z.number().int().min(0, "Stock must be a non-negative integer").optional(),
-  sku: z.string().optional(),
-  links: z.array(affiliateLinkSchema).optional().transform(() => undefined), // Ensure links is undefined for creator
+  stock: z.number().int().min(0, "Stock must be a non-negative integer").optional().default(0),
+  sku: z.string().max(50).optional().nullable(),
+  links: z.array(affiliateLinkSchema).max(0, "Creator products cannot have affiliate links.").optional().transform(() => undefined),
 });
 
 const affiliateProductSchema = baseProductSchema.extend({
   productType: z.literal('affiliate'),
-  links: z.array(affiliateLinkSchema).min(1, "Affiliate products must have at least one link"),
-  price: z.number().optional().transform(() => undefined), // Ensure price is undefined for affiliate
+  links: z.array(affiliateLinkSchema).min(1, "Affiliate products must have at least one link").max(5),
+  price: z.number().optional().transform(() => undefined), 
   stock: z.number().optional().transform(() => undefined),
   sku: z.string().optional().transform(() => undefined),
 });
@@ -62,10 +62,18 @@ export async function POST(request: NextRequest) {
     const validation = productCreateSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error("API Product Create Validation Error:", validation.error.flatten());
       return NextResponse.json({ message: "Invalid product data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
     
+    // The data is already correctly typed by the discriminated union
     const productData = validation.data as Omit<Product, 'id' | '_id' | 'slug'>;
+    
+    // Ensure tags array is present, even if empty, to avoid MongoDB errors if schema expects it
+    if (!productData.tags) {
+      productData.tags = [];
+    }
+    
     const newProduct = await addProduct(productData);
     return NextResponse.json(newProduct, { status: 201 });
 
@@ -77,3 +85,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: `Server error: ${error.message || "Failed to create product"}` }, { status: 500 });
   }
 }
+
