@@ -1,14 +1,53 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServiceById, updateService, deleteService, type Service } from '@/lib/services-data';
+import { getServiceById, getServiceBySlug, updateService, deleteService, type Service } from '@/lib/services-data';
+import { z } from 'zod';
+import { ObjectId } from 'mongodb';
+
+// Zod schema for updating a service - all fields are optional.
+const testimonialUpdateSchema = z.object({
+  id: z.string().optional(), // Existing ID for updates, new ones won't have it
+  customerName: z.string().min(1, "Customer name is required"),
+  customerAvatar: z.string().url("Avatar URL must be valid").optional(),
+  comment: z.string().min(5, "Comment must be at least 5 characters"),
+  rating: z.number().min(1).max(5).optional(),
+  date: z.string().datetime({ message: "Invalid date format" }).optional(),
+});
+
+const serviceUpdateSchema = z.object({
+  name: z.string().min(3, "Service name must be at least 3 characters.").optional(),
+  price: z.string().refine(value => !isNaN(parseFloat(value)) && parseFloat(value) >= 0, {
+    message: "Price must be a valid non-negative number.",
+  }).optional(),
+  duration: z.string().min(3, "Duration must be at least 3 characters.").optional(),
+  description: z.string().min(10, "Description must be at least 10 characters.").max(500).optional(),
+  detailedDescription: z.string().optional(),
+  howItWorks: z.array(z.string()).optional(),
+  benefits: z.array(z.string()).optional(),
+  offers: z.array(z.string()).optional(),
+  securityInfo: z.string().optional(),
+  imageUrl: z.string().url("Image URL must be valid").optional().or(z.literal('')), // Allow empty string to clear
+  imageHint: z.string().max(50).optional().or(z.literal('')),
+  testimonials: z.array(testimonialUpdateSchema).optional(),
+});
+
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { serviceId: string } }
+  { params }: { params: { serviceId: string } } // serviceId can be ID or slug
 ) {
   try {
-    const serviceId = params.serviceId;
-    const service = getServiceById(serviceId);
+    const idOrSlug = params.serviceId;
+    let service: Service | null = null;
+
+    if (ObjectId.isValid(idOrSlug)) {
+      service = await getServiceById(idOrSlug);
+    }
+    
+    if (!service) {
+      // If not found by ID or if it's not a valid ObjectId, try by slug
+      service = await getServiceBySlug(idOrSlug);
+    }
 
     if (service) {
       return NextResponse.json(service);
@@ -23,31 +62,28 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { serviceId: string } }
+  { params }: { params: { serviceId: string } } // serviceId is actual ID here
 ) {
   try {
     const serviceId = params.serviceId;
+    if (!ObjectId.isValid(serviceId)) {
+      return NextResponse.json({ message: "Invalid service ID format for update." }, { status: 400 });
+    }
     const body = await request.json();
     
-    // Construct the updates object carefully to ensure type safety
-    // and only include fields that are actually part of the Service model.
-    const updates: Partial<Omit<Service, 'id'>> = {};
-    if (body.name !== undefined) updates.name = body.name;
-    if (body.price !== undefined) updates.price = String(body.price); // Ensure price is string
-    if (body.duration !== undefined) updates.duration = body.duration;
-    if (body.description !== undefined) updates.description = body.description;
+    const validation = serviceUpdateSchema.safeParse(body);
+    if(!validation.success) {
+      console.error("API Service Update Validation Error:", validation.error.flatten());
+      return NextResponse.json({ message: "Invalid service data for update", errors: validation.error.flatten().fieldErrors }, { status: 400 });
+    }
+    
+    const updates = validation.data as Partial<Omit<Service, 'id' | '_id' | 'slug'>>;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ message: "No update fields provided" }, { status: 400 });
     }
     
-    // Validate required fields for update, if any (though PUT usually allows partial updates)
-    // For example, if name was mandatory for an update:
-    // if (updates.name !== undefined && typeof updates.name !== 'string') {
-    //   return NextResponse.json({ message: "Invalid name format" }, { status: 400 });
-    // }
-
-    const updatedService = updateService(serviceId, updates);
+    const updatedService = await updateService(serviceId, updates);
 
     if (updatedService) {
       return NextResponse.json(updatedService);
@@ -56,7 +92,9 @@ export async function PUT(
     }
   } catch (error: any) {
     console.error(`Failed to update service ${params.serviceId}:`, error);
-    return NextResponse.json({ message: error.message || `Failed to update service ${params.serviceId}` }, { status: 500 });
+    const errorMessage = error.message || `Failed to update service ${params.serviceId}`;
+    const statusCode = errorMessage.includes('conflict') || errorMessage.includes('already exists') ? 409 : 500;
+    return NextResponse.json({ message: errorMessage }, { status: statusCode });
   }
 }
 
@@ -66,7 +104,10 @@ export async function DELETE(
 ) {
   try {
     const serviceId = params.serviceId;
-    const success = deleteService(serviceId);
+     if (!ObjectId.isValid(serviceId)) {
+        return NextResponse.json({ message: "Invalid service ID format for delete." }, { status: 400 });
+    }
+    const success = await deleteService(serviceId);
 
     if (success) {
       return NextResponse.json({ message: "Service deleted successfully" });
