@@ -2,9 +2,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link'; // Import Link
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, DollarSign, Clock, CalendarPlus, CheckCircle, Briefcase } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, DollarSign, Clock, Eye, CheckCircle, Briefcase, ExternalLink } from "lucide-react"; // Added Eye
 import type { Service } from '@/lib/services-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -72,45 +73,42 @@ export default function OurServicesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <Card key={service.id || `service-${index}`} className="shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col bg-card">
-                <CardHeader className="pb-4">
-                  <div className="mb-3">
-                     <Image 
-                        src={`https://placehold.co/600x400.png?text=${encodeURIComponent(service.name.substring(0,15))}`} 
-                        alt={service.name} 
-                        width={600} 
-                        height={400} 
-                        className="rounded-t-lg object-cover w-full aspect-[16/9]"
-                        data-ai-hint="service offering"
-                      />
-                  </div>
-                  <CardTitle className="text-2xl font-bold text-primary font-headline">{service.name}</CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground line-clamp-3 h-[3.75rem]">{service.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-3">
-                  <div className="flex items-center text-lg">
-                    <DollarSign className="h-5 w-5 mr-2 text-green-600" />
-                    <span className="font-semibold text-foreground">${service.price}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <span>Duration: {service.duration}</span>
-                  </div>
-                  {/* Placeholder for key features/benefits if available */}
-                  {/* <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pl-1 pt-2">
-                    <li>Feature one of this great service</li>
-                    <li>Another amazing benefit included</li>
-                    <li>Key deliverable explained</li>
-                  </ul> */}
-                </CardContent>
-                <CardContent className="border-t pt-4">
-                  <Button 
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-base py-3" 
-                    onClick={() => toast({ title: "Booking Coming Soon!", description: `Booking for "${service.name}" will be available shortly.`})}
-                  >
-                    <CalendarPlus className="mr-2 h-5 w-5" /> Book Now
-                  </Button>
-                </CardContent>
+              <Card key={service.id || `service-${index}`} className="shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col bg-card group">
+                <Link href={`/our-services/${service.slug}`} className="flex flex-col h-full">
+                  <CardHeader className="pb-4">
+                    <div className="mb-3 aspect-[16/9] overflow-hidden rounded-t-lg">
+                       <Image 
+                          src={service.imageUrl || `https://placehold.co/600x400.png?text=${encodeURIComponent(service.name.substring(0,15))}`} 
+                          alt={service.name} 
+                          width={600} 
+                          height={400} 
+                          className="rounded-t-lg object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                          data-ai-hint={service.imageHint || "service offering"}
+                        />
+                    </div>
+                    <CardTitle className="text-2xl font-bold text-primary font-headline group-hover:text-primary/80 transition-colors">{service.name}</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground line-clamp-3 h-[3.75rem]">{service.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow space-y-3">
+                    <div className="flex items-center text-lg">
+                      <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                      <span className="font-semibold text-foreground">{service.price ? `$${service.price}` : 'Inquire'}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4 mr-2" />
+                      <span>Duration: {service.duration}</span>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="mt-auto border-t pt-4">
+                    <Button 
+                      variant="outline"
+                      className="w-full text-base py-3" 
+                    >
+                      <Eye className="mr-2 h-5 w-5" /> View Details
+                       <ExternalLink className="ml-auto h-4 w-4 text-muted-foreground group-hover:text-primary/80 transition-colors" />
+                    </Button>
+                  </CardFooter>
+                </Link>
               </Card>
             ))}
           </div>
@@ -131,3 +129,5 @@ export default function OurServicesPage() {
     </div>
   );
 }
+
+    
