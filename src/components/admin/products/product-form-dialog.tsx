@@ -24,6 +24,7 @@ import { Loader2, PlusCircle, Trash2, DollarSign, Package, LinkIcon as LinkIconL
 import { useToast } from "@/hooks/use-toast";
 import type { Product, AffiliateLink, ProductType } from '@/lib/products-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card } from "@/components/ui/card"; // Added missing Card import
 
 const affiliateLinkSchemaDialog = z.object({
   vendorName: z.string().min(1, "Vendor name is required.").max(100),
@@ -90,8 +91,8 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
           name: "",
           description: "",
           category: "",
-          imageUrl: "",
-          imageHint: "",
+          imageUrl: "https://placehold.co/600x400.png", // Default placeholder
+          imageHint: "product image",
           tags: "",
           productType: "creator", // Default to creator
           price: 0,
@@ -140,14 +141,13 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
   useEffect(() => {
     if (productType === 'creator') {
       form.setValue('links', []); // Clear links if switching to creator
-      // Set default for creator-specific fields if they are undefined from a previous type
       if (form.getValues('price') === undefined) form.setValue('price', 0);
       if (form.getValues('stock') === undefined) form.setValue('stock', 0);
     } else if (productType === 'affiliate') {
-      form.setValue('price', undefined); // Clear creator fields
+      form.setValue('price', undefined); 
       form.setValue('stock', undefined);
       form.setValue('sku', undefined);
-      if (form.getValues('links')?.length === 0) { // Add one link if none exist
+      if (form.getValues('links')?.length === 0) { 
         appendLink({ vendorName: "", url: "", priceDisplay: "" });
       }
     }
@@ -158,12 +158,10 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
     const apiUrl = product && product.id ? `/api/products/${product.id}` : '/api/products';
     const method = product ? 'PUT' : 'POST';
 
-    // Ensure tags is an array when sending to API
     const payload = {
       ...values,
       tags: typeof values.tags === 'string' ? values.tags.split(',').map(tag => tag.trim()).filter(Boolean) : values.tags,
     };
-    // Zod schema already handles transforming price/stock/sku to undefined for affiliate.
 
     try {
       const response = await fetch(apiUrl, {
@@ -207,7 +205,7 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <ScrollArea className="h-[calc(100vh-20rem)] pr-6"> {/* Adjust height as needed */}
+            <ScrollArea className="h-[calc(100vh-20rem)] pr-6">
             <div className="space-y-4 py-4">
               <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem><FormLabel>Name</FormLabel><FormControl><Input placeholder="Product Name" {...field} /></FormControl><FormMessage /></FormItem>
