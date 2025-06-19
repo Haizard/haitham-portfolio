@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit3, Trash2, Loader2, PlusCircle, Briefcase, CalendarDays, CheckSquare, PlaySquare, PauseSquare, FolderClock } from "lucide-react";
+import { Edit3, Trash2, Loader2, PlusCircle, Briefcase, CalendarDays, CheckSquare, PlaySquare, Pause, FolderClock } from "lucide-react"; // Corrected: PauseSquare to Pause
 import { useToast } from "@/hooks/use-toast";
 import type { ClientProject } from '@/lib/client-projects-data';
 import { ClientProjectFormDialog } from './client-project-form-dialog';
@@ -103,7 +103,7 @@ export function ClientProjectListManagement() {
       case "Planning": return "secondary";
       case "In Progress": return "default"; 
       case "Completed": return "outline"; 
-      case "On Hold": return "destructive"; // Using destructive for 'On Hold' to make it stand out
+      case "On Hold": return "destructive"; 
       default: return "outline";
     }
   };
@@ -113,7 +113,7 @@ export function ClientProjectListManagement() {
         case "Planning": return <FolderClock className="h-4 w-4 mr-1.5 text-blue-500"/>;
         case "In Progress": return <PlaySquare className="h-4 w-4 mr-1.5 text-yellow-500"/>;
         case "Completed": return <CheckSquare className="h-4 w-4 mr-1.5 text-green-500"/>;
-        case "On Hold": return <PauseSquare className="h-4 w-4 mr-1.5 text-red-500"/>;
+        case "On Hold": return <Pause className="h-4 w-4 mr-1.5 text-red-500"/>; // Corrected: Using Pause icon
         default: return null;
     }
   };
