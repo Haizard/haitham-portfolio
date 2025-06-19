@@ -1,49 +1,91 @@
 
+import { ObjectId, type Filter } from 'mongodb';
+import { getCollection } from './mongodb';
+
+const CLIENT_PROJECTS_COLLECTION = 'clientProjects';
+
 export interface ClientProject {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   name: string;
   status: "In Progress" | "Completed" | "Planning" | "On Hold";
-  client: string;
-  description?: string; // Optional: a brief description
-  startDate?: string; // Optional
-  endDate?: string; // Optional
+  client: string; // In a real system, this might be a client ID
+  description?: string;
+  startDate?: string; // ISO Date string
+  endDate?: string; // ISO Date string
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-let projects: ClientProject[] = [
-  { id: "proj1", name: "Website Redesign Q3 2024", status: "In Progress", client: "Acme Corp", description: "Full redesign of the corporate website and e-commerce platform." },
-  { id: "proj2", name: "Social Media Campaign - Summer", status: "Completed", client: "Beta LLC", description: "Executed a targeted social media marketing campaign." },
-  { id: "proj3", name: "Video Production Series - Product Launch", status: "Planning", client: "Gamma Inc", description: "Series of promotional videos for an upcoming product." },
-  { id: "proj4", name: "Brand Identity Overhaul", status: "On Hold", client: "Delta Solutions", description: "Complete rebranding including logo, style guide, and marketing materials." },
-];
-
-export function getAllClientProjects(): ClientProject[] {
-  return projects;
+function docToClientProject(doc: any): ClientProject {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: _id?.toString(), ...rest } as ClientProject;
 }
 
-export function getClientProjectById(id: string): ClientProject | undefined {
-  return projects.find(project => project.id === id);
-}
-
-export function addClientProject(project: Omit<ClientProject, 'id'>): ClientProject {
-  const newProject: ClientProject = {
-    id: (Math.random() + 1).toString(36).substring(7), // simple unique id
-    ...project
-  };
-  projects.push(newProject);
-  return newProject;
-}
-
-export function updateClientProject(id: string, updates: Partial<Omit<ClientProject, 'id'>>): ClientProject | undefined {
-  const projectIndex = projects.findIndex(project => project.id === id);
-  if (projectIndex === -1) {
-    return undefined;
+// Seed some initial data if the collection is empty (for demo purposes)
+async function seedInitialProjects() {
+  const collection = await getCollection<ClientProject>(CLIENT_PROJECTS_COLLECTION);
+  const count = await collection.countDocuments();
+  if (count === 0) {
+    console.log("Seeding initial client projects...");
+    const initialProjects: Omit<ClientProject, 'id' | '_id' | 'createdAt' | 'updatedAt'>[] = [
+      { name: "Corporate Website V2", status: "In Progress", client: "Acme Corp", description: "Full redesign of the corporate website and e-commerce platform.", startDate: "2024-07-01" },
+      { name: "Summer Marketing Campaign", status: "Completed", client: "Beta LLC", description: "Targeted social media marketing campaign.", startDate: "2024-05-01", endDate: "2024-06-30" },
+      { name: "Mobile App - Phase 1", status: "Planning", client: "Gamma Inc", description: "Initial design and core feature planning for new mobile app." },
+      { name: "Branding Refresh", status: "On Hold", client: "Delta Solutions", description: "Revisiting brand identity and visual assets.", startDate: "2024-06-15" },
+    ];
+    const now = new Date();
+    await collection.insertMany(initialProjects.map(p => ({ ...p, createdAt: now, updatedAt: now })) as any[]);
+    console.log("Initial client projects seeded.");
   }
-  projects[projectIndex] = { ...projects[projectIndex], ...updates };
-  return projects[projectIndex];
+}
+// Call seed function once - ideally this would be a separate script or only run in dev
+// For simplicity in this environment, we'll let it check on module load.
+// Consider moving this to a more controlled seeding mechanism if this were production.
+seedInitialProjects().catch(console.error);
+
+
+export async function getAllClientProjects(): Promise<ClientProject[]> {
+  const collection = await getCollection<ClientProject>(CLIENT_PROJECTS_COLLECTION);
+  const projectDocs = await collection.find({}).sort({ createdAt: -1 }).toArray();
+  return projectDocs.map(docToClientProject);
 }
 
-export function deleteClientProject(id: string): boolean {
-  const initialLength = projects.length;
-  projects = projects.filter(project => project.id !== id);
-  return projects.length < initialLength;
+export async function getClientProjectById(id: string): Promise<ClientProject | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<ClientProject>(CLIENT_PROJECTS_COLLECTION);
+  const projectDoc = await collection.findOne({ _id: new ObjectId(id) });
+  return projectDoc ? docToClientProject(projectDoc) : null;
+}
+
+export async function addClientProject(projectData: Omit<ClientProject, 'id' | '_id' | 'createdAt' | 'updatedAt'>): Promise<ClientProject> {
+  const collection = await getCollection<Omit<ClientProject, 'id' | '_id'>>(CLIENT_PROJECTS_COLLECTION);
+  const now = new Date();
+  const docToInsert = {
+    ...projectData,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const result = await collection.insertOne(docToInsert as any);
+  return { _id: result.insertedId, id: result.insertedId.toString(), ...docToInsert };
+}
+
+export async function updateClientProject(id: string, updates: Partial<Omit<ClientProject, 'id' | '_id' | 'createdAt' | 'updatedAt'>>): Promise<ClientProject | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<ClientProject>(CLIENT_PROJECTS_COLLECTION);
+  const updatePayload = { ...updates, updatedAt: new Date() };
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updatePayload },
+    { returnDocument: 'after' }
+  );
+  return result ? docToClientProject(result) : null;
+}
+
+export async function deleteClientProject(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const collection = await getCollection<ClientProject>(CLIENT_PROJECTS_COLLECTION);
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
 }

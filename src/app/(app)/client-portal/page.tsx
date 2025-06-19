@@ -20,18 +20,19 @@ export default function ClientPortalPage() {
       try {
         const response = await fetch('/api/client-projects');
         if (!response.ok) {
-          throw new Error('Failed to fetch projects');
+          const errorData = await response.json().catch(() => ({ message: 'Failed to fetch projects and parse error.' }));
+          throw new Error(errorData.message || 'Failed to fetch projects');
         }
         const data: ClientProject[] = await response.json();
         setProjects(data);
-      } catch (error) {
-        console.error(error);
+      } catch (error: any) {
+        console.error("Error fetching client projects:", error);
         toast({
-          title: "Error",
-          description: "Could not load client projects.",
+          title: "Error Loading Projects",
+          description: error.message || "Could not load client projects.",
           variant: "destructive",
         });
-        setProjects([]); // Set to empty array on error
+        setProjects([]); 
       } finally {
         setIsLoadingProjects(false);
       }
@@ -80,7 +81,7 @@ export default function ClientPortalPage() {
                 ))}
               </ul>
             ) : (
-               <p className="text-muted-foreground text-center py-4">No projects to display.</p>
+               <p className="text-muted-foreground text-center py-4">No projects to display. (Or seed data might be running - refresh if stuck)</p>
             )}
           </CardContent>
         </Card>
