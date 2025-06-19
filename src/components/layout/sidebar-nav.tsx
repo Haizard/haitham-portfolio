@@ -23,7 +23,8 @@ import {
   Layers,
   Package, 
   BarChartHorizontalBig, 
-  PackageSearch // Added for Manage Products
+  PackageSearch,
+  CalendarCheck2 // Added for Manage Bookings
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -41,7 +42,7 @@ const navItems = [
   { href: "/sports-predictor", label: "Sports Predictor", icon: Target },
   { href: "/social-media", label: "Social Media", icon: MessagesSquare },
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
-  { href: "/services", label: "Services", icon: Briefcase },
+  { href: "/services", label: "Services Admin", icon: Briefcase }, // Renamed to Services Admin for clarity
   { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
   { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
   { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
@@ -51,8 +52,9 @@ const navItems = [
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
-      { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig }, // Renamed for clarity
-      { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch }, // New item
+      { href: "/admin/bookings", label: "Manage Bookings", icon: CalendarCheck2 }, // New item
+      { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig },
+      { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },
     ]
   }
 ];
