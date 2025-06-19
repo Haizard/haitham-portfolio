@@ -11,7 +11,7 @@ import type { Conversation, Message as MessageType } from '@/lib/chat-data';
 import { Loader2, MessageCircleOff, MessageSquare, WifiOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const CURRENT_USER_ID = "user1";
+const CURRENT_USER_ID = "user1"; // Replace with actual authenticated user ID
 const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001';
 
 export default function ChatPage() {
@@ -44,11 +44,10 @@ export default function ChatPage() {
   useEffect(() => {
     fetchConversations();
     
-    // Initialize Socket.IO connection
     console.log(`Attempting to connect to WebSocket server at ${WEBSOCKET_URL}`);
     const newSocket = io(WEBSOCKET_URL, {
       reconnectionAttempts: 5,
-      transports: ['websocket'], // Prefer WebSocket
+      transports: ['websocket'], 
     });
     socketRef.current = newSocket;
     setSocket(newSocket);
@@ -57,7 +56,6 @@ export default function ChatPage() {
       console.log('Socket connected:', newSocket.id);
       setIsConnected(true);
       toast({ title: "Chat Connected", description: "Real-time communication established." });
-      // If a conversation was selected before connection, try to join its room
       if (selectedConversation?.id) {
         newSocket.emit('joinConversation', selectedConversation.id);
       }
@@ -74,7 +72,7 @@ export default function ChatPage() {
       setIsConnected(false);
       toast({
         title: "Chat Connection Error",
-        description: `Could not connect to chat server: ${err.message}. Ensure the WebSocket server is running.`,
+        description: `Could not connect to chat server at ${WEBSOCKET_URL}. Error: ${err.message}. Please ensure the WebSocket server (src/server/socket-server.ts) is running and accessible.`,
         variant: "destructive",
         duration: 10000,
       });
@@ -82,23 +80,20 @@ export default function ChatPage() {
     
     newSocket.on('newMessage', (newMessage: MessageType) => {
       console.log('New message received via WebSocket:', newMessage);
-      // Add to messages if it's for the currently selected conversation
       if (newMessage.conversationId === selectedConversation?.id) {
         setMessages(prevMessages => [...prevMessages, newMessage]);
       }
-      // Update conversation list (last message preview, sort by recency)
       setConversations(prevConvs => {
         const updatedConvs = prevConvs.map(conv => {
           if (conv.id === newMessage.conversationId) {
             return { 
               ...conv, 
               lastMessage: { text: newMessage.text, timestamp: new Date(newMessage.timestamp).toISOString(), senderId: newMessage.senderId },
-              lastMessageAt: new Date(newMessage.timestamp) // Ensure this is a Date object for sorting
+              lastMessageAt: new Date(newMessage.timestamp)
             };
           }
           return conv;
         });
-        // Sort conversations by lastMessageAt, most recent first
         return updatedConvs.sort((a, b) => 
           new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime()
         );
@@ -121,7 +116,7 @@ export default function ChatPage() {
       }
       socketRef.current = null;
     };
-  }, [fetchConversations, selectedConversation?.id]); // Added selectedConversation dependency for re-joining room
+  }, [fetchConversations, selectedConversation?.id, toast]);
 
   const handleSelectConversation = useCallback(async (conversation: Conversation) => {
     setSelectedConversation(conversation);
@@ -150,10 +145,15 @@ export default function ChatPage() {
   }, [toast]);
 
   const handleSendMessage = async (text: string) => {
-    if (!selectedConversation || !text.trim() || !socketRef.current || !socketRef.current.connected) {
-      toast({ title: "Cannot Send", description: "No conversation selected or chat not connected.", variant: "destructive" });
+    if (!selectedConversation || !text.trim()) {
+      toast({ title: "Cannot Send", description: "No conversation selected or message is empty.", variant: "destructive" });
       return;
     }
+    if (!socketRef.current || !socketRef.current.connected) {
+      toast({ title: "Cannot Send", description: "Chat not connected. Please ensure WebSocket server is running and client is connected.", variant: "destructive" });
+      return;
+    }
+
 
     const messageData = {
       conversationId: selectedConversation.id!,
@@ -161,15 +161,8 @@ export default function ChatPage() {
       text: text.trim(),
     };
     
-    // Optimistic UI update can be done here if desired
-    // const optimisticMessage: MessageType = { /* ... */ id: `temp-${Date.now()}`, ...messageData, timestamp: new Date() };
-    // setMessages(prev => [...prev, optimisticMessage]);
-
     socketRef.current.emit('sendMessage', messageData);
     console.log('Message sent via WebSocket:', messageData);
-
-    // Note: The server will broadcast the message back, which `newMessage` listener will pick up.
-    // If the server doesn't broadcast back to the sender, then handle optimistic update and server ack.
   };
 
   return (
