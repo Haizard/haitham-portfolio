@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -7,14 +8,19 @@ import { cn } from "@/lib/utils"
 
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
+    viewportRef?: React.Ref<HTMLDivElement>; // Explicitly define viewportRef prop
+  }
+>(({ className, children, viewportRef, ...props }, ref) => ( // Destructure viewportRef
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
-    {...props}
+    {...props} // viewportRef is no longer in ...props here
   >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+    <ScrollAreaPrimitive.Viewport
+      className="h-full w-full rounded-[inherit]"
+      ref={viewportRef} // Pass viewportRef to the Viewport component
+    >
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
