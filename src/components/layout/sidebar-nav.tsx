@@ -24,7 +24,8 @@ import {
   Package, 
   BarChartHorizontalBig, 
   PackageSearch,
-  CalendarCheck2
+  CalendarCheck2,
+  MessageCircle // Added for Chat
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -43,7 +44,8 @@ const navItems = [
   { href: "/social-media", label: "Social Media", icon: MessagesSquare },
   { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
   { href: "/services", label: "Services Admin", icon: Briefcase }, 
-  { href: "/client-portal", label: "Client Portal Access", icon: ShieldCheck }, // Clarified label
+  { href: "/client-portal", label: "Client Portal Access", icon: ShieldCheck },
+  { href: "/chat", label: "Chat", icon: MessageCircle }, // Added Chat link
   { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
   { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
   { 
@@ -53,7 +55,7 @@ const navItems = [
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
       { href: "/admin/bookings", label: "Manage Bookings", icon: CalendarCheck2 },
-      { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase }, // New Item
+      { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase },
       { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig },
       { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },
     ]
