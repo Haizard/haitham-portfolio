@@ -1,7 +1,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getMockMessagesForConversation, addMockMessageToConversation, getMockUser } from '@/lib/chat-data';
+import { getMessagesForConversation, addMessageToConversation } from '@/lib/chat-data'; // Updated imports
 import { z } from 'zod';
+import { ObjectId } from 'mongodb';
+
 
 export async function GET(
   request: NextRequest,
@@ -9,22 +11,12 @@ export async function GET(
 ) {
   try {
     const conversationId = params.conversationId;
-    if (!conversationId) {
-      return NextResponse.json({ message: "Conversation ID is required" }, { status: 400 });
+    if (!conversationId || !ObjectId.isValid(conversationId)) {
+      return NextResponse.json({ message: "Valid Conversation ID is required" }, { status: 400 });
     }
-    const messages = await getMockMessagesForConversation(conversationId);
-    
-    // Optionally enrich messages with sender details if needed by frontend
-    const enrichedMessages = messages.map(msg => {
-        const sender = getMockUser(msg.senderId);
-        return {
-            ...msg,
-            senderName: sender?.name || 'Unknown Sender',
-            senderAvatarUrl: sender?.avatarUrl
-        }
-    });
-
-    return NextResponse.json(enrichedMessages);
+    // getMessagesForConversation already enriches messages with sender details
+    const messages = await getMessagesForConversation(conversationId); 
+    return NextResponse.json(messages);
   } catch (error: any) {
     console.error(`[API /api/chat/conversations/${params.conversationId}/messages GET] Error:`, error);
     return NextResponse.json({ message: `Failed to fetch messages: ${error.message || "Unknown error"}` }, { status: 500 });
@@ -32,7 +24,6 @@ export async function GET(
 }
 
 const postMessageSchema = z.object({
-  // In a real app, senderId would come from an authenticated session
   senderId: z.string().min(1, "Sender ID is required."), 
   text: z.string().min(1, "Message text cannot be empty.").max(5000, "Message text is too long."),
 });
@@ -43,8 +34,8 @@ export async function POST(
 ) {
   try {
     const conversationId = params.conversationId;
-    if (!conversationId) {
-      return NextResponse.json({ message: "Conversation ID is required" }, { status: 400 });
+    if (!conversationId || !ObjectId.isValid(conversationId)) {
+      return NextResponse.json({ message: "Valid Conversation ID is required" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -55,18 +46,13 @@ export async function POST(
     }
     
     const { senderId, text } = validation.data;
-    const newMessage = await addMockMessageToConversation(conversationId, { senderId, text });
-    
-    const sender = getMockUser(newMessage.senderId);
-    const enrichedNewMessage = {
-        ...newMessage,
-        senderName: sender?.name || 'Unknown Sender',
-        senderAvatarUrl: sender?.avatarUrl
-    };
+    // addMessageToConversation now handles enrichment
+    const newMessage = await addMessageToConversation(conversationId, senderId, text); 
 
-    return NextResponse.json(enrichedNewMessage, { status: 201 });
+    return NextResponse.json(newMessage, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: any)
+   {
     console.error(`[API /api/chat/conversations/${params.conversationId}/messages POST] Error:`, error);
     return NextResponse.json({ message: `Failed to send message: ${error.message || "Unknown error"}` }, { status: 500 });
   }

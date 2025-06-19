@@ -1,4 +1,11 @@
 
+import { ObjectId, type Filter } from 'mongodb';
+import { getCollection } from './mongodb';
+
+const CHAT_CONVERSATIONS_COLLECTION = 'chat_conversations';
+const CHAT_MESSAGES_COLLECTION = 'chat_messages';
+
+// --- Interfaces ---
 export interface User {
   id: string;
   name: string;
@@ -6,25 +13,34 @@ export interface User {
 }
 
 export interface Message {
-  id: string;
-  conversationId: string;
+  _id?: ObjectId;
+  id?: string;
+  conversationId: string; // Will be ObjectId string
   senderId: string;
   text: string;
-  timestamp: string; // ISO string
+  timestamp: Date;
 }
 
 export interface Conversation {
-  id:string;
-  participants: User[]; // Array of User objects
-  lastMessage?: Pick<Message, 'text' | 'timestamp' | 'senderId'>;
-  unreadCount?: number;
-  name?: string; // For group chats or custom names
-  isGroup?: boolean;
-  avatarUrl?: string; // For group chats or if it's a DM, the other person's avatar
+  _id?: ObjectId;
+  id?: string;
+  participantIds: string[];
+  lastMessageId?: string | null; // ObjectId string of the last message
+  lastMessagePreview?: string;
+  lastMessageAt?: Date | null;
+  isGroup: boolean;
+  groupName?: string;
+  groupAvatarUrl?: string;
+  // For display purposes, enriched on retrieval
+  displayInfo?: {
+    name: string;
+    avatarUrl?: string;
+    unreadCount?: number; // Placeholder for future unread count logic
+  };
 }
 
-// --- Mock Data ---
-
+// --- Mock User Data (for display enrichment until full auth) ---
+// This is kept separate and simple, not a full user DB.
 const mockUsers: Record<string, User> = {
   "user1": { id: "user1", name: "Alice Wonderland", avatarUrl: "https://placehold.co/100x100.png?text=AW" },
   "user2": { id: "user2", name: "Bob The Builder", avatarUrl: "https://placehold.co/100x100.png?text=BB" },
@@ -32,147 +48,186 @@ const mockUsers: Record<string, User> = {
   "admin": { id: "admin", name: "CreatorOS Admin", avatarUrl: "https://placehold.co/100x100.png?text=AD" },
 };
 
-let mockMessages: Record<string, Message[]> = {
-  "conv1": [
-    { id: "msg1", conversationId: "conv1", senderId: "user1", text: "Hey Bob, how's the new project coming along?", timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
-    { id: "msg2", conversationId: "conv1", senderId: "user2", text: "Hey Alice! It's going well, a bit challenging but exciting.", timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString() },
-    { id: "msg3", conversationId: "conv1", senderId: "user1", text: "Great to hear! Let me know if you need any help.", timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString() },
-  ],
-  "conv2": [
-    { id: "msg4", conversationId: "conv2", senderId: "user3", text: "Admin, I have a question about my billing.", timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
-    { id: "msg5", conversationId: "conv2", senderId: "admin", text: "Hi Charlie, sure, what's your question?", timestamp: new Date(Date.now() - 9 * 60 * 1000).toISOString() },
-  ],
-  "conv3": [
-    { id: "msg6", conversationId: "conv3", senderId: "user1", text: "Hi Admin, just wanted to say the platform is great!", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-  ]
-};
-
-let mockConversations: Conversation[] = [
-  {
-    id: "conv1",
-    participants: [mockUsers["user1"], mockUsers["user2"]],
-    lastMessage: { text: "Great to hear! Let me know if you need any help.", timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), senderId: "user1" },
-    unreadCount: 1,
-    name: "Bob The Builder", // For DM, set to other participant's name
-    avatarUrl: mockUsers["user2"].avatarUrl,
-    isGroup: false,
-  },
-  {
-    id: "conv2",
-    participants: [mockUsers["user3"], mockUsers["admin"]],
-    lastMessage: { text: "Hi Charlie, sure, what's your question?", timestamp: new Date(Date.now() - 9 * 60 * 1000).toISOString(), senderId: "admin" },
-    unreadCount: 0,
-    name: "CreatorOS Admin",
-    avatarUrl: mockUsers["admin"].avatarUrl,
-    isGroup: false,
-  },
-  {
-    id: "conv3",
-    participants: [mockUsers["user1"], mockUsers["admin"]],
-    lastMessage: { text: "Hi Admin, just wanted to say the platform is great!", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), senderId: "user1" },
-    name: "CreatorOS Admin (Support)",
-    avatarUrl: mockUsers["admin"].avatarUrl,
-    isGroup: false,
-  }
-];
-
-// --- Mock Functions ---
-
 export function getMockUser(userId: string): User | undefined {
     return mockUsers[userId];
 }
 
-export async function getMockConversations(currentUserId: string): Promise<Conversation[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  // Filter conversations where the currentUserId is a participant
-  return mockConversations
-    .filter(conv => conv.participants.some(p => p.id === currentUserId))
-    .map(conv => {
-      // If it's a DM, set name and avatar to the *other* participant for display purposes
-      if (!conv.isGroup && conv.participants.length === 2) {
-        const otherParticipant = conv.participants.find(p => p.id !== currentUserId);
-        return {
-          ...conv,
-          name: otherParticipant?.name || conv.name,
-          avatarUrl: otherParticipant?.avatarUrl || conv.avatarUrl,
-        };
+// --- Helper Functions ---
+function docToConversation(doc: any): Conversation {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return {
+    id: _id?.toString(),
+    ...rest,
+    lastMessageId: rest.lastMessageId?.toString() || null,
+  } as Conversation;
+}
+
+function docToMessage(doc: any): Message {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return {
+    id: _id?.toString(),
+    conversationId: rest.conversationId?.toString(), // Ensure conversationId is string
+    ...rest
+  } as Message;
+}
+
+// --- Database Functions ---
+
+export async function getConversationsForUser(currentUserId: string): Promise<Conversation[]> {
+  const conversationsCollection = await getCollection<Conversation>(CHAT_CONVERSATIONS_COLLECTION);
+  const messagesCollection = await getCollection<Message>(CHAT_MESSAGES_COLLECTION);
+
+  const conversationDocs = await conversationsCollection.find({
+    participantIds: currentUserId
+  }).sort({ lastMessageAt: -1 }).toArray();
+
+  const enrichedConversations = await Promise.all(
+    conversationDocs.map(async (doc) => {
+      const conv = docToConversation(doc);
+      let lastMessageText: string | undefined = conv.lastMessagePreview;
+      let lastMessageSenderId: string | undefined;
+
+      if (conv.lastMessageId) {
+        const lastMsgDoc = await messagesCollection.findOne({ _id: new ObjectId(conv.lastMessageId) });
+        if (lastMsgDoc) {
+          lastMessageText = lastMsgDoc.text;
+          lastMessageSenderId = lastMsgDoc.senderId;
+        }
       }
-      return conv;
+
+      let displayName = conv.groupName || "Chat";
+      let displayAvatarUrl = conv.groupAvatarUrl;
+
+      if (!conv.isGroup && conv.participantIds.length === 2) {
+        const otherParticipantId = conv.participantIds.find(pid => pid !== currentUserId);
+        if (otherParticipantId) {
+          const otherUser = getMockUser(otherParticipantId);
+          displayName = otherUser?.name || "Unknown User";
+          displayAvatarUrl = otherUser?.avatarUrl;
+        }
+      } else if (conv.isGroup) {
+        displayName = conv.groupName || "Group Chat";
+        displayAvatarUrl = conv.groupAvatarUrl || `https://placehold.co/100x100.png?text=${displayName.substring(0,1) || 'G'}`;
+      }
+      
+      return {
+        ...conv,
+        lastMessage: conv.lastMessageAt && lastMessageText ? {
+          text: lastMessageText,
+          timestamp: conv.lastMessageAt.toISOString(),
+          senderId: lastMessageSenderId || ""
+        } : undefined,
+        name: displayName, // Used by ConversationListItem now
+        avatarUrl: displayAvatarUrl, // Used by ConversationListItem
+        // unreadCount will be 0 for now, real implementation is complex
+        unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 3) : 0, 
+      };
     })
-    .sort((a, b) => new Date(b.lastMessage?.timestamp || 0).getTime() - new Date(a.lastMessage?.timestamp || 0).getTime());
+  );
+  return enrichedConversations;
 }
 
-export async function getMockMessagesForConversation(conversationId: string): Promise<Message[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 200));
-  return mockMessages[conversationId] || [];
+export async function getMessagesForConversation(conversationId: string): Promise<Message[]> {
+  if (!ObjectId.isValid(conversationId)) {
+    console.warn(`getMessagesForConversation: Invalid conversationId format: ${conversationId}`);
+    return [];
+  }
+  const messagesCollection = await getCollection<Message>(CHAT_MESSAGES_COLLECTION);
+  const messageDocs = await messagesCollection.find({
+    conversationId: conversationId // Storing conversationId as string matching the Conversation's ID
+  }).sort({ timestamp: 1 }).toArray();
+
+  return messageDocs.map(doc => {
+    const message = docToMessage(doc);
+    const sender = getMockUser(message.senderId);
+    return {
+      ...message,
+      senderName: sender?.name || 'Unknown Sender',
+      senderAvatarUrl: sender?.avatarUrl
+    };
+  });
 }
 
-export async function addMockMessageToConversation(
+export async function addMessageToConversation(
   conversationId: string,
-  messageData: Omit<Message, 'id' | 'conversationId' | 'timestamp'> & { text: string; senderId: string }
+  senderId: string,
+  text: string
 ): Promise<Message> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  const newMessage: Message = {
-    id: `msg${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    conversationId,
-    senderId: messageData.senderId,
-    text: messageData.text,
-    timestamp: new Date().toISOString(),
+  if (!ObjectId.isValid(conversationId)) {
+    throw new Error("Invalid conversation ID format for adding message.");
+  }
+  const messagesCollection = await getCollection<Omit<Message, 'id' | '_id'>>(CHAT_MESSAGES_COLLECTION);
+  const conversationsCollection = await getCollection<Conversation>(CHAT_CONVERSATIONS_COLLECTION);
+
+  const newMessageDoc: Omit<Message, 'id' | '_id'> = {
+    conversationId: conversationId, // Storing as string matching Conversation's ID
+    senderId,
+    text,
+    timestamp: new Date(),
   };
 
-  if (!mockMessages[conversationId]) {
-    mockMessages[conversationId] = [];
-  }
-  mockMessages[conversationId].push(newMessage);
+  const result = await messagesCollection.insertOne(newMessageDoc as any);
+  const insertedMessageId = result.insertedId;
 
-  // Update last message in conversation
-  const convIndex = mockConversations.findIndex(c => c.id === conversationId);
-  if (convIndex > -1) {
-    mockConversations[convIndex].lastMessage = {
-      text: newMessage.text,
-      timestamp: newMessage.timestamp,
-      senderId: newMessage.senderId,
-    };
-    // Move conversation to top
-    const updatedConv = mockConversations.splice(convIndex, 1)[0];
-    mockConversations.unshift(updatedConv);
-  }
+  await conversationsCollection.updateOne(
+    { _id: new ObjectId(conversationId) },
+    {
+      $set: {
+        lastMessageId: insertedMessageId.toString(),
+        lastMessagePreview: text.substring(0, 50) + (text.length > 50 ? "..." : ""),
+        lastMessageAt: newMessageDoc.timestamp,
+        updatedAt: new Date()
+      }
+    }
+  );
   
-  return newMessage;
+  const finalMessage = { _id: insertedMessageId, id: insertedMessageId.toString(), ...newMessageDoc };
+  const sender = getMockUser(finalMessage.senderId);
+  return {
+      ...finalMessage,
+      senderName: sender?.name || 'Unknown Sender',
+      senderAvatarUrl: sender?.avatarUrl
+  };
 }
 
-export async function createMockConversation(currentUserId: string, participantIds: string[], isGroup: boolean = false, groupName?: string): Promise<Conversation | null> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    const allParticipantIds = Array.from(new Set([currentUserId, ...participantIds]));
-    if (allParticipantIds.length < 2) return null; // Need at least two distinct participants
+export async function createConversation(
+  currentUserId: string,
+  otherParticipantIds: string[],
+  isGroup: boolean = false,
+  groupName?: string,
+  groupAvatarUrl?: string
+): Promise<Conversation> {
+  const conversationsCollection = await getCollection<Omit<Conversation, 'id' | '_id'>>(CHAT_CONVERSATIONS_COLLECTION);
+  
+  const allParticipantIds = Array.from(new Set([currentUserId, ...otherParticipantIds]));
+  if (allParticipantIds.length < 2) {
+    throw new Error("A conversation requires at least two distinct participants.");
+  }
 
-    const participants: User[] = allParticipantIds.map(id => mockUsers[id]).filter(Boolean) as User[];
-    if (participants.length !== allParticipantIds.length) return null; // Some user IDs were invalid
-
-    // Check if a DM conversation already exists between two users
-    if (!isGroup && participants.length === 2) {
-        const existingConv = mockConversations.find(c => 
-            !c.isGroup &&
-            c.participants.length === 2 &&
-            c.participants.every(p => allParticipantIds.includes(p.id))
-        );
-        if (existingConv) return existingConv;
+  // Check for existing DM
+  if (!isGroup && allParticipantIds.length === 2) {
+    const existingDM = await conversationsCollection.findOne({
+      isGroup: false,
+      participantIds: { $all: allParticipantIds, $size: 2 }
+    });
+    if (existingDM) {
+      return docToConversation(existingDM); // Return existing DM
     }
-    
-    const newConversationId = `conv${Date.now()}`;
-    const newConversation: Conversation = {
-        id: newConversationId,
-        participants,
-        isGroup,
-        name: isGroup ? (groupName || "New Group") : undefined, // Name for group, undefined for DM for now (will be set by getMockConversations)
-        // avatarUrl: isGroup ? 'https://placehold.co/100x100.png?text=GRP' : undefined,
-    };
-    mockConversations.unshift(newConversation);
-    mockMessages[newConversationId] = [];
-    return newConversation;
+  }
+
+  const now = new Date();
+  const newConversationDoc: Omit<Conversation, 'id' | '_id'> = {
+    participantIds: allParticipantIds,
+    isGroup,
+    groupName: isGroup ? (groupName || "New Group") : undefined,
+    groupAvatarUrl: isGroup ? (groupAvatarUrl || `https://placehold.co/100x100.png?text=${(groupName || "G").substring(0,1)}`) : undefined,
+    lastMessageAt: now, // Initialize for sorting
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const result = await conversationsCollection.insertOne(newConversationDoc as any);
+  return { id: result.insertedId.toString(), _id: result.insertedId, ...newConversationDoc };
 }
