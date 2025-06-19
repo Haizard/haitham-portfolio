@@ -20,7 +20,12 @@ export interface ClientProject {
 function docToClientProject(doc: any): ClientProject {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
-  return { id: _id?.toString(), ...rest } as ClientProject;
+  return { 
+    id: _id?.toString(), 
+    ...rest,
+    startDate: rest.startDate ? new Date(rest.startDate).toISOString().split('T')[0] : undefined,
+    endDate: rest.endDate ? new Date(rest.endDate).toISOString().split('T')[0] : undefined,
+  } as ClientProject;
 }
 
 // Seed some initial data if the collection is empty (for demo purposes)
@@ -40,9 +45,7 @@ async function seedInitialProjects() {
     console.log("Initial client projects seeded.");
   }
 }
-// Call seed function once - ideally this would be a separate script or only run in dev
-// For simplicity in this environment, we'll let it check on module load.
-// Consider moving this to a more controlled seeding mechanism if this were production.
+
 seedInitialProjects().catch(console.error);
 
 
@@ -64,17 +67,28 @@ export async function addClientProject(projectData: Omit<ClientProject, 'id' | '
   const now = new Date();
   const docToInsert = {
     ...projectData,
+    startDate: projectData.startDate ? new Date(projectData.startDate).toISOString() : undefined,
+    endDate: projectData.endDate ? new Date(projectData.endDate).toISOString() : undefined,
     createdAt: now,
     updatedAt: now,
   };
   const result = await collection.insertOne(docToInsert as any);
-  return { _id: result.insertedId, id: result.insertedId.toString(), ...docToInsert };
+  const newProject = { _id: result.insertedId, id: result.insertedId.toString(), ...docToInsert };
+  return docToClientProject(newProject); // Ensure dates are formatted correctly on return
 }
 
 export async function updateClientProject(id: string, updates: Partial<Omit<ClientProject, 'id' | '_id' | 'createdAt' | 'updatedAt'>>): Promise<ClientProject | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<ClientProject>(CLIENT_PROJECTS_COLLECTION);
+  
   const updatePayload = { ...updates, updatedAt: new Date() };
+  if (updates.startDate) {
+    updatePayload.startDate = new Date(updates.startDate).toISOString();
+  }
+  if (updates.endDate) {
+    updatePayload.endDate = new Date(updates.endDate).toISOString();
+  }
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updatePayload },
