@@ -19,8 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"; // Removed FormLabel as ShadCN uses Label directly or via FormItem->FormLabel
-import { Loader2, PlusCircle, Trash2, Image as ImageIcon, Shield, ListChecks, Gift, CheckSquare, Info } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Loader2, PlusCircle, Trash2, Image as ImageIcon, Shield, ListChecks, Gift, CheckSquare, Info, PackageCheck, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Service, Testimonial } from '@/lib/services-data';
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,7 +33,6 @@ const testimonialSchemaDialog = z.object({
   customerAvatar: z.string().url("Avatar URL must be valid.").optional().or(z.literal('')),
   comment: z.string().min(5, "Comment must be at least 5 characters."),
   rating: z.coerce.number().min(1).max(5).optional(),
-  // id and date are handled by backend/defaults
 });
 
 const serviceFormSchema = z.object({
@@ -52,6 +51,8 @@ const serviceFormSchema = z.object({
   offers: z.array(z.object({ value: z.string().min(1, "Offer cannot be empty.") })).optional().default([]),
   securityInfo: z.string().optional().default(""),
   testimonials: z.array(testimonialSchemaDialog).optional().default([]),
+  deliveryTime: z.string().max(50, "Delivery time max 50 chars.").optional().or(z.literal('')),
+  revisionsIncluded: z.string().max(50, "Revisions info max 50 chars.").optional().or(z.literal('')),
 });
 
 type ServiceFormValues = z.infer<typeof serviceFormSchema>;
@@ -82,6 +83,8 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
       offers: [],
       securityInfo: "",
       testimonials: [],
+      deliveryTime: "",
+      revisionsIncluded: "",
     },
   });
 
@@ -111,6 +114,8 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
               comment: t.comment,
               rating: t.rating
           })) || [],
+          deliveryTime: service.deliveryTime || "",
+          revisionsIncluded: service.revisionsIncluded || "",
         });
       } else {
         form.reset({
@@ -118,6 +123,7 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
           imageUrl: "", imageHint: "", detailedDescription: "",
           howItWorks: [], benefits: [], offers: [], securityInfo: "",
           testimonials: [],
+          deliveryTime: "", revisionsIncluded: "",
         });
       }
     }
@@ -172,20 +178,25 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <ScrollArea className="h-[calc(100vh-18rem)] pr-6"> {/* Adjusted height */}
+            <ScrollArea className="h-[calc(100vh-18rem)] pr-6">
               <div className="space-y-6 py-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem><Label>Service Name</Label><Input placeholder="e.g., 1-on-1 Coaching" {...field} /><FormMessage /></FormItem>
                 )}/>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="price" render={({ field }) => (
                         <FormItem><Label>Price ($)</Label><Input type="text" placeholder="e.g., 150" {...field} /><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="duration" render={({ field }) => (
                         <FormItem><Label>Duration</Label><Input placeholder="e.g., 60 min, 1 Project" {...field} /><FormMessage /></FormItem>
                     )}/>
-                     <FormField control={form.control} name="category" render={({ field }) => ( // Placeholder for category
-                        <FormItem><Label>Category (Optional)</Label><Input placeholder="e.g., Consultation, Design" {...field} /><FormMessage /></FormItem>
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="deliveryTime" render={({ field }) => (
+                        <FormItem><Label>Delivery Time (Optional)</Label><Input placeholder="e.g., 3 days, 1 week" {...field} /><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="revisionsIncluded" render={({ field }) => (
+                        <FormItem><Label>Revisions Included (Optional)</Label><Input placeholder="e.g., 2 revisions, Unlimited" {...field} /><FormMessage /></FormItem>
                     )}/>
                 </div>
                 <FormField control={form.control} name="description" render={({ field }) => (
@@ -262,16 +273,15 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
 }
 
 
-// Helper component for array field inputs
 interface ArrayFieldInputSectionProps {
     title: string;
     titleIcon?: React.ElementType;
-    fieldName: `howItWorks` | `benefits` | `offers`; // Ensure type safety
-    fields: any[]; // from useFieldArray
+    fieldName: `howItWorks` | `benefits` | `offers`; 
+    fields: any[]; 
     append: (value: { value: string }) => void;
     remove: (index: number) => void;
     placeholder: string;
-    control: any; // from useForm
+    control: any; 
 }
 
 function ArrayFieldInputSection({ title, titleIcon: Icon, fieldName, fields, append, remove, placeholder, control }: ArrayFieldInputSectionProps) {
@@ -307,4 +317,3 @@ function ArrayFieldInputSection({ title, titleIcon: Icon, fieldName, fields, app
         </Card>
     );
 }
-

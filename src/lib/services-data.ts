@@ -29,6 +29,8 @@ export interface Service {
   imageUrl?: string; // Featured image for the service
   imageHint?: string;
   testimonials?: Testimonial[];
+  deliveryTime?: string; // e.g., "3 days", "1 week"
+  revisionsIncluded?: string; // e.g., "2 revisions", "Unlimited"
 }
 
 function docToService(doc: any): Service {
@@ -41,6 +43,8 @@ function docToService(doc: any): Service {
     benefits: rest.benefits || [],
     offers: rest.offers || [],
     testimonials: (rest.testimonials || []).map((t: any) => ({ id: new ObjectId().toString(), ...t })),
+    deliveryTime: rest.deliveryTime || undefined,
+    revisionsIncluded: rest.revisionsIncluded || undefined,
   } as Service;
 }
 
@@ -98,7 +102,7 @@ export async function addService(serviceData: Omit<Service, 'id' | '_id' | 'slug
   const docToInsert = {
     ...serviceData,
     slug,
-    detailedDescription: serviceData.detailedDescription || serviceData.description, // Default detailed to short desc
+    detailedDescription: serviceData.detailedDescription || serviceData.description,
     howItWorks: serviceData.howItWorks || [],
     benefits: serviceData.benefits || [],
     offers: serviceData.offers || [],
@@ -106,6 +110,8 @@ export async function addService(serviceData: Omit<Service, 'id' | '_id' | 'slug
     imageUrl: serviceData.imageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(serviceData.name.substring(0,15))}`,
     imageHint: serviceData.imageHint || "service photo",
     testimonials: (serviceData.testimonials || []).map(t => ({ ...t, id: new ObjectId().toString() })),
+    deliveryTime: serviceData.deliveryTime || undefined,
+    revisionsIncluded: serviceData.revisionsIncluded || undefined,
   };
 
   const result = await collection.insertOne(docToInsert as any);

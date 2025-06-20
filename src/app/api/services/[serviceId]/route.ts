@@ -4,13 +4,12 @@ import { getServiceById, getServiceBySlug, updateService, deleteService, type Se
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
 
-// Zod schema for updating a service - all fields are optional.
 const testimonialUpdateSchema = z.object({
-  id: z.string().optional(), // Existing ID for updates, new ones won't have it
+  id: z.string().optional(), 
   customerName: z.string().min(1, "Customer name is required"),
-  customerAvatar: z.string().url("Avatar URL must be valid").optional(),
+  customerAvatar: z.string().url("Avatar URL must be valid").optional().or(z.literal('')),
   comment: z.string().min(5, "Comment must be at least 5 characters"),
-  rating: z.number().min(1).max(5).optional(),
+  rating: z.coerce.number().min(1).max(5).optional(),
   date: z.string().datetime({ message: "Invalid date format" }).optional(),
 });
 
@@ -21,20 +20,22 @@ const serviceUpdateSchema = z.object({
   }).optional(),
   duration: z.string().min(3, "Duration must be at least 3 characters.").optional(),
   description: z.string().min(10, "Description must be at least 10 characters.").max(500).optional(),
-  detailedDescription: z.string().optional(),
+  detailedDescription: z.string().optional().or(z.literal('')),
   howItWorks: z.array(z.string()).optional(),
   benefits: z.array(z.string()).optional(),
   offers: z.array(z.string()).optional(),
-  securityInfo: z.string().optional(),
-  imageUrl: z.string().url("Image URL must be valid").optional().or(z.literal('')), // Allow empty string to clear
+  securityInfo: z.string().optional().or(z.literal('')),
+  imageUrl: z.string().url("Image URL must be valid").optional().or(z.literal('')), 
   imageHint: z.string().max(50).optional().or(z.literal('')),
   testimonials: z.array(testimonialUpdateSchema).optional(),
+  deliveryTime: z.string().max(50).optional().or(z.literal('')),
+  revisionsIncluded: z.string().max(50).optional().or(z.literal('')),
 });
 
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { serviceId: string } } // serviceId can be ID or slug
+  { params }: { params: { serviceId: string } } 
 ) {
   try {
     const idOrSlug = params.serviceId;
@@ -45,7 +46,6 @@ export async function GET(
     }
     
     if (!service) {
-      // If not found by ID or if it's not a valid ObjectId, try by slug
       service = await getServiceBySlug(idOrSlug);
     }
 
@@ -62,7 +62,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { serviceId: string } } // serviceId is actual ID here
+  { params }: { params: { serviceId: string } } 
 ) {
   try {
     const serviceId = params.serviceId;

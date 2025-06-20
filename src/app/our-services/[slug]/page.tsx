@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Loader2, DollarSign, Clock, CalendarPlus, CheckCircle, Shield, MessageSquare, ThumbsUp, ListChecks, Gift, Info, ArrowLeft } from 'lucide-react';
+import { Loader2, DollarSign, Clock, CalendarPlus, CheckCircle, Shield, MessageSquare, ThumbsUp, ListChecks, Gift, Info, ArrowLeft, PackageCheck, RefreshCw } from 'lucide-react';
 import type { Service, Testimonial } from '@/lib/services-data';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookingRequestDialog } from '@/components/bookings/booking-request-dialog'; // Import the dialog
+import { BookingRequestDialog } from '@/components/bookings/booking-request-dialog';
 
 async function getServiceData(slug: string): Promise<Service | null> {
   try {
@@ -39,7 +39,7 @@ export default function ServiceDetailPage() {
   const [service, setService] = useState<Service | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false); // State for dialog
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -144,7 +144,7 @@ export default function ServiceDetailPage() {
               )}
 
             <Card className="bg-secondary/30">
-              <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center sm:text-left">
+              <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-center sm:text-left">
                 <div className="flex flex-col items-center sm:items-start">
                   <DollarSign className="h-8 w-8 text-primary mb-2" />
                   <p className="text-sm text-muted-foreground">Price</p>
@@ -155,16 +155,37 @@ export default function ServiceDetailPage() {
                   <p className="text-sm text-muted-foreground">Duration</p>
                   <p className="text-xl font-semibold text-foreground">{service.duration}</p>
                 </div>
-                <div className="flex flex-col items-center sm:items-start">
+                 <div className="flex flex-col items-center sm:items-start">
                   <Button 
-                      className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-6 mt-3 sm:mt-0"
-                      onClick={() => setIsBookingDialogOpen(true)} // Open dialog
+                      className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-6 mt-3 sm:mt-0 lg:col-span-1"
+                      onClick={() => setIsBookingDialogOpen(true)}
                   >
                       <CalendarPlus className="mr-2 h-5 w-5" /> Book This Service
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {(service.deliveryTime || service.revisionsIncluded) && (
+                <Card className="bg-secondary/30">
+                    <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6 text-center sm:text-left">
+                        {service.deliveryTime && (
+                            <div className="flex flex-col items-center sm:items-start">
+                                <PackageCheck className="h-8 w-8 text-primary mb-2" />
+                                <p className="text-sm text-muted-foreground">Delivery Time</p>
+                                <p className="text-xl font-semibold text-foreground">{service.deliveryTime}</p>
+                            </div>
+                        )}
+                        {service.revisionsIncluded && (
+                            <div className="flex flex-col items-center sm:items-start">
+                                <RefreshCw className="h-8 w-8 text-primary mb-2" />
+                                <p className="text-sm text-muted-foreground">Revisions Included</p>
+                                <p className="text-xl font-semibold text-foreground">{service.revisionsIncluded}</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
             
             <section>
               <h2 className="text-2xl font-semibold mb-3 font-headline flex items-center"><Info className="h-6 w-6 mr-2 text-primary"/>Service Overview</h2>
@@ -224,7 +245,7 @@ export default function ServiceDetailPage() {
           </div>
         </article>
       </div>
-      {service && service.id && ( // Ensure service and service.id are available
+      {service && service.id && (
         <BookingRequestDialog
           isOpen={isBookingDialogOpen}
           onClose={() => setIsBookingDialogOpen(false)}

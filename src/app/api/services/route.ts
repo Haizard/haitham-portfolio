@@ -3,12 +3,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getAllServices, addService, type Service } from '@/lib/services-data';
 import { z } from 'zod';
 
-// Zod schema for creating a new service
 const testimonialSchema = z.object({
   customerName: z.string().min(1, "Customer name is required"),
-  customerAvatar: z.string().url("Avatar URL must be valid").optional(),
+  customerAvatar: z.string().url("Avatar URL must be valid").optional().or(z.literal('')),
   comment: z.string().min(5, "Comment must be at least 5 characters"),
-  rating: z.number().min(1).max(5).optional(),
+  rating: z.coerce.number().min(1).max(5).optional(),
   date: z.string().datetime({ message: "Invalid date format" }).optional().default(() => new Date().toISOString()),
 });
 
@@ -24,9 +23,11 @@ const serviceCreateSchema = z.object({
   benefits: z.array(z.string()).optional(),
   offers: z.array(z.string()).optional(),
   securityInfo: z.string().optional(),
-  imageUrl: z.string().url("Image URL must be valid").optional(),
-  imageHint: z.string().max(50).optional(),
+  imageUrl: z.string().url("Image URL must be a valid URL.").optional().or(z.literal('')),
+  imageHint: z.string().max(50).optional().or(z.literal('')),
   testimonials: z.array(testimonialSchema).optional(),
+  deliveryTime: z.string().max(50).optional().or(z.literal('')),
+  revisionsIncluded: z.string().max(50).optional().or(z.literal('')),
 });
 
 
@@ -51,7 +52,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid service data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
     
-    // The data is already correctly typed by the schema
     const serviceData = validation.data as Omit<Service, 'id' | '_id' | 'slug'>;
     
     const addedService = await addService(serviceData);
