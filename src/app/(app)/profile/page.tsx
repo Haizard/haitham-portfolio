@@ -2,74 +2,115 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, UserCircle, Mail, Briefcase, Save } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, UserCircle, Mail, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon, DollarSign, Settings2, Palette, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { UserProfile, PortfolioLink, UserRole, AvailabilityStatus } from '@/lib/user-profile-data';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface UserProfile {
-  name: string;
-  email: string;
-  bio: string;
-  avatarUrl: string;
-  occupation: string;
-}
+const portfolioLinkSchema = z.object({
+  id: z.string().optional(), // For existing links, to help with updates if needed
+  title: z.string().min(1, "Title is required.").max(100),
+  url: z.string().url("Must be a valid URL.").min(1),
+});
+
+const profileFormSchema = z.object({
+  name: z.string().min(1, "Name is required.").max(100),
+  email: z.string().email("Invalid email address."),
+  avatarUrl: z.string().url("Avatar URL must be valid.").or(z.literal("")),
+  occupation: z.string().min(1, "Occupation is required.").max(100),
+  bio: z.string().max(1000, "Bio cannot exceed 1000 characters.").optional().default(""),
+  role: z.enum(['client', 'freelancer', 'admin']),
+  skills: z.string().optional().transform(val => val ? val.split(',').map(skill => skill.trim()).filter(Boolean) : []),
+  portfolioLinks: z.array(portfolioLinkSchema).optional().default([]),
+  hourlyRate: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined || Number.isNaN(parseFloat(String(val)))) ? null : parseFloat(String(val)),
+    z.number().min(0, "Hourly rate must be non-negative.").nullable().optional()
+  ),
+  availabilityStatus: z.enum(['available', 'busy', 'not_available']),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      name: "", email: "", avatarUrl: "", occupation: "", bio: "",
+      role: "freelancer", skills: [], portfolioLinks: [], hourlyRate: null, availabilityStatus: "available",
+    },
+  });
+
+  const { fields: portfolioFields, append: appendPortfolioLink, remove: removePortfolioLink } = useFieldArray({
+    control: form.control,
+    name: "portfolioLinks",
+  });
 
   useEffect(() => {
     async function fetchProfile() {
       setIsLoading(true);
       try {
         const response = await fetch('/api/profile');
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile');
-        }
+        if (!response.ok) throw new Error('Failed to fetch profile');
         const data: UserProfile = await response.json();
-        setProfile(data);
+        setProfileData(data);
+        form.reset({
+          ...data,
+          skills: data.skills?.join(', ') || "", // Convert array to comma-separated string for input
+          hourlyRate: data.hourlyRate ?? null, // Ensure null if undefined
+          portfolioLinks: data.portfolioLinks?.map(link => ({ ...link, id: link.id || new ObjectId().toString() })) || [], // Ensure IDs for field array
+        });
       } catch (error) {
         console.error(error);
-        toast({
-          title: "Error",
-          description: "Could not load your profile data.",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Could not load your profile data.", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     }
     fetchProfile();
-  }, [toast]);
+  }, [form, toast]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (!profile) return;
-    const { name, value } = e.target;
-    setProfile({ ...profile, [name]: value });
-  };
-
-  const handleSaveProfile = async () => {
-    if (!profile) return;
+  const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
+    const dataToSave = {
+      ...values,
+      // Skills are already an array due to Zod transform in schema
+      hourlyRate: values.hourlyRate === null || values.hourlyRate === undefined ? null : Number(values.hourlyRate),
+    };
+
     try {
       const response = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
+        body: JSON.stringify(dataToSave),
       });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save profile');
       }
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile); // Update state with response from API
+      const updatedProfile: UserProfile = await response.json();
+      setProfileData(updatedProfile); // Update local state
+      form.reset({ // Re-sync form with potentially processed data (like skills array to string)
+         ...updatedProfile,
+         skills: updatedProfile.skills?.join(', ') || "",
+         hourlyRate: updatedProfile.hourlyRate ?? null,
+         portfolioLinks: updatedProfile.portfolioLinks?.map(link => ({ ...link, id: link.id || new ObjectId().toString() })) || [],
+      });
       toast({ title: "Success", description: "Profile updated successfully!" });
     } catch (error: any) {
       console.error("Error saving profile:", error);
@@ -87,7 +128,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profile) {
+  if (!profileData) {
     return (
       <div className="text-center py-10">
         <p className="text-xl text-muted-foreground">Could not load profile data.</p>
@@ -95,6 +136,11 @@ export default function ProfilePage() {
       </div>
     );
   }
+  
+  const currentAvatar = form.watch("avatarUrl") || profileData.avatarUrl;
+  const currentName = form.watch("name") || profileData.name;
+  const currentOccupation = form.watch("occupation") || profileData.occupation;
+
 
   return (
     <div className="container mx-auto py-8">
@@ -103,62 +149,110 @@ export default function ProfilePage() {
           <UserCircle className="mr-3 h-10 w-10 text-primary" /> Your Profile
         </h1>
         <p className="text-xl text-muted-foreground mt-2">
-          Manage your personal information and preferences.
+          Manage your personal and professional information.
         </p>
       </header>
 
-      <Card className="shadow-xl max-w-3xl mx-auto">
-        <CardHeader className="flex flex-col items-center text-center sm:flex-row sm:text-left sm:space-x-6">
-          <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 mb-4 sm:mb-0">
-            <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="user avatar" />
-            <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div>
-            <CardTitle className="text-3xl font-headline">{profile.name}</CardTitle>
-            <CardDescription className="text-lg">{profile.occupation}</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="flex items-center"><UserCircle className="mr-2 h-4 w-4 text-muted-foreground" />Full Name</Label>
-              <Input id="name" name="name" value={profile.name} onChange={handleInputChange} className="text-base p-3" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center"><Mail className="mr-2 h-4 w-4 text-muted-foreground" />Email Address</Label>
-              <Input id="email" name="email" type="email" value={profile.email} onChange={handleInputChange} className="text-base p-3" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="occupation" className="flex items-center"><Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />Occupation / Title</Label>
-            <Input id="occupation" name="occupation" value={profile.occupation} onChange={handleInputChange} className="text-base p-3" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="bio" className="flex items-center"><UserCircle className="mr-2 h-4 w-4 text-muted-foreground" />Bio / About Me</Label>
-            <Textarea
-              id="bio"
-              name="bio"
-              value={profile.bio}
-              onChange={handleInputChange}
-              placeholder="Tell us a little about yourself..."
-              className="min-h-[120px] text-base p-3"
-            />
-          </div>
-          <div className="border-t pt-6 flex justify-end">
-            <Button onClick={handleSaveProfile} disabled={isSaving || isLoading} size="lg" className="bg-primary hover:bg-primary/90">
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-5 w-5" /> Save Changes
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSaveProfile)}>
+          <Card className="shadow-xl max-w-4xl mx-auto">
+            <CardHeader className="flex flex-col items-center text-center sm:flex-row sm:text-left sm:space-x-6">
+              <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 mb-4 sm:mb-0">
+                <AvatarImage src={currentAvatar} alt={currentName} data-ai-hint="user avatar large" />
+                <AvatarFallback>{currentName.substring(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-3xl font-headline">{currentName}</CardTitle>
+                <CardDescription className="text-lg">{currentOccupation}</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+            <ScrollArea className="h-[calc(100vh-28rem)] pr-3"> {/* Adjust height as needed */}
+              <div className="space-y-6">
+              <FormField control={form.control} name="avatarUrl" render={({ field }) => (
+                <FormItem><FormLabel className="flex items-center"><Palette className="mr-2 h-4 w-4 text-muted-foreground" />Avatar URL</FormLabel><Input {...field} placeholder="https://example.com/avatar.png" className="text-base p-3" /><FormMessage /></FormItem>
+              )}/>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem><FormLabel className="flex items-center"><UserCircle className="mr-2 h-4 w-4 text-muted-foreground" />Full Name</FormLabel><Input {...field} className="text-base p-3" /><FormMessage /></FormItem>
+                )}/>
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem><FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-muted-foreground" />Email Address</FormLabel><Input type="email" {...field} className="text-base p-3" /><FormMessage /></FormItem>
+                )}/>
+              </div>
+              <FormField control={form.control} name="occupation" render={({ field }) => (
+                <FormItem><FormLabel className="flex items-center"><Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />Occupation / Title</FormLabel><Input {...field} className="text-base p-3" /><FormMessage /></FormItem>
+              )}/>
+              <FormField control={form.control} name="bio" render={({ field }) => (
+                <FormItem><FormLabel className="flex items-center"><Info className="mr-2 h-4 w-4 text-muted-foreground" />Bio / About Me</FormLabel><Textarea {...field} placeholder="Tell us a little about yourself..." className="min-h-[120px] text-base p-3" /><FormMessage /></FormItem>
+              )}/>
+
+              <div className="border-t pt-6 space-y-6">
+                <h3 className="text-lg font-semibold text-primary flex items-center"><Settings2 className="mr-2 h-5 w-5"/>Professional Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField control={form.control} name="role" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger className="text-base p-3"><SelectValue placeholder="Select your role" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="client">Client</SelectItem>
+                          <SelectItem value="freelancer">Freelancer</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="availabilityStatus" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Availability Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger className="text-base p-3"><SelectValue placeholder="Set availability" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="available">Available</SelectItem>
+                          <SelectItem value="busy">Busy</SelectItem>
+                          <SelectItem value="not_available">Not Available</SelectItem>
+                        </SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>
+                  )}/>
+                </div>
+                 <FormField control={form.control} name="skills" render={({ field }) => (
+                    <FormItem><FormLabel>Skills (comma-separated)</FormLabel><Input placeholder="e.g., React, Figma, Copywriting" {...field} className="text-base p-3" /><FormMessage /></FormItem>
+                  )}/>
+                <FormField control={form.control} name="hourlyRate" render={({ field }) => (
+                  <FormItem><FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />Hourly Rate ($) (Optional)</FormLabel><Input type="number" step="0.01" placeholder="e.g., 50" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))} className="text-base p-3" /><FormMessage /></FormItem>
+                )}/>
+                
+                <div>
+                  <FormLabel className="text-base block mb-2">Portfolio Links</FormLabel>
+                  {portfolioFields.map((item, index) => (
+                    <Card key={item.id} className="p-3 mb-3 space-y-2 bg-secondary/50 relative">
+                      <FormField control={form.control} name={`portfolioLinks.${index}.title`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs">Title</FormLabel><Input placeholder="Project Title" {...field} className="text-sm p-2" /><FormMessage /></FormItem>
+                      )}/>
+                      <FormField control={form.control} name={`portfolioLinks.${index}.url`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs">URL</FormLabel><Input type="url" placeholder="https://example.com/project" {...field} className="text-sm p-2" /><FormMessage /></FormItem>
+                      )}/>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removePortfolioLink(index)} className="absolute top-1 right-1 h-7 w-7 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button>
+                    </Card>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={() => appendPortfolioLink({ title: "", url: "" })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Portfolio Link
+                  </Button>
+                </div>
+              </div>
+              </div> {/* End of ScrollArea content div */}
+            </ScrollArea>
+            </CardContent>
+            <CardFooter className="border-t pt-6 flex justify-end">
+              <Button type="submit" disabled={isSaving || isLoading} size="lg" className="bg-primary hover:bg-primary/90">
+                {isSaving ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving...</> : <><Save className="mr-2 h-5 w-5" /> Save Changes</>}
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
     </div>
   );
 }
