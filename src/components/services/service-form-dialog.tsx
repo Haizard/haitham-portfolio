@@ -149,13 +149,28 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${service ? 'update' : 'create'} service`);
+        let errorDetail = `Failed to ${service ? 'update' : 'create'} service. Status: ${response.status}`;
+        try {
+          // Attempt to parse the error response as JSON
+          const errorData = await response.json();
+          errorDetail = errorData.message || errorDetail;
+        } catch (jsonError) {
+          // If JSON parsing fails, use the response text or a more generic message
+          const responseText = await response.text().catch(() => ""); // Attempt to get raw text
+          if (responseText) {
+            errorDetail = `Server error (${response.status}): ${responseText.substring(0, 200)}...`; // Limit length
+          }
+          console.error("Failed to parse error response as JSON:", jsonError, "Raw response text:", responseText);
+        }
+        throw new Error(errorDetail);
       }
+      
+      // If response.ok, we assume the API sends back the created/updated service object as JSON
+      const savedService: Service = await response.json(); 
 
       toast({
         title: `Service ${service ? 'Updated' : 'Created'}!`,
-        description: `The service "${values.name}" has been successfully ${service ? 'updated' : 'created'}.`,
+        description: `The service "${savedService.name}" has been successfully ${service ? 'updated' : 'created'}.`,
       });
       onSuccess();
       onClose();
@@ -317,3 +332,5 @@ function ArrayFieldInputSection({ title, titleIcon: Icon, fieldName, fields, app
         </Card>
     );
 }
+
+    
