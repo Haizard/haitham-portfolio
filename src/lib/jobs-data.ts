@@ -22,6 +22,17 @@ export interface Job {
   updatedAt: Date;
 }
 
+// Interface for filter options passed to getAllJobs
+export interface JobFilters {
+  status?: JobStatus;
+  search?: string;
+  minBudget?: number;
+  maxBudget?: number;
+  budgetType?: BudgetType;
+  skills?: string[];
+}
+
+
 function docToJob(doc: any): Job {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
@@ -32,15 +43,38 @@ function docToJob(doc: any): Job {
   } as Job;
 }
 
-export async function getAllJobs(filters: { status?: JobStatus } = {}): Promise<Job[]> {
+export async function getAllJobs(filters: JobFilters = {}): Promise<Job[]> {
   const collection = await getCollection<Job>(JOBS_COLLECTION);
+  
   const query: Filter<Job> = {};
-  if (filters.status) {
-    query.status = filters.status;
-  } else {
-    // Default to only showing open jobs if no status is specified
-    query.status = 'open';
+
+  // Default to open status if not otherwise specified
+  query.status = filters.status || 'open';
+
+  if (filters.search) {
+    const regex = { $regex: filters.search, $options: 'i' };
+    query.$or = [{ title: regex }, { description: regex }];
   }
+
+  if (filters.minBudget !== undefined || filters.maxBudget !== undefined) {
+    query.budgetAmount = {};
+    if (filters.minBudget !== undefined) {
+      query.budgetAmount.$gte = filters.minBudget;
+    }
+    if (filters.maxBudget !== undefined) {
+      query.budgetAmount.$lte = filters.maxBudget;
+    }
+  }
+
+  if (filters.budgetType) {
+    query.budgetType = filters.budgetType;
+  }
+
+  if (filters.skills && filters.skills.length > 0) {
+    // Use $all to find jobs that have all the specified skills
+    query.skillsRequired = { $all: filters.skills.map(skill => new RegExp(`^${skill}$`, 'i')) };
+  }
+
   const jobDocs = await collection.find(query).sort({ createdAt: -1 }).toArray();
   return jobDocs.map(docToJob);
 }
