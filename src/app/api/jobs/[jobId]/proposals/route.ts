@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { addProposal } from '@/lib/proposals-data';
+import { addProposal, getProposalsForJob } from '@/lib/proposals-data';
 import { getJobById } from '@/lib/jobs-data';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
@@ -54,5 +54,23 @@ export async function POST(
       return NextResponse.json({ message: error.message }, { status: 409 }); // Conflict
     }
     return NextResponse.json({ message: `Failed to submit proposal: ${error.message || "Unknown error"}` }, { status: 500 });
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { jobId: string } }
+) {
+  try {
+    const { jobId } = params;
+    if (!ObjectId.isValid(jobId)) {
+      return NextResponse.json({ message: "Invalid Job ID." }, { status: 400 });
+    }
+    // TODO: Add authorization check - only the job poster or involved parties should see proposals.
+    const proposals = await getProposalsForJob(jobId);
+    return NextResponse.json(proposals);
+  } catch (error: any) {
+    console.error(`[API /jobs/${params.jobId}/proposals GET] Error:`, error);
+    return NextResponse.json({ message: `Failed to fetch proposals: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }

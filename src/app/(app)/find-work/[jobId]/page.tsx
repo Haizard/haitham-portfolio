@@ -7,22 +7,29 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
+import type { Proposal } from '@/lib/proposals-data'; // Import Proposal type
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ProposalSubmitDialog } from '@/components/proposals/proposal-submit-dialog';
+import { ProposalList } from '@/components/proposals/proposal-list'; // Import ProposalList
+
+// This is a placeholder until we have real user auth.
+// This should match the clientId used when creating jobs.
+const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
 
 export default function JobDetailPage() {
   const params = useParams<{ jobId: string }>();
   const [job, setJob] = useState<Job | null>(null);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProposalDialogOpen, setIsProposalDialogOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
-  const fetchJobDetails = async () => {
+  const fetchJobAndProposals = async () => {
     if (!params.jobId) {
       setError("Job ID is missing.");
       setIsLoading(false);
@@ -32,15 +39,27 @@ export default function JobDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/jobs/${params.jobId}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          notFound();
-        }
-        throw new Error(`Failed to fetch job details. Status: ${response.status}`);
+      // Fetch job and proposals in parallel
+      const [jobResponse, proposalsResponse] = await Promise.all([
+        fetch(`/api/jobs/${params.jobId}`),
+        fetch(`/api/jobs/${params.jobId}/proposals`),
+      ]);
+
+      if (!jobResponse.ok) {
+        if (jobResponse.status === 404) notFound();
+        throw new Error(`Failed to fetch job details. Status: ${jobResponse.status}`);
       }
-      const data: Job = await response.json();
-      setJob(data);
+      const jobData: Job = await jobResponse.json();
+      setJob(jobData);
+      
+      if (proposalsResponse.ok) {
+        const proposalsData: Proposal[] = await proposalsResponse.json();
+        setProposals(proposalsData);
+      } else {
+         console.warn(`Could not fetch proposals for job ${params.jobId}. Status: ${proposalsResponse.status}`);
+         setProposals([]); // Set to empty array on failure
+      }
+
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
       console.error("Error fetching job details:", err);
@@ -50,8 +69,10 @@ export default function JobDetailPage() {
   }
 
   useEffect(() => {
-    fetchJobDetails();
+    fetchJobAndProposals();
   }, [params.jobId]);
+  
+  const isOwner = job?.clientId === MOCK_CURRENT_USER_AS_CLIENT_ID;
 
   if (isLoading) {
     return (
@@ -90,7 +111,7 @@ export default function JobDetailPage() {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <main className="lg:col-span-2">
+          <main className="lg:col-span-2 space-y-8">
             <Card className="shadow-xl">
               <CardHeader>
                 <CardTitle className="text-3xl font-bold font-headline">{job.title}</CardTitle>
@@ -113,6 +134,21 @@ export default function JobDetailPage() {
                 </div>
               </CardContent>
             </Card>
+            
+            {isOwner && (
+                <Card className="shadow-xl animate-in fade-in-50 duration-300">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-headline flex items-center gap-2">
+                           <Users className="h-7 w-7 text-primary"/> Proposals Received ({proposals.length})
+                        </CardTitle>
+                        <CardDescription>Review applications from interested freelancers.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ProposalList proposals={proposals} />
+                    </CardContent>
+                </Card>
+            )}
+            
           </main>
           
           <aside className="lg:col-span-1">
@@ -151,16 +187,18 @@ export default function JobDetailPage() {
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button 
-                      size="lg" 
-                      className="w-full bg-primary hover:bg-primary/90"
-                      onClick={() => setIsProposalDialogOpen(true)}
-                    >
-                      <Send className="mr-2 h-4 w-4"/>
-                      Apply for this Job
-                  </Button>
-                </CardFooter>
+                {!isOwner && (
+                  <CardFooter>
+                    <Button 
+                        size="lg" 
+                        className="w-full bg-primary hover:bg-primary/90"
+                        onClick={() => setIsProposalDialogOpen(true)}
+                      >
+                        <Send className="mr-2 h-4 w-4"/>
+                        Apply for this Job
+                    </Button>
+                  </CardFooter>
+                )}
               </Card>
               
               <Card className="shadow-lg">
@@ -182,7 +220,8 @@ export default function JobDetailPage() {
           job={job}
           onSuccess={() => {
             toast({ title: "Application Sent!", description: "The client will be notified of your proposal."});
-            // Optionally, you could disable the apply button after successful submission
+            // Optionally, you could disable the apply button after successful submission or re-fetch proposals
+            fetchJobAndProposals();
           }}
         />
       )}
