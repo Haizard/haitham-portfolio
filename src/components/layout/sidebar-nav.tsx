@@ -25,7 +25,9 @@ import {
   BarChartHorizontalBig, 
   PackageSearch,
   CalendarCheck2,
-  MessageCircle // Added for Chat
+  MessageCircle,
+  FilePlus2, // Added for Post a Job
+  Search, // Added for Find Work
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -37,17 +39,29 @@ import {
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/profile", label: "User Profile", icon: UserCircle }, 
-  { href: "/content-studio", label: "Content Studio", icon: Sparkles },
-  { href: "/content-inspirer", label: "Content Inspirer", icon: Lightbulb },
-  { href: "/content-calendar", label: "Content Calendar", icon: CalendarDays },
-  { href: "/sports-predictor", label: "Sports Predictor", icon: Target },
-  { href: "/social-media", label: "Social Media", icon: MessagesSquare },
-  { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
-  { href: "/services", label: "Services Admin", icon: Briefcase }, 
-  { href: "/client-portal", label: "Client Portal Access", icon: ShieldCheck },
-  { href: "/chat", label: "Chat", icon: MessageCircle }, // Added Chat link
-  { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
-  { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
+  { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
+  { href: "/find-work", label: "Find Work", icon: Search },
+  { 
+    group: "Content",
+    items: [
+      { href: "/content-studio", label: "Content Studio", icon: Sparkles },
+      { href: "/content-inspirer", label: "Content Inspirer", icon: Lightbulb },
+      { href: "/content-calendar", label: "Content Calendar", icon: CalendarDays },
+      { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
+    ]
+  },
+  { 
+    group: "Platform",
+    items: [
+      { href: "/sports-predictor", label: "Sports Predictor", icon: Target },
+      { href: "/social-media", label: "Social Media", icon: MessagesSquare },
+      { href: "/chat", label: "Chat", icon: MessageCircle },
+      { href: "/services", label: "Services Admin", icon: Briefcase }, 
+      { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
+      { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
+      { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
+    ]
+  },
   { 
     group: "Admin",
     items: [
@@ -132,4 +146,3 @@ export function SidebarNav() {
     </SidebarMenu>
   );
 }
-    
