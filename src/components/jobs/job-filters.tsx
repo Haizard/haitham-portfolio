@@ -56,11 +56,13 @@ export function JobFilters({ onFilterChange }: JobFiltersProps) {
     onFilterChange({}); // Reset to no filters
   };
 
-  // Auto-submit on change for any field
-  const watchedFields = form.watch();
+  // Auto-submit on change for any field using a subscription model
   React.useEffect(() => {
-    debouncedOnFilterChange(watchedFields);
-  }, [watchedFields, debouncedOnFilterChange]);
+    const subscription = form.watch((value) => {
+        debouncedOnFilterChange(value as JobFilterValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch, debouncedOnFilterChange]);
 
 
   return (
