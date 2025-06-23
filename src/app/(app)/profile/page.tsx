@@ -73,7 +73,7 @@ export default function ProfilePage() {
           ...data,
           skills: data.skills?.join(', ') || "", // Convert array to comma-separated string for input
           hourlyRate: data.hourlyRate ?? null, // Ensure null if undefined
-          portfolioLinks: data.portfolioLinks?.map(link => ({ ...link, id: link.id || new ObjectId().toString() })) || [], // Ensure IDs for field array
+          portfolioLinks: data.portfolioLinks || [],
         });
       } catch (error) {
         console.error(error);
@@ -109,7 +109,7 @@ export default function ProfilePage() {
          ...updatedProfile,
          skills: updatedProfile.skills?.join(', ') || "",
          hourlyRate: updatedProfile.hourlyRate ?? null,
-         portfolioLinks: updatedProfile.portfolioLinks?.map(link => ({ ...link, id: link.id || new ObjectId().toString() })) || [],
+         portfolioLinks: updatedProfile.portfolioLinks || [],
       });
       toast({ title: "Success", description: "Profile updated successfully!" });
     } catch (error: any) {
@@ -237,7 +237,7 @@ export default function ProfilePage() {
                       <Button type="button" variant="ghost" size="icon" onClick={() => removePortfolioLink(index)} className="absolute top-1 right-1 h-7 w-7 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button>
                     </Card>
                   ))}
-                  <Button type="button" variant="outline" size="sm" onClick={() => appendPortfolioLink({ title: "", url: "" })}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => appendPortfolioLink({ id: `new-${Date.now()}`, title: "", url: "" })}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Portfolio Link
                   </Button>
                 </div>
