@@ -1,31 +1,46 @@
 
-import { ObjectId, type Filter } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { getCollection } from './mongodb';
 
-const USER_PROFILES_COLLECTION = 'userProfiles';
+// ARCHITECTURAL NOTE: User Identity vs. Role Profiles
+// To support multiple user types (freelancers, clients, shop owners, etc.),
+// the database is designed with a central `users` collection for identity
+// and separate collections for each role's specific data.
+//
+// 1. `users` collection: Stores universal data (userId, email, name, password hash, active roles).
+// 2. `freelancerProfiles` collection: Stores data ONLY for freelancers (this file).
+// 3. `clientProfiles`, `shopOwnerProfiles`, etc.: Would be separate collections.
+//
+// This file, `user-profile-data.ts`, now exclusively manages the `FreelancerProfile`.
+// The generic name is kept for now to avoid breaking existing imports, but its
+// contents are now specific to the freelancer role.
 
-export type UserRole = 'client' | 'freelancer' | 'admin';
+const FREELANCER_PROFILES_COLLECTION = 'freelancerProfiles';
+
+// Note: Availability status is specific to freelancers.
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available';
 
 export interface PortfolioLink {
-  _id?: ObjectId; // For MongoDB internal use if subdocument
-  id?: string;    // For client-side keying
+  _id?: ObjectId;
+  id?: string;
   title: string;
   url: string;
 }
 
-export interface UserProfile {
+// This interface now defines the data specific to a FREELANCER.
+export interface FreelancerProfile {
   _id?: ObjectId;
-  id?: string; // String representation of _id, used for API client
-  userId: string; // The actual user identifier (e.g., from auth system)
+  id?: string;
+  userId: string; // Foreign key to the main `users` collection.
 
+  // General info - would eventually live in the `users` collection but is here for now.
   name: string;
   email: string;
   avatarUrl: string;
+  
+  // Freelancer-specific fields
   occupation: string;
   bio: string;
-
-  role: UserRole;
   skills: string[];
   portfolioLinks: PortfolioLink[];
   hourlyRate?: number | null;
@@ -35,74 +50,69 @@ export interface UserProfile {
   updatedAt: Date;
 }
 
-function docToUserProfile(doc: any): UserProfile {
+function docToFreelancerProfile(doc: any): FreelancerProfile {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
   return {
     id: _id?.toString(),
-    userId: rest.userId,
     ...rest,
     portfolioLinks: (rest.portfolioLinks || []).map((link: any) => ({
-        // Ensure sub-documents also get string IDs if they have ObjectIds
-        id: link._id?.toString() || link.id || new ObjectId().toString(), 
+        id: link._id?.toString() || link.id || new ObjectId().toString(),
         title: link.title,
         url: link.url,
     })),
     skills: rest.skills || [],
-  } as UserProfile;
+  } as FreelancerProfile;
 }
 
-const defaultProfileData = (userId: string): Omit<UserProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
+const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
   userId,
-  name: 'New User',
-  email: 'user@example.com',
-  avatarUrl: `https://placehold.co/200x200.png?text=${userId.substring(0,1) || 'U'}`,
-  occupation: 'Explorer',
-  bio: 'Just starting out on CreatorOS!',
-  role: 'freelancer',
+  name: 'New Freelancer',
+  email: 'freelancer@example.com',
+  avatarUrl: `https://placehold.co/200x200.png?text=${userId.substring(0,1) || 'F'}`,
+  occupation: 'Creative Professional',
+  bio: 'Ready to take on new projects!',
   skills: [],
   portfolioLinks: [],
   hourlyRate: null,
   availabilityStatus: 'available',
 });
 
-export async function createProfileIfNotExists(userId: string, initialData?: Partial<Omit<UserProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<UserProfile> {
-  const collection = await getCollection<UserProfile>(USER_PROFILES_COLLECTION);
+export async function createFreelancerProfileIfNotExists(userId: string, initialData?: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile> {
+  const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
   const existingProfile = await collection.findOne({ userId });
   if (existingProfile) {
-    return docToUserProfile(existingProfile);
+    return docToFreelancerProfile(existingProfile);
   }
 
   const now = new Date();
-  const profileToInsert: Omit<UserProfile, 'id' | '_id'> = {
-    ...defaultProfileData(userId),
+  const profileToInsert: Omit<FreelancerProfile, 'id' | '_id'> = {
+    ...defaultFreelancerProfileData(userId),
     ...initialData,
     createdAt: now,
     updatedAt: now,
   };
 
   const result = await collection.insertOne(profileToInsert as any);
-  return docToUserProfile({ _id: result.insertedId, ...profileToInsert });
+  return docToFreelancerProfile({ _id: result.insertedId, ...profileToInsert });
 }
 
-export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  const collection = await getCollection<UserProfile>(USER_PROFILES_COLLECTION);
+export async function getFreelancerProfile(userId: string): Promise<FreelancerProfile | null> {
+  const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
   const profileDoc = await collection.findOne({ userId });
   
   if (!profileDoc) {
-    // If profile doesn't exist for this userId, create a default one
-    console.log(`Profile for userId ${userId} not found, creating default.`);
-    return await createProfileIfNotExists(userId);
+    console.log(`Freelancer profile for userId ${userId} not found, creating default.`);
+    return await createFreelancerProfileIfNotExists(userId);
   }
-  return docToUserProfile(profileDoc);
+  return docToFreelancerProfile(profileDoc);
 }
 
-export async function updateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<UserProfile | null> {
-  const collection = await getCollection<UserProfile>(USER_PROFILES_COLLECTION);
+export async function updateFreelancerProfile(userId: string, data: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile | null> {
+  const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
   
   const updateData = { ...data, updatedAt: new Date() };
   
-  // Ensure portfolioLinks have ObjectIds if new, or are handled correctly
   if (updateData.portfolioLinks) {
     updateData.portfolioLinks = updateData.portfolioLinks.map(link => ({
       _id: link.id && ObjectId.isValid(link.id) ? new ObjectId(link.id) : new ObjectId(),
@@ -114,20 +124,14 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
   const result = await collection.findOneAndUpdate(
     { userId },
     { $set: updateData },
-    { returnDocument: 'after', upsert: false } // Don't upsert here, getUserProfile handles creation
+    { returnDocument: 'after', upsert: false }
   );
 
   if (!result) {
-    // This case should ideally be handled by prior check or creation logic
-    console.warn(`Profile for userId ${userId} not found during update attempt.`);
+    console.warn(`Freelancer profile for userId ${userId} not found during update attempt.`);
     return null; 
   }
-  return docToUserProfile(result);
+  return docToFreelancerProfile(result);
 }
 
-// Example of how you might get all profiles (e.g., for an admin panel)
-export async function getAllUserProfiles(): Promise<UserProfile[]> {
-  const collection = await getCollection<UserProfile>(USER_PROFILES_COLLECTION);
-  const profileDocs = await collection.find({}).toArray();
-  return profileDocs.map(docToUserProfile);
-}
+    

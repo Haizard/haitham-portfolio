@@ -15,22 +15,24 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, UserCircle, Mail, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon, DollarSign, Settings2, Palette, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { UserProfile, PortfolioLink, UserRole, AvailabilityStatus } from '@/lib/user-profile-data';
+import type { FreelancerProfile, PortfolioLink } from '@/lib/user-profile-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const portfolioLinkSchema = z.object({
-  id: z.string().optional(), // For existing links, to help with updates if needed
+  id: z.string().optional(),
   title: z.string().min(1, "Title is required.").max(100),
   url: z.string().url("Must be a valid URL.").min(1),
 });
 
+// This schema now defines a Freelancer's profile.
+// General user data (name, email, avatar) is included here for now,
+// but in a future multi-role system, this would be split into a base 'user' and a 'freelancerProfile'.
 const profileFormSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100),
   email: z.string().email("Invalid email address."),
   avatarUrl: z.string().url("Avatar URL must be valid.").or(z.literal("")),
   occupation: z.string().min(1, "Occupation is required.").max(100),
   bio: z.string().max(1000, "Bio cannot exceed 1000 characters.").optional().default(""),
-  role: z.enum(['client', 'freelancer', 'admin']),
   skills: z.string().optional().transform(val => val ? val.split(',').map(skill => skill.trim()).filter(Boolean) : []),
   portfolioLinks: z.array(portfolioLinkSchema).optional().default([]),
   hourlyRate: z.preprocess(
@@ -43,7 +45,7 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
-  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [profileData, setProfileData] = useState<FreelancerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -52,7 +54,7 @@ export default function ProfilePage() {
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: "", email: "", avatarUrl: "", occupation: "", bio: "",
-      role: "freelancer", skills: [], portfolioLinks: [], hourlyRate: null, availabilityStatus: "available",
+      skills: [], portfolioLinks: [], hourlyRate: null, availabilityStatus: "available",
     },
   });
 
@@ -65,9 +67,9 @@ export default function ProfilePage() {
     async function fetchProfile() {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/profile');
+        const response = await fetch('/api/profile'); // This API route now specifically handles the Freelancer Profile
         if (!response.ok) throw new Error('Failed to fetch profile');
-        const data: UserProfile = await response.json();
+        const data: FreelancerProfile = await response.json();
         setProfileData(data);
         form.reset({
           ...data,
@@ -87,6 +89,7 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
+    // The role is hardcoded as 'freelancer' on the backend now for this profile type
     const dataToSave = {
       ...values,
       // Skills are already an array due to Zod transform in schema
@@ -103,9 +106,9 @@ export default function ProfilePage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save profile');
       }
-      const updatedProfile: UserProfile = await response.json();
-      setProfileData(updatedProfile); // Update local state
-      form.reset({ // Re-sync form with potentially processed data (like skills array to string)
+      const updatedProfile: FreelancerProfile = await response.json();
+      setProfileData(updatedProfile);
+      form.reset({
          ...updatedProfile,
          skills: updatedProfile.skills?.join(', ') || "",
          hourlyRate: updatedProfile.hourlyRate ?? null,
@@ -146,10 +149,10 @@ export default function ProfilePage() {
     <div className="container mx-auto py-8">
       <header className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight font-headline flex items-center">
-          <UserCircle className="mr-3 h-10 w-10 text-primary" /> Your Profile
+          <UserCircle className="mr-3 h-10 w-10 text-primary" /> Your Freelancer Profile
         </h1>
         <p className="text-xl text-muted-foreground mt-2">
-          Manage your personal and professional information.
+          Manage your professional information that clients will see.
         </p>
       </header>
 
@@ -167,8 +170,9 @@ export default function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
-            <ScrollArea className="h-[calc(100vh-28rem)] pr-3"> {/* Adjust height as needed */}
+            <ScrollArea className="h-[calc(100vh-28rem)] pr-3">
               <div className="space-y-6">
+              {/* --- General User Info (Part of profile for now) --- */}
               <FormField control={form.control} name="avatarUrl" render={({ field }) => (
                 <FormItem><FormLabel className="flex items-center"><Palette className="mr-2 h-4 w-4 text-muted-foreground" />Avatar URL</FormLabel><Input {...field} placeholder="https://example.com/avatar.png" className="text-base p-3" /><FormMessage /></FormItem>
               )}/>
@@ -186,24 +190,10 @@ export default function ProfilePage() {
               <FormField control={form.control} name="bio" render={({ field }) => (
                 <FormItem><FormLabel className="flex items-center"><Info className="mr-2 h-4 w-4 text-muted-foreground" />Bio / About Me</FormLabel><Textarea {...field} placeholder="Tell us a little about yourself..." className="min-h-[120px] text-base p-3" /><FormMessage /></FormItem>
               )}/>
-
+              {/* --- Freelancer-Specific Info --- */}
               <div className="border-t pt-6 space-y-6">
-                <h3 className="text-lg font-semibold text-primary flex items-center"><Settings2 className="mr-2 h-5 w-5"/>Professional Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField control={form.control} name="role" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger className="text-base p-3"><SelectValue placeholder="Select your role" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="client">Client</SelectItem>
-                          <SelectItem value="freelancer">Freelancer</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select><FormMessage />
-                    </FormItem>
-                  )}/>
-                  <FormField control={form.control} name="availabilityStatus" render={({ field }) => (
+                <h3 className="text-lg font-semibold text-primary flex items-center"><Settings2 className="mr-2 h-5 w-5"/>Freelancer Details</h3>
+                <FormField control={form.control} name="availabilityStatus" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Availability Status</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -216,7 +206,6 @@ export default function ProfilePage() {
                       </Select><FormMessage />
                     </FormItem>
                   )}/>
-                </div>
                  <FormField control={form.control} name="skills" render={({ field }) => (
                     <FormItem><FormLabel>Skills (comma-separated)</FormLabel><Input placeholder="e.g., React, Figma, Copywriting" {...field} className="text-base p-3" /><FormMessage /></FormItem>
                   )}/>
@@ -242,7 +231,7 @@ export default function ProfilePage() {
                   </Button>
                 </div>
               </div>
-              </div> {/* End of ScrollArea content div */}
+              </div>
             </ScrollArea>
             </CardContent>
             <CardFooter className="border-t pt-6 flex justify-end">
@@ -256,3 +245,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
