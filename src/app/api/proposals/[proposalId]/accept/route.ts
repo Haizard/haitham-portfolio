@@ -3,6 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getProposalById, updateProposalStatus, rejectOtherProposalsForJob } from '@/lib/proposals-data';
 import { getJobById, updateJobStatus } from '@/lib/jobs-data';
+import { addClientProject } from '@/lib/client-projects-data'; // Import addClientProject
 import { ObjectId } from 'mongodb';
 
 // This is a placeholder until we have real user auth.
@@ -40,21 +41,31 @@ export async function PUT(
         return NextResponse.json({ message: `Cannot accept proposal. Job is already ${job.status}.` }, { status: 409 }); // Conflict
     }
 
-    // Perform the operations in a sequence
+    // Perform the operations in a sequence. In a real-world app, this should be a database transaction.
     const acceptedProposal = await updateProposalStatus(proposalId, 'accepted');
     const updatedJob = await updateJobStatus(job.id!, 'in-progress');
     await rejectOtherProposalsForJob(job.id!, proposalId);
 
-    if (!acceptedProposal || !updatedJob) {
+    // ** NEW STEP: Create a corresponding client project **
+    const newProject = await addClientProject({
+      name: job.title,
+      client: job.clientId,
+      status: 'Planning', // Start in the planning phase
+      description: job.description,
+      startDate: new Date().toISOString(), // Set start date to today
+      // endDate can be set later
+    });
+
+    if (!acceptedProposal || !updatedJob || !newProject) {
         // This would indicate an issue, though unlikely if checks pass.
-        // In a real app, you'd wrap this in a database transaction.
-        throw new Error("Failed to finalize proposal acceptance.");
+        throw new Error("Failed to finalize proposal acceptance and project creation.");
     }
 
     return NextResponse.json({ 
-        message: "Proposal accepted successfully!",
+        message: "Proposal accepted and project created successfully!",
         acceptedProposal,
-        updatedJob 
+        updatedJob,
+        newProject,
     });
 
   } catch (error: any) {
