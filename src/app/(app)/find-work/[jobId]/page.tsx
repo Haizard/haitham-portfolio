@@ -67,7 +67,7 @@ export default function JobDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [params.jobId]);
+  }, [params.jobId, notFound]);
 
   useEffect(() => {
     fetchJobAndProposals();
