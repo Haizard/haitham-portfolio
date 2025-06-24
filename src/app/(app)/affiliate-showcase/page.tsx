@@ -25,25 +25,22 @@ export default function AffiliateShowcasePage() {
     async function fetchProducts() {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/products`);
+        const response = await fetch(`/api/products?productType=affiliate`);
         if (!response.ok) {
           let serverErrorMessage = 'Failed to fetch products from the server.';
           try {
-            // Try to parse a JSON error response from the server
             const errorData = await response.json();
             if (errorData && errorData.message) {
               serverErrorMessage = `Server error: ${errorData.message}`;
             }
           } catch (jsonError) {
-            // If JSON parsing fails, use status text or a generic message
             serverErrorMessage = `Server error: ${response.status} ${response.statusText || 'Unknown error'}`;
           }
-          throw new Error(serverErrorMessage); // Throw the more specific error
+          throw new Error(serverErrorMessage);
         }
         const data: Product[] = await response.json();
-        const affiliateOnly = data.filter(p => p.productType === 'affiliate');
-        setAllAffiliateProducts(affiliateOnly);
-        setFilteredProducts(affiliateOnly);
+        setAllAffiliateProducts(data);
+        setFilteredProducts(data);
       } catch (error: any) {
         console.error("Error fetching affiliate products:", error);
         toast({
@@ -61,7 +58,7 @@ export default function AffiliateShowcasePage() {
   const uniqueCategories = useMemo(() => {
     const categories = new Set<string>();
     allAffiliateProducts.forEach(product => {
-      if (product.category) { // Ensure category exists
+      if (product.category) {
         categories.add(product.category);
       }
     });

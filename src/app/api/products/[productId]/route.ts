@@ -120,4 +120,3 @@ export async function DELETE(
     return NextResponse.json({ message: `Server error: ${error.message || "Failed to delete product"}` }, { status: 500 });
   }
 }
-
