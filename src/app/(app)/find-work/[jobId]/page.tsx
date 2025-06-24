@@ -1,23 +1,24 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
-import type { Proposal } from '@/lib/proposals-data'; // Import Proposal type
+import type { Proposal } from '@/lib/proposals-data';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ProposalSubmitDialog } from '@/components/proposals/proposal-submit-dialog';
-import { ProposalList } from '@/components/proposals/proposal-list'; // Import ProposalList
+import { ProposalList } from '@/components/proposals/proposal-list';
 
 // This is a placeholder until we have real user auth.
 // This should match the clientId used when creating jobs.
 const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
+const MOCK_CURRENT_USER_AS_FREELANCER_ID = "mockFreelancer456";
 
 export default function JobDetailPage() {
   const params = useParams<{ jobId: string }>();
@@ -29,7 +30,7 @@ export default function JobDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const fetchJobAndProposals = async () => {
+  const fetchJobAndProposals = useCallback(async () => {
     if (!params.jobId) {
       setError("Job ID is missing.");
       setIsLoading(false);
@@ -66,13 +67,14 @@ export default function JobDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [params.jobId]);
 
   useEffect(() => {
     fetchJobAndProposals();
-  }, [params.jobId]);
+  }, [fetchJobAndProposals]);
   
   const isOwner = job?.clientId === MOCK_CURRENT_USER_AS_CLIENT_ID;
+  const hasApplied = proposals.some(p => p.freelancerId === MOCK_CURRENT_USER_AS_FREELANCER_ID);
 
   if (isLoading) {
     return (
@@ -102,6 +104,26 @@ export default function JobDetailPage() {
   const budgetDisplay = job.budgetAmount
     ? `$${job.budgetAmount.toLocaleString()}`
     : "Not specified";
+    
+  const getStatusBadgeVariant = (status: Job['status']): "default" | "secondary" | "outline" | "destructive" => {
+    switch (status) {
+      case "open": return "secondary";
+      case "in-progress": return "default"; 
+      case "completed": return "outline"; 
+      case "cancelled": return "destructive"; 
+      default: return "outline";
+    }
+  };
+  
+  const getStatusIcon = (status: Job['status']) => {
+    switch(status) {
+        case "open": return <FolderClock className="h-4 w-4 mr-1.5 text-blue-500"/>;
+        case "in-progress": return <PlaySquare className="h-4 w-4 mr-1.5 text-yellow-500"/>;
+        case "completed": return <CheckSquare className="h-4 w-4 mr-1.5 text-green-500"/>;
+        case "cancelled": return <Pause className="h-4 w-4 mr-1.5 text-red-500"/>;
+        default: return null;
+    }
+  };
 
   return (
     <>
@@ -114,7 +136,13 @@ export default function JobDetailPage() {
           <main className="lg:col-span-2 space-y-8">
             <Card className="shadow-xl">
               <CardHeader>
-                <CardTitle className="text-3xl font-bold font-headline">{job.title}</CardTitle>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-3xl font-bold font-headline pr-4">{job.title}</CardTitle>
+                    <Badge variant={getStatusBadgeVariant(job.status)} className="text-sm capitalize flex items-center w-fit shrink-0">
+                      {getStatusIcon(job.status)}
+                      {job.status}
+                    </Badge>
+                </div>
                 <CardDescription className="text-base text-muted-foreground">
                   Posted {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
                 </CardDescription>
@@ -141,10 +169,14 @@ export default function JobDetailPage() {
                         <CardTitle className="text-2xl font-headline flex items-center gap-2">
                            <Users className="h-7 w-7 text-primary"/> Proposals Received ({proposals.length})
                         </CardTitle>
-                        <CardDescription>Review applications from interested freelancers.</CardDescription>
+                        <CardDescription>Review applications from interested freelancers. Job status is now '<strong>{job.status}</strong>'.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ProposalList proposals={proposals} />
+                        <ProposalList 
+                            proposals={proposals} 
+                            isJobOwner={isOwner}
+                            onAcceptSuccess={fetchJobAndProposals}
+                        />
                     </CardContent>
                 </Card>
             )}
@@ -193,9 +225,10 @@ export default function JobDetailPage() {
                         size="lg" 
                         className="w-full bg-primary hover:bg-primary/90"
                         onClick={() => setIsProposalDialogOpen(true)}
+                        disabled={job.status !== 'open' || hasApplied}
                       >
                         <Send className="mr-2 h-4 w-4"/>
-                        Apply for this Job
+                        {hasApplied ? "You Have Applied" : job.status !== 'open' ? `Job is ${job.status}` : "Apply for this Job"}
                     </Button>
                   </CardFooter>
                 )}
@@ -220,7 +253,6 @@ export default function JobDetailPage() {
           job={job}
           onSuccess={() => {
             toast({ title: "Application Sent!", description: "The client will be notified of your proposal."});
-            // Optionally, you could disable the apply button after successful submission or re-fetch proposals
             fetchJobAndProposals();
           }}
         />

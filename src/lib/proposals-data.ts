@@ -72,3 +72,28 @@ export async function getProposalById(id: string): Promise<Proposal | null> {
   const proposalDoc = await collection.findOne({ _id: new ObjectId(id) });
   return proposalDoc ? docToProposal(proposalDoc) : null;
 }
+
+export async function updateProposalStatus(proposalId: string, status: ProposalStatus): Promise<Proposal | null> {
+    if (!ObjectId.isValid(proposalId)) return null;
+    const collection = await getCollection<Proposal>(PROPOSALS_COLLECTION);
+    const result = await collection.findOneAndUpdate(
+        { _id: new ObjectId(proposalId) },
+        { $set: { status, updatedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+    return result ? docToProposal(result) : null;
+}
+
+export async function rejectOtherProposalsForJob(jobId: string, acceptedProposalId: string): Promise<boolean> {
+    if (!ObjectId.isValid(jobId) || !ObjectId.isValid(acceptedProposalId)) return false;
+    const collection = await getCollection<Proposal>(PROPOSALS_COLLECTION);
+    const result = await collection.updateMany(
+        { 
+            jobId: jobId, 
+            _id: { $ne: new ObjectId(acceptedProposalId) },
+            status: 'submitted' // Only reject proposals that are still pending
+        },
+        { $set: { status: 'rejected', updatedAt: new Date() } }
+    );
+    return result.acknowledged;
+}

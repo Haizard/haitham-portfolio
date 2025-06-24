@@ -98,3 +98,14 @@ export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'up
   const result = await collection.insertOne(docToInsert as any);
   return { _id: result.insertedId, id: result.insertedId.toString(), ...docToInsert };
 }
+
+export async function updateJobStatus(jobId: string, status: JobStatus): Promise<Job | null> {
+    if (!ObjectId.isValid(jobId)) return null;
+    const collection = await getCollection<Job>(JOBS_COLLECTION);
+    const result = await collection.findOneAndUpdate(
+        { _id: new ObjectId(jobId) },
+        { $set: { status, updatedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+    return result ? docToJob(result) : null;
+}

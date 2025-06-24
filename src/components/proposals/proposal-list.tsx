@@ -4,7 +4,14 @@
 import type { Proposal } from '@/lib/proposals-data';
 import { ProposalListItem } from './proposal-list-item';
 
-export function ProposalList({ proposals }: { proposals: Proposal[] }) {
+interface ProposalListProps {
+  proposals: Proposal[];
+  isJobOwner: boolean;
+  onAcceptSuccess: () => void;
+}
+
+
+export function ProposalList({ proposals, isJobOwner, onAcceptSuccess }: ProposalListProps) {
   if (proposals.length === 0) {
     return (
       <div className="text-center py-10">
@@ -19,7 +26,12 @@ export function ProposalList({ proposals }: { proposals: Proposal[] }) {
   return (
     <div className="space-y-6">
       {proposals.map(proposal => (
-        <ProposalListItem key={proposal.id} proposal={proposal} />
+        <ProposalListItem 
+            key={proposal.id} 
+            proposal={proposal} 
+            isJobOwner={isJobOwner}
+            onAcceptSuccess={onAcceptSuccess}
+        />
       ))}
     </div>
   );
