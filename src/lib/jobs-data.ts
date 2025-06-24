@@ -86,6 +86,16 @@ export async function getJobById(id: string): Promise<Job | null> {
   return jobDoc ? docToJob(jobDoc) : null;
 }
 
+export async function getJobsByIds(ids: string[]): Promise<Job[]> {
+  if (!ids || ids.length === 0) return [];
+  const validObjectIds = ids.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+  if (validObjectIds.length === 0) return [];
+
+  const collection = await getCollection<Job>(JOBS_COLLECTION);
+  const jobDocs = await collection.find({ _id: { $in: validObjectIds } }).toArray();
+  return jobDocs.map(docToJob);
+}
+
 export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt'>): Promise<Job> {
   const collection = await getCollection<Omit<Job, 'id' | '_id'>>(JOBS_COLLECTION);
   const now = new Date();

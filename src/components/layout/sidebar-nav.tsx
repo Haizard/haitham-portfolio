@@ -26,8 +26,9 @@ import {
   PackageSearch,
   CalendarCheck2,
   MessageCircle,
-  FilePlus2, // Added for Post a Job
-  Search, // Added for Find Work
+  FilePlus2,
+  Search,
+  ClipboardList, // Added for My Proposals
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -39,8 +40,19 @@ import {
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/profile", label: "User Profile", icon: UserCircle }, 
-  { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
-  { href: "/find-work", label: "Find Work", icon: Search },
+  {
+    group: "Client",
+    items: [
+       { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
+    ]
+  },
+  {
+    group: "Freelancer",
+    items: [
+      { href: "/find-work", label: "Find Work", icon: Search },
+      { href: "/my-proposals", label: "My Proposals", icon: ClipboardList },
+    ]
+  },
   { 
     group: "Content",
     items: [

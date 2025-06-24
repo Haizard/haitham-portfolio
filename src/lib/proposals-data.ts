@@ -1,7 +1,8 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
-import { getJobById } from './jobs-data'; // To update job proposal count
+import { getJobsByIds } from './jobs-data';
+import type { Job } from './jobs-data';
 
 const PROPOSALS_COLLECTION = 'proposals';
 const MOCK_FREELANCER_ID = "mockFreelancer456"; // For now, all proposals come from this mock user
@@ -65,6 +66,30 @@ export async function getProposalsForJob(jobId: string): Promise<Proposal[]> {
   const proposalDocs = await collection.find({ jobId }).sort({ createdAt: -1 }).toArray();
   return proposalDocs.map(docToProposal);
 }
+
+export async function getProposalsByFreelancerId(freelancerId: string): Promise<(Proposal & { job?: Job })[]> {
+  const collection = await getCollection<Proposal>(PROPOSALS_COLLECTION);
+  const proposalDocs = await collection.find({ freelancerId }).sort({ createdAt: -1 }).toArray();
+  
+  const proposals = proposalDocs.map(docToProposal);
+  
+  if (proposals.length === 0) {
+    return [];
+  }
+
+  // Enrich proposals with job data
+  const jobIds = [...new Set(proposals.map(p => p.jobId))];
+  const jobs = await getJobsByIds(jobIds);
+  const jobsMap = new Map<string, Job>(jobs.map(j => [j.id!, j]));
+  
+  const enrichedProposals = proposals.map(p => ({
+    ...p,
+    job: jobsMap.get(p.jobId),
+  }));
+
+  return enrichedProposals;
+}
+
 
 export async function getProposalById(id: string): Promise<Proposal | null> {
   if (!ObjectId.isValid(id)) return null;
