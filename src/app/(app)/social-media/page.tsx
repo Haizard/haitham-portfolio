@@ -55,6 +55,32 @@ export default function SocialMediaPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const handleAddAccount = useCallback((platform: SocialPlatformType, name: string, isOAuthSuccess: boolean = false) => {
+    // Prevent adding if already processing another auth flow and this is not an OAuth success callback
+    if (isProcessingAuth && !isOAuthSuccess) {
+      toast({ title: "Processing", description: "Please wait for the current operation to complete.", variant: "default"});
+      return;
+    }
+
+    const newAccount: LinkedAccount = {
+      id: `${platform.toLowerCase()}-${name.replace(/\s+/g, '-')}-${Date.now()}`, // Simple unique ID
+      platform,
+      name,
+    };
+    setLinkedAccounts(prev => {
+      // Prevent duplicates if somehow callback triggers multiple times or user manually adds after OAuth
+      if (prev.some(acc => acc.platform === platform && acc.name === name)) {
+        return prev;
+      }
+      return [...prev, newAccount];
+    });
+    // Toast is handled by useEffect for OAuth, and by dialog for mock
+    if (!isOAuthSuccess) {
+      toast({ title: "Account Added (Mock)", description: `${platform} account "${name}" has been mock linked.` });
+    }
+  }, [isProcessingAuth, toast]); // Add toast here as it's stable
+
+
   // Handle OAuth callbacks
   useEffect(() => {
     const tiktokAuthSuccess = searchParams.get('tiktok_auth_success');
@@ -85,32 +111,7 @@ export default function SocialMediaPage() {
     }
     setIsProcessingAuth(false); // Always ensure this is reset after handling callback
 
-  }, [searchParams, router, toast]); // Removed linkedAccounts and handleAddAccount from deps to avoid stale closures/loops
-
-  const handleAddAccount = useCallback((platform: SocialPlatformType, name: string, isOAuthSuccess: boolean = false) => {
-    // Prevent adding if already processing another auth flow and this is not an OAuth success callback
-    if (isProcessingAuth && !isOAuthSuccess) {
-      toast({ title: "Processing", description: "Please wait for the current operation to complete.", variant: "default"});
-      return;
-    }
-
-    const newAccount: LinkedAccount = {
-      id: `${platform.toLowerCase()}-${name.replace(/\s+/g, '-')}-${Date.now()}`, // Simple unique ID
-      platform,
-      name,
-    };
-    setLinkedAccounts(prev => {
-      // Prevent duplicates if somehow callback triggers multiple times or user manually adds after OAuth
-      if (prev.some(acc => acc.platform === platform && acc.name === name)) {
-        return prev;
-      }
-      return [...prev, newAccount];
-    });
-    // Toast is handled by useEffect for OAuth, and by dialog for mock
-    if (!isOAuthSuccess) {
-      toast({ title: "Account Added (Mock)", description: `${platform} account "${name}" has been mock linked.` });
-    }
-  }, [isProcessingAuth, toast]); // Add toast here as it's stable
+  }, [searchParams, router, toast, handleAddAccount, linkedAccounts]);
 
   const confirmDisconnect = (account: LinkedAccount) => {
     setAccountToDisconnect(account);

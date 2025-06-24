@@ -19,7 +19,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Link2, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-// Removed: import { useRouter } from 'next/navigation'; // No longer needed here for this specific change
 
 export const socialPlatformOptions = ["Instagram", "Twitter", "Facebook", "LinkedIn", "TikTok", "YouTube"] as const;
 export type SocialPlatformType = (typeof socialPlatformOptions)[number];
@@ -52,7 +51,6 @@ interface AddAccountDialogProps {
 
 export function AddAccountDialog({ isOpen, onClose, onAccountAdd, isProcessingAuth, setIsProcessingAuth }: AddAccountDialogProps) {
   const { toast } = useToast();
-  // Removed: const router = useRouter(); // No longer needed here for this specific change
 
   const form = useForm<AddAccountFormValues>({
     resolver: zodResolver(addAccountFormSchema),
