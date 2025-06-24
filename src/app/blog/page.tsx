@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, FormEvent, useCallback } from 'react';
+import { useEffect, useState, FormEvent, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -83,11 +83,11 @@ export default function BlogIndexPage() {
     setCurrentSearchQuery(query);
   };
 
-  const getSlugsToExcludeForFurtherReading = () => {
+  const slugsToExclude = useMemo(() => {
     const trendingSlugs = trendingPosts.map(p => p.slug);
     const mainSlugs = mainPosts.map(p => p.slug);
     return Array.from(new Set([...trendingSlugs, ...mainSlugs]));
-  };
+  }, [trendingPosts, mainPosts]);
 
   if (error && isLoading) { 
      return (
@@ -238,7 +238,7 @@ export default function BlogIndexPage() {
           {(trendingPosts.length > 0 || mainPosts.length > 0 || currentSearchQuery) && ( 
             <RelatedPostsSection 
                 sectionTitle="Further Reading" 
-                excludeSlugs={getSlugsToExcludeForFurtherReading()}
+                excludeSlugs={slugsToExclude}
                 limit={3}
             />
           )}

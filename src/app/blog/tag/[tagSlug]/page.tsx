@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { notFound, useParams, useRouter } from 'next/navigation'; 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -76,6 +76,8 @@ export default function TagArchivePage() {
     setCurrentSearchQuery(query);
     router.push(`/blog?search=${encodeURIComponent(query)}`);
   };
+
+  const excludedSlugs = useMemo(() => posts.map(p => p.slug), [posts]);
 
   if (isLoading) {
     return (
@@ -164,7 +166,7 @@ export default function TagArchivePage() {
              <RelatedPostsSection 
                 sectionTitle={`More with tag "${tag.name}"`}
                 tagId={tag.id} 
-                excludeSlugs={posts.map(p => p.slug)}
+                excludeSlugs={excludedSlugs}
                 limit={3}
             />
           )}
