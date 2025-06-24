@@ -1,10 +1,10 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
-import { getJobsByIds } from './jobs-data';
-import type { Job } from './jobs-data';
+import { getJobsByIds, type Job } from './jobs-data';
 
 const PROPOSALS_COLLECTION = 'proposals';
+const JOBS_COLLECTION = 'jobs';
 const MOCK_FREELANCER_ID = "mockFreelancer456"; // For now, all proposals come from this mock user
 
 export type ProposalStatus = 'submitted' | 'shortlisted' | 'rejected' | 'accepted';
@@ -53,9 +53,12 @@ export async function addProposal(proposalData: Omit<Proposal, 'id' | '_id' | 'c
   
   const result = await proposalsCollection.insertOne(docToInsert as any);
 
-  // After adding proposal, update the job's proposal count (optional, but good for performance)
-  // This requires modifying the jobs collection, which is a side-effect.
-  // For now we'll just return the proposal. We can add proposal counts later.
+  // After adding proposal, update the job's proposal count
+  const jobsCollection = await getCollection<Job>(JOBS_COLLECTION);
+  await jobsCollection.updateOne(
+    { _id: new ObjectId(proposalData.jobId) },
+    { $inc: { proposalCount: 1 } }
+  );
   
   return { _id: result.insertedId, id: result.insertedId.toString(), ...docToInsert };
 }

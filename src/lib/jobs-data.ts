@@ -18,6 +18,7 @@ export interface Job {
   budgetAmount?: number;
   skillsRequired: string[];
   deadline?: string; // ISO Date string
+  proposalCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +26,7 @@ export interface Job {
 // Interface for filter options passed to getAllJobs
 export interface JobFilters {
   status?: JobStatus;
+  clientId?: string;
   search?: string;
   minBudget?: number;
   maxBudget?: number;
@@ -48,8 +50,18 @@ export async function getAllJobs(filters: JobFilters = {}): Promise<Job[]> {
   
   const query: Filter<Job> = {};
 
-  // Default to open status if not otherwise specified
-  query.status = filters.status || 'open';
+  if (filters.clientId) {
+    query.clientId = filters.clientId;
+  }
+  
+  // Only filter by status if it's explicitly provided.
+  // If not, and no client ID is given, default to 'open'.
+  if (filters.status) {
+    query.status = filters.status;
+  } else if (!filters.clientId) {
+    query.status = 'open'; // Default for public job board browsing
+  }
+
 
   if (filters.search) {
     const regex = { $regex: filters.search, $options: 'i' };
@@ -96,12 +108,13 @@ export async function getJobsByIds(ids: string[]): Promise<Job[]> {
   return jobDocs.map(docToJob);
 }
 
-export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt'>): Promise<Job> {
+export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount'>): Promise<Job> {
   const collection = await getCollection<Omit<Job, 'id' | '_id'>>(JOBS_COLLECTION);
   const now = new Date();
   const docToInsert = {
     ...jobData,
     status: 'open' as JobStatus, // New jobs are always 'open'
+    proposalCount: 0,
     createdAt: now,
     updatedAt: now,
   };

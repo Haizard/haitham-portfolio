@@ -28,7 +28,7 @@ import {
   MessageCircle,
   FilePlus2,
   Search,
-  ClipboardList, // Added for My Proposals
+  ClipboardList, 
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -44,6 +44,7 @@ const navItems = [
     group: "Client",
     items: [
        { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
+       { href: "/my-jobs", label: "Manage My Jobs", icon: ClipboardList },
     ]
   },
   {

@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { addJob, getAllJobs } from '@/lib/jobs-data';
 import { z } from 'zod';
-import type { BudgetType } from '@/lib/jobs-data';
+import type { BudgetType, JobFilters } from '@/lib/jobs-data';
 
 const jobPostSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters.").max(150),
@@ -18,17 +18,17 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const filters = {
+    const filters: JobFilters = {
       search: searchParams.get('search') || undefined,
       minBudget: searchParams.get('minBudget') ? Number(searchParams.get('minBudget')) : undefined,
       maxBudget: searchParams.get('maxBudget') ? Number(searchParams.get('maxBudget')) : undefined,
       budgetType: searchParams.get('budgetType') as BudgetType | undefined,
       skills: searchParams.get('skills')?.split(',').map(s => s.trim()).filter(Boolean) || undefined,
-      status: 'open' as const, // Always fetch 'open' jobs for the find work page
+      clientId: searchParams.get('clientId') || undefined,
     };
     
-    const openJobs = await getAllJobs(filters);
-    return NextResponse.json(openJobs);
+    const jobs = await getAllJobs(filters);
+    return NextResponse.json(jobs);
   } catch (error) {
     console.error("API - Failed to fetch jobs:", error);
     return NextResponse.json({ message: "Failed to fetch jobs" }, { status: 500 });
