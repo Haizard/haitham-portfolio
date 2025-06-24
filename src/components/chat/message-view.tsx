@@ -39,9 +39,9 @@ export function MessageView({ conversation, messages, isLoading, currentUserId }
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
         <MessageCircle className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-        <h2 className="text-xl font-semibold text-muted-foreground">No conversation selected</h2>
+        <h2 className="text-xl font-semibold text-muted-foreground">Select a conversation</h2>
         <p className="text-sm text-muted-foreground">
-          Please select a conversation from the list to view messages.
+          Choose a conversation from the list to view messages.
         </p>
       </div>
     );
@@ -56,7 +56,6 @@ export function MessageView({ conversation, messages, isLoading, currentUserId }
         </Avatar>
         <div>
           <h2 className="font-semibold text-sm">{conversation.name || "Chat"}</h2>
-          {/* Can add online status or participant count here later */}
            <p className="text-xs text-muted-foreground">
             {conversation.participants.length} participant{conversation.participants.length === 1 ? '' : 's'}
           </p>

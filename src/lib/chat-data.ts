@@ -32,11 +32,15 @@ export interface Conversation {
   groupName?: string;
   groupAvatarUrl?: string;
   // For display purposes, enriched on retrieval
-  displayInfo?: {
-    name: string;
-    avatarUrl?: string;
-    unreadCount?: number; // Placeholder for future unread count logic
+  name?: string;
+  avatarUrl?: string;
+  lastMessage?: {
+      text: string;
+      timestamp: string;
+      senderId: string;
   };
+  unreadCount?: number;
+  participants: User[]; // Enriched participants
 }
 
 // --- Mock User Data (for display enrichment until full auth) ---
@@ -96,17 +100,16 @@ export async function getConversationsForUser(currentUserId: string): Promise<Co
           lastMessageSenderId = lastMsgDoc.senderId;
         }
       }
+      
+      const participants = conv.participantIds.map(id => getMockUser(id)).filter(Boolean) as User[];
 
       let displayName = conv.groupName || "Chat";
       let displayAvatarUrl = conv.groupAvatarUrl;
 
-      if (!conv.isGroup && conv.participantIds.length === 2) {
-        const otherParticipantId = conv.participantIds.find(pid => pid !== currentUserId);
-        if (otherParticipantId) {
-          const otherUser = getMockUser(otherParticipantId);
-          displayName = otherUser?.name || "Unknown User";
-          displayAvatarUrl = otherUser?.avatarUrl;
-        }
+      if (!conv.isGroup && participants.length === 2) {
+        const otherParticipant = participants.find(p => p.id !== currentUserId);
+        displayName = otherParticipant?.name || "Unknown User";
+        displayAvatarUrl = otherParticipant?.avatarUrl;
       } else if (conv.isGroup) {
         displayName = conv.groupName || "Group Chat";
         displayAvatarUrl = conv.groupAvatarUrl || `https://placehold.co/100x100.png?text=${displayName.substring(0,1) || 'G'}`;
@@ -114,6 +117,7 @@ export async function getConversationsForUser(currentUserId: string): Promise<Co
       
       return {
         ...conv,
+        participants, // Add enriched participants
         lastMessage: conv.lastMessageAt && lastMessageText ? {
           text: lastMessageText,
           timestamp: conv.lastMessageAt.toISOString(),
@@ -136,7 +140,7 @@ export async function getMessagesForConversation(conversationId: string): Promis
   }
   const messagesCollection = await getCollection<Message>(CHAT_MESSAGES_COLLECTION);
   const messageDocs = await messagesCollection.find({
-    conversationId: conversationId // Storing conversationId as string matching the Conversation's ID
+    conversationId: conversationId 
   }).sort({ timestamp: 1 }).toArray();
 
   return messageDocs.map(doc => {
@@ -218,7 +222,7 @@ export async function createConversation(
   }
 
   const now = new Date();
-  const newConversationDoc: Omit<Conversation, 'id' | '_id'> = {
+  const newConversationDoc: Omit<Conversation, 'id' | '_id' | 'participants'> = {
     participantIds: allParticipantIds,
     isGroup,
     groupName: isGroup ? (groupName || "New Group") : undefined,
@@ -229,5 +233,8 @@ export async function createConversation(
   };
 
   const result = await conversationsCollection.insertOne(newConversationDoc as any);
-  return { id: result.insertedId.toString(), _id: result.insertedId, ...newConversationDoc };
+  
+  const finalConv = docToConversation({ _id: result.insertedId, ...newConversationDoc });
+  finalConv.participants = allParticipantIds.map(id => getMockUser(id)).filter(Boolean) as User[];
+  return finalConv;
 }

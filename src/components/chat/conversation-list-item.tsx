@@ -14,18 +14,7 @@ interface ConversationListItemProps {
 }
 
 export function ConversationListItem({ conversation, isSelected, onSelect, currentUserId }: ConversationListItemProps) {
-  const getDisplayNameAndAvatar = () => {
-    if (conversation.isGroup) {
-      return { name: conversation.name || "Group Chat", avatarUrl: conversation.avatarUrl || `https://placehold.co/100x100.png?text=${conversation.name?.substring(0,1) || 'G'}` };
-    }
-    const otherParticipant = conversation.participants.find(p => p.id !== currentUserId);
-    return { 
-      name: otherParticipant?.name || "Unknown User", 
-      avatarUrl: otherParticipant?.avatarUrl || `https://placehold.co/100x100.png?text=${otherParticipant?.name?.substring(0,1) || 'U'}`
-    };
-  };
-
-  const { name, avatarUrl } = getDisplayNameAndAvatar();
+  
   const lastMessageText = conversation.lastMessage?.text;
   const lastMessageTimestamp = conversation.lastMessage?.timestamp;
 
@@ -38,12 +27,12 @@ export function ConversationListItem({ conversation, isSelected, onSelect, curre
       )}
     >
       <Avatar className="h-10 w-10">
-        <AvatarImage src={avatarUrl} alt={name} data-ai-hint="user avatar chat list" />
-        <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
+        <AvatarImage src={conversation.avatarUrl} alt={conversation.name} data-ai-hint="user avatar chat list" />
+        <AvatarFallback>{conversation.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center">
-          <h3 className={cn("text-sm font-semibold truncate", isSelected ? "text-accent-foreground" : "text-foreground")}>{name}</h3>
+          <h3 className={cn("text-sm font-semibold truncate", isSelected ? "text-accent-foreground" : "text-foreground")}>{conversation.name}</h3>
           {lastMessageTimestamp && (
             <span className={cn("text-xs", isSelected ? "text-accent-foreground/80" : "text-muted-foreground")}>
               {formatDistanceToNowStrict(new Date(lastMessageTimestamp), { addSuffix: true })}

@@ -33,13 +33,45 @@ export default function ChatPage() {
       if (!response.ok) throw new Error('Failed to fetch conversations');
       const data: Conversation[] = await response.json();
       setConversations(data);
+       if (data.length > 0 && !selectedConversation) {
+        // Automatically select the first conversation on initial load
+        handleSelectConversation(data[0]);
+      }
     } catch (error: any) {
       toast({ title: "Error", description: `Could not load conversations: ${error.message}`, variant: "destructive" });
       setConversations([]);
     } finally {
       setIsLoadingConversations(false);
     }
-  }, [toast]);
+  }, [toast]); // handleSelectConversation is defined later, so we can't include it here yet. But this is okay.
+
+  const handleSelectConversation = useCallback(async (conversation: Conversation) => {
+    if (selectedConversation?.id === conversation.id) return; // Don't re-select the same conversation
+    
+    setSelectedConversation(conversation);
+    setIsLoadingMessages(true);
+    setMessages([]);
+    
+    if (socketRef.current?.connected && conversation.id) {
+      console.log(`Emitting joinConversation for ${conversation.id}`);
+      socketRef.current.emit('joinConversation', conversation.id);
+    } else if (conversation.id) {
+      console.warn(`Socket not connected, cannot join room for ${conversation.id} yet.`);
+    }
+
+    try {
+      const response = await fetch(`/api/chat/conversations/${conversation.id}/messages`);
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const data: MessageType[] = await response.json();
+      setMessages(data);
+    } catch (error: any) {
+      toast({ title: "Error", description: `Could not load messages for ${conversation.name}: ${error.message}`, variant: "destructive" });
+      setMessages([]);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, [toast, selectedConversation?.id]);
+
 
   useEffect(() => {
     fetchConversations();
@@ -56,6 +88,7 @@ export default function ChatPage() {
       console.log('Socket connected:', newSocket.id);
       setIsConnected(true);
       toast({ title: "Chat Connected", description: "Real-time communication established." });
+      // If a conversation is already selected when connection establishes, re-join the room
       if (selectedConversation?.id) {
         newSocket.emit('joinConversation', selectedConversation.id);
       }
@@ -72,7 +105,7 @@ export default function ChatPage() {
       setIsConnected(false);
       toast({
         title: "Chat Connection Error",
-        description: `Could not connect to chat server at ${WEBSOCKET_URL}. Error: ${err.message}. Please ensure the WebSocket server (src/server/socket-server.ts) is running and accessible.`,
+        description: `Could not connect to chat server. Ensure the WebSocket server (src/server/socket-server.ts) is running and accessible. Error: ${err.message}.`,
         variant: "destructive",
         duration: 10000,
       });
@@ -83,20 +116,20 @@ export default function ChatPage() {
       if (newMessage.conversationId === selectedConversation?.id) {
         setMessages(prevMessages => [...prevMessages, newMessage]);
       }
+      // Update conversation list with new last message
       setConversations(prevConvs => {
-        const updatedConvs = prevConvs.map(conv => {
-          if (conv.id === newMessage.conversationId) {
-            return { 
-              ...conv, 
-              lastMessage: { text: newMessage.text, timestamp: new Date(newMessage.timestamp).toISOString(), senderId: newMessage.senderId },
-              lastMessageAt: new Date(newMessage.timestamp)
-            };
-          }
-          return conv;
-        });
-        return updatedConvs.sort((a, b) => 
-          new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime()
-        );
+        const targetConv = prevConvs.find(c => c.id === newMessage.conversationId);
+        if (targetConv) {
+          targetConv.lastMessage = {
+            text: newMessage.text,
+            timestamp: new Date(newMessage.timestamp).toISOString(),
+            senderId: newMessage.senderId,
+          };
+          targetConv.lastMessageAt = new Date(newMessage.timestamp);
+          // Move updated conversation to the top and re-sort
+          return [targetConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)].sort((a,b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
+        }
+        return prevConvs;
       });
     });
 
@@ -108,7 +141,6 @@ export default function ChatPage() {
         console.log(`Successfully joined room for conversation: ${conversationId}`);
     });
 
-
     return () => {
       console.log('Cleaning up socket connection...');
       if (newSocket) {
@@ -118,31 +150,6 @@ export default function ChatPage() {
     };
   }, [fetchConversations, selectedConversation?.id, toast]);
 
-  const handleSelectConversation = useCallback(async (conversation: Conversation) => {
-    setSelectedConversation(conversation);
-    setIsLoadingMessages(true);
-    setMessages([]);
-    
-    if (socketRef.current?.connected && conversation.id) {
-      console.log(`Emitting joinConversation for ${conversation.id}`);
-      socketRef.current.emit('joinConversation', conversation.id);
-    } else if (conversation.id) {
-      console.warn(`Socket not connected, cannot join room for ${conversation.id} yet.`);
-    }
-
-
-    try {
-      const response = await fetch(`/api/chat/conversations/${conversation.id}/messages`);
-      if (!response.ok) throw new Error('Failed to fetch messages');
-      const data: MessageType[] = await response.json();
-      setMessages(data);
-    } catch (error: any) {
-      toast({ title: "Error", description: `Could not load messages for ${conversation.name}: ${error.message}`, variant: "destructive" });
-      setMessages([]);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, [toast]);
 
   const handleSendMessage = async (text: string) => {
     if (!selectedConversation || !text.trim()) {
@@ -153,7 +160,6 @@ export default function ChatPage() {
       toast({ title: "Cannot Send", description: "Chat not connected. Please ensure WebSocket server is running and client is connected.", variant: "destructive" });
       return;
     }
-
 
     const messageData = {
       conversationId: selectedConversation.id!,
@@ -208,15 +214,21 @@ export default function ChatPage() {
                 isLoading={isLoadingMessages}
                 currentUserId={CURRENT_USER_ID}
               />
-              <MessageInput onSendMessage={handleSendMessage} />
+              <MessageInput onSendMessage={handleSendMessage} disabled={!isConnected} />
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <MessageCircleOff className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-              <h2 className="text-xl font-semibold text-muted-foreground">Select a conversation</h2>
-              <p className="text-sm text-muted-foreground">
-                Choose a conversation from the list to view messages.
-              </p>
+              {isLoadingConversations ? (
+                  <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+              ) : (
+                <>
+                <MessageCircleOff className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
+                <h2 className="text-xl font-semibold text-muted-foreground">Select a conversation</h2>
+                <p className="text-sm text-muted-foreground">
+                  Choose a conversation from the list to view messages.
+                </p>
+                </>
+              )}
             </div>
           )}
         </main>

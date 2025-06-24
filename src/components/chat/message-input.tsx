@@ -8,15 +8,16 @@ import { Send } from 'lucide-react';
 
 interface MessageInputProps {
   onSendMessage: (text: string) => Promise<void>;
+  disabled?: boolean;
 }
 
-export function MessageInput({ onSendMessage }: MessageInputProps) {
+export function MessageInput({ onSendMessage, disabled = false }: MessageInputProps) {
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() || disabled) return;
     setIsSending(true);
     await onSendMessage(text.trim());
     setText('');
@@ -37,9 +38,9 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
               handleSubmit(e);
             }
           }}
-          disabled={isSending}
+          disabled={isSending || disabled}
         />
-        <Button type="submit" size="icon" disabled={!text.trim() || isSending} className="bg-primary hover:bg-primary/90">
+        <Button type="submit" size="icon" disabled={!text.trim() || isSending || disabled} className="bg-primary hover:bg-primary/90">
           <Send className="h-5 w-5" />
           <span className="sr-only">Send message</span>
         </Button>

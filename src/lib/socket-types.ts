@@ -1,5 +1,5 @@
 
-import type { Message as MessageType } from '@/lib/chat-data'; // Ensure Message is imported
+import type { Message as MessageType } from '@/lib/chat-data';
 
 export interface ClientToServerEvents {
   joinConversation: (conversationId: string) => void;
@@ -8,8 +8,8 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
-  connectError: (err: { message: string }) => void;
-  newMessage: (message: MessageType) => void; // Use MessageType for consistency
+  connect_error: (err: { message: string; data?: any }) => void;
+  newMessage: (message: MessageType) => void; 
   conversationJoined: (conversationId: string) => void;
   error: (data: { message: string }) => void;
 }
