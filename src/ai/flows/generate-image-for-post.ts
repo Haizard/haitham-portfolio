@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates an image for a blog post using AI.
@@ -33,14 +34,11 @@ const generateImageForPostFlow = ai.defineFlow(
   },
   async (input) => {
     const {media, textOutput} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp', // IMPORTANT: Specific model for image generation
+      // IMPORTANT: Updated to the recommended model for image generation.
+      model: 'googleai/gemini-2.0-flash-preview-image-generation',
       prompt: `Generate a visually appealing featured image suitable for a blog header. The blog post is about: "${input.prompt}". The image should be vibrant and relevant. Also, provide two keywords describing the image.`,
       config: {
         responseModalities: ['IMAGE', 'TEXT'], // MUST provide both TEXT and IMAGE
-        // Optional: Adjust safety settings if needed, but default is usually fine.
-        // safetySettings: [
-        //   { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_LOW_AND_ABOVE' },
-        // ],
       },
     });
 
