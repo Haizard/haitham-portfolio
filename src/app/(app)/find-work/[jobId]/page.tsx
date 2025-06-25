@@ -41,8 +41,11 @@ export default function JobDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isProposalDialogOpen, setIsProposalDialogOpen] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  
   const [isFunding, setIsFunding] = useState(false);
+  const [isReleasing, setIsReleasing] = useState(false);
   const [isFundingConfirmationOpen, setIsFundingConfirmationOpen] = useState(false);
+  const [isReleaseConfirmationOpen, setIsReleaseConfirmationOpen] = useState(false);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -110,6 +113,23 @@ export default function JobDetailPage() {
     } finally {
       setIsFunding(false);
       setIsFundingConfirmationOpen(false);
+    }
+  };
+
+  const handleReleaseEscrow = async () => {
+    if (!job?.id) return;
+    setIsReleasing(true);
+    try {
+      const response = await fetch(`/api/jobs/${job.id}/release`, { method: 'PUT' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to release funds');
+      toast({ title: "Funds Released!", description: "The escrow payment has been released to the freelancer." });
+      fetchJobAndProposals();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsReleasing(false);
+      setIsReleaseConfirmationOpen(false);
     }
   };
 
@@ -260,6 +280,12 @@ export default function JobDetailPage() {
                   Project is funded. You can now collaborate with the freelancer.
                 </div>
               )}
+               {isOwner && job.status === 'completed' && job.escrowStatus === 'funded' && (
+                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setIsReleaseConfirmationOpen(true)} disabled={isReleasing}>
+                  {isReleasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Unlock className="mr-2 h-4 w-4"/>}
+                  Release Escrow Payment
+                </Button>
+              )}
               {amIHiredFreelancer && job.status === 'in-progress' && job.escrowStatus === 'unfunded' && (
                  <div className="text-center p-3 bg-orange-100 dark:bg-orange-900/30 rounded-md text-orange-700 dark:text-orange-300 text-sm">
                   Waiting for client to fund escrow before starting work.
@@ -394,9 +420,11 @@ export default function JobDetailPage() {
           isOpen={isReviewDialogOpen}
           onClose={() => setIsReviewDialogOpen(false)}
           jobId={job.id!}
+          reviewerId={MOCK_CURRENT_USER_AS_CLIENT_ID}
           revieweeId={hiredFreelancerId}
           jobTitle={job.title}
-          freelancerName="Mock Freelancer" // In a real app, fetch freelancer name
+          revieweeName="Mock Freelancer" // In a real app, fetch freelancer name
+          reviewerRole="client"
           onSuccess={() => {
             toast({ title: "Review Submitted!", description: "Thank you for your feedback."});
             fetchJobAndProposals();
@@ -417,6 +445,23 @@ export default function JobDetailPage() {
             <AlertDialogAction onClick={handleFundEscrow} disabled={isFunding} className="bg-primary hover:bg-primary/90">
               {isFunding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm & Fund Escrow
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={isReleaseConfirmationOpen} onOpenChange={setIsReleaseConfirmationOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Fund Release</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to release the payment of <strong>${job.budgetAmount?.toLocaleString()}</strong> to the freelancer for the project "<strong>{job.title}</strong>"? This action is final and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsReleaseConfirmationOpen(false)} disabled={isReleasing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReleaseEscrow} disabled={isReleasing} className="bg-blue-600 hover:bg-blue-700">
+              {isReleasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm & Release Funds
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
