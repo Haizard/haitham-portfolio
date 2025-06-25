@@ -118,7 +118,7 @@ export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'up
   const docToInsert = {
     ...jobData,
     status: 'open' as JobStatus, // New jobs are always 'open'
-    escrowStatus: 'unfunded' as EscrowStatus, // New jobs are unfunded
+    escrowStatus: 'funded' as EscrowStatus, // New jobs are pre-funded now
     proposalCount: 0,
     createdAt: now,
     updatedAt: now,
