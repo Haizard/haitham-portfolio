@@ -51,7 +51,8 @@ const navItems = [
     group: "Freelancer",
     items: [
       { href: "/find-work", label: "Find Work", icon: Search },
-      { href: "/my-proposals", label: "My Proposals", icon: ClipboardList },
+      { href: "/my-proposals", label: "My Proposals", icon: FileText },
+      { href: "/my-projects", label: "My Projects", icon: Briefcase },
     ]
   },
   { 
