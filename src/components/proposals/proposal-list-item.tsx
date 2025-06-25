@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Proposal } from '@/lib/proposals-data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,10 +20,13 @@ interface ProposalListItemProps {
   onAcceptSuccess: () => void; // Callback to refresh job details on parent
 }
 
+const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
 
 export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: ProposalListItemProps) {
   const [isAccepting, setIsAccepting] = useState(false);
+  const [isMessaging, setIsMessaging] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   // In a real app, we'd fetch freelancer details from the DB using proposal.freelancerId
   const mockFreelancer = {
@@ -57,6 +61,29 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
     }
   };
   
+  const handleMessage = async () => {
+    setIsMessaging(true);
+    try {
+      const response = await fetch('/api/chat/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentUserId: MOCK_CURRENT_USER_AS_CLIENT_ID,
+          participantIds: [proposal.freelancerId]
+        }),
+      });
+      const conversation = await response.json();
+      if (!response.ok) {
+        throw new Error(conversation.message || "Failed to start conversation");
+      }
+      router.push(`/chat?conversationId=${conversation.id}`);
+    } catch (error: any) {
+      toast({ title: "Error starting chat", description: error.message, variant: "destructive" });
+    } finally {
+      setIsMessaging(false);
+    }
+  };
+
   const getStatusBadgeVariant = (status: Proposal['status']): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
       case 'submitted': return 'secondary';
@@ -117,15 +144,17 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
       </CardContent>
       {isJobOwner && (
         <CardFooter className="flex justify-end gap-2 border-t pt-4">
-            <Button variant="outline" size="sm"><MessageSquare className="mr-2 h-4 w-4"/> Message</Button>
+            <Button variant="outline" size="sm" onClick={handleMessage} disabled={isAccepting || isMessaging}>
+                {isMessaging ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MessageSquare className="mr-2 h-4 w-4"/>} Message
+            </Button>
             <Button 
                 variant="default" 
                 size="sm" 
                 className="bg-primary hover:bg-primary/90"
                 onClick={handleAccept}
-                disabled={isAccepting || proposal.status !== 'submitted'}
+                disabled={isAccepting || isMessaging || proposal.status !== 'submitted'}
             >
-                {isAccepting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                {isAccepting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4"/>}
                 {proposal.status === 'accepted' ? 'Accepted' : 'Accept Proposal'}
             </Button>
         </CardFooter>

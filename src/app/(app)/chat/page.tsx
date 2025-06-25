@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { io, type Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '@/lib/socket-types';
 import { ConversationList } from '@/components/chat/conversation-list';
@@ -25,25 +26,8 @@ export default function ChatPage() {
   const { toast } = useToast();
 
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
-
-  const fetchConversations = useCallback(async () => {
-    setIsLoadingConversations(true);
-    try {
-      const response = await fetch(`/api/chat/conversations?userId=${CURRENT_USER_ID}`);
-      if (!response.ok) throw new Error('Failed to fetch conversations');
-      const data: Conversation[] = await response.json();
-      setConversations(data);
-       if (data.length > 0 && !selectedConversation) {
-        // Automatically select the first conversation on initial load
-        handleSelectConversation(data[0]);
-      }
-    } catch (error: any) {
-      toast({ title: "Error", description: `Could not load conversations: ${error.message}`, variant: "destructive" });
-      setConversations([]);
-    } finally {
-      setIsLoadingConversations(false);
-    }
-  }, [toast]); // handleSelectConversation is defined later, so we can't include it here yet. But this is okay.
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSelectConversation = useCallback(async (conversation: Conversation) => {
     if (selectedConversation?.id === conversation.id) return; // Don't re-select the same conversation
@@ -74,8 +58,40 @@ export default function ChatPage() {
 
 
   useEffect(() => {
-    fetchConversations();
+    // This effect runs once on mount to fetch data and setup sockets.
+    const conversationIdFromUrl = searchParams.get('conversationId');
     
+    async function initialize() {
+        // 1. Fetch all conversations for the user
+        setIsLoadingConversations(true);
+        let allConversations: Conversation[] = [];
+        try {
+            const response = await fetch(`/api/chat/conversations?userId=${CURRENT_USER_ID}`);
+            if (!response.ok) throw new Error('Failed to fetch conversations');
+            allConversations = await response.json();
+            setConversations(allConversations);
+        } catch (error: any) {
+            toast({ title: "Error", description: `Could not load conversations: ${error.message}`, variant: "destructive" });
+        } finally {
+            setIsLoadingConversations(false);
+        }
+
+        // 2. Determine which conversation to select
+        if (conversationIdFromUrl) {
+            const target = allConversations.find(c => c.id === conversationIdFromUrl);
+            if (target) {
+                handleSelectConversation(target);
+            }
+            router.replace('/chat', { scroll: false }); // Clean up URL
+        } else if (allConversations.length > 0 && !selectedConversation) {
+            // Default to selecting first conversation if no specific one is requested and none is selected
+            handleSelectConversation(allConversations[0]);
+        }
+    }
+
+    initialize();
+
+    // Setup socket connection
     console.log(`Attempting to connect to WebSocket server at ${WEBSOCKET_URL}`);
     const newSocket = io(WEBSOCKET_URL, {
       reconnectionAttempts: 5,
@@ -113,21 +129,27 @@ export default function ChatPage() {
     
     newSocket.on('newMessage', (newMessage: MessageType) => {
       console.log('New message received via WebSocket:', newMessage);
-      if (newMessage.conversationId === selectedConversation?.id) {
-        setMessages(prevMessages => [...prevMessages, newMessage]);
-      }
-      // Update conversation list with new last message
+      // We need to use functional updates for states that depend on previous state inside socket handlers
+      setSelectedConversation(currentSelected => {
+          if (newMessage.conversationId === currentSelected?.id) {
+              setMessages(prevMessages => [...prevMessages, newMessage]);
+          }
+          return currentSelected;
+      });
+
       setConversations(prevConvs => {
         const targetConv = prevConvs.find(c => c.id === newMessage.conversationId);
         if (targetConv) {
-          targetConv.lastMessage = {
-            text: newMessage.text,
-            timestamp: new Date(newMessage.timestamp).toISOString(),
-            senderId: newMessage.senderId,
+          const updatedConv = {
+            ...targetConv,
+            lastMessage: {
+              text: newMessage.text,
+              timestamp: new Date(newMessage.timestamp).toISOString(),
+              senderId: newMessage.senderId,
+            },
+            lastMessageAt: new Date(newMessage.timestamp),
           };
-          targetConv.lastMessageAt = new Date(newMessage.timestamp);
-          // Move updated conversation to the top and re-sort
-          return [targetConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)].sort((a,b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
+          return [updatedConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)].sort((a,b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
         }
         return prevConvs;
       });
@@ -148,7 +170,8 @@ export default function ChatPage() {
       }
       socketRef.current = null;
     };
-  }, [fetchConversations, selectedConversation?.id, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   const handleSendMessage = async (text: string) => {
