@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -9,7 +10,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,6 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Loader2, Send, Star, UserCircle, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { StarRating } from './StarRating';
+import type { ReviewerRole } from '@/lib/reviews-data';
 
 const reviewSubmitSchema = z.object({
   rating: z.coerce.number().min(1, "Rating is required.").max(5),
@@ -30,13 +31,25 @@ interface ReviewSubmitDialogProps {
   isOpen: boolean;
   onClose: () => void;
   jobId: string;
-  revieweeId: string; // The freelancer being reviewed
   jobTitle: string;
-  freelancerName: string;
+  reviewerId: string; // The person *leaving* the review
+  revieweeId: string; // The person *being* reviewed
+  revieweeName: string; // Name of person being reviewed
+  reviewerRole: ReviewerRole; // Role of the person leaving the review
   onSuccess: () => void;
 }
 
-export function ReviewSubmitDialog({ isOpen, onClose, jobId, revieweeId, jobTitle, freelancerName, onSuccess }: ReviewSubmitDialogProps) {
+export function ReviewSubmitDialog({ 
+  isOpen, 
+  onClose, 
+  jobId, 
+  jobTitle, 
+  reviewerId, 
+  revieweeId, 
+  revieweeName, 
+  reviewerRole, 
+  onSuccess 
+}: ReviewSubmitDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,7 +67,13 @@ export function ReviewSubmitDialog({ isOpen, onClose, jobId, revieweeId, jobTitl
       const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, jobId, revieweeId }),
+        body: JSON.stringify({ 
+          ...values, 
+          jobId, 
+          revieweeId,
+          reviewerId,
+          reviewerRole
+        }),
       });
 
       const responseData = await response.json();
@@ -64,7 +83,7 @@ export function ReviewSubmitDialog({ isOpen, onClose, jobId, revieweeId, jobTitl
 
       toast({
         title: "Review Submitted!",
-        description: `Your feedback for ${freelancerName} has been recorded.`,
+        description: `Your feedback for ${revieweeName} has been recorded.`,
       });
       onSuccess();
       onClose();
@@ -86,7 +105,7 @@ export function ReviewSubmitDialog({ isOpen, onClose, jobId, revieweeId, jobTitl
           <DialogTitle className="text-xl font-headline">Leave a Review</DialogTitle>
           <div className="space-y-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5"><Briefcase className="h-4 w-4"/><span>{jobTitle}</span></div>
-            <div className="flex items-center gap-1.5"><UserCircle className="h-4 w-4"/><span>For: {freelancerName}</span></div>
+            <div className="flex items-center gap-1.5"><UserCircle className="h-4 w-4"/><span>For: {revieweeName}</span></div>
           </div>
         </DialogHeader>
         <Form {...form}>
@@ -111,7 +130,7 @@ export function ReviewSubmitDialog({ isOpen, onClose, jobId, revieweeId, jobTitl
                 <FormItem>
                   <FormLabel>Your Feedback</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Share your experience working with this freelancer..." className="min-h-[150px]" {...field} />
+                    <Textarea placeholder={`Share your experience working with ${revieweeName}...`} className="min-h-[150px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

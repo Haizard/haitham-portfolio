@@ -6,14 +6,15 @@ import type { Job } from '@/lib/jobs-data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DollarSign, CheckSquare, Play, FolderClock, Pause, ExternalLink, MessageSquare, Lock } from 'lucide-react';
+import { DollarSign, CheckSquare, Play, FolderClock, Pause, ExternalLink, MessageSquare, Lock, Star } from 'lucide-react';
 import Link from 'next/link';
 
 interface MyProjectListItemProps {
   proposal: Proposal & { job?: Job };
+  onLeaveReview: (project: Proposal & { job?: Job }) => void;
 }
 
-export function MyProjectListItem({ proposal }: MyProjectListItemProps) {
+export function MyProjectListItem({ proposal, onLeaveReview }: MyProjectListItemProps) {
     const job = proposal.job;
 
     if (!job) {
@@ -57,6 +58,7 @@ export function MyProjectListItem({ proposal }: MyProjectListItemProps) {
     // In a real app, client details would be fetched.
     const mockClientName = "Mock Client";
     const escrowInfo = getEscrowStatusBadgeInfo(job.escrowStatus);
+    const canLeaveReview = job.status === 'completed' && !job.freelancerReviewId;
 
     return (
         <Card className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
@@ -89,9 +91,15 @@ export function MyProjectListItem({ proposal }: MyProjectListItemProps) {
                         <ExternalLink className="mr-2 h-4 w-4" /> View Project
                     </Link>
                 </Button>
-                 <Button size="sm">
-                    <MessageSquare className="mr-2 h-4 w-4" /> Go to Workspace
-                </Button>
+                {canLeaveReview ? (
+                    <Button onClick={() => onLeaveReview(proposal)} size="sm">
+                        <Star className="mr-2 h-4 w-4" /> Leave a Review
+                    </Button>
+                ) : (
+                    <Button size="sm">
+                        <MessageSquare className="mr-2 h-4 w-4" /> Go to Workspace
+                    </Button>
+                )}
             </CardFooter>
         </Card>
     );

@@ -3,6 +3,7 @@ import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { updateJobReviewStatus } from './jobs-data';
 import { updateFreelancerProfile } from './user-profile-data';
+import { updateClientProfile } from './client-profile-data';
 
 const REVIEWS_COLLECTION = 'reviews';
 
@@ -42,9 +43,9 @@ export async function addReview(reviewData: Omit<Review, 'id' | '_id' | 'created
   // 1. Update the job to note that a review has been left
   await updateJobReviewStatus(newReview.jobId, newReview.reviewerRole, newReview.id!);
 
-  // 2. Recalculate and update the freelancer's average rating
-  // This should only happen when a client reviews a freelancer
+  // 2. Recalculate and update the reviewed user's average rating
   if (newReview.reviewerRole === 'client') {
+    // Client is reviewing a freelancer
     const allReviews = await getReviewsForFreelancer(newReview.revieweeId);
     const totalReviews = allReviews.length;
     const averageRating = totalReviews > 0
@@ -52,6 +53,18 @@ export async function addReview(reviewData: Omit<Review, 'id' | '_id' | 'created
       : 0;
 
     await updateFreelancerProfile(newReview.revieweeId, {
+      averageRating: parseFloat(averageRating.toFixed(2)),
+      reviewCount: totalReviews,
+    });
+  } else if (newReview.reviewerRole === 'freelancer') {
+    // Freelancer is reviewing a client
+    const allReviews = await getReviewsForClient(newReview.revieweeId);
+    const totalReviews = allReviews.length;
+    const averageRating = totalReviews > 0
+      ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+      : 0;
+
+    await updateClientProfile(newReview.revieweeId, {
       averageRating: parseFloat(averageRating.toFixed(2)),
       reviewCount: totalReviews,
     });
@@ -70,6 +83,21 @@ export async function getReviewsForFreelancer(freelancerId: string): Promise<Rev
       // Mock enrichment
       review.reviewerName = "Mock Client";
       review.reviewerAvatar = `https://placehold.co/100x100.png?text=MC`;
+      return review;
+  });
+}
+
+// New function to get reviews FOR a client
+export async function getReviewsForClient(clientId: string): Promise<Review[]> {
+  const collection = await getCollection<Review>(REVIEWS_COLLECTION);
+  // Fetch reviews where the client was the one being reviewed
+  const reviewDocs = await collection.find({ revieweeId: clientId, reviewerRole: 'freelancer' }).sort({ createdAt: -1 }).toArray();
+  // In a real app, you would enrich with reviewer details (freelancer name, avatar) from the users collection
+  return reviewDocs.map(doc => {
+      const review = docToReview(doc);
+      // Mock enrichment
+      review.reviewerName = "Mock Freelancer";
+      review.reviewerAvatar = `https://placehold.co/100x100.png?text=MF`;
       return review;
   });
 }

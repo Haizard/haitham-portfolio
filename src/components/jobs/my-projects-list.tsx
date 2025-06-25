@@ -8,9 +8,10 @@ import { Briefcase } from 'lucide-react';
 
 interface MyProjectsListProps {
   projects: (Proposal & { job?: Job })[];
+  onLeaveReview: (project: Proposal & { job?: Job }) => void;
 }
 
-export function MyProjectsList({ projects }: MyProjectsListProps) {
+export function MyProjectsList({ projects, onLeaveReview }: MyProjectsListProps) {
   if (projects.length === 0) {
     return (
       <div className="text-center py-10 border rounded-lg shadow-sm bg-card">
@@ -26,7 +27,7 @@ export function MyProjectsList({ projects }: MyProjectsListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map(p => (
-        <MyProjectListItem key={p.id} proposal={p} />
+        <MyProjectListItem key={p.id} proposal={p} onLeaveReview={onLeaveReview} />
       ))}
     </div>
   );

@@ -7,14 +7,24 @@ import { Loader2, Briefcase } from 'lucide-react';
 import type { Proposal } from '@/lib/proposals-data';
 import type { Job } from '@/lib/jobs-data';
 import { useToast } from '@/hooks/use-toast';
+import { ReviewSubmitDialog } from '@/components/reviews/ReviewSubmitDialog';
 
 // This would come from auth in a real app
 const MOCK_FREELANCER_ID = "mockFreelancer456";
+
+interface ReviewDialogState {
+  isOpen: boolean;
+  jobId: string;
+  jobTitle: string;
+  revieweeId: string; // This will be the client's ID
+  revieweeName: string; // The client's name
+}
 
 export default function MyProjectsPage() {
   const [projects, setProjects] = useState<(Proposal & { job?: Job })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [reviewState, setReviewState] = useState<ReviewDialogState | null>(null);
 
   const fetchMyProjects = useCallback(async () => {
     setIsLoading(true);
@@ -42,6 +52,17 @@ export default function MyProjectsPage() {
     fetchMyProjects();
   }, [fetchMyProjects]);
 
+  const handleOpenReviewDialog = (project: Proposal & { job?: Job }) => {
+    if (!project.job) return;
+    setReviewState({
+      isOpen: true,
+      jobId: project.job.id!,
+      jobTitle: project.job.title,
+      revieweeId: project.job.clientId, // The client is being reviewed
+      revieweeName: "Mock Client", // In real app, fetch client name
+    });
+  };
+
   return (
     <div className="container mx-auto py-8">
       <header className="mb-8">
@@ -60,9 +81,30 @@ export default function MyProjectsPage() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
             ) : (
-                <MyProjectsList projects={projects} />
+                <MyProjectsList 
+                    projects={projects} 
+                    onLeaveReview={handleOpenReviewDialog}
+                />
             )}
         </main>
+
+        {reviewState?.isOpen && (
+            <ReviewSubmitDialog
+                isOpen={reviewState.isOpen}
+                onClose={() => setReviewState(null)}
+                jobId={reviewState.jobId}
+                jobTitle={reviewState.jobTitle}
+                reviewerId={MOCK_FREELANCER_ID}
+                revieweeId={reviewState.revieweeId}
+                revieweeName={reviewState.revieweeName}
+                reviewerRole="freelancer"
+                onSuccess={() => {
+                    toast({ title: "Review Submitted!", description: "Thank you for your feedback." });
+                    fetchMyProjects(); // Re-fetch to update button state
+                    setReviewState(null);
+                }}
+            />
+        )}
     </div>
   );
 }
