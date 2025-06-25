@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 interface ProposalListItemProps {
   proposal: Proposal;
@@ -79,12 +80,18 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
     <Card className="shadow-md hover:shadow-lg transition-shadow bg-card">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={mockFreelancer.avatarUrl} alt={mockFreelancer.name} data-ai-hint="freelancer avatar"/>
-            <AvatarFallback>{mockFreelancer.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
+          <Link href={`/freelancer/${proposal.freelancerId}`}>
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={mockFreelancer.avatarUrl} alt={mockFreelancer.name} data-ai-hint="freelancer avatar"/>
+              <AvatarFallback>{mockFreelancer.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          </Link>
           <div>
-            <CardTitle className="text-lg font-semibold">{mockFreelancer.name}</CardTitle>
+            <CardTitle className="text-lg font-semibold hover:text-primary">
+              <Link href={`/freelancer/${proposal.freelancerId}`}>
+                {mockFreelancer.name}
+              </Link>
+            </CardTitle>
             <CardDescription className="text-xs">Submitted {formatDistanceToNow(new Date(proposal.createdAt), { addSuffix: true })}</CardDescription>
           </div>
         </div>

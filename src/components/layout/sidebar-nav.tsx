@@ -39,12 +39,13 @@ import {
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/profile", label: "User Profile", icon: UserCircle }, 
+  { href: "/profile", label: "My Profile", icon: UserCircle }, 
   {
     group: "Client",
     items: [
        { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
        { href: "/my-jobs", label: "Manage My Jobs", icon: ClipboardList },
+       { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
     ]
   },
   {
@@ -71,7 +72,6 @@ const navItems = [
       { href: "/social-media", label: "Social Media", icon: MessagesSquare },
       { href: "/chat", label: "Chat", icon: MessageCircle },
       { href: "/services", label: "Services Admin", icon: Briefcase }, 
-      { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
       { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
       { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
     ]
