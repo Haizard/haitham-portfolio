@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause, Star, Shield, Lock, Unlock, Banknote } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause, Star, Shield, Lock, Unlock, Banknote, User } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
 import type { Proposal } from '@/lib/proposals-data';
+import type { ClientProfile } from '@/lib/client-profile-data';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ProposalSubmitDialog } from '@/components/proposals/proposal-submit-dialog';
@@ -28,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from '@/components/ui/skeleton';
 
 // This is a placeholder until we have real user auth.
 const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
@@ -36,6 +38,7 @@ const MOCK_CURRENT_USER_AS_FREELANCER_ID = "mockFreelancer456";
 export default function JobDetailPage() {
   const params = useParams<{ jobId: string }>();
   const [job, setJob] = useState<Job | null>(null);
+  const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +92,25 @@ export default function JobDetailPage() {
   useEffect(() => {
     fetchJobAndProposals();
   }, [fetchJobAndProposals]);
+
+  useEffect(() => {
+    if (job?.clientId) {
+      const fetchClientProfile = async () => {
+        try {
+          const res = await fetch(`/api/client-profiles/${job.clientId}`);
+          if (res.ok) {
+            const data = await res.json();
+            setClientProfile(data);
+          } else {
+             console.error(`Failed to fetch client profile for ${job.clientId}. Status: ${res.status}`);
+          }
+        } catch (err) {
+          console.error("Failed to fetch client profile", err);
+        }
+      };
+      fetchClientProfile();
+    }
+  }, [job]);
   
   // This could be determined by a global auth context in a real app
   const isOwner = job?.clientId === MOCK_CURRENT_USER_AS_CLIENT_ID;
@@ -362,10 +384,47 @@ export default function JobDetailPage() {
                 
                 <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle className="text-lg">About the Client</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2"><User className="h-5 w-5 text-primary"/> About the Client</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-muted-foreground">Client details and history will be displayed here.</p>
+                       {clientProfile ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <Avatar>
+                                        <AvatarImage src={clientProfile.avatarUrl} data-ai-hint="client avatar"/>
+                                        <AvatarFallback>{clientProfile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{clientProfile.name}</p>
+                                        <p className="text-xs text-muted-foreground">Joined {formatDistanceToNow(new Date(clientProfile.createdAt), { addSuffix: true })}</p>
+                                    </div>
+                                </div>
+                                <Separator/>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div className="flex items-center gap-1.5 text-muted-foreground"><Shield className="h-4 w-4 text-green-500"/><span>Payment Verified</span></div>
+                                    <div className="flex items-center gap-1.5 text-muted-foreground"><Star className="h-4 w-4 text-yellow-500"/><span>{clientProfile.averageRating?.toFixed(1)} ({clientProfile.reviewCount} reviews)</span></div>
+                                    <div className="flex items-center gap-1.5 text-muted-foreground"><Briefcase className="h-4 w-4"/><span>{clientProfile.projectsPosted} jobs posted</span></div>
+                                    <div className="flex items-center gap-1.5 text-muted-foreground"><DollarSign className="h-4 w-4"/><span>${clientProfile.totalSpent.toLocaleString()} spent</span></div>
+                                </div>
+                            </div>
+                        ) : (
+                             <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                    <div className="space-y-1">
+                                        <Skeleton className="h-4 w-24" />
+                                        <Skeleton className="h-3 w-16" />
+                                    </div>
+                                </div>
+                                <Skeleton className="h-px w-full my-2" />
+                                 <div className="grid grid-cols-2 gap-2">
+                                     <Skeleton className="h-4 w-full" />
+                                     <Skeleton className="h-4 w-full" />
+                                     <Skeleton className="h-4 w-full" />
+                                     <Skeleton className="h-4 w-full" />
+                                 </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
                 </>
