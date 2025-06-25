@@ -67,7 +67,7 @@ export default function MyJobsPage() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
             ) : (
-                <MyJobsList jobs={jobs} />
+                <MyJobsList jobs={jobs} onJobUpdate={fetchMyJobs} />
             )}
         </main>
     </div>
