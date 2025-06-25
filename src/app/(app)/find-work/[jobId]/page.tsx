@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause, Star } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause, Star, Shield, Lock, Unlock, Banknote } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
 import type { Proposal } from '@/lib/proposals-data';
 import { formatDistanceToNow } from 'date-fns';
@@ -15,9 +15,20 @@ import { useToast } from '@/hooks/use-toast';
 import { ProposalSubmitDialog } from '@/components/proposals/proposal-submit-dialog';
 import { ProposalList } from '@/components/proposals/proposal-list';
 import { ReviewSubmitDialog } from '@/components/reviews/ReviewSubmitDialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // This is a placeholder until we have real user auth.
-// This should match the clientId used when creating jobs.
 const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
 const MOCK_CURRENT_USER_AS_FREELANCER_ID = "mockFreelancer456";
 
@@ -29,6 +40,9 @@ export default function JobDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isProposalDialogOpen, setIsProposalDialogOpen] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [isFunding, setIsFunding] = useState(false);
+  const [isFundingConfirmationOpen, setIsFundingConfirmationOpen] = useState(false);
+  
   const router = useRouter();
   const { toast } = useToast();
 
@@ -42,7 +56,6 @@ export default function JobDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch job and proposals in parallel
       const [jobResponse, proposalsResponse] = await Promise.all([
         fetch(`/api/jobs/${params.jobId}`),
         fetch(`/api/jobs/${params.jobId}/proposals`),
@@ -60,7 +73,7 @@ export default function JobDetailPage() {
         setProposals(proposalsData);
       } else {
          console.warn(`Could not fetch proposals for job ${params.jobId}. Status: ${proposalsResponse.status}`);
-         setProposals([]); // Set to empty array on failure
+         setProposals([]);
       }
 
     } catch (err: any) {
@@ -75,13 +88,29 @@ export default function JobDetailPage() {
     fetchJobAndProposals();
   }, [fetchJobAndProposals]);
   
+  // This could be determined by a global auth context in a real app
   const isOwner = job?.clientId === MOCK_CURRENT_USER_AS_CLIENT_ID;
   const hasApplied = proposals.some(p => p.freelancerId === MOCK_CURRENT_USER_AS_FREELANCER_ID);
-  
-  // Find the accepted proposal to identify the hired freelancer
   const acceptedProposal = proposals.find(p => p.status === 'accepted');
   const hiredFreelancerId = acceptedProposal?.freelancerId;
+  const amIHiredFreelancer = hiredFreelancerId === MOCK_CURRENT_USER_AS_FREELANCER_ID;
 
+  const handleFundEscrow = async () => {
+    if (!job?.id) return;
+    setIsFunding(true);
+    try {
+      const response = await fetch(`/api/jobs/${job.id}/fund`, { method: 'PUT' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to fund escrow');
+      toast({ title: "Escrow Funded!", description: "The freelancer will be notified that the project is funded." });
+      fetchJobAndProposals();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsFunding(false);
+      setIsFundingConfirmationOpen(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -108,10 +137,7 @@ export default function JobDetailPage() {
     return null;
   }
   
-  const budgetDisplay = job.budgetAmount
-    ? `$${job.budgetAmount.toLocaleString()}`
-    : "Not specified";
-    
+  const budgetDisplay = job.budgetAmount ? `$${job.budgetAmount.toLocaleString()}` : "Not specified";
   const getStatusBadgeVariant = (status: Job['status']): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
       case "open": return "secondary";
@@ -132,45 +158,129 @@ export default function JobDetailPage() {
     }
   };
 
+  const getEscrowStatusInfo = (status: Job['escrowStatus']) => {
+    switch(status) {
+      case 'unfunded': return { text: 'Unfunded', icon: Shield, color: 'text-orange-500' };
+      case 'funded': return { text: 'Funded', icon: Lock, color: 'text-green-600' };
+      case 'released': return { text: 'Released', icon: Unlock, color: 'text-blue-500' };
+      default: return { text: 'Unknown', icon: Shield, color: 'text-muted-foreground' };
+    }
+  };
+
+  const showWorkspaceView = job.status === 'in-progress' || job.status === 'completed';
+
+  const renderPublicView = () => (
+    <Card className="shadow-xl">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <CardTitle className="text-3xl font-bold font-headline pr-4">{job.title}</CardTitle>
+            <Badge variant={getStatusBadgeVariant(job.status)} className="text-sm capitalize flex items-center w-fit shrink-0">
+              {getStatusIcon(job.status)}
+              {job.status}
+            </Badge>
+        </div>
+        <CardDescription className="text-base text-muted-foreground">
+          Posted {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Separator className="my-4" />
+        <h3 className="font-semibold text-lg mb-2">Project Description</h3>
+        <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{job.description}</p>
+        <Separator className="my-6" />
+        <h3 className="font-semibold text-lg mb-3">Required Skills</h3>
+        <div className="flex flex-wrap gap-2">
+          {job.skillsRequired.map(skill => (
+            <Badge key={skill} variant="secondary" className="text-sm px-3 py-1">
+              <Tag className="mr-1.5 h-4 w-4" /> {skill}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderWorkspaceView = () => (
+    <Card className="shadow-xl">
+       <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-3xl font-bold font-headline pr-4">{job.title}</CardTitle>
+            <CardDescription className="text-base text-muted-foreground">Project Workspace</CardDescription>
+          </div>
+          <Badge variant={getStatusBadgeVariant(job.status)} className="text-sm capitalize flex items-center w-fit shrink-0">
+            {getStatusIcon(job.status)}
+            {job.status}
+          </Badge>
+        </div>
+       </CardHeader>
+       <CardContent>
+          <Separator className="my-4"/>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-secondary/40">
+              <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Hired Freelancer</CardTitle></CardHeader>
+              <CardContent>
+                <Link href={`/freelancer/${hiredFreelancerId}`} className="flex items-center gap-3 group">
+                  <Avatar><AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="freelancer avatar"/><AvatarFallback>FL</AvatarFallback></Avatar>
+                  <div>
+                    <p className="font-semibold group-hover:text-primary">Mock Freelancer</p>
+                    <p className="text-xs text-muted-foreground">View Profile</p>
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+            <Card className="bg-secondary/40">
+              <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Agreed Terms</CardTitle></CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 font-semibold text-green-600">
+                  <DollarSign className="h-5 w-5"/> {acceptedProposal?.proposedRate.toLocaleString()} ({job.budgetType})
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <Separator className="my-6"/>
+          <h3 className="font-semibold text-lg mb-3">Project Status & Actions</h3>
+          <div className="border rounded-lg p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Payment Protection</span>
+                <Badge variant="outline" className={`text-sm flex items-center gap-1.5 ${getEscrowStatusInfo(job.escrowStatus).color}`}>
+                  {React.createElement(getEscrowStatusInfo(job.escrowStatus).icon, { className: 'h-4 w-4' })}
+                  {getEscrowStatusInfo(job.escrowStatus).text}
+                </Badge>
+              </div>
+              {isOwner && job.status === 'in-progress' && job.escrowStatus === 'unfunded' && (
+                <Button className="w-full" onClick={() => setIsFundingConfirmationOpen(true)} disabled={isFunding}>
+                  {isFunding ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Banknote className="mr-2 h-4 w-4"/>}
+                  Fund Escrow (${job.budgetAmount?.toLocaleString()})
+                </Button>
+              )}
+               {isOwner && job.status === 'in-progress' && job.escrowStatus === 'funded' && (
+                <div className="text-center p-3 bg-green-100 dark:bg-green-900/30 rounded-md text-green-700 dark:text-green-300 text-sm">
+                  Project is funded. You can now collaborate with the freelancer.
+                </div>
+              )}
+              {amIHiredFreelancer && job.status === 'in-progress' && job.escrowStatus === 'unfunded' && (
+                 <div className="text-center p-3 bg-orange-100 dark:bg-orange-900/30 rounded-md text-orange-700 dark:text-orange-300 text-sm">
+                  Waiting for client to fund escrow before starting work.
+                </div>
+              )}
+          </div>
+       </CardContent>
+    </Card>
+  );
+
   return (
     <>
       <div className="container mx-auto py-8">
         <Button variant="outline" onClick={() => router.back()} className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <main className="lg:col-span-2 space-y-8">
-            <Card className="shadow-xl">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                    <CardTitle className="text-3xl font-bold font-headline pr-4">{job.title}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(job.status)} className="text-sm capitalize flex items-center w-fit shrink-0">
-                      {getStatusIcon(job.status)}
-                      {job.status}
-                    </Badge>
-                </div>
-                <CardDescription className="text-base text-muted-foreground">
-                  Posted {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Separator className="my-4" />
-                <h3 className="font-semibold text-lg mb-2">Project Description</h3>
-                <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{job.description}</p>
-                <Separator className="my-6" />
-                <h3 className="font-semibold text-lg mb-3">Required Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {job.skillsRequired.map(skill => (
-                    <Badge key={skill} variant="secondary" className="text-sm px-3 py-1">
-                      <Tag className="mr-1.5 h-4 w-4" /> {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {showWorkspaceView ? renderWorkspaceView() : renderPublicView()}
             
-            {isOwner && (
+            {isOwner && job.status === "open" && (
                 <Card className="shadow-xl animate-in fade-in-50 duration-300">
                     <CardHeader>
                         <CardTitle className="text-2xl font-headline flex items-center gap-2">
@@ -185,77 +295,84 @@ export default function JobDetailPage() {
                             onAcceptSuccess={fetchJobAndProposals}
                         />
                     </CardContent>
-                     {job.status === 'completed' && !job.clientReviewId && hiredFreelancerId && (
-                        <CardFooter className="border-t pt-4">
-                            <Button className="w-full sm:w-auto" onClick={() => setIsReviewDialogOpen(true)}>
-                                <Star className="mr-2 h-4 w-4"/> Leave a Review for the Freelancer
-                            </Button>
-                        </CardFooter>
-                    )}
                 </Card>
             )}
-            
+             {isOwner && job.status === 'completed' && !job.clientReviewId && hiredFreelancerId && (
+                <Card className="shadow-xl">
+                    <CardHeader><CardTitle>Project Complete!</CardTitle></CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">The project is marked as complete. Please leave a review for the freelancer to finalize the process.</p>
+                       <Button className="w-full sm:w-auto" onClick={() => setIsReviewDialogOpen(true)}>
+                          <Star className="mr-2 h-4 w-4"/> Leave a Review
+                      </Button>
+                    </CardContent>
+                </Card>
+             )}
           </main>
           
           <aside className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-              <Card className="shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Briefcase className="h-6 w-6 text-primary" />
-                    Job Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="h-5 w-5 mt-0.5 text-green-600" />
-                    <div>
-                      <p className="font-semibold text-foreground">{budgetDisplay}</p>
-                      <p className="text-xs text-muted-foreground">({job.budgetType} rate)</p>
-                    </div>
-                  </div>
-                  {job.deadline && (
+              {!showWorkspaceView && (
+                <>
+                <Card className="shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <Briefcase className="h-6 w-6 text-primary" />
+                      Job Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm">
                     <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 mt-0.5 text-red-600" />
+                      <DollarSign className="h-5 w-5 mt-0.5 text-green-600" />
                       <div>
-                        <p className="font-semibold text-foreground">
-                          {new Date(job.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Application Deadline</p>
+                        <p className="font-semibold text-foreground">{budgetDisplay}</p>
+                        <p className="text-xs text-muted-foreground">({job.budgetType} rate)</p>
                       </div>
                     </div>
-                  )}
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 mt-0.5 text-blue-600" />
-                    <div>
-                      <p className="font-semibold text-foreground">Posted</p>
-                      <p className="text-xs text-muted-foreground">{new Date(job.createdAt).toLocaleDateString()}</p>
+                    {job.deadline && (
+                      <div className="flex items-start gap-3">
+                        <Calendar className="h-5 w-5 mt-0.5 text-red-600" />
+                        <div>
+                          <p className="font-semibold text-foreground">
+                            {new Date(job.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Application Deadline</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 mt-0.5 text-blue-600" />
+                      <div>
+                        <p className="font-semibold text-foreground">Posted</p>
+                        <p className="text-xs text-muted-foreground">{new Date(job.createdAt).toLocaleDateString()}</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-                {!isOwner && (
-                  <CardFooter>
-                    <Button 
-                        size="lg" 
-                        className="w-full bg-primary hover:bg-primary/90"
-                        onClick={() => setIsProposalDialogOpen(true)}
-                        disabled={job.status !== 'open' || hasApplied}
-                      >
-                        <Send className="mr-2 h-4 w-4"/>
-                        {hasApplied ? "You Have Applied" : job.status !== 'open' ? `Job is ${job.status}` : "Apply for this Job"}
-                    </Button>
-                  </CardFooter>
-                )}
-              </Card>
-              
-              <Card className="shadow-lg">
-                  <CardHeader>
-                      <CardTitle className="text-lg">About the Client</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <p className="text-sm text-muted-foreground">Client details and history will be displayed here.</p>
                   </CardContent>
-              </Card>
+                  {!isOwner && (
+                    <CardFooter>
+                      <Button 
+                          size="lg" 
+                          className="w-full bg-primary hover:bg-primary/90"
+                          onClick={() => setIsProposalDialogOpen(true)}
+                          disabled={job.status !== 'open' || hasApplied}
+                        >
+                          <Send className="mr-2 h-4 w-4"/>
+                          {hasApplied ? "You Have Applied" : job.status !== 'open' ? `Job is ${job.status}` : "Apply for this Job"}
+                      </Button>
+                    </CardFooter>
+                  )}
+                </Card>
+                
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="text-lg">About the Client</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">Client details and history will be displayed here.</p>
+                    </CardContent>
+                </Card>
+                </>
+              )}
             </div>
           </aside>
         </div>
@@ -281,10 +398,28 @@ export default function JobDetailPage() {
           freelancerName="Mock Freelancer" // In a real app, fetch freelancer name
           onSuccess={() => {
             toast({ title: "Review Submitted!", description: "Thank you for your feedback."});
-            fetchJobAndProposals(); // Re-fetch to update review status
+            fetchJobAndProposals();
           }}
         />
       )}
+       <AlertDialog open={isFundingConfirmationOpen} onOpenChange={setIsFundingConfirmationOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Escrow Funding</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to fund the escrow for "<strong>{job.title}</strong>" with the amount of <strong>${job.budgetAmount?.toLocaleString()}</strong>.
+              This amount will be held securely by CreatorOS and released to the freelancer upon successful project completion. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsFundingConfirmationOpen(false)} disabled={isFunding}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleFundEscrow} disabled={isFunding} className="bg-primary hover:bg-primary/90">
+              {isFunding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm & Fund Escrow
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

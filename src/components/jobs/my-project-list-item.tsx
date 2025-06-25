@@ -6,7 +6,7 @@ import type { Job } from '@/lib/jobs-data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DollarSign, CheckSquare, Play, FolderClock, Pause, ExternalLink, MessageSquare } from 'lucide-react';
+import { DollarSign, CheckSquare, Play, FolderClock, Pause, ExternalLink, MessageSquare, Lock } from 'lucide-react';
 import Link from 'next/link';
 
 interface MyProjectListItemProps {
@@ -44,9 +44,19 @@ export function MyProjectListItem({ proposal }: MyProjectListItemProps) {
             default: return null;
         }
     };
+
+    const getEscrowStatusBadgeInfo = (status: Job['escrowStatus']) => {
+        switch (status) {
+            case "funded": return { variant: "default", text: "Funded", icon: Lock, className: "bg-green-600 hover:bg-green-700" };
+            case "unfunded": return { variant: "secondary", text: "Unfunded", icon: null, className: "" };
+            case "released": return { variant: "outline", text: "Paid Out", icon: null, className: "" };
+            default: return { variant: "outline", text: "Unknown", icon: null, className: "" };
+        }
+    };
     
     // In a real app, client details would be fetched.
     const mockClientName = "Mock Client";
+    const escrowInfo = getEscrowStatusBadgeInfo(job.escrowStatus);
 
     return (
         <Card className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
@@ -65,11 +75,18 @@ export function MyProjectListItem({ proposal }: MyProjectListItemProps) {
                         {getJobStatusIcon(job.status)} {job.status}
                     </Badge>
                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Escrow Status:</span>
+                    <Badge variant={escrowInfo.variant} className={`capitalize flex items-center ${escrowInfo.className}`}>
+                        {escrowInfo.icon && <escrowInfo.icon className="h-3 w-3 mr-1" />}
+                        {escrowInfo.text}
+                    </Badge>
+                </div>
             </CardContent>
             <CardFooter className="border-t pt-4 mt-auto flex justify-between gap-2">
                  <Button variant="outline" size="sm" asChild>
                     <Link href={`/find-work/${job.id}`}>
-                        <ExternalLink className="mr-2 h-4 w-4" /> View Job
+                        <ExternalLink className="mr-2 h-4 w-4" /> View Project
                     </Link>
                 </Button>
                  <Button size="sm">

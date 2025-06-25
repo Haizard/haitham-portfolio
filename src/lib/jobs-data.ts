@@ -6,6 +6,7 @@ const JOBS_COLLECTION = 'jobs';
 
 export type JobStatus = 'open' | 'in-progress' | 'completed' | 'cancelled';
 export type BudgetType = 'fixed' | 'hourly';
+export type EscrowStatus = 'unfunded' | 'funded' | 'released';
 
 export interface Job {
   _id?: ObjectId;
@@ -21,6 +22,7 @@ export interface Job {
   proposalCount?: number;
   clientReviewId?: string; // ID of the review left by the client
   freelancerReviewId?: string; // ID of the review left by the freelancer
+  escrowStatus: EscrowStatus; // New field for escrow
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,12 +112,13 @@ export async function getJobsByIds(ids: string[]): Promise<Job[]> {
   return jobDocs.map(docToJob);
 }
 
-export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount'>): Promise<Job> {
+export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount' | 'escrowStatus'>): Promise<Job> {
   const collection = await getCollection<Omit<Job, 'id' | '_id'>>(JOBS_COLLECTION);
   const now = new Date();
   const docToInsert = {
     ...jobData,
     status: 'open' as JobStatus, // New jobs are always 'open'
+    escrowStatus: 'unfunded' as EscrowStatus, // New jobs are unfunded
     proposalCount: 0,
     createdAt: now,
     updatedAt: now,
@@ -133,6 +136,17 @@ export async function updateJobStatus(jobId: string, status: JobStatus): Promise
         { returnDocument: 'after' }
     );
     return result ? docToJob(result) : null;
+}
+
+export async function updateJobEscrowStatus(jobId: string, escrowStatus: EscrowStatus): Promise<Job | null> {
+  if (!ObjectId.isValid(jobId)) return null;
+  const collection = await getCollection<Job>(JOBS_COLLECTION);
+  const result = await collection.findOneAndUpdate(
+      { _id: new ObjectId(jobId) },
+      { $set: { escrowStatus, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+  );
+  return result ? docToJob(result) : null;
 }
 
 export async function updateJobReviewStatus(jobId: string, role: 'client' | 'freelancer', reviewId: string): Promise<Job | null> {
