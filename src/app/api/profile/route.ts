@@ -1,11 +1,11 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getFreelancerProfile, updateFreelancerProfile, createFreelancerProfileIfNotExists, type FreelancerProfile } from '@/lib/user-profile-data';
+import { getFreelancerProfile, updateFreelancerProfile, type FreelancerProfile } from '@/lib/user-profile-data';
 import { z } from 'zod';
 
 // This is the hardcoded user ID for demo purposes until auth is implemented.
 // In a real app, this would come from the authenticated session.
-const MOCK_USER_ID = "mockUser123"; 
+const MOCK_USER_ID = "mockFreelancer456"; 
 
 const portfolioLinkSchema = z.object({
   id: z.string().optional(),
@@ -70,5 +70,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: `Failed to update profile: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }
-
-    

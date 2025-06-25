@@ -20,6 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { cn } from "@/lib/utils";
+import { StarRating } from '@/components/reviews/StarRating';
 
 // This would come from auth in a real app
 const MOCK_FREELANCER_ID = "mockFreelancer456";
