@@ -19,6 +19,8 @@ export interface Job {
   skillsRequired: string[];
   deadline?: string; // ISO Date string
   proposalCount?: number;
+  clientReviewId?: string; // ID of the review left by the client
+  freelancerReviewId?: string; // ID of the review left by the freelancer
   createdAt: Date;
   updatedAt: Date;
 }
@@ -131,4 +133,18 @@ export async function updateJobStatus(jobId: string, status: JobStatus): Promise
         { returnDocument: 'after' }
     );
     return result ? docToJob(result) : null;
+}
+
+export async function updateJobReviewStatus(jobId: string, role: 'client' | 'freelancer', reviewId: string): Promise<Job | null> {
+  if (!ObjectId.isValid(jobId) || !ObjectId.isValid(reviewId)) return null;
+  const collection = await getCollection<Job>(JOBS_COLLECTION);
+  
+  const updateField = role === 'client' ? 'clientReviewId' : 'freelancerReviewId';
+  
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(jobId) },
+    { $set: { [updateField]: reviewId, updatedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+  return result ? docToJob(result) : null;
 }

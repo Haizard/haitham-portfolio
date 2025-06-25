@@ -45,6 +45,8 @@ export interface FreelancerProfile {
   portfolioLinks: PortfolioLink[];
   hourlyRate?: number | null;
   availabilityStatus: AvailabilityStatus;
+  averageRating?: number;
+  reviewCount?: number;
 
   createdAt: Date;
   updatedAt: Date;
@@ -62,6 +64,8 @@ function docToFreelancerProfile(doc: any): FreelancerProfile {
         url: link.url,
     })),
     skills: rest.skills || [],
+    averageRating: rest.averageRating || 0,
+    reviewCount: rest.reviewCount || 0,
   } as FreelancerProfile;
 }
 
@@ -76,6 +80,8 @@ const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, '
   portfolioLinks: [],
   hourlyRate: null,
   availabilityStatus: 'available',
+  averageRating: 0,
+  reviewCount: 0,
 });
 
 export async function createFreelancerProfileIfNotExists(userId: string, initialData?: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile> {
@@ -133,5 +139,3 @@ export async function updateFreelancerProfile(userId: string, data: Partial<Omit
   }
   return docToFreelancerProfile(result);
 }
-
-    

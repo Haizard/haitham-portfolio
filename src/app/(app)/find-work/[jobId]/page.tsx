@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause, Star } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
 import type { Proposal } from '@/lib/proposals-data';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ProposalSubmitDialog } from '@/components/proposals/proposal-submit-dialog';
 import { ProposalList } from '@/components/proposals/proposal-list';
+import { ReviewSubmitDialog } from '@/components/reviews/ReviewSubmitDialog';
 
 // This is a placeholder until we have real user auth.
 // This should match the clientId used when creating jobs.
@@ -27,6 +28,7 @@ export default function JobDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProposalDialogOpen, setIsProposalDialogOpen] = useState(false);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -75,6 +77,11 @@ export default function JobDetailPage() {
   
   const isOwner = job?.clientId === MOCK_CURRENT_USER_AS_CLIENT_ID;
   const hasApplied = proposals.some(p => p.freelancerId === MOCK_CURRENT_USER_AS_FREELANCER_ID);
+  
+  // Find the accepted proposal to identify the hired freelancer
+  const acceptedProposal = proposals.find(p => p.status === 'accepted');
+  const hiredFreelancerId = acceptedProposal?.freelancerId;
+
 
   if (isLoading) {
     return (
@@ -178,6 +185,13 @@ export default function JobDetailPage() {
                             onAcceptSuccess={fetchJobAndProposals}
                         />
                     </CardContent>
+                     {job.status === 'completed' && !job.clientReviewId && hiredFreelancerId && (
+                        <CardFooter className="border-t pt-4">
+                            <Button className="w-full sm:w-auto" onClick={() => setIsReviewDialogOpen(true)}>
+                                <Star className="mr-2 h-4 w-4"/> Leave a Review for the Freelancer
+                            </Button>
+                        </CardFooter>
+                    )}
                 </Card>
             )}
             
@@ -254,6 +268,20 @@ export default function JobDetailPage() {
           onSuccess={() => {
             toast({ title: "Application Sent!", description: "The client will be notified of your proposal."});
             fetchJobAndProposals();
+          }}
+        />
+      )}
+      {job && job.status === 'completed' && hiredFreelancerId && (
+        <ReviewSubmitDialog
+          isOpen={isReviewDialogOpen}
+          onClose={() => setIsReviewDialogOpen(false)}
+          jobId={job.id!}
+          revieweeId={hiredFreelancerId}
+          jobTitle={job.title}
+          freelancerName="Mock Freelancer" // In a real app, fetch freelancer name
+          onSuccess={() => {
+            toast({ title: "Review Submitted!", description: "Thank you for your feedback."});
+            fetchJobAndProposals(); // Re-fetch to update review status
           }}
         />
       )}
