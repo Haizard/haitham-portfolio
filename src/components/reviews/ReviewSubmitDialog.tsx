@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -85,10 +84,10 @@ export function ReviewSubmitDialog({ isOpen, onClose, jobId, revieweeId, jobTitl
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-xl font-headline">Leave a Review</DialogTitle>
-          <DialogDescription className="space-y-1">
+          <div className="space-y-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5"><Briefcase className="h-4 w-4"/><span>{jobTitle}</span></div>
             <div className="flex items-center gap-1.5"><UserCircle className="h-4 w-4"/><span>For: {freelancerName}</span></div>
-          </DialogDescription>
+          </div>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 py-2">
