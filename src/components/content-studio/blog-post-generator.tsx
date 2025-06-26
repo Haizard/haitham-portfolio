@@ -27,7 +27,7 @@ import { Separator } from "../ui/separator";
 import Image from "next/image";
 import { useSearchParams } from 'next/navigation';
 import type { BlogPost, GalleryImage, DownloadLink } from '@/lib/blog-data';
-import { getFreelancerProfile, type FreelancerProfile } from "@/lib/user-profile-data"; // For author details
+import type { FreelancerProfile } from "@/lib/user-profile-data"; // For author details
 
 // This would come from an authenticated session
 const MOCK_FREELANCER_ID = "mockFreelancer456";
@@ -236,15 +236,16 @@ export function BlogPostGenerator() {
       try {
         const [catResponse, profileResponse] = await Promise.all([
           fetch('/api/categories'),
-          getFreelancerProfile(MOCK_FREELANCER_ID) // Using data-layer function directly
+          fetch('/api/profile') // Use API route now
         ]);
         
         if (!catResponse.ok) throw new Error('Failed to fetch categories');
         const catData: CategoryNode[] = await catResponse.json();
         setCategories(catData);
 
-        if (profileResponse) {
-          setAuthorProfile(profileResponse);
+        if (profileResponse.ok) {
+          const profileData: FreelancerProfile = await profileResponse.json();
+          setAuthorProfile(profileData);
         } else {
           throw new Error('Failed to load author profile');
         }

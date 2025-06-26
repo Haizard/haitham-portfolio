@@ -71,14 +71,14 @@ export default function ProfilePage() {
     async function fetchProfile() {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/profile`); // This API route now specifically handles the Freelancer Profile
+        const response = await fetch(`/api/profile`);
         if (!response.ok) throw new Error('Failed to fetch profile');
         const data: FreelancerProfile = await response.json();
         setProfileData(data);
         form.reset({
           ...data,
-          skills: data.skills?.join(', ') || "", // Convert array to comma-separated string for input
-          hourlyRate: data.hourlyRate ?? null, // Ensure null if undefined
+          skills: data.skills?.join(', ') || "",
+          hourlyRate: data.hourlyRate ?? null,
           portfolioLinks: data.portfolioLinks || [],
         });
       } catch (error) {
@@ -93,10 +93,8 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
-    // The role is hardcoded as 'freelancer' on the backend now for this profile type
     const dataToSave = {
       ...values,
-      // Skills are already an array due to Zod transform in schema
       hourlyRate: values.hourlyRate === null || values.hourlyRate === undefined ? null : Number(values.hourlyRate),
     };
 
@@ -257,9 +255,7 @@ export default function ProfilePage() {
                 <CardContent className="text-center">
                     <p className="text-4xl font-bold">{profileData.averageRating?.toFixed(1) ?? '0.0'}</p>
                     <div className="flex justify-center items-center my-1">
-                        {[...Array(5)].map((_, i) => (
-                           <Star key={i} size={20} className={cn(i < Math.round(profileData.averageRating || 0) ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/30")}/>
-                        ))}
+                        <StarRating rating={profileData.averageRating || 0} disabled />
                     </div>
                     <p className="text-sm text-muted-foreground">from {profileData.reviewCount} reviews</p>
                 </CardContent>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -12,6 +13,7 @@ import type { FreelancerProfile } from '@/lib/user-profile-data';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { StarRating } from '@/components/reviews/StarRating';
 
 export default function FreelancerProfilePage() {
   const params = useParams<{ userId: string }>();
