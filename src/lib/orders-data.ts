@@ -4,6 +4,7 @@ import { getCollection } from './mongodb';
 import type { Product } from './products-data';
 
 const ORDERS_COLLECTION = 'orders';
+const PLATFORM_COMMISSION_RATE = 0.15; // 15% platform fee
 
 export type LineItemStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
 
@@ -16,6 +17,9 @@ export interface LineItem {
   quantity: number;
   price: number; // Price per item at time of purchase
   status: LineItemStatus;
+  commissionRate: number;
+  commissionAmount: number;
+  vendorEarnings: number;
 }
 
 export interface Order {
@@ -43,9 +47,9 @@ async function seedInitialOrders() {
 
   if (count === 0) {
     console.log("Seeding initial orders...");
-    const allProducts = await productsCollection.find({}).toArray();
+    const allProducts = await productsCollection.find({ productType: 'creator' }).toArray();
     if (allProducts.length < 4) {
-      console.log("Not enough products to seed orders. Please add more products.");
+      console.log("Not enough creator products to seed orders. Please add more products.");
       return;
     }
 
@@ -57,8 +61,8 @@ async function seedInitialOrders() {
         orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
         totalAmount: 0, // Will be calculated
         lineItems: [
-          { _id: new ObjectId(), productId: allProducts[0]._id.toString(), productName: allProducts[0].name, productImageUrl: allProducts[0].imageUrl, vendorId: allProducts[0].vendorId, quantity: 1, price: allProducts[0].price || 0, status: 'Pending' },
-          { _id: new ObjectId(), productId: allProducts[1]._id.toString(), productName: allProducts[1].name, productImageUrl: allProducts[1].imageUrl, vendorId: allProducts[1].vendorId, quantity: 1, price: allProducts[1].price || 0, status: 'Pending' },
+          { _id: new ObjectId(), productId: allProducts[0]._id.toString(), productName: allProducts[0].name, productImageUrl: allProducts[0].imageUrl, vendorId: allProducts[0].vendorId, quantity: 1, price: allProducts[0].price || 0, status: 'Pending', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
+          { _id: new ObjectId(), productId: allProducts[1]._id.toString(), productName: allProducts[1].name, productImageUrl: allProducts[1].imageUrl, vendorId: allProducts[1].vendorId, quantity: 1, price: allProducts[1].price || 0, status: 'Delivered', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
         ],
       },
       {
@@ -68,7 +72,7 @@ async function seedInitialOrders() {
         orderDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
         totalAmount: 0, // Will be calculated
         lineItems: [
-          { _id: new ObjectId(), productId: allProducts[2]._id.toString(), productName: allProducts[2].name, productImageUrl: allProducts[2].imageUrl, vendorId: allProducts[2].vendorId, quantity: 2, price: allProducts[2].price || 0, status: 'Shipped' },
+          { _id: new ObjectId(), productId: allProducts[2]._id.toString(), productName: allProducts[2].name, productImageUrl: allProducts[2].imageUrl, vendorId: allProducts[2].vendorId, quantity: 2, price: allProducts[2].price || 0, status: 'Shipped', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
         ],
       },
        {
@@ -78,19 +82,27 @@ async function seedInitialOrders() {
         orderDate: new Date(), // Today
         totalAmount: 0, // Will be calculated
         lineItems: [
-          { _id: new ObjectId(), productId: allProducts[0]._id.toString(), productName: allProducts[0].name, productImageUrl: allProducts[0].imageUrl, vendorId: allProducts[0].vendorId, quantity: 1, price: allProducts[0].price || 0, status: 'Processing' },
-          { _id: new ObjectId(), productId: allProducts[3]._id.toString(), productName: allProducts[3].name, productImageUrl: allProducts[3].imageUrl, vendorId: allProducts[3].vendorId, quantity: 1, price: allProducts[3].price || 0, status: 'Pending' },
+          { _id: new ObjectId(), productId: allProducts[0]._id.toString(), productName: allProducts[0].name, productImageUrl: allProducts[0].imageUrl, vendorId: allProducts[0].vendorId, quantity: 1, price: allProducts[0].price || 0, status: 'Delivered', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
+          { _id: new ObjectId(), productId: allProducts[3]._id.toString(), productName: allProducts[3].name, productImageUrl: allProducts[3].imageUrl, vendorId: allProducts[3].vendorId, quantity: 1, price: allProducts[3].price || 0, status: 'Processing', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
         ],
       }
     ];
 
-    // Calculate total amount for each order
+    // Calculate totals and commissions for each order
     mockOrders.forEach(order => {
-      order.totalAmount = order.lineItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      let orderTotal = 0;
+      order.lineItems.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        orderTotal += itemTotal;
+        item.commissionRate = PLATFORM_COMMISSION_RATE;
+        item.commissionAmount = itemTotal * PLATFORM_COMMISSION_RATE;
+        item.vendorEarnings = itemTotal - item.commissionAmount;
+      });
+      order.totalAmount = orderTotal;
     });
 
     await ordersCollection.insertMany(mockOrders as any[]);
-    console.log("Initial orders seeded.");
+    console.log("Initial orders with financial data seeded.");
   }
 }
 
@@ -113,7 +125,6 @@ export async function getOrdersByVendorId(vendorId: string): Promise<Order[]> {
     return {
       ...order,
       lineItems: vendorLineItems,
-      // Optional: recalculate total based on only their items if needed, but showing order total is fine
     };
   });
 

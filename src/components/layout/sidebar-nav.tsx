@@ -31,6 +31,7 @@ import {
   Store,
   UserPlus,
   ShoppingCart,
+  Landmark,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -65,6 +66,7 @@ const navItems = [
     items: [
         { href: "/vendor/products", label: "My Products", icon: Store },
         { href: "/vendor/orders", label: "Order Management", icon: ShoppingCart },
+        { href: "/vendor/finances", label: "Finances", icon: Landmark },
         { href: "/become-a-vendor", label: "Become a Vendor", icon: UserPlus },
     ]
   },
