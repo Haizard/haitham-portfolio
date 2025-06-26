@@ -19,7 +19,6 @@ import {
   FolderKanban,
   Tags,
   FileText,
-  Target,
   Layers,
   Package, 
   BarChartHorizontalBig, 
@@ -70,7 +69,6 @@ const navItems = [
   { 
     group: "Platform",
     items: [
-      { href: "/sports-predictor", label: "Sports Predictor", icon: Target },
       { href: "/social-media", label: "Social Media", icon: MessagesSquare },
       { href: "/chat", label: "Chat", icon: MessageCircle },
       { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
