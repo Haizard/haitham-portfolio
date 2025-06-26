@@ -29,6 +29,7 @@ import {
   Search,
   ClipboardList, 
   Store,
+  UserPlus,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -62,6 +63,7 @@ const navItems = [
     group: "Vendor Dashboard",
     items: [
         { href: "/vendor/products", label: "My Products", icon: Store },
+        { href: "/become-a-vendor", label: "Become a Vendor", icon: UserPlus },
     ]
   },
   { 

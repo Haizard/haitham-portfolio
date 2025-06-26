@@ -375,17 +375,29 @@ export default function EcommerceStorePage() {
         </section>
       )}
       
-       {/* Final CTA / Info Section */}
-      <section className="container mx-auto py-10 md:py-16 border-t mt-8 bg-gradient-to-b from-background to-muted/30">
-        <div className="text-center">
-          <h2 className="text-2xl md:text-3xl font-bold font-headline mb-3">Discover More with CreatorOS</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-            Explore a wide range of products, services, and content designed to empower your creative journey. Competitive prices, fast shipping, and excellent support.
-          </p>
-          <Button variant="default" size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg">
-            Explore All Products <ArrowRight className="ml-2 h-4 w-4"/>
-          </Button>
-        </div>
+       <section className="container mx-auto py-10 md:py-16">
+        <Card className="bg-gradient-to-r from-primary to-accent shadow-2xl text-primary-foreground">
+            <div className="grid md:grid-cols-2 items-center">
+                <div className="p-8 md:p-12">
+                    <h2 className="text-3xl font-bold mb-2">Sell Your Products Here</h2>
+                    <p className="text-primary-foreground/90 mb-6">
+                        Are you a creator with products to sell? Join our marketplace to reach a dedicated audience and grow your brand.
+                    </p>
+                    <Button variant="secondary" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" asChild>
+                       <Link href="/become-a-vendor">Become a Vendor</Link>
+                    </Button>
+                </div>
+                <div className="relative h-48 md:h-full w-full overflow-hidden hidden md:block">
+                     <Image 
+                        src="https://placehold.co/500x300.png" 
+                        alt="Vendor illustration" 
+                        fill 
+                        className="object-cover" 
+                        data-ai-hint="selling online"
+                    />
+                </div>
+            </div>
+        </Card>
       </section>
 
       <footer className="py-8 text-center text-muted-foreground text-xs border-t">
