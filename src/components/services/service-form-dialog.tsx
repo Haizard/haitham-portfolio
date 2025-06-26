@@ -332,5 +332,3 @@ function ArrayFieldInputSection({ title, titleIcon: Icon, fieldName, fields, app
         </Card>
     );
 }
-
-    
