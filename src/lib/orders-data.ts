@@ -1,19 +1,19 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
-import type { Product } from './products-data';
+import { getProductById, type Product } from './products-data'; // Import Product type
 
 const ORDERS_COLLECTION = 'orders';
 const PLATFORM_COMMISSION_RATE = 0.15; // 15% platform fee
 
 export type LineItemStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
 
+// LineItem no longer needs vendorId, as the parent Order will have it.
 export interface LineItem {
   _id: ObjectId; // Unique ID for the line item itself
   productId: string;
   productName: string;
   productImageUrl: string;
-  vendorId: string;
   quantity: number;
   price: number; // Price per item at time of purchase
   status: LineItemStatus;
@@ -22,14 +22,16 @@ export interface LineItem {
   vendorEarnings: number;
 }
 
+// Order now has a vendorId
 export interface Order {
   _id?: ObjectId;
   id?: string;
+  vendorId: string; // The vendor this specific order belongs to
   customerName: string;
   customerEmail: string;
   shippingAddress: string;
   orderDate: Date;
-  totalAmount: number;
+  totalAmount: number; // The total for this specific vendor's portion of the order
   lineItems: LineItem[];
 }
 
@@ -39,96 +41,124 @@ function docToOrder(doc: any): Order {
   return { id: _id?.toString(), ...rest } as Order;
 }
 
-// Seed some initial data if the collection is empty
+// The core order splitting logic.
+export async function createOrderFromCart(
+    customerDetails: { name: string; email: string; address: string }, 
+    cart: { productId: string; quantity: number }[]
+): Promise<Order[]> {
+    const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
+    const createdOrders: Order[] = [];
+
+    // 1. Fetch all product details to get price, vendor, etc.
+    const productIds = cart.map(item => item.productId);
+    const productPromises = productIds.map(id => getProductById(id));
+    const products = (await Promise.all(productPromises)).filter((p): p is Product => p !== null);
+    
+    const productsById = new Map(products.map(p => [p.id!, p]));
+
+    // 2. Group cart items by vendorId
+    const itemsByVendor = new Map<string, typeof cart>();
+    for (const item of cart) {
+        const product = productsById.get(item.productId);
+        if (product && product.productType === 'creator') {
+            if (!itemsByVendor.has(product.vendorId)) {
+                itemsByVendor.set(product.vendorId, []);
+            }
+            itemsByVendor.get(product.vendorId)!.push(item);
+        }
+    }
+    
+    // 3. Create a separate order for each vendor
+    for (const [vendorId, vendorItems] of itemsByVendor.entries()) {
+        const now = new Date();
+        let totalAmount = 0;
+
+        const lineItems: LineItem[] = vendorItems.map(item => {
+            const product = productsById.get(item.productId)!;
+            const itemTotal = (product.price || 0) * item.quantity;
+            totalAmount += itemTotal;
+            const commissionAmount = itemTotal * PLATFORM_COMMISSION_RATE;
+
+            return {
+                _id: new ObjectId(),
+                productId: product.id!,
+                productName: product.name,
+                productImageUrl: product.imageUrl,
+                quantity: item.quantity,
+                price: product.price || 0,
+                status: 'Pending',
+                commissionRate: PLATFORM_COMMISSION_RATE,
+                commissionAmount,
+                vendorEarnings: itemTotal - commissionAmount,
+            };
+        });
+
+        const newOrderDoc: Omit<Order, 'id' | '_id'> = {
+            vendorId,
+            customerName: customerDetails.name,
+            customerEmail: customerDetails.email,
+            shippingAddress: customerDetails.address,
+            orderDate: now,
+            totalAmount,
+            lineItems,
+        };
+        
+        const result = await ordersCollection.insertOne(newOrderDoc as any);
+        createdOrders.push(docToOrder({ _id: result.insertedId, ...newOrderDoc }));
+    }
+    
+    console.log(`Split cart into ${createdOrders.length} orders.`);
+    return createdOrders;
+}
+
+
+// Seed data function now uses the new order splitting logic
 async function seedInitialOrders() {
   const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
   const productsCollection = await getCollection<Product>('products');
   const count = await ordersCollection.countDocuments();
 
   if (count === 0) {
-    console.log("Seeding initial orders...");
-    const allProducts = await productsCollection.find({ productType: 'creator' }).toArray();
-    if (allProducts.length < 4) {
-      console.log("Not enough creator products to seed orders. Please add more products.");
+    console.log("Seeding initial orders using createOrderFromCart logic...");
+    const vendorProducts = await productsCollection.find({ productType: 'creator' }).limit(4).toArray();
+    
+    if (vendorProducts.length < 2) {
+      console.log("Not enough creator products from different vendors to seed split orders.");
       return;
     }
 
-    const mockOrders: Omit<Order, 'id' | '_id'>[] = [
-      {
-        customerName: "Alice Wonderland",
-        customerEmail: "alice@example.com",
-        shippingAddress: "123 Fantasy Lane, Wonderland",
-        orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-        totalAmount: 0, // Will be calculated
-        lineItems: [
-          { _id: new ObjectId(), productId: allProducts[0]._id.toString(), productName: allProducts[0].name, productImageUrl: allProducts[0].imageUrl, vendorId: allProducts[0].vendorId, quantity: 1, price: allProducts[0].price || 0, status: 'Pending', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
-          { _id: new ObjectId(), productId: allProducts[1]._id.toString(), productName: allProducts[1].name, productImageUrl: allProducts[1].imageUrl, vendorId: allProducts[1].vendorId, quantity: 1, price: allProducts[1].price || 0, status: 'Delivered', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
-        ],
-      },
-      {
-        customerName: "Bob The Builder",
-        customerEmail: "bob@example.com",
-        shippingAddress: "456 Construction Way, Builderville",
-        orderDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-        totalAmount: 0, // Will be calculated
-        lineItems: [
-          { _id: new ObjectId(), productId: allProducts[2]._id.toString(), productName: allProducts[2].name, productImageUrl: allProducts[2].imageUrl, vendorId: allProducts[2].vendorId, quantity: 2, price: allProducts[2].price || 0, status: 'Shipped', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
-        ],
-      },
-       {
-        customerName: "Charlie Creator",
-        customerEmail: "charlie@example.com",
-        shippingAddress: "789 Art Avenue, Creativity City",
-        orderDate: new Date(), // Today
-        totalAmount: 0, // Will be calculated
-        lineItems: [
-          { _id: new ObjectId(), productId: allProducts[0]._id.toString(), productName: allProducts[0].name, productImageUrl: allProducts[0].imageUrl, vendorId: allProducts[0].vendorId, quantity: 1, price: allProducts[0].price || 0, status: 'Delivered', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
-          { _id: new ObjectId(), productId: allProducts[3]._id.toString(), productName: allProducts[3].name, productImageUrl: allProducts[3].imageUrl, vendorId: allProducts[3].vendorId, quantity: 1, price: allProducts[3].price || 0, status: 'Processing', commissionRate: 0, commissionAmount: 0, vendorEarnings: 0 },
-        ],
-      }
+    // Create a mock cart with items from potentially different vendors
+    const mockCart = [
+        { productId: vendorProducts[0]._id.toString(), quantity: 1 },
+        { productId: vendorProducts[1]._id.toString(), quantity: 2 },
     ];
+    
+    if (vendorProducts.length > 2) {
+      // Add another item from the first vendor to test grouping
+      mockCart.push({ productId: vendorProducts[0]._id.toString(), quantity: 1 });
+    }
 
-    // Calculate totals and commissions for each order
-    mockOrders.forEach(order => {
-      let orderTotal = 0;
-      order.lineItems.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        orderTotal += itemTotal;
-        item.commissionRate = PLATFORM_COMMISSION_RATE;
-        item.commissionAmount = itemTotal * PLATFORM_COMMISSION_RATE;
-        item.vendorEarnings = itemTotal - item.commissionAmount;
-      });
-      order.totalAmount = orderTotal;
-    });
-
-    await ordersCollection.insertMany(mockOrders as any[]);
-    console.log("Initial orders with financial data seeded.");
+    const customerDetails = {
+      name: "Alice Wonderland",
+      email: "alice@example.com",
+      address: "123 Fantasy Lane, Wonderland",
+    };
+    
+    await createOrderFromCart(customerDetails, mockCart);
+    console.log("Initial orders seeded.");
   }
 }
 
 seedInitialOrders().catch(console.error);
 
-
+// The getOrdersByVendorId function is now much simpler.
 export async function getOrdersByVendorId(vendorId: string): Promise<Order[]> {
   const collection = await getCollection<Order>(ORDERS_COLLECTION);
   
-  // Find orders where at least one line item belongs to the vendor
-  const vendorOrdersCursor = collection.find({
-    "lineItems.vendorId": vendorId
-  }).sort({ orderDate: -1 });
-  
-  const allVendorOrders = await vendorOrdersCursor.toArray();
+  // No need to filter line items in code, just query for orders belonging to the vendor.
+  const vendorOrders = await collection.find({ vendorId }).sort({ orderDate: -1 }).toArray();
 
-  // For each order, filter the lineItems to only show the ones belonging to the vendor
-  const filteredOrders = allVendorOrders.map(order => {
-    const vendorLineItems = order.lineItems.filter(item => item.vendorId === vendorId);
-    return {
-      ...order,
-      lineItems: vendorLineItems,
-    };
-  });
-
-  return filteredOrders.map(docToOrder);
+  return vendorOrders.map(docToOrder);
 }
 
 export async function updateLineItemStatus(orderId: string, lineItemId: string, newStatus: LineItemStatus): Promise<boolean> {
