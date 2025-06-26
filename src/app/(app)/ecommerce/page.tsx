@@ -47,7 +47,7 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
         onMouseLeave={() => setIsHovered(false)}
     >
       <div className={cn("bg-muted overflow-hidden relative", size === 'small' ? 'aspect-[1/1]' : 'aspect-[4/3]')}>
-        <Link href={`/blog/${product.slug || product.id}`} legacyBehavior={false}>
+        <Link href={`/ecommerce?product=${product.slug || product.id}`} legacyBehavior={false}>
           <Image
             src={product.imageUrl}
             alt={product.name}
@@ -86,7 +86,7 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
       <CardContent className={cn("p-3 flex-grow flex flex-col", size === 'small' && 'p-2')}>
         {product.category && <span className={cn("text-xs text-muted-foreground mb-1", size === 'small' && 'text-[0.65rem] mb-0.5')}>{product.category}</span>}
         <CardTitle className={cn("font-semibold line-clamp-2 mb-1", size === 'small' ? 'text-xs leading-tight' : 'text-sm')}>
-            <Link href={`/blog/${product.slug || product.id}`} className="hover:text-primary transition-colors">
+            <Link href={`/ecommerce?product=${product.slug || product.id}`} className="hover:text-primary transition-colors">
                 {product.name}
             </Link>
         </CardTitle>
@@ -210,7 +210,6 @@ export default function EcommerceStorePage() {
         </div>
       </section>
 
-      {/* Best Pick of the Week Section */}
       {bestPickOfTheWeek && (
         <section className="container mx-auto py-8 md:py-12">
           <div className="bg-gradient-to-r from-accent/20 via-background to-background border border-accent/50 rounded-xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 shadow-xl">
@@ -396,6 +395,3 @@ export default function EcommerceStorePage() {
     </div>
   );
 }
-        
-
-    
