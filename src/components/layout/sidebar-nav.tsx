@@ -54,6 +54,8 @@ const navItems = [
       { href: "/find-work", label: "Find Work", icon: Search },
       { href: "/my-proposals", label: "My Proposals", icon: FileText },
       { href: "/my-projects", label: "My Projects", icon: Briefcase },
+      { href: "/my-services", label: "Manage Services", icon: PackageSearch },
+      { href: "/my-bookings", label: "Manage Bookings", icon: CalendarCheck2 },
     ]
   },
   { 
@@ -71,7 +73,6 @@ const navItems = [
       { href: "/sports-predictor", label: "Sports Predictor", icon: Target },
       { href: "/social-media", label: "Social Media", icon: MessagesSquare },
       { href: "/chat", label: "Chat", icon: MessageCircle },
-      { href: "/services", label: "Services Admin", icon: Briefcase }, 
       { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
       { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
     ]
@@ -82,7 +83,6 @@ const navItems = [
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
-      { href: "/admin/bookings", label: "Manage Bookings", icon: CalendarCheck2 },
       { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase },
       { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig },
       { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },

@@ -16,6 +16,7 @@ export interface Testimonial {
 export interface Service {
   _id?: ObjectId;
   id?: string;
+  freelancerId: string; // ID of the freelancer offering the service
   slug: string;
   name: string;
   price: string;
@@ -68,9 +69,13 @@ async function isServiceSlugUnique(slug: string, excludeId?: string): Promise<bo
   return count === 0;
 }
 
-export async function getAllServices(): Promise<Service[]> {
+export async function getAllServices(freelancerId?: string): Promise<Service[]> {
   const collection = await getCollection<Service>(SERVICES_COLLECTION);
-  const serviceDocs = await collection.find({}).sort({ name: 1 }).toArray();
+  const query: Filter<Service> = {};
+  if (freelancerId) {
+    query.freelancerId = freelancerId;
+  }
+  const serviceDocs = await collection.find(query).sort({ name: 1 }).toArray();
   return serviceDocs.map(docToService);
 }
 
@@ -124,7 +129,7 @@ export async function addService(serviceData: Omit<Service, 'id' | '_id' | 'slug
   return newService;
 }
 
-export async function updateService(id: string, updates: Partial<Omit<Service, 'id' | '_id' | 'slug'>>): Promise<Service | null> {
+export async function updateService(id: string, updates: Partial<Omit<Service, 'id' | '_id' | 'slug' | 'freelancerId'>>): Promise<Service | null> {
   if (!ObjectId.isValid(id)) {
     console.warn(`updateService: Invalid ID format: ${id}`);
     return null;

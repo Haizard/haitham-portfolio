@@ -1,6 +1,7 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { getServiceById } from './services-data'; // Import to fetch service details
 
 const BOOKINGS_COLLECTION = 'bookings';
 
@@ -10,6 +11,7 @@ export interface Booking {
   _id?: ObjectId;
   id?: string;
   serviceId: string;
+  freelancerId: string; // ID of the freelancer whose service was booked
   serviceName: string;
   clientName: string;
   clientEmail: string;
@@ -27,12 +29,19 @@ function docToBooking(doc: any): Booking {
   return { id: _id?.toString(), ...rest } as Booking;
 }
 
-export async function addBooking(bookingData: Omit<Booking, 'id' | '_id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<Booking> {
+export async function addBooking(bookingData: Omit<Booking, 'id' | '_id' | 'status' | 'createdAt' | 'updatedAt' | 'freelancerId'>): Promise<Booking> {
   const collection = await getCollection<Omit<Booking, 'id' | '_id'>>(BOOKINGS_COLLECTION);
   
+  // Fetch the service to get the freelancerId
+  const service = await getServiceById(bookingData.serviceId);
+  if (!service) {
+    throw new Error("Cannot create booking for a non-existent service.");
+  }
+
   const now = new Date();
   const docToInsert = {
     ...bookingData,
+    freelancerId: service.freelancerId, // Associate booking with the service owner
     status: "Pending" as BookingStatus,
     createdAt: now,
     updatedAt: now,
@@ -48,9 +57,13 @@ export async function addBooking(bookingData: Omit<Booking, 'id' | '_id' | 'stat
   return newBooking;
 }
 
-export async function getAllBookings(): Promise<Booking[]> {
+export async function getAllBookings(freelancerId?: string): Promise<Booking[]> {
   const collection = await getCollection<Booking>(BOOKINGS_COLLECTION);
-  const bookingDocs = await collection.find({}).sort({ createdAt: -1 }).toArray(); // Sort by newest first
+  const query: Filter<Booking> = {};
+  if (freelancerId) {
+    query.freelancerId = freelancerId;
+  }
+  const bookingDocs = await collection.find(query).sort({ createdAt: -1 }).toArray(); // Sort by newest first
   return bookingDocs.map(docToBooking);
 }
 

@@ -3,6 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getAllServices, addService, type Service } from '@/lib/services-data';
 import { z } from 'zod';
 
+// This would come from an authenticated session in a real app
+const MOCK_FREELANCER_ID = "mockFreelancer456";
+
 const testimonialSchema = z.object({
   customerName: z.string().min(1, "Customer name is required"),
   customerAvatar: z.string().url("Avatar URL must be valid").optional().or(z.literal('')),
@@ -33,7 +36,10 @@ const serviceCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const allServicesData = await getAllServices();
+    const { searchParams } = new URL(request.url);
+    const freelancerId = searchParams.get('freelancerId') || undefined;
+
+    const allServicesData = await getAllServices(freelancerId);
     return NextResponse.json(allServicesData);
   } catch (error) {
     console.error("[API /api/services GET] Critical error in GET handler:", error);
@@ -52,7 +58,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid service data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
     
-    const serviceData = validation.data as Omit<Service, 'id' | '_id' | 'slug'>;
+    const serviceData: Omit<Service, 'id' | '_id' | 'slug'> = {
+        ...validation.data,
+        freelancerId: MOCK_FREELANCER_ID, // Associate with the authenticated freelancer
+    };
     
     const addedService = await addService(serviceData);
     return NextResponse.json(addedService, { status: 201 });

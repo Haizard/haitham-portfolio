@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     }
     
     const bookingData = validation.data;
+    // The addBooking data layer function now handles fetching the service and adding the freelancerId
     const newBooking = await addBooking(bookingData);
     return NextResponse.json(newBooking, { status: 201 });
 
@@ -34,8 +35,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add authentication to ensure only admins can access this
-    const bookings = await getAllBookings();
+    const { searchParams } = new URL(request.url);
+    const freelancerId = searchParams.get('freelancerId') || undefined;
+
+    // The API now supports filtering bookings by freelancerId
+    const bookings = await getAllBookings(freelancerId);
     return NextResponse.json(bookings);
   } catch (error: any) {
     console.error("[API /api/bookings GET] Failed to fetch bookings:", error);
