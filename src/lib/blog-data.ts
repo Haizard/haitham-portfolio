@@ -33,6 +33,7 @@ export interface BlogPost {
   id?: string;
   slug: string;
   title: string;
+  authorId: string; // ID of the author (freelancer)
   author: string;
   authorAvatar: string;
   date: string;
@@ -189,7 +190,7 @@ export async function addPost(postData: Omit<BlogPost, 'id' | '_id' | 'date' | '
   return newPost;
 }
 
-export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' | 'categoryName' | 'categorySlugPath' | 'resolvedTags' >>): Promise<BlogPost | null> {
+export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' | 'categoryName' | 'categorySlugPath' | 'resolvedTags' | 'authorId'>>): Promise<BlogPost | null> {
   if (!ObjectId.isValid(id)) {
     console.log(`Invalid ObjectId for updatePost: ${id}`);
     return null;

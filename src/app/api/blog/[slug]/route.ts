@@ -6,6 +6,9 @@ import { findOrCreateTagsByNames, getTagsByIds, type Tag } from '@/lib/tags-data
 import { getCategoryPath } from '@/lib/categories-data';
 import { ObjectId } from 'mongodb';
 
+// This would come from auth in a real app
+const MOCK_FREELANCER_ID = "mockFreelancer456";
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
@@ -38,16 +41,22 @@ export async function PUT(
       originalLanguage, categoryId 
     } = body;
 
+    const existingPost = await getPostBySlug(slug); // Don't need enriched data for update check
+    if (!existingPost || !existingPost.id) {
+      return NextResponse.json({ message: "Post to update not found" }, { status: 404 });
+    }
+    
+    // --- Authorization Check ---
+    if (existingPost.authorId !== MOCK_FREELANCER_ID) {
+      return NextResponse.json({ message: "Unauthorized. You are not the author of this post." }, { status: 403 });
+    }
+    // ---
+
     if (!title || !content || !categoryId) {
       return NextResponse.json({ message: "Missing required fields for update: title, content, categoryId are mandatory." }, { status: 400 });
     }
     if (!ObjectId.isValid(categoryId)) {
         return NextResponse.json({ message: "Invalid categoryId format for update" }, { status: 400 });
-    }
-
-    const existingPost = await getPostBySlug(slug); // Don't need enriched data for update check
-    if (!existingPost || !existingPost.id) {
-      return NextResponse.json({ message: "Post to update not found" }, { status: 404 });
     }
 
     let tagIds: string[] = [];
@@ -56,7 +65,7 @@ export async function PUT(
       tagIds = createdOrFoundTags.map(t => t.id!);
     }
 
-    const updateData: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'categoryName' | 'categorySlugPath' | 'resolvedTags'>> = {
+    const updateData: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' | 'categoryName' | 'categorySlugPath' | 'resolvedTags' | 'authorId'>> = {
       title,
       content,
       author: author || existingPost.author,
@@ -68,7 +77,6 @@ export async function PUT(
       downloads: downloads !== undefined ? downloads : existingPost.downloads,
       originalLanguage: originalLanguage || existingPost.originalLanguage,
       categoryId: categoryId || existingPost.categoryId,
-      // Comments are typically handled separately or appended, not overwritten wholesale by main post update.
     };
 
     const updatedPost = await updatePost(existingPost.id, updateData);
@@ -88,6 +96,18 @@ export async function DELETE(
 ) {
   try {
     const slug = params.slug;
+    
+    const existingPost = await getPostBySlug(slug);
+    if (!existingPost) {
+      return NextResponse.json({ message: "Post not found" }, { status: 404 });
+    }
+
+    // --- Authorization Check ---
+    if (existingPost.authorId !== MOCK_FREELANCER_ID) {
+        return NextResponse.json({ message: "Unauthorized. You are not the author of this post." }, { status: 403 });
+    }
+    // ---
+
     const success = await deletePostBySlug(slug);
 
     if (success) {

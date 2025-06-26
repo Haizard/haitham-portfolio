@@ -5,6 +5,9 @@ import { findOrCreateTagsByNames, getTagsByIds, type Tag } from '@/lib/tags-data
 import { getCategoryPath, type CategoryNode } from '@/lib/categories-data';
 import { ObjectId } from 'mongodb';
 
+// This would come from auth in a real app
+const MOCK_FREELANCER_ID = "mockFreelancer456";
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -48,6 +51,9 @@ export async function POST(request: NextRequest) {
       featuredImageUrl, featuredImageHint, galleryImages, downloads, 
       originalLanguage, categoryId 
     } = body;
+    
+    // In a real app, this would come from the authenticated session
+    const authorId = MOCK_FREELANCER_ID; 
 
     if (!title || !content || !slug || !categoryId) {
       return NextResponse.json({ message: "Missing required fields: title, content, slug, categoryId are all mandatory." }, { status: 400 });
@@ -71,8 +77,9 @@ export async function POST(request: NextRequest) {
       slug,
       title,
       content,
-      author: author || "AI Assistant",
-      authorAvatar: authorAvatar || "https://placehold.co/100x100.png?text=AI",
+      authorId: authorId, // Set the author ID
+      author: author || "CreatorOS Freelancer", // Use a dynamic name in the future
+      authorAvatar: authorAvatar || "https://placehold.co/100x100.png?text=F", 
       tagIds: tagIds,
       featuredImageUrl: featuredImageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(title.substring(0,20))}`,
       featuredImageHint: featuredImageHint || "abstract content topic",

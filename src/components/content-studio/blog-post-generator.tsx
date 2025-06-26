@@ -27,6 +27,10 @@ import { Separator } from "../ui/separator";
 import Image from "next/image";
 import { useSearchParams } from 'next/navigation';
 import type { BlogPost, GalleryImage, DownloadLink } from '@/lib/blog-data';
+import { getFreelancerProfile, type FreelancerProfile } from "@/lib/user-profile-data"; // For author details
+
+// This would come from an authenticated session
+const MOCK_FREELANCER_ID = "mockFreelancer456";
 
 const galleryImageSchema = z.object({
   url: z.string().url("Image URL must be a valid URL.").min(1, "URL is required."),
@@ -148,6 +152,7 @@ export function BlogPostGenerator() {
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isLoadingPostForEdit, setIsLoadingPostForEdit] = useState(false);
+  const [authorProfile, setAuthorProfile] = useState<FreelancerProfile | null>(null);
 
   const searchParams = useSearchParams();
   const editSlug = searchParams.get('editSlug');
@@ -226,21 +231,32 @@ export function BlogPostGenerator() {
 
 
   useEffect(() => {
-    async function fetchCategoriesData() {
+    async function fetchInitialData() {
       setIsLoadingCategories(true);
       try {
-        const response = await fetch('/api/categories');
-        if (!response.ok) throw new Error('Failed to fetch categories');
-        const data: CategoryNode[] = await response.json();
-        setCategories(data);
+        const [catResponse, profileResponse] = await Promise.all([
+          fetch('/api/categories'),
+          getFreelancerProfile(MOCK_FREELANCER_ID) // Using data-layer function directly
+        ]);
+        
+        if (!catResponse.ok) throw new Error('Failed to fetch categories');
+        const catData: CategoryNode[] = await catResponse.json();
+        setCategories(catData);
+
+        if (profileResponse) {
+          setAuthorProfile(profileResponse);
+        } else {
+          throw new Error('Failed to load author profile');
+        }
+
       } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast({ title: "Error", description: "Could not load categories.", variant: "destructive" });
+        console.error("Error fetching initial data:", error);
+        toast({ title: "Error", description: "Could not load initial page data.", variant: "destructive" });
       } finally {
         setIsLoadingCategories(false);
       }
     }
-    fetchCategoriesData();
+    fetchInitialData();
   }, [toast]);
 
   useEffect(() => {
@@ -250,14 +266,20 @@ export function BlogPostGenerator() {
         try {
           const response = await fetch(`/api/blog/${editSlug}`);
           if (!response.ok) {
-            throw new Error(`Failed to fetch post: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+             if (response.status === 403) { // Handle forbidden error
+                toast({ title: "Unauthorized", description: errorData.message || "You are not authorized to edit this post.", variant: "destructive" });
+             } else {
+                throw new Error(errorData.message || `Failed to fetch post: ${response.statusText}`);
+             }
+             return;
           }
           const postData: BlogPost = await response.json();
 
           form.reset({
-            topic: postData.title || '', // Use post title for topic when editing
+            topic: postData.title || '',
             seoKeywords: postData.resolvedTags?.map(tag => tag.name).join(', ') || '',
-            brandVoice: '', // Brand voice is for AI generation, not stored with post
+            brandVoice: '',
             editableContent: postData.content || '',
             categoryId: postData.categoryId || '',
             tags: postData.resolvedTags?.map(tag => tag.name).join(', ') || '',
@@ -270,7 +292,7 @@ export function BlogPostGenerator() {
           setGeneratedPost({
             title: postData.title,
             content: postData.content,
-            reasoning: '', // Reasoning is from AI generation, not stored
+            reasoning: '',
             slug: postData.slug,
           });
           setPublishedSlug(postData.slug);
@@ -278,7 +300,6 @@ export function BlogPostGenerator() {
         } catch (error: any) {
           console.error("Error loading post for editing:", error);
           toast({ title: "Error Loading Post", description: error.message, variant: "destructive" });
-          // Optionally redirect or clear editSlug from URL
         } finally {
           setIsLoadingPostForEdit(false);
         }
@@ -352,12 +373,10 @@ export function BlogPostGenerator() {
       return;
     }
     
-    // Reset states related to a previously loaded/published post
     setPublishedSlug(null); 
-    setGeneratedPost(null); // Clear any previously generated/loaded post structure
-    form.setValue('editableContent', ''); // Clear editor content
+    setGeneratedPost(null); 
+    form.setValue('editableContent', ''); 
     if (editor) editor.commands.clearContent();
-    // Also clear other fields that might have been loaded from an existing post
     form.setValue('featuredImageUrl', '');
     form.setValue('featuredImageHint', '');
     form.setValue('galleryImages', []);
@@ -426,7 +445,6 @@ export function BlogPostGenerator() {
 
 
   async function handlePublishPost(values: FormValues) {
-    // Use generatedPost.title for the post title if available, otherwise fallback to form's topic
     const postTitleToUse = generatedPost?.title || values.topic;
     
     if (!postTitleToUse) {
@@ -434,7 +452,6 @@ export function BlogPostGenerator() {
         return;
     }
 
-    // Use publishedSlug if available (editing), otherwise generate new slug from title/topic for a new post
     const slugToUse = publishedSlug || (generatedPost?.slug || createSlug(postTitleToUse));
 
     if (!slugToUse) {
@@ -460,8 +477,8 @@ export function BlogPostGenerator() {
         title: postTitleToUse,
         content: values.editableContent, 
         slug: slugToUse,
-        author: "AI Content Studio", 
-        authorAvatar: "https://placehold.co/100x100.png?text=AI", 
+        author: authorProfile?.name || "CreatorOS Freelancer", 
+        authorAvatar: authorProfile?.avatarUrl || "https://placehold.co/100x100.png?text=F", 
         tags: tagsArray,
         featuredImageUrl: values.featuredImageUrl,
         featuredImageHint: values.featuredImageHint,
@@ -469,9 +486,10 @@ export function BlogPostGenerator() {
         downloads: values.downloads,
         originalLanguage: "en", 
         categoryId: values.categoryId,
+        authorId: MOCK_FREELANCER_ID, // Add the authorId to the payload
     };
 
-    const isUpdateOperation = !!publishedSlug; // If publishedSlug is set, it's an update
+    const isUpdateOperation = !!publishedSlug; 
     const apiUrl = isUpdateOperation ? `/api/blog/${publishedSlug}` : '/api/blog';
     const method = isUpdateOperation ? 'PUT' : 'POST';
 
