@@ -3,6 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getAllProducts, addProduct, type Product, type ProductType } from '@/lib/products-data';
 import { z } from 'zod';
 
+// This would come from an authenticated session
+const MOCK_VENDOR_ID = "freelancer123"; // Using a different ID to distinguish from client/freelancer mocks
+
 // Schema for creating a new product
 const affiliateLinkSchema = z.object({
   vendorName: z.string().min(1, "Vendor name is required").max(100),
@@ -47,8 +50,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category') || undefined;
     const productType = searchParams.get('productType') as ProductType | undefined;
+    const vendorId = searchParams.get('vendorId') || undefined;
     
-    const products = await getAllProducts(category, productType);
+    const products = await getAllProducts(category, productType, vendorId);
     return NextResponse.json(products);
   } catch (error: any) {
     console.error("API Error in /api/products GET route:", error.message, error.stack); 
@@ -58,6 +62,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // In a real app, this would come from an authenticated session.
+    // If an admin is creating a product, they might specify a vendorId in the body.
+    // If a vendor is creating a product, their ID comes from the session.
+    const vendorId = MOCK_VENDOR_ID; 
+
     const body = await request.json();
     const validation = productCreateSchema.safeParse(body);
 
@@ -67,7 +76,10 @@ export async function POST(request: NextRequest) {
     }
     
     // The data is already correctly typed by the discriminated union
-    const productData = validation.data as Omit<Product, 'id' | '_id' | 'slug'>;
+    const productData = {
+      ...validation.data,
+      vendorId: vendorId, // Assign the product to the logged-in vendor
+    } as Omit<Product, 'id' | '_id' | 'slug'>;
     
     // Ensure tags array is present, even if empty, to avoid MongoDB errors if schema expects it
     if (!productData.tags) {

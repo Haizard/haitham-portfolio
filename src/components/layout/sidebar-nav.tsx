@@ -28,6 +28,7 @@ import {
   FilePlus2,
   Search,
   ClipboardList, 
+  Store,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -55,6 +56,12 @@ const navItems = [
       { href: "/my-projects", label: "My Projects", icon: Briefcase },
       { href: "/my-services", label: "Manage Services", icon: PackageSearch },
       { href: "/my-bookings", label: "Manage Bookings", icon: CalendarCheck2 },
+    ]
+  },
+  {
+    group: "Vendor Dashboard",
+    items: [
+        { href: "/vendor/products", label: "My Products", icon: Store },
     ]
   },
   { 

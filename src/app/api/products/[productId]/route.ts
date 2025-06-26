@@ -3,6 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getProductById, updateProduct, deleteProduct, type Product } from '@/lib/products-data';
 import { z } from 'zod';
 
+// This would come from an authenticated session
+const MOCK_VENDOR_ID = "freelancer123";
+
 // Schemas for updating a product - all fields are optional.
 // productType is NOT updatable here to keep it simple. If type needs changing, delete & recreate.
 const affiliateLinkUpdateSchema = z.object({
@@ -67,8 +70,18 @@ export async function PUT(
 ) {
   try {
     const productId = params.productId;
-    const body = await request.json();
+    const productToUpdate = await getProductById(productId);
+    if (!productToUpdate) {
+        return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    }
+
+    // --- Authorization Check ---
+    if (productToUpdate.vendorId !== MOCK_VENDOR_ID) {
+        return NextResponse.json({ message: "Unauthorized: You do not own this product." }, { status: 403 });
+    }
+    // ---
     
+    const body = await request.json();
     const validation = productUpdateSchema.safeParse(body);
     if (!validation.success) {
       console.error("API Product Update Validation Error:", validation.error.flatten());
@@ -108,6 +121,18 @@ export async function DELETE(
 ) {
   try {
     const productId = params.productId;
+    
+    const productToDelete = await getProductById(productId);
+    if (!productToDelete) {
+      return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    }
+
+    // --- Authorization Check ---
+    if (productToDelete.vendorId !== MOCK_VENDOR_ID) {
+      return NextResponse.json({ message: "Unauthorized: You do not own this product." }, { status: 403 });
+    }
+    // ---
+
     const success = await deleteProduct(productId);
 
     if (success) {

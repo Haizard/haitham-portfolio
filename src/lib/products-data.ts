@@ -19,11 +19,12 @@ export interface Product {
   slug: string;
   name: string;
   description: string;
-  category: string; // Kept as string for now, can be categoryId later
+  category: string; 
+  vendorId: string; // ID of the freelancer/vendor who owns this product
   imageUrl: string;
   imageHint: string;
   productType: ProductType;
-  tags?: string[]; // Kept as string array for now, can be tagIds later
+  tags?: string[]; 
 
   // For affiliate products
   links?: AffiliateLink[];
@@ -65,7 +66,7 @@ async function isProductSlugUnique(slug: string, excludeId?: string): Promise<bo
   return count === 0;
 }
 
-export async function getAllProducts(category?: string, productType?: ProductType): Promise<Product[]> {
+export async function getAllProducts(category?: string, productType?: ProductType, vendorId?: string): Promise<Product[]> {
   const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const query: Filter<ProductDocument> = {};
   if (category && category.toLowerCase() !== 'all') {
@@ -73,6 +74,9 @@ export async function getAllProducts(category?: string, productType?: ProductTyp
   }
   if (productType) {
     query.productType = productType;
+  }
+  if (vendorId) {
+    query.vendorId = vendorId;
   }
   const productDocs = await collection.find(query).sort({ name: 1 }).toArray();
   return productDocs.map(docToProduct);
@@ -101,6 +105,10 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
   while (!(await isProductSlugUnique(slug))) {
     slug = `${createProductSlug(productData.name)}-${counter}`;
     counter++;
+  }
+
+  if (!productData.vendorId) {
+      throw new Error("Cannot add product: vendorId is missing.");
   }
 
   const docToInsert: Omit<ProductDocument, '_id'> = {
