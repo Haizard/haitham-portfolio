@@ -3,6 +3,7 @@ import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 
 const PRODUCTS_COLLECTION = 'products';
+const ORDERS_COLLECTION = 'orders'; // Need this for top selling products
 
 export interface AffiliateLink {
   vendorName: string;
@@ -33,6 +34,10 @@ export interface Product {
   price?: number;
   stock?: number;
   sku?: string;
+
+  // Enriched fields for analytics
+  sales?: number;
+  revenue?: number;
 }
 
 // For MongoDB document representation
@@ -184,4 +189,52 @@ export async function deleteProduct(id: string): Promise<boolean> {
 export async function countProducts(): Promise<number> {
   const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   return collection.countDocuments();
+}
+
+// --- NEW Function for Admin Dashboard ---
+export async function getTopSellingProducts(limit: number = 5): Promise<Product[]> {
+    const ordersCollection = await getCollection('orders'); // No specific type needed for aggregation
+    const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+
+    // 1. Aggregate sales data from orders
+    const salesPipeline = [
+        { $unwind: "$lineItems" },
+        { $match: { "lineItems.status": "Delivered" } },
+        { 
+            $group: { 
+                _id: "$lineItems.productId", 
+                sales: { $sum: "$lineItems.quantity" },
+                revenue: { $sum: { $multiply: ["$lineItems.quantity", "$lineItems.price"] } }
+            } 
+        },
+        { $sort: { sales: -1 } },
+        { $limit: limit }
+    ];
+
+    const topProductsData = await ordersCollection.aggregate(salesPipeline).toArray();
+
+    if (topProductsData.length === 0) {
+        return [];
+    }
+
+    // 2. Fetch product details for the top selling product IDs
+    const topProductIds = topProductsData.map(p => p._id);
+    const productDetails = await productsCollection.find({ id: { $in: topProductIds } }).toArray();
+
+    // 3. Combine sales data with product details
+    const productsById = new Map(productDetails.map(p => [p.id, docToProduct(p)]));
+    
+    const enrichedTopProducts = topProductsData.map(salesData => {
+        const productInfo = productsById.get(salesData._id);
+        if (productInfo) {
+            return {
+                ...productInfo,
+                sales: salesData.sales,
+                revenue: salesData.revenue,
+            };
+        }
+        return null;
+    }).filter((p): p is Product => p !== null);
+
+    return enrichedTopProducts;
 }

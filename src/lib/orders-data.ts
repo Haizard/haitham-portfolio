@@ -2,6 +2,7 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { getProductById, type Product } from './products-data'; // Import Product type
+import { getFreelancerProfile } from './user-profile-data'; // To enrich with vendor names
 
 const ORDERS_COLLECTION = 'orders';
 const PLATFORM_COMMISSION_RATE = 0.15; // 15% platform fee
@@ -33,6 +34,17 @@ export interface Order {
   orderDate: Date;
   totalAmount: number; // The total for this specific vendor's portion of the order
   lineItems: LineItem[];
+  // Enriched field for admin views
+  vendorName?: string;
+}
+
+// Interface for dashboard stats API
+export interface AdminDashboardStats {
+    totalSales: number;
+    totalOrders: number;
+    monthlySales: { name: string; sales: number; orders: number; }[];
+    recentOrders: Order[];
+    // topSellingProducts will be added in the API route from the products data lib
 }
 
 function docToOrder(doc: any): Order {
@@ -173,4 +185,59 @@ export async function updateLineItemStatus(orderId: string, lineItemId: string, 
   );
 
   return result.modifiedCount === 1;
+}
+
+// --- NEW Admin Dashboard Functions ---
+
+export async function getAdminDashboardStats(): Promise<Omit<AdminDashboardStats, 'topSellingProducts'>> {
+    const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
+    
+    // 1. Total Sales and Order Count
+    const salesStats = await ordersCollection.aggregate([
+        { $group: { _id: null, totalSales: { $sum: "$totalAmount" }, totalOrders: { $sum: 1 } } }
+    ]).toArray();
+    const totalSales = salesStats[0]?.totalSales || 0;
+    const totalOrders = salesStats[0]?.totalOrders || 0;
+
+    // 2. Monthly Sales Data (for last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const monthlySalesData = await ordersCollection.aggregate([
+        { $match: { orderDate: { $gte: sixMonthsAgo } } },
+        {
+            $group: {
+                _id: { year: { $year: "$orderDate" }, month: { $month: "$orderDate" } },
+                sales: { $sum: "$totalAmount" },
+                orders: { $sum: 1 }
+            }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]).toArray();
+    
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlySales = monthlySalesData.map(d => ({
+        name: `${monthNames[d._id.month - 1]} ${d._id.year}`,
+        sales: d.sales,
+        orders: d.orders,
+    }));
+    
+    // 3. Recent Orders
+    const recentOrderDocs = await ordersCollection.find().sort({ orderDate: -1 }).limit(5).toArray();
+    // Enrich with vendor names
+    const vendorIds = [...new Set(recentOrderDocs.map(o => o.vendorId))];
+    const vendorProfiles = await Promise.all(vendorIds.map(id => getFreelancerProfile(id)));
+    const vendorMap = new Map(vendorProfiles.map(p => p ? [p.userId, p.name] : [null, null]));
+
+    const recentOrders = recentOrderDocs.map(docToOrder).map(order => ({
+        ...order,
+        vendorName: vendorMap.get(order.vendorId) || 'Unknown Vendor'
+    }));
+
+
+    return {
+        totalSales,
+        totalOrders,
+        monthlySales,
+        recentOrders
+    };
 }

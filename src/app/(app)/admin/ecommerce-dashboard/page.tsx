@@ -11,47 +11,18 @@ import { ArrowUpRight, ArrowDownRight, MoreHorizontal, ExternalLink, TrendingUp 
 import Image from "next/image";
 import Link from "next/link";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { useState, useEffect, useCallback } from "react";
-import { ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Area, Line } from "recharts";
-import { useToast } from "@/hooks/use-toast"; // Added useToast
-
-// Placeholder Data for some stats
-const initialStats = [
-  { id: "sales", title: "Total Sales", value: "$0", trend: "+0%", trendDirection: "up" as "up" | "down", icon: DollarSign, color: "bg-green-500", isLoading: true },
-  { id: "orders", title: "Total Orders", value: "0", trend: "+0%", trendDirection: "up" as "up" | "down", icon: ShoppingCart, color: "bg-blue-500", isLoading: true },
-  { id: "products", title: "Products", value: "0", trend: "", trendDirection: "up" as "up" | "down", icon: Package, color: "bg-orange-500", isLoading: true },
-  { id: "visitors", title: "Visitors", value: "0", trend: "+0%", trendDirection: "up" as "up" | "down", icon: Users, color: "bg-purple-500", isLoading: true },
-];
-
-const placeholderSalesChartData = [
-  { date: "01 Jun", Sales: 2400, Orders: 120 },
-  { date: "02 Jun", Sales: 1398, Orders: 70 },
-  { date: "03 Jun", Sales: 9800, Orders: 210 },
-  { date: "04 Jun", Sales: 3908, Orders: 90 },
-  { date: "05 Jun", Sales: 4800, Orders: 150 },
-  { date: "06 Jun", Sales: 3800, Orders: 110 },
-  { date: "07 Jun", Sales: 4300, Orders: 130 },
-  { date: "Today", Sales: 5200, Orders: 160 },
-];
+import { useState, useEffect } from "react";
+import { ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Area, Line, Bar } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { AdminDashboardStats } from "@/lib/orders-data";
 
 const salesChartConfig = {
   sales: { label: "Sales ($)", color: "hsl(var(--primary))" },
   orders: { label: "Orders", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
-const placeholderRecentOrders = [
-  { id: "ORD001", customer: "Alice Wonderland", avatar: "AW", date: "2024-07-28", total: "$125.50", status: "Processing" as "Processing" | "Shipped" | "Delivered" | "Cancelled", items: 3 },
-  { id: "ORD002", customer: "Bob The Builder", avatar: "BB", date: "2024-07-28", total: "$45.00", status: "Shipped" as "Processing" | "Shipped" | "Delivered" | "Cancelled", items: 1 },
-  // ... more mock orders
-];
-
-const placeholderTopProducts = [
-  { id: "PROD001", name: "Premium Blend Coffee", category: "Groceries", price: "$18.99", sales: 120, revenue: "$2278.80", imageUrl: "https://placehold.co/80x80.png", imageHint:"coffee beans" },
-  { id: "PROD002", name: "Wireless Ergonomic Mouse", category: "Electronics", price: "$49.99", sales: 85, revenue: "$4249.15", imageUrl: "https://placehold.co/80x80.png", imageHint:"computer mouse" },
-  // ... more mock products
-];
-
-const StatCard: React.FC<{ title: string; value: string; trend: string; trendDirection: "up" | "down"; icon: React.ElementType; color: string; isLoading: boolean }> = ({ title, value, trend, trendDirection, icon: Icon, color, isLoading }) => (
+const StatCard: React.FC<{ title: string; value: string; trend?: string; trendDirection?: "up" | "down"; icon: React.ElementType; color: string; isLoading: boolean }> = ({ title, value, trend, trendDirection, icon: Icon, color, isLoading }) => (
   <Card className="shadow-lg hover:shadow-xl transition-shadow">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
@@ -68,7 +39,7 @@ const StatCard: React.FC<{ title: string; value: string; trend: string; trendDir
       {isLoading ? (
         <div className="h-[18px] w-3/4 bg-muted animate-pulse rounded-md mt-1"></div>
       ) : (
-        trend && (
+        trend && trendDirection && (
             <p className={`text-xs ${trendDirection === "up" ? "text-green-600" : "text-red-600"} flex items-center`}>
             {trendDirection === "up" ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
             {trend} vs last month
@@ -79,49 +50,32 @@ const StatCard: React.FC<{ title: string; value: string; trend: string; trendDir
   </Card>
 );
 
+
 export default function EcommerceAdminDashboardPage() {
-  const [mounted, setMounted] = useState(false);
-  const [stats, setStats] = useState(initialStats);
-  const { toast } = useToast(); // Added toast
-
-  const fetchProductCount = useCallback(async () => {
-    try {
-      const response = await fetch('/api/products');
-      if (!response.ok) {
-        throw new Error('Failed to fetch products');
-      }
-      const products: any[] = await response.json();
-      setStats(prevStats => prevStats.map(stat => 
-        stat.id === 'products' ? { ...stat, value: products.length.toString(), isLoading: false } : stat
-      ));
-    } catch (error: any) {
-      console.error("Error fetching product count:", error);
-      toast({ title: "Error", description: "Could not load product count.", variant: "destructive"});
-      setStats(prevStats => prevStats.map(stat => 
-        stat.id === 'products' ? { ...stat, value: "Error", isLoading: false } : stat
-      ));
-    }
-  }, [toast]);
-
+  const [stats, setStats] = useState<AdminDashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    setMounted(true);
-    fetchProductCount();
-    // Simulate loading for other stats
-    setTimeout(() => {
-        setStats(prev => prev.map(s => {
-            if (s.id === 'products' && !s.isLoading) return s; // Don't overwrite if products loaded
-            if (s.id === 'sales') return {...s, value: "$12,345", trend: "+12.5%", isLoading: false};
-            if (s.id === 'orders') return {...s, value: "1,280", trend: "+8.2%", isLoading: false};
-            if (s.id === 'visitors') return {...s, value: "35,678", trend: "+20.1%", isLoading: false};
-            return s;
-        }))
-    }, 1500);
-  }, [fetchProductCount]);
-
-  if (!mounted) {
-    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-12 w-12 animate-pulse text-primary"/></div>;
-  }
+    async function fetchDashboardData() {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/admin/dashboard-stats');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to fetch dashboard data.');
+            }
+            const data: AdminDashboardStats = await response.json();
+            setStats(data);
+        } catch (error: any) {
+            console.error("Error fetching dashboard data:", error);
+            toast({ title: "Error", description: `Could not load dashboard stats: ${error.message}`, variant: "destructive"});
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchDashboardData();
+  }, [toast]);
   
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
@@ -132,6 +86,13 @@ export default function EcommerceAdminDashboardPage() {
       default: return "outline";
     }
   };
+
+  const statCardsData = [
+    { id: "sales", title: "Total Sales", value: stats ? `$${stats.totalSales.toLocaleString()}` : "$0", trend: "+0%", trendDirection: "up" as const, icon: DollarSign, color: "bg-green-500", isLoading: isLoading },
+    { id: "orders", title: "Total Orders", value: stats ? stats.totalOrders.toLocaleString() : "0", trend: "+0%", trendDirection: "up" as const, icon: ShoppingCart, color: "bg-blue-500", isLoading: isLoading },
+    { id: "products", title: "Products", value: stats ? stats.totalProducts.toLocaleString() : "0", trend: "", icon: Package, color: "bg-orange-500", isLoading: isLoading },
+    { id: "visitors", title: "Visitors", value: "35,678", trend: "+20.1%", trendDirection: "up" as const, icon: Users, color: "bg-purple-500", isLoading: false }, // Visitors is still mock
+  ];
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -150,58 +111,33 @@ export default function EcommerceAdminDashboardPage() {
       </header>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
+        {statCardsData.map((stat) => (
           <StatCard key={stat.id} {...stat} />
         ))}
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 shadow-xl">
+        <Card className="lg:col-span-3 shadow-xl">
           <CardHeader>
             <CardTitle className="text-xl font-semibold">Sales This Month</CardTitle>
-            <CardDescription>Comparison of sales and orders (Placeholder Data)</CardDescription>
+            <CardDescription>Monthly sales performance overview</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <ChartContainer config={salesChartConfig} className="h-[350px] w-full">
-              <ComposedChart data={placeholderSalesChartData}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-                <YAxis yAxisId="left" tickFormatter={(value) => `$${value / 1000}k`} tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-                <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-                <RechartsTooltip content={<ChartTooltipContent />} />
-                <Legend />
-                <Area yAxisId="left" type="monotone" dataKey="Sales" fill="hsl(var(--primary)/0.2)" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="Orders" stroke="hsl(var(--accent))" strokeWidth={2} dot={{r: 4, fill: "hsl(var(--accent))", stroke: "hsl(var(--background))"}}/>
-              </ComposedChart>
-            </ChartContainer>
+             {isLoading ? <Skeleton className="h-[350px] w-full" /> : (
+                <ChartContainer config={salesChartConfig} className="h-[350px] w-full">
+                <ComposedChart data={stats?.monthlySales}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                    <YAxis yAxisId="left" tickFormatter={(value) => `$${value / 1000}k`} tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                    <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                    <RechartsTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="orders" stroke="hsl(var(--accent))" strokeWidth={2} dot={{r: 4, fill: "hsl(var(--accent))", stroke: "hsl(var(--background))"}}/>
+                </ComposedChart>
+                </ChartContainer>
+             )}
           </CardContent>
-        </Card>
-
-        <Card className="shadow-xl">
-            <CardHeader>
-                <CardTitle className="text-xl font-semibold">Recent Activity</CardTitle>
-                <CardDescription>Latest updates from your store.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 max-h-[350px] overflow-y-auto">
-                {[
-                    { user: "Olivia Martin", action: "placed a new order #ORD006", time: "5m ago", icon: ShoppingCart, avatar: "OM" },
-                    { user: "Product Update", action: "Stock for 'Yoga Mat' low", time: "30m ago", icon: Package, avatar: "PU" },
-                    { user: "Liam Smith", action: "left a 5-star review", time: "1h ago", icon: TrendingUp, avatar: "LS"},
-                    { user: "System Alert", action: "Payment gateway connection stable", time: "2h ago", icon: DollarSign, avatar: "SA"},
-                ].map(activity => (
-                    <div key={activity.action + activity.time} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50">
-                        <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                                {activity.avatar}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="text-sm font-medium">{activity.user} <span className="text-muted-foreground font-normal">{activity.action}</span></p>
-                            <p className="text-xs text-muted-foreground">{activity.time}</p>
-                        </div>
-                    </div>
-                ))}
-            </CardContent>
         </Card>
       </section>
       
@@ -212,45 +148,36 @@ export default function EcommerceAdminDashboardPage() {
             <CardDescription>A quick view of the latest customer orders.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Order ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden sm:table-cell">Items</TableHead>
-                  <TableHead className="hidden md:table-cell">Date</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right w-[80px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {placeholderRecentOrders.map((order) => (
-                  <TableRow key={order.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium text-xs">{order.id}</TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7">
-                                <AvatarFallback className="text-xs">{order.avatar}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">{order.customer}</span>
-                        </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-sm">{order.items}</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">{new Date(order.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-sm">{order.total}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(order.status)} className="text-xs">{order.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+             {isLoading ? <Skeleton className="h-[200px] w-full" /> : (
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead className="w-[100px]">Order ID</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead className="hidden md:table-cell">Date</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead className="text-right w-[80px]">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {stats?.recentOrders.map((order) => (
+                    <TableRow key={order.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium text-xs">{order.id?.substring(0, 8).toUpperCase()}</TableCell>
+                        <TableCell>{order.customerName}</TableCell>
+                        <TableCell>{order.vendorName}</TableCell>
+                        <TableCell className="hidden md:table-cell text-sm">{new Date(order.orderDate).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-sm">${order.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+             )}
           </CardContent>
            <CardFooter className="justify-end">
                 <Button variant="outline" size="sm">View All Orders</Button>
@@ -265,24 +192,26 @@ export default function EcommerceAdminDashboardPage() {
             <CardDescription>Your most popular items this month.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {placeholderTopProducts.map((product) => (
-              <div key={product.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                <Image src={product.imageUrl} alt={product.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={product.imageHint}/>
-                <div className="flex-grow">
-                  <h4 className="font-medium text-sm">{product.name}</h4>
-                  <p className="text-xs text-muted-foreground">{product.category} - {product.price}</p>
+             {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
+                stats?.topSellingProducts.map((product) => (
+                <div key={product.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <Image src={product.imageUrl} alt={product.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={product.imageHint || 'product image'}/>
+                    <div className="flex-grow">
+                    <h4 className="font-medium text-sm">{product.name}</h4>
+                    <p className="text-xs text-muted-foreground">{product.category} - ${product.price?.toFixed(2)}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-semibold">{product.sales} sales</p>
+                        <p className="text-xs text-green-600">${product.revenue?.toLocaleString()}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/ecommerce?product=${product.slug}`}>
+                            <ExternalLink className="h-4 w-4 text-muted-foreground"/>
+                        </Link>
+                    </Button>
                 </div>
-                <div className="text-right">
-                    <p className="text-sm font-semibold">{product.sales} sales</p>
-                    <p className="text-xs text-green-600">{product.revenue}</p>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                    <Link href={`#product/${product.id}`}>
-                        <ExternalLink className="h-4 w-4 text-muted-foreground"/>
-                    </Link>
-                </Button>
-              </div>
-            ))}
+                ))
+            )}
           </CardContent>
             <CardFooter className="justify-end">
                 <Button variant="outline" size="sm">View All Products</Button>
