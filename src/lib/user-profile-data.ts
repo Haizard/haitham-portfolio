@@ -19,6 +19,7 @@ const FREELANCER_PROFILES_COLLECTION = 'freelancerProfiles';
 
 // Note: Availability status is specific to freelancers.
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available';
+export type VendorStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 
 export interface PortfolioLink {
   _id?: ObjectId;
@@ -47,6 +48,10 @@ export interface FreelancerProfile {
   availabilityStatus: AvailabilityStatus;
   averageRating?: number;
   reviewCount?: number;
+
+  // Vendor-specific fields
+  storeName: string;
+  vendorStatus: VendorStatus;
 
   createdAt: Date;
   updatedAt: Date;
@@ -82,6 +87,8 @@ const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, '
   availabilityStatus: 'available',
   averageRating: 0,
   reviewCount: 0,
+  storeName: `${userId}'s Store`,
+  vendorStatus: 'pending',
 });
 
 export async function createFreelancerProfileIfNotExists(userId: string, initialData?: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile> {
@@ -138,4 +145,21 @@ export async function updateFreelancerProfile(userId: string, data: Partial<Omit
     return null; 
   }
   return docToFreelancerProfile(result);
+}
+
+export async function getAllVendorProfiles(): Promise<FreelancerProfile[]> {
+    const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
+    const vendorDocs = await collection.find({}).sort({ createdAt: -1 }).toArray();
+    return vendorDocs.map(docToFreelancerProfile);
+}
+
+export async function updateVendorStatus(vendorId: string, status: VendorStatus): Promise<FreelancerProfile | null> {
+    if (!ObjectId.isValid(vendorId)) return null;
+    const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
+    const result = await collection.findOneAndUpdate(
+        { _id: new ObjectId(vendorId) },
+        { $set: { vendorStatus: status, updatedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+    return result ? docToFreelancerProfile(result) : null;
 }

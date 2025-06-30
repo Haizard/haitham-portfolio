@@ -35,16 +35,17 @@ export async function getVendorFinanceSummary(vendorId: string): Promise<VendorF
   const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
   const payoutsCollection = await getCollection<Payout>(PAYOUTS_COLLECTION);
 
-  // Calculate total earnings from delivered items
+  // Calculate total earnings from delivered items for a specific vendor
   const earningsPipeline = [
+    { $match: { vendorId: vendorId } },
     { $unwind: "$lineItems" },
-    { $match: { "lineItems.vendorId": vendorId, "lineItems.status": "Delivered" } },
-    { $group: { _id: "$lineItems.vendorId", totalEarnings: { $sum: "$lineItems.vendorEarnings" } } }
+    { $match: { "lineItems.status": "Delivered" } },
+    { $group: { _id: "$vendorId", totalEarnings: { $sum: "$lineItems.vendorEarnings" } } }
   ];
   const earningsResult = await ordersCollection.aggregate(earningsPipeline).toArray();
   const totalEarnings = earningsResult.length > 0 ? earningsResult[0].totalEarnings : 0;
 
-  // Calculate total paid out and pending amounts from payouts
+  // Calculate total paid out and pending amounts from payouts for that vendor
   const payoutsPipeline = [
     { $match: { vendorId: vendorId } },
     { $group: { _id: "$status", totalAmount: { $sum: "$amount" } } }

@@ -32,6 +32,7 @@ import {
   UserPlus,
   ShoppingCart,
   Landmark,
+  Users, // Added Users icon
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -95,6 +96,7 @@ const navItems = [
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
       { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase },
+      { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
       { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig },
       { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },
     ]
