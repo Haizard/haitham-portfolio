@@ -1,6 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getVendorFinanceSummary, getPayoutsForVendor, createPayoutRequest } from '@/lib/payouts-data';
+import { getVendorFinanceSummary, getPayoutsForVendor, createPayoutRequest, getAllPayouts } from '@/lib/payouts-data';
+import { getFreelancerProfile } from '@/lib/user-profile-data';
 import { z } from 'zod';
 
 // This would come from an authenticated session
@@ -10,22 +11,38 @@ const createPayoutSchema = z.object({
   amount: z.coerce.number().positive("Amount must be a positive number."),
 });
 
-// GET handler for fetching vendor's financial summary and payout history
+// GET handler for fetching vendor's financial summary and payout history OR all payouts for admin
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const vendorId = searchParams.get('vendorId') || MOCK_VENDOR_ID;
+    const vendorId = searchParams.get('vendorId');
 
-    if (!vendorId) {
-      return NextResponse.json({ message: "Vendor ID is required." }, { status: 400 });
+    // If a specific vendor ID is provided, return their financial summary and history.
+    if (vendorId) {
+      // This is the flow for the vendor's own finance page.
+      const [summary, history] = await Promise.all([
+        getVendorFinanceSummary(vendorId),
+        getPayoutsForVendor(vendorId)
+      ]);
+      return NextResponse.json({ summary, history });
     }
 
-    const [summary, history] = await Promise.all([
-      getVendorFinanceSummary(vendorId),
-      getPayoutsForVendor(vendorId)
-    ]);
+    // If no vendor ID is provided, assume it's an admin request to fetch all payouts.
+    // TODO: Add admin role check here in a real app.
+    const allPayouts = await getAllPayouts();
+    
+    // Enrich payouts with vendor names for the admin view
+    const vendorIds = [...new Set(allPayouts.map(p => p.vendorId))];
+    const vendorProfiles = await Promise.all(vendorIds.map(id => getFreelancerProfile(id)));
+    const vendorMap = new Map(vendorProfiles.map(p => p ? [p.userId, p.name] : [null, null]));
 
-    return NextResponse.json({ summary, history });
+    const enrichedPayouts = allPayouts.map(p => ({
+      ...p,
+      vendorName: vendorMap.get(p.vendorId) || 'Unknown Vendor',
+    }));
+
+    return NextResponse.json(enrichedPayouts);
+
   } catch (error: any) {
     console.error("[API /api/payouts GET] Error:", error);
     return NextResponse.json({ message: `Failed to fetch financial data: ${error.message || "Unknown error"}` }, { status: 500 });

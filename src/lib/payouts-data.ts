@@ -70,6 +70,12 @@ export async function getPayoutsForVendor(vendorId: string): Promise<Payout[]> {
   return payoutDocs.map(docToPayout);
 }
 
+export async function getAllPayouts(): Promise<Payout[]> {
+  const collection = await getCollection<Payout>(PAYOUTS_COLLECTION);
+  const payoutDocs = await collection.find({}).sort({ requestedAt: -1 }).toArray();
+  return payoutDocs.map(docToPayout);
+}
+
 export async function createPayoutRequest(vendorId: string, amount: number): Promise<Payout> {
   // Validate that the requested amount is valid
   if (amount <= 0) {
@@ -92,4 +98,22 @@ export async function createPayoutRequest(vendorId: string, amount: number): Pro
 
   const result = await collection.insertOne(docToInsert as any);
   return { _id: result.insertedId, id: result.insertedId.toString(), ...docToInsert };
+}
+
+export async function updatePayoutStatus(payoutId: string, status: 'completed' | 'failed'): Promise<Payout | null> {
+  if (!ObjectId.isValid(payoutId)) return null;
+  const collection = await getCollection<Payout>(PAYOUTS_COLLECTION);
+  
+  const updatePayload: any = { status };
+  if (status === 'completed') {
+    updatePayload.completedAt = new Date();
+  }
+
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(payoutId) },
+    { $set: updatePayload },
+    { returnDocument: 'after' }
+  );
+
+  return result ? docToPayout(result) : null;
 }
