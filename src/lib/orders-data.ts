@@ -231,7 +231,7 @@ export async function getAdminDashboardStats(): Promise<Omit<AdminDashboardStats
     // 3. Recent Orders
     const recentOrderDocs = await ordersCollection.find().sort({ orderDate: -1 }).limit(5).toArray();
     // Enrich with vendor names
-    const vendorIds = [...new Set(recentOrderDocs.map(o => o.vendorId))];
+    const vendorIds = [...new Set(recentOrderDocs.map(o => o.vendorId))].filter((id): id is string => !!id);
     const vendorProfiles = await Promise.all(vendorIds.map(id => getFreelancerProfile(id)));
     const vendorMap = new Map(vendorProfiles.map(p => p ? [p.userId, p.name] : [null, null]));
 
