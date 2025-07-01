@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     // If no vendorId is provided, assume it's an admin request to fetch all orders
     // TODO: Add admin role check here
     const allOrders = await getAllOrdersAdmin();
-    const vendorIds = [...new Set(allOrders.map(o => o.vendorId))];
+    // FIX: Filter out any null or undefined vendor IDs before fetching profiles
+    const vendorIds = [...new Set(allOrders.map(o => o.vendorId))].filter((id): id is string => !!id);
     const vendorProfiles = await Promise.all(vendorIds.map(id => getFreelancerProfile(id)));
     const vendorMap = new Map(vendorProfiles.map(p => p ? [p.userId, p.name] : [null, null]));
 
