@@ -9,12 +9,13 @@ import {
   SheetHeader,
   SheetTitle,
   SheetFooter,
-  SheetDescription,
+  SheetClose,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { CartItem } from './cart-item';
 import { ShoppingCart } from 'lucide-react';
+import Link from 'next/link';
 
 export function CartSheet() {
   const { cartItems, cartTotal, isCartOpen, setIsCartOpen, clearCart } = useCart();
@@ -47,9 +48,11 @@ export function CartSheet() {
                 </div>
                 <div className="flex justify-between">
                     <Button variant="outline" onClick={clearCart}>Clear Cart</Button>
-                    <Button className="w-full max-w-xs bg-primary text-primary-foreground hover:bg-primary/90">
-                        Proceed to Checkout
-                    </Button>
+                    <SheetClose asChild>
+                      <Button asChild className="w-full max-w-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                          <Link href="/checkout">Proceed to Checkout</Link>
+                      </Button>
+                    </SheetClose>
                 </div>
               </div>
             </SheetFooter>
