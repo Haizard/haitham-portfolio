@@ -73,10 +73,28 @@ async function isProductSlugUnique(slug: string, excludeId?: string): Promise<bo
 }
 
 export async function getAllProducts(category?: string, productType?: ProductType, vendorId?: string): Promise<Product[]> {
-  const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const ordersCollection = await getCollection('orders');
+
+  // 1. Get sales data first
+  const salesPipeline = [
+    { $unwind: "$lineItems" },
+    { $match: { "lineItems.status": "Delivered" } },
+    {
+      $group: {
+        _id: "$lineItems.productId",
+        sales: { $sum: "$lineItems.quantity" },
+        revenue: { $sum: { $multiply: ["$lineItems.quantity", "$lineItems.price"] } }
+      }
+    }
+  ];
+  const salesData = await ordersCollection.aggregate(salesPipeline).toArray();
+  const salesMap = new Map(salesData.map((item: any) => [item._id.toString(), { sales: item.sales, revenue: item.revenue }]));
+
+  // 2. Fetch products based on filters
   const query: Filter<ProductDocument> = {};
   if (category && category.toLowerCase() !== 'all') {
-    query.category = { $regex: new RegExp(`^${category}$`, 'i') }; // Case-insensitive match
+    query.category = { $regex: new RegExp(`^${category}$`, 'i') };
   }
   if (productType) {
     query.productType = productType;
@@ -84,8 +102,18 @@ export async function getAllProducts(category?: string, productType?: ProductTyp
   if (vendorId) {
     query.vendorId = vendorId;
   }
-  const productDocs = await collection.find(query).sort({ name: 1 }).toArray();
-  return productDocs.map(docToProduct);
+  const productDocs = await productsCollection.find(query).sort({ name: 1 }).toArray();
+
+  // 3. Enrich products with sales data
+  const enrichedProducts = productDocs.map(doc => {
+    const product = docToProduct(doc);
+    const saleInfo = salesMap.get(product.id!);
+    product.sales = saleInfo?.sales || 0;
+    product.revenue = saleInfo?.revenue || 0;
+    return product;
+  });
+
+  return enrichedProducts;
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
@@ -220,10 +248,10 @@ export async function getTopSellingProducts(limit: number = 5): Promise<Product[
 
     // 2. Fetch product details for the top selling product IDs
     const topProductIds = topProductsData.map(p => p._id);
-    const productDetails = await productsCollection.find({ id: { $in: topProductIds } }).toArray();
+    const productDocs = await productsCollection.find({ id: { $in: topProductIds } }).toArray();
 
     // 3. Combine sales data with product details
-    const productsById = new Map(productDetails.map(p => [p.id, docToProduct(p)]));
+    const productsById = new Map(productDocs.map(p => [p.id, docToProduct(p)]));
     
     const enrichedTopProducts = topProductsData.map(salesData => {
         const productInfo = productsById.get(salesData._id);

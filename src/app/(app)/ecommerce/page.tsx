@@ -116,7 +116,7 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
             ))}
            <span className={cn("text-xs text-muted-foreground ml-1", size === 'small' && 'text-[0.65rem] ml-0.5')}>({Math.floor(Math.random() * 50) + 5})</span>
           </div>
-           <span className={cn("text-xs text-muted-foreground", size === 'small' && 'text-[0.65rem]')}>({Math.floor(Math.random() * 200) + 20} sold)</span>
+           <span className={cn("text-xs text-muted-foreground", size === 'small' && 'text-[0.65rem]')}>({product.sales || 0} sold)</span>
         </div>
         <div className={cn("mt-auto pt-1", size === 'small' && 'pt-0.5')}>
         {product.productType === 'creator' && product.price !== undefined ? (
