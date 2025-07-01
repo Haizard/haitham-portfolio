@@ -13,6 +13,7 @@ import type { BlogPost } from '@/lib/blog-data'; // For Latest Articles
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { StarRating } from '@/components/reviews/StarRating';
 
 const mockCategories = [
   { name: "Electronics", icon: Zap, hint: "electronics device", products: 120, image: "https://placehold.co/100x100.png" },
@@ -34,6 +35,7 @@ const mockHotCategories = [
 
 const ProductCard: React.FC<{ product: Product, className?: string, size?: 'small' | 'default' }> = ({ product, className, size = 'default' }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const { toast } = useToast();
   const originalPrice = product.price ? product.price * 1.2 : null;
 
   return (
@@ -51,12 +53,12 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
             size="icon"
             variant="ghost"
             className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-card/60 hover:bg-card text-destructive"
-            onClick={(e) => { e.preventDefault(); alert("Added to wishlist (mock)!"); }}
+            onClick={(e) => { e.preventDefault(); toast({ title: "Added to Wishlist (Mock)" }); }}
             aria-label="Add to wishlist"
         >
             <Heart className="h-4 w-4" />
         </Button>
-        <Link href={`/ecommerce?product=${product.slug || product.id}`} legacyBehavior={false}>
+        <Link href={`/products/${product.slug || product.id}`} legacyBehavior={false}>
           <Image
             src={product.imageUrl}
             alt={product.name}
@@ -79,12 +81,12 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
             )}
         >
             <Button size={size === 'small' ? 'xs' : 'sm'} variant="outline" className="text-xs flex-1 h-8" asChild>
-                <Link href={`/ecommerce?product=${product.slug || product.id}`}>
+                <Link href={`/products/${product.slug || product.id}`}>
                     <Eye className="mr-1 h-3.5 w-3.5" /> View
                 </Link>
             </Button>
              {product.productType === 'creator' && (
-                <Button size={size === 'small' ? 'xs' : 'sm'} variant="primary" className="text-xs flex-1 h-8">
+                <Button size={size === 'small' ? 'xs' : 'sm'} variant="primary" className="text-xs flex-1 h-8" onClick={(e) => { e.preventDefault(); toast({ title: "Added to Cart (Mock)" }); }}>
                     <ShoppingCart className="mr-1 h-3.5 w-3.5" /> Cart
                 </Button>
             )}
@@ -100,7 +102,7 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
       <CardContent className={cn("p-3 flex-grow flex flex-col", size === 'small' && 'p-2')}>
         {product.category && <span className={cn("text-xs text-muted-foreground mb-1", size === 'small' && 'text-[0.65rem] mb-0.5')}>{product.category}</span>}
         <CardTitle className={cn("font-semibold line-clamp-2 mb-1", size === 'small' ? 'text-xs leading-tight' : 'text-sm')}>
-            <Link href={`/ecommerce?product=${product.slug || product.id}`} className="hover:text-primary transition-colors">
+            <Link href={`/products/${product.slug || product.id}`} className="hover:text-primary transition-colors">
                 {product.name}
             </Link>
         </CardTitle>
@@ -111,10 +113,8 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
         )}
         <div className="flex items-center my-1 gap-2 flex-wrap">
           <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className={cn("h-3 w-3", i < Math.floor(Math.random() * 3) + 3 ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/50", size === 'small' && 'h-2.5 w-2.5')} />
-            ))}
-           <span className={cn("text-xs text-muted-foreground ml-1", size === 'small' && 'text-[0.65rem] ml-0.5')}>({Math.floor(Math.random() * 50) + 5})</span>
+            <StarRating rating={product.averageRating || 0} size={size === 'small' ? 10 : 12} disabled/>
+           <span className={cn("text-xs text-muted-foreground ml-1", size === 'small' && 'text-[0.65rem] ml-0.5')}>({product.reviewCount || 0})</span>
           </div>
            <span className={cn("text-xs text-muted-foreground", size === 'small' && 'text-[0.65rem]')}>({product.sales || 0} sold)</span>
         </div>
@@ -243,13 +243,16 @@ export default function EcommerceStorePage() {
               <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground mb-3">{bestPickOfTheWeek.name}</h2>
               <p className="text-muted-foreground mb-2 line-clamp-3">{bestPickOfTheWeek.description}</p>
               <div className="flex items-center justify-center md:justify-start gap-2 text-yellow-500 mb-4">
-                  {[...Array(5)].map((_,i)=><Star key={i} className="h-5 w-5 fill-current"/>)} <span className="text-sm text-muted-foreground ml-1">(5.0 from 120 reviews)</span>
+                  <StarRating rating={bestPickOfTheWeek.averageRating || 0} disabled/>
+                  <span className="text-sm text-muted-foreground ml-1">({bestPickOfTheWeek.reviewCount || 0} reviews)</span>
               </div>
               <div className="text-2xl font-bold text-primary mb-6">
                 {bestPickOfTheWeek.productType === 'creator' && bestPickOfTheWeek.price ? `$${bestPickOfTheWeek.price.toFixed(2)}` : bestPickOfTheWeek.links?.[0]?.priceDisplay || 'Check Price'}
               </div>
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
-                <ShoppingCart className="mr-2 h-5 w-5"/> View Product
+              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" asChild>
+                <Link href={`/products/${bestPickOfTheWeek.slug}`}>
+                    <ShoppingCart className="mr-2 h-5 w-5"/> View Product
+                </Link>
               </Button>
             </div>
           </div>

@@ -35,6 +35,10 @@ export interface Product {
   price?: number;
   stock?: number;
   sku?: string;
+  
+  // Rating and Review fields
+  averageRating?: number;
+  reviewCount?: number;
 
   // Enriched fields for analytics
   sales?: number;
@@ -49,7 +53,12 @@ interface ProductDocument extends Omit<Product, 'id'> {
 function docToProduct(doc: any): Product {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
-  return { id: _id?.toString(), ...rest } as Product;
+  return { 
+      id: _id?.toString(), 
+      ...rest,
+      averageRating: rest.averageRating || 0,
+      reviewCount: rest.reviewCount || 0,
+    } as Product;
 }
 
 function createProductSlug(name: string): string {
@@ -154,6 +163,8 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
     price: productData.productType === 'creator' ? (productData.price || 0) : undefined,
     stock: productData.productType === 'creator' ? (productData.stock || 0) : undefined,
     sku: productData.productType === 'creator' ? (productData.sku || '') : undefined,
+    averageRating: 0,
+    reviewCount: 0,
   };
 
   const result = await collection.insertOne(docToInsert as any);
@@ -266,4 +277,17 @@ export async function getTopSellingProducts(limit: number = 5): Promise<Product[
     }).filter((p): p is Product => p !== null);
 
     return enrichedTopProducts;
+}
+
+// New function to be called by review system to update a product's rating
+export async function updateProductRating(productId: string, newAverageRating: number, newReviewCount: number): Promise<boolean> {
+  if (!ObjectId.isValid(productId)) {
+    return false;
+  }
+  const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const result = await productsCollection.updateOne(
+    { _id: new ObjectId(productId) },
+    { $set: { averageRating: newAverageRating, reviewCount: newReviewCount } }
+  );
+  return result.modifiedCount === 1;
 }
