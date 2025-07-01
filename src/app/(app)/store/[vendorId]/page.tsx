@@ -6,15 +6,21 @@ import { useParams, notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Star, Rss } from 'lucide-react';
+import { Loader2, Star, Rss, Wallet, ShoppingCart, Package, Clock } from 'lucide-react';
 import type { Product } from '@/lib/products-data';
 import type { FreelancerProfile } from '@/lib/user-profile-data';
+import type { VendorFinanceSummary } from '@/lib/payouts-data';
+import type { Order } from '@/lib/orders-data';
 import Image from "next/image";
 import { ProductCard } from '@/components/products/ProductCard';
+import { MetricCard } from '@/components/dashboard/metric-card';
+import { formatDistanceToNow } from 'date-fns';
 
 interface VendorData {
   profile: FreelancerProfile;
   products: Product[];
+  financeSummary: VendorFinanceSummary;
+  orders: Order[];
 }
 
 export default function VendorStorefrontPage() {
@@ -80,7 +86,8 @@ export default function VendorStorefrontPage() {
     return null;
   }
   
-  const { profile, products } = vendorData;
+  const { profile, products, financeSummary, orders } = vendorData;
+  const lastOrder = orders.length > 0 ? orders[0] : null;
 
   return (
     <div className="bg-secondary/30">
@@ -108,7 +115,38 @@ export default function VendorStorefrontPage() {
             </div>
         </header>
         
-        <main className="mt-8">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 my-8">
+          <MetricCard
+            title="Available Balance"
+            value={`$${financeSummary.availableBalance.toFixed(2)}`}
+            icon={Wallet}
+            description={`Total earnings: $${financeSummary.totalEarnings.toFixed(2)}`}
+            className="shadow-md"
+          />
+          <MetricCard
+            title="Total Orders"
+            value={orders.length.toString()}
+            icon={ShoppingCart}
+            description="All-time orders received"
+            className="shadow-md"
+          />
+          <MetricCard
+            title="Listed Products"
+            value={products.length.toString()}
+            icon={Package}
+            description="Currently for sale"
+            className="shadow-md"
+          />
+          <MetricCard
+            title="Last Order"
+            value={lastOrder ? formatDistanceToNow(new Date(lastOrder.orderDate), { addSuffix: true }) : 'N/A'}
+            icon={Clock}
+            description={lastOrder ? `by ${lastOrder.customerName}` : 'No orders yet'}
+            className="shadow-md"
+          />
+        </section>
+
+        <main>
             <h2 className="text-2xl font-bold font-headline mb-6">Products from {profile.name}</h2>
             {products.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

@@ -3,6 +3,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getFreelancerProfile } from '@/lib/user-profile-data';
 import { getAllProducts } from '@/lib/products-data';
+import { getVendorFinanceSummary } from '@/lib/payouts-data';
+import { getOrdersByVendorId } from '@/lib/orders-data';
 
 export async function GET(
   request: NextRequest,
@@ -14,16 +16,20 @@ export async function GET(
       return NextResponse.json({ message: "Vendor ID is required." }, { status: 400 });
     }
     
-    const [profile, products] = await Promise.all([
+    // Fetch all data concurrently for efficiency
+    const [profile, products, financeSummary, orders] = await Promise.all([
       getFreelancerProfile(vendorId),
-      getAllProducts(undefined, undefined, vendorId)
+      getAllProducts(undefined, undefined, vendorId),
+      getVendorFinanceSummary(vendorId),
+      getOrdersByVendorId(vendorId)
     ]);
 
     if (!profile) {
       return NextResponse.json({ message: "Vendor profile not found." }, { status: 404 });
     }
 
-    return NextResponse.json({ profile, products });
+    // Return a composite object with all the necessary data
+    return NextResponse.json({ profile, products, financeSummary, orders });
 
   } catch (error: any) {
     console.error(`[API /api/vendors/${params.vendorId} GET] Error:`, error);
