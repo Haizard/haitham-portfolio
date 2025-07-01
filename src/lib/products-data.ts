@@ -22,6 +22,7 @@ export interface Product {
   description: string;
   category: string; 
   vendorId: string; // ID of the freelancer/vendor who owns this product
+  vendorName?: string;
   imageUrl: string;
   imageHint: string;
   productType: ProductType;

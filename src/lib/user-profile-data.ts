@@ -121,6 +121,16 @@ export async function getFreelancerProfile(userId: string): Promise<FreelancerPr
   return docToFreelancerProfile(profileDoc);
 }
 
+export async function getFreelancerProfilesByUserIds(userIds: string[]): Promise<FreelancerProfile[]> {
+    if (!userIds || userIds.length === 0) {
+        return [];
+    }
+    const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
+    const profileDocs = await collection.find({ userId: { $in: userIds } }).toArray();
+    return profileDocs.map(docToFreelancerProfile);
+}
+
+
 export async function updateFreelancerProfile(userId: string, data: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile | null> {
   const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
   

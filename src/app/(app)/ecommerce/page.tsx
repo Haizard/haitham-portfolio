@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, ExternalLink, Star, Search, ChevronRight, Gamepad2, Watch, Armchair, Zap, Sparkles, Tag, ArrowRight, Flame, Newspaper, Award, Info, ThumbsUp, PackageCheck } from "lucide-react";
+import { ShoppingCart, ExternalLink, Star, Search, ChevronRight, Gamepad2, Watch, Armchair, Zap, Sparkles, Tag, ArrowRight, Flame, Newspaper, Award, Info, ThumbsUp, PackageCheck, Heart, Eye } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from '@/lib/products-data';
@@ -47,6 +47,15 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
         onMouseLeave={() => setIsHovered(false)}
     >
       <div className={cn("bg-muted overflow-hidden relative", size === 'small' ? 'aspect-[1/1]' : 'aspect-[4/3]')}>
+        <Button
+            size="icon"
+            variant="ghost"
+            className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-card/60 hover:bg-card text-destructive"
+            onClick={(e) => { e.preventDefault(); alert("Added to wishlist (mock)!"); }}
+            aria-label="Add to wishlist"
+        >
+            <Heart className="h-4 w-4" />
+        </Button>
         <Link href={`/ecommerce?product=${product.slug || product.id}`} legacyBehavior={false}>
           <Image
             src={product.imageUrl}
@@ -64,20 +73,25 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
         )}
          <div 
             className={cn(
-                "absolute bottom-0 left-0 right-0 p-2 flex justify-center items-center gap-2 bg-black/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                "absolute bottom-0 left-0 right-0 p-2 flex justify-center items-stretch gap-2 bg-black/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300",
                 isHovered && "opacity-100",
-                size === 'small' && 'p-1.5'
+                size === 'small' && 'p-1.5 gap-1'
             )}
         >
+            <Button size={size === 'small' ? 'xs' : 'sm'} variant="outline" className="text-xs flex-1 h-8" asChild>
+                <Link href={`/ecommerce?product=${product.slug || product.id}`}>
+                    <Eye className="mr-1 h-3.5 w-3.5" /> View
+                </Link>
+            </Button>
              {product.productType === 'creator' && (
                 <Button size={size === 'small' ? 'xs' : 'sm'} variant="primary" className="text-xs flex-1 h-8">
-                    <ShoppingCart className="mr-1 h-3.5 w-3.5" /> Add to Cart
+                    <ShoppingCart className="mr-1 h-3.5 w-3.5" /> Cart
                 </Button>
             )}
             {product.productType === 'affiliate' && product.links && product.links.length > 0 && (
                  <Button size={size === 'small' ? 'xs' : 'sm'} variant="secondary" className="text-xs flex-1 h-8" asChild>
                     <Link href={product.links[0].url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="mr-1 h-3.5 w-3.5" /> View Offer
+                        <ExternalLink className="mr-1 h-3.5 w-3.5" /> Offer
                     </Link>
                 </Button>
             )}
@@ -90,11 +104,19 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
                 {product.name}
             </Link>
         </CardTitle>
-        <div className="flex items-center my-1">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className={cn("h-3 w-3", i < Math.floor(Math.random() * 3) + 3 ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/50", size === 'small' && 'h-2.5 w-2.5')} />
-          ))}
+        {product.vendorName && (
+             <Link href={`/store/${product.vendorId}`} className={cn("text-xs font-medium text-muted-foreground hover:text-primary transition-colors", size === 'small' && 'text-[0.65rem] mb-0.5')}>
+                by {product.vendorName}
+            </Link>
+        )}
+        <div className="flex items-center my-1 gap-2 flex-wrap">
+          <div className="flex items-center">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className={cn("h-3 w-3", i < Math.floor(Math.random() * 3) + 3 ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/50", size === 'small' && 'h-2.5 w-2.5')} />
+            ))}
            <span className={cn("text-xs text-muted-foreground ml-1", size === 'small' && 'text-[0.65rem] ml-0.5')}>({Math.floor(Math.random() * 50) + 5})</span>
+          </div>
+           <span className={cn("text-xs text-muted-foreground", size === 'small' && 'text-[0.65rem]')}>({Math.floor(Math.random() * 200) + 20} sold)</span>
         </div>
         <div className={cn("mt-auto pt-1", size === 'small' && 'pt-0.5')}>
         {product.productType === 'creator' && product.price !== undefined ? (

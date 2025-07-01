@@ -2,6 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllProducts, addProduct, type Product, type ProductType } from '@/lib/products-data';
 import { z } from 'zod';
+import { getFreelancerProfilesByUserIds } from '@/lib/user-profile-data';
 
 // This would come from an authenticated session
 const MOCK_VENDOR_ID = "freelancer123"; // Using a different ID to distinguish from client/freelancer mocks
@@ -53,6 +54,23 @@ export async function GET(request: NextRequest) {
     const vendorId = searchParams.get('vendorId') || undefined;
     
     const products = await getAllProducts(category, productType, vendorId);
+
+    // --- ENRICHMENT STEP ---
+    if (products.length > 0) {
+        // Get unique vendor IDs from the products
+        const vendorIds = [...new Set(products.map(p => p.vendorId))];
+        // Fetch the corresponding freelancer profiles
+        const vendorProfiles = await getFreelancerProfilesByUserIds(vendorIds);
+        // Create a map for easy lookup
+        const vendorMap = new Map(vendorProfiles.map(p => [p.userId, p.name]));
+        
+        // Add vendorName to each product
+        products.forEach(p => {
+            p.vendorName = vendorMap.get(p.vendorId) || 'Unknown Vendor';
+        });
+    }
+    // --- END ENRICHMENT ---
+
     return NextResponse.json(products);
   } catch (error: any) {
     console.error("API Error in /api/products GET route:", error.message, error.stack); 
