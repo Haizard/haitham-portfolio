@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import { RelatedProducts } from '@/components/products/RelatedProducts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 async function getProductData(slug: string): Promise<Product | null> {
@@ -44,6 +45,8 @@ export default function ProductDetailPage() {
     const [product, setProduct] = useState<Product | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [bestDeals, setBestDeals] = useState<Product[]>([]);
+    const [isLoadingDeals, setIsLoadingDeals] = useState(true);
 
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
@@ -56,15 +59,25 @@ export default function ProductDetailPage() {
 
         async function fetchData() {
             setIsLoading(true);
+            setIsLoadingDeals(true);
             setError(null);
-            const data = await getProductData(slug as string);
-            if (data) {
-                setProduct(data);
+            
+            const [productData, dealsData] = await Promise.all([
+                getProductData(slug as string),
+                fetch(`/api/products?limit=4`).then(res => res.ok ? res.json() : []) // Fetch 4, might include current
+            ]);
+
+            if (productData) {
+                setProduct(productData);
+                // Filter the current product out of the deals list and take the first 3
+                const deals = (dealsData as Product[]).filter(p => p.id !== productData.id).slice(0, 3);
+                setBestDeals(deals);
             } else {
                 setError("Product not found.");
                 notFound();
             }
             setIsLoading(false);
+            setIsLoadingDeals(false);
         }
         fetchData();
     }, [slug]);
@@ -205,15 +218,41 @@ export default function ProductDetailPage() {
                             <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-yellow-500"/> Best Deals Today</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="flex items-center gap-3 p-2 rounded-md hover:bg-secondary/50">
-                                    <Image src={`https://placehold.co/80x80.png`} alt={`Deal ${i}`} width={60} height={60} className="rounded-md" data-ai-hint="product deal"/>
-                                    <div>
-                                        <p className="text-sm font-medium line-clamp-2">Premium Tech Gadget {i}</p>
-                                        <p className="text-xs text-primary font-semibold">$99.99 <span className="text-muted-foreground line-through ml-1">$129.99</span></p>
-                                    </div>
+                           {isLoadingDeals ? (
+                                <div className="space-y-4">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <Skeleton className="h-16 w-16 rounded-md" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton className="h-4 w-4/5" />
+                                                <Skeleton className="h-4 w-1/2" />
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            ) : bestDeals.length > 0 ? (
+                                bestDeals.map((deal) => {
+                                    const dealOriginalPrice = deal.price ? deal.price * 1.25 : null;
+                                    return (
+                                        <Link href={`/products/${deal.slug}`} key={deal.id} className="block group">
+                                            <div className="flex items-center gap-3 p-2 rounded-md group-hover:bg-secondary/50 transition-colors">
+                                                <Image src={deal.imageUrl} alt={deal.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={deal.imageHint || "product deal"}/>
+                                                <div>
+                                                    <p className="text-sm font-medium line-clamp-2 group-hover:text-primary">{deal.name}</p>
+                                                    <p className="text-xs text-primary font-semibold">
+                                                        {deal.price ? `$${deal.price.toFixed(2)}` : 'Check Price'}
+                                                        {dealOriginalPrice && (
+                                                            <span className="text-muted-foreground line-through ml-1.5">${dealOriginalPrice.toFixed(2)}</span>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    );
+                                })
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center py-4">No other deals available now.</p>
+                            )}
                              <Button className="w-full mt-2" variant="outline">View All Deals</Button>
                         </CardContent>
                     </Card>
