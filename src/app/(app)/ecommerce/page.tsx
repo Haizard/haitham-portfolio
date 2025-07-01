@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ProductCard } from '@/components/products/ProductCard';
+import { StarRating } from '@/components/reviews/StarRating';
 
 
 const mockCategories = [
