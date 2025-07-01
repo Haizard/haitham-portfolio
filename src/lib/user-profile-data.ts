@@ -48,6 +48,7 @@ export interface FreelancerProfile {
   availabilityStatus: AvailabilityStatus;
   averageRating?: number;
   reviewCount?: number;
+  wishlist?: string[]; // Array of product IDs
 
   // Vendor-specific fields
   storeName: string;
@@ -71,6 +72,7 @@ function docToFreelancerProfile(doc: any): FreelancerProfile {
     skills: rest.skills || [],
     averageRating: rest.averageRating || 0,
     reviewCount: rest.reviewCount || 0,
+    wishlist: rest.wishlist || [],
   } as FreelancerProfile;
 }
 
@@ -87,6 +89,7 @@ const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, '
   availabilityStatus: 'available',
   averageRating: 0,
   reviewCount: 0,
+  wishlist: [],
   storeName: `${userId}'s Store`,
   vendorStatus: 'pending',
 });
@@ -172,4 +175,31 @@ export async function updateVendorStatus(vendorId: string, status: VendorStatus)
         { returnDocument: 'after' }
     );
     return result ? docToFreelancerProfile(result) : null;
+}
+
+export async function toggleWishlistItem(userId: string, productId: string): Promise<{ wishlist: string[] }> {
+  const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
+  const profile = await collection.findOne({ userId });
+
+  if (!profile) {
+    throw new Error("Profile not found");
+  }
+
+  const isInWishlist = (profile.wishlist || []).includes(productId);
+
+  const updateOperation = isInWishlist
+    ? { $pull: { wishlist: productId } }
+    : { $addToSet: { wishlist: productId } };
+
+  const result = await collection.findOneAndUpdate(
+    { userId },
+    { ...updateOperation, $set: { updatedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+  
+  if (!result) {
+    throw new Error("Failed to update wishlist.");
+  }
+
+  return { wishlist: result.wishlist || [] };
 }
