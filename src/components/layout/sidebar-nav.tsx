@@ -43,57 +43,66 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/profile", label: "My Profile", icon: UserCircle }, 
+  { href: "/dashboard", label: "Hub", icon: LayoutDashboard },
+  { href: "/profile", label: "My Profile", icon: UserCircle },
   {
-    group: "Client",
-    items: [
-       { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
-       { href: "/my-jobs", label: "Manage My Jobs", icon: ClipboardList },
-       { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
-    ]
-  },
-  {
-    group: "Freelancer",
+    group: "Freelancer Suite",
     items: [
       { href: "/find-work", label: "Find Work", icon: Search },
       { href: "/my-proposals", label: "My Proposals", icon: FileText },
       { href: "/my-projects", label: "My Projects", icon: Briefcase },
-      { href: "/my-services", label: "Manage Services", icon: PackageSearch },
-      { href: "/my-bookings", label: "Manage Bookings", icon: CalendarCheck2 },
-    ]
+      { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
+      { href: "/my-jobs", label: "Manage My Jobs", icon: ClipboardList },
+    ],
   },
   {
-    group: "Vendor Dashboard",
+    group: "Services Marketplace",
     items: [
-        { href: "/vendor/products", label: "My Products", icon: Store },
-        { href: "/vendor/orders", label: "Order Management", icon: ShoppingCart },
-        { href: "/vendor/finances", label: "Finances", icon: Landmark },
-        { href: "/become-a-vendor", label: "Become a Vendor", icon: UserPlus },
-    ]
+      { href: "/my-services", label: "Manage My Services", icon: PackageSearch },
+      { href: "/my-bookings", label: "Manage Bookings", icon: CalendarCheck2 },
+      { href: "/client-portal", label: "Client Portal", icon: ShieldCheck },
+    ],
   },
-  { 
-    group: "Content",
+  {
+    group: "E-commerce Marketplace",
+    items: [
+      { href: "/vendor/dashboard", label: "Vendor Dashboard", icon: Store },
+      { href: "/vendor/products", label: "My Products", icon: Package },
+      { href: "/vendor/orders", label: "Order Management", icon: ShoppingCart },
+      { href: "/vendor/finances", label: "Finances", icon: Landmark },
+      { href: "/become-a-vendor", label: "Become a Vendor", icon: UserPlus },
+    ],
+  },
+  {
+    group: "AI Content Tools",
     items: [
       { href: "/content-studio", label: "Content Studio", icon: Sparkles },
-      { href: "/content-inspirer", label: "Content Inspirer", icon: Lightbulb },
-      { href: "/content-calendar", label: "Content Calendar", icon: CalendarDays },
+      {
+        href: "/content-inspirer",
+        label: "Content Inspirer",
+        icon: Lightbulb,
+      },
+      {
+        href: "/content-calendar",
+        label: "Content Calendar",
+        icon: CalendarDays,
+      },
       { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
-    ]
+    ],
   },
-  { 
-    group: "Platform",
+  {
+    group: "Platform Tools",
     items: [
       { href: "/social-media", label: "Social Media", icon: MessagesSquare },
       { href: "/chat", label: "Chat", icon: MessageCircle },
       { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
-      { href: "/ecommerce", label: "E-commerce Store", icon: Package }, 
-    ]
+      { href: "/ecommerce", label: "E-commerce Store", icon: Package },
+    ],
   },
-  { 
+  {
     group: "Admin",
     items: [
-      { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig },
+      { href: "/admin/dashboard", label: "Platform Dashboard", icon: BarChartHorizontalBig },
       { href: "/admin/orders", label: "Manage Orders", icon: ShoppingCart },
       { href: "/admin/payouts", label: "Manage Payouts", icon: Banknote },
       { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
@@ -102,9 +111,10 @@ const navItems = [
       { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Manage Tags", icon: Tags },
       { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase },
-    ]
-  }
+    ],
+  },
 ];
+
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -115,7 +125,7 @@ export function SidebarNav() {
   };
   
   const isActive = (href: string) => {
-    if (href === '/dashboard') {
+    if (href === '/dashboard' || href === '/profile') { // Hub and Profile should be exact matches
         return pathname === href;
     }
     return pathname.startsWith(href);
