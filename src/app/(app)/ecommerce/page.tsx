@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { StarRating } from '@/components/reviews/StarRating';
+import { useCart } from '@/hooks/use-cart';
+import { useWishlist } from '@/hooks/use-wishlist';
 
 const mockCategories = [
   { name: "Electronics", icon: Zap, hint: "electronics device", products: 120, image: "https://placehold.co/100x100.png" },
@@ -34,9 +36,23 @@ const mockHotCategories = [
 ];
 
 const ProductCard: React.FC<{ product: Product, className?: string, size?: 'small' | 'default' }> = ({ product, className, size = 'default' }) => {
+  const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id!);
   const [isHovered, setIsHovered] = useState(false);
-  const { toast } = useToast();
   const originalPrice = product.price ? product.price * 1.2 : null;
+
+  const handleWishlistClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(product.id!, product.name);
+  };
+  
+  const handleAddToCartClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product);
+  };
 
   return (
     <Card 
@@ -53,10 +69,10 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
             size="icon"
             variant="ghost"
             className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-card/60 hover:bg-card text-destructive"
-            onClick={(e) => { e.preventDefault(); toast({ title: "Added to Wishlist (Mock)" }); }}
+            onClick={handleWishlistClick}
             aria-label="Add to wishlist"
         >
-            <Heart className="h-4 w-4" />
+            <Heart className={cn("h-4 w-4", isWishlisted && "fill-current text-destructive")} />
         </Button>
         <Link href={`/products/${product.slug || product.id}`} legacyBehavior={false}>
           <Image
@@ -86,7 +102,7 @@ const ProductCard: React.FC<{ product: Product, className?: string, size?: 'smal
                 </Link>
             </Button>
              {product.productType === 'creator' && (
-                <Button size={size === 'small' ? 'xs' : 'sm'} variant="primary" className="text-xs flex-1 h-8" onClick={(e) => { e.preventDefault(); toast({ title: "Added to Cart (Mock)" }); }}>
+                <Button size={size === 'small' ? 'xs' : 'sm'} variant="primary" className="text-xs flex-1 h-8" onClick={handleAddToCartClick}>
                     <ShoppingCart className="mr-1 h-3.5 w-3.5" /> Cart
                 </Button>
             )}
@@ -177,8 +193,7 @@ export default function EcommerceStorePage() {
 
   const featuredProducts = allProducts.slice(0, 10); 
   const latestProducts = allProducts.slice(0, 4); 
-  const bestPickOfTheWeek = allProducts.length > 0 ? allProducts[Math.floor(Math.random() * Math.min(allProducts.length, 5))] : null;
-
+  const bestPickOfTheWeek = allProducts.length > 0 ? allProducts.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))[0] : null;
 
   return (
     <div className="bg-background text-foreground">

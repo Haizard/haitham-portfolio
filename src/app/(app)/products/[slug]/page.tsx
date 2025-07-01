@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, DollarSign, Star, Package, Rss, User, ExternalLink, ThumbsUp } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Star, ShoppingCart, ExternalLink, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,8 @@ import type { Product } from '@/lib/products-data';
 import { StarRating } from '@/components/reviews/StarRating';
 import { ProductReviews } from '@/components/products/ProductReviews';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useCart } from '@/hooks/use-cart';
+import { useWishlist } from '@/hooks/use-wishlist';
 
 
 async function getProductData(slug: string): Promise<Product | null> {
@@ -43,6 +45,9 @@ export default function ProductDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const { addToCart } = useCart();
+    const { toggleWishlist, isInWishlist } = useWishlist();
+
     useEffect(() => {
         if (!slug) {
             notFound();
@@ -52,6 +57,7 @@ export default function ProductDetailPage() {
         async function fetchData() {
             setIsLoading(true);
             setError(null);
+            // This needs to be implemented to fetch product by slug
             const data = await getProductBySlug(slug as string);
             if (data) {
                 setProduct(data);
@@ -90,6 +96,7 @@ export default function ProductDetailPage() {
     }
     
     const originalPrice = product.price ? product.price * 1.2 : null;
+    const isWishlisted = isInWishlist(product.id!);
 
     return (
         <div className="container mx-auto py-8 px-4">
@@ -166,8 +173,8 @@ export default function ProductDetailPage() {
                     
                     <div className="flex flex-col sm:flex-row gap-3">
                         {product.productType === 'creator' && (
-                            <Button size="lg" className="flex-1" onClick={() => toast({ title: "Added to Cart (Mock)" })}>
-                                <ThumbsUp className="mr-2 h-5 w-5" /> Add to Cart
+                            <Button size="lg" className="flex-1" onClick={() => addToCart(product)}>
+                                <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
                             </Button>
                         )}
                         {product.productType === 'affiliate' && product.links?.[0] && (
@@ -177,8 +184,9 @@ export default function ProductDetailPage() {
                                 </Link>
                             </Button>
                         )}
-                         <Button size="lg" variant="outline" className="flex-1" onClick={() => toast({ title: "Added to Wishlist (Mock)" })}>
-                           <ThumbsUp className="mr-2 h-5 w-5"/> Add to Wishlist
+                         <Button size="lg" variant="outline" className="flex-1" onClick={() => toggleWishlist(product.id!, product.name)}>
+                           <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-current text-destructive")} />
+                           {isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
                         </Button>
                     </div>
 
@@ -193,4 +201,3 @@ export default function ProductDetailPage() {
         </div>
     );
 }
-
