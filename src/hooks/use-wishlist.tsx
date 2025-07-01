@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -46,23 +45,22 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [wishlist]);
 
   const toggleWishlist = useCallback((productId: string, productName?: string) => {
-    setWishlist(prevWishlist => {
-      const isIn = prevWishlist.includes(productId);
-      if (isIn) {
-        toast({
-          title: "Removed from Wishlist",
-          description: `${productName || 'The item'} has been removed from your wishlist.`,
-        });
-        return prevWishlist.filter(id => id !== productId);
-      } else {
-        toast({
-          title: "Added to Wishlist",
-          description: `${productName || 'The item'} has been added to your wishlist.`,
-        });
-        return [...prevWishlist, productId];
-      }
-    });
-  }, [toast]);
+    const wasInWishlist = wishlist.includes(productId);
+
+    if (wasInWishlist) {
+      setWishlist(prev => prev.filter(id => id !== productId));
+      toast({
+        title: "Removed from Wishlist",
+        description: `${productName || 'The item'} has been removed from your wishlist.`,
+      });
+    } else {
+      setWishlist(prev => [...prev, productId]);
+      toast({
+        title: "Added to Wishlist",
+        description: `${productName || 'The item'} has been added to your wishlist.`,
+      });
+    }
+  }, [wishlist, toast]);
 
   const isInWishlist = useCallback((productId: string) => {
     return wishlist.includes(productId);
