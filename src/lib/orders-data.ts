@@ -173,6 +173,13 @@ export async function getOrdersByVendorId(vendorId: string): Promise<Order[]> {
   return vendorOrders.map(docToOrder);
 }
 
+// NEW function to get all orders for the admin panel
+export async function getAllOrders(): Promise<Order[]> {
+  const collection = await getCollection<Order>(ORDERS_COLLECTION);
+  const allOrders = await collection.find({}).sort({ orderDate: -1 }).toArray();
+  return allOrders.map(docToOrder);
+}
+
 export async function updateLineItemStatus(orderId: string, lineItemId: string, newStatus: LineItemStatus): Promise<boolean> {
   if (!ObjectId.isValid(orderId) || !ObjectId.isValid(lineItemId)) {
     return false;

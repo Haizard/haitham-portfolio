@@ -94,6 +94,7 @@ const navItems = [
     group: "Admin",
     items: [
       { href: "/admin/ecommerce-dashboard", label: "E-commerce Stats", icon: BarChartHorizontalBig },
+      { href: "/admin/orders", label: "Manage Orders", icon: ShoppingCart },
       { href: "/admin/payouts", label: "Manage Payouts", icon: Banknote },
       { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
