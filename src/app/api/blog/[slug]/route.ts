@@ -46,12 +46,9 @@ export async function PUT(
       return NextResponse.json({ message: "Post to update not found" }, { status: 404 });
     }
     
-    // --- Authorization Check ---
-    if (existingPost.authorId !== MOCK_FREELANCER_ID) {
-      return NextResponse.json({ message: "Unauthorized. You are not the author of this post." }, { status: 403 });
-    }
-    // ---
-
+    // In a real app, this would be a check for admin role, e.g., if (user.role !== 'admin' && post.authorId !== user.id).
+    // For now, we are removing the check to allow admin edits.
+    
     if (!title || !content || !categoryId) {
       return NextResponse.json({ message: "Missing required fields for update: title, content, categoryId are mandatory." }, { status: 400 });
     }
@@ -102,11 +99,8 @@ export async function DELETE(
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
 
-    // --- Authorization Check ---
-    if (existingPost.authorId !== MOCK_FREELANCER_ID) {
-        return NextResponse.json({ message: "Unauthorized. You are not the author of this post." }, { status: 403 });
-    }
-    // ---
+    // In a real app, this would be a check for admin role.
+    // For now, we are removing the check to allow admin deletes.
 
     const success = await deletePostBySlug(slug);
 
