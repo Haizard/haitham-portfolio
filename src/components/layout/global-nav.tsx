@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Layers, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
+import { Logo } from './logo';
 
 export function GlobalNav() {
   const { cartCount, setIsCartOpen } = useCart();
@@ -14,17 +15,10 @@ export function GlobalNav() {
     <>
       <nav className="bg-card border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/landing" className="flex items-center gap-2 group">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg group-hover:bg-primary/90 transition-colors">
-              <Layers className="h-6 w-6" />
-            </div>
-            <h1 className="text-xl font-semibold text-primary group-hover:text-primary/90 transition-colors font-headline">
-              CreatorOS
-            </h1>
-          </Link>
+          <Logo />
           <div className="flex items-center gap-1">
             <Button variant="ghost" asChild>
-              <Link href="/landing">Home</Link>
+              <Link href="/">Home</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/blog">Blog</Link>
@@ -36,7 +30,7 @@ export function GlobalNav() {
               <Link href="/our-services">Our Services</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/dashboard">Dashboard</Link>
             </Button>
             <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(true)} className="relative">
                 <ShoppingCart className="h-5 w-5" />

@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/profile", label: "My Profile", icon: UserCircle }, 
   {
     group: "Client",
@@ -113,6 +113,13 @@ export function SidebarNav() {
   const handleLinkClick = () => {
     setOpenMobile(false); 
   };
+  
+  const isActive = (href: string) => {
+    if (href === '/dashboard') {
+        return pathname === href;
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <SidebarMenu>
@@ -127,13 +134,13 @@ export function SidebarNav() {
                     <Link href={subItem.href} passHref legacyBehavior>
                       <SidebarMenuButton
                         asChild
-                        variant={pathname.startsWith(subItem.href) ? "default" : "ghost"}
+                        variant={isActive(subItem.href) ? "default" : "ghost"}
                         className={cn(
                           "w-full justify-start",
-                          pathname.startsWith(subItem.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-                          !pathname.startsWith(subItem.href) && "hover:bg-muted"
+                          isActive(subItem.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                          !isActive(subItem.href) && "hover:bg-muted"
                         )}
-                        isActive={pathname.startsWith(subItem.href)}
+                        isActive={isActive(subItem.href)}
                         tooltip={subItem.label}
                         onClick={handleLinkClick}
                       >
@@ -154,13 +161,13 @@ export function SidebarNav() {
             <Link href={item.href} passHref legacyBehavior>
               <SidebarMenuButton
                 asChild
-                variant={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)) ? "default" : "ghost"}
+                variant={isActive(item.href) ? "default" : "ghost"}
                 className={cn(
                   "w-full justify-start",
-                  (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-                  !(pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))) && "hover:bg-muted"
+                  isActive(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                  !isActive(item.href) && "hover:bg-muted"
                 )}
-                isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))}
+                isActive={isActive(item.href)}
                 tooltip={item.label}
                 onClick={handleLinkClick}
               >
