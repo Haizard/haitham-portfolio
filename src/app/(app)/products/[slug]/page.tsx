@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, DollarSign, Star, ShoppingCart, ExternalLink, Heart } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Star, ShoppingCart, ExternalLink, Heart, Store, MessageSquare, ShieldCheck, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -18,11 +18,12 @@ import { ProductReviews } from '@/components/products/ProductReviews';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
+import { RelatedProducts } from '@/components/products/RelatedProducts';
 
 
 async function getProductData(slug: string): Promise<Product | null> {
     try {
-        const response = await fetch(`/api/products/${slug}`); // Assuming API can fetch by slug, if not change to ID
+        const response = await fetch(`/api/products/by-identifier/${slug}`);
         if (!response.ok) {
             if (response.status === 404) return null;
             throw new Error('Failed to fetch product data');
@@ -33,7 +34,6 @@ async function getProductData(slug: string): Promise<Product | null> {
         return null;
     }
 }
-
 
 export default function ProductDetailPage() {
     const params = useParams<{ slug: string }>();
@@ -57,8 +57,7 @@ export default function ProductDetailPage() {
         async function fetchData() {
             setIsLoading(true);
             setError(null);
-            // This needs to be implemented to fetch product by slug
-            const data = await getProductBySlug(slug as string);
+            const data = await getProductData(slug as string);
             if (data) {
                 setProduct(data);
             } else {
@@ -70,15 +69,6 @@ export default function ProductDetailPage() {
         fetchData();
     }, [slug]);
     
-    // getProductBySlug needs to be defined or imported
-    async function getProductBySlug(slug: string): Promise<Product | null> {
-        // This is a placeholder for your actual data fetching logic
-        const response = await fetch(`/api/products?slug=${slug}`); // Fictional API endpoint
-        if (!response.ok) return null;
-        const products: Product[] = await response.json();
-        return products.length > 0 ? products[0] : null;
-    }
-
     if (isLoading) {
         return <div className="flex justify-center items-center h-[calc(100vh-8rem)]"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
@@ -121,7 +111,6 @@ export default function ProductDetailPage() {
                             </Badge>
                         )}
                     </div>
-                    {/* TODO: Add thumbnails for multiple images */}
                 </div>
 
                 {/* Product Details */}
@@ -141,21 +130,6 @@ export default function ProductDetailPage() {
                     
                     <p className="text-muted-foreground leading-relaxed">{product.description}</p>
                     
-                    <Card className="bg-secondary/50">
-                        <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                                <Avatar>
-                                    <AvatarImage src="https://placehold.co/100x100.png?text=V" alt={product.vendorName} data-ai-hint="vendor avatar"/>
-                                    <AvatarFallback>{product.vendorName?.substring(0,1)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Sold by</p>
-                                    <Link href={`/store/${product.vendorId}`} className="font-semibold hover:text-primary transition-colors">{product.vendorName}</Link>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
                     {product.productType === 'creator' ? (
                         <div className="flex items-baseline gap-3">
                             {product.price !== undefined && (
@@ -171,7 +145,7 @@ export default function ProductDetailPage() {
                         ))
                     )}
                     
-                    <div className="flex flex-col sm:flex-row gap-3">
+                     <div className="flex flex-col sm:flex-row gap-3">
                         {product.productType === 'creator' && (
                             <Button size="lg" className="flex-1" onClick={() => addToCart(product)}>
                                 <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
@@ -186,17 +160,68 @@ export default function ProductDetailPage() {
                         )}
                          <Button size="lg" variant="outline" className="flex-1" onClick={() => toggleWishlist(product.id!, product.name)}>
                            <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-current text-destructive")} />
-                           {isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                           {isWishlisted ? 'In Wishlist' : 'Add to Wishlist'}
                         </Button>
                     </div>
+
+                    <Card className="bg-secondary/50">
+                        <CardHeader>
+                            <CardTitle className="text-base">Seller Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Avatar>
+                                    <AvatarImage src="https://placehold.co/100x100.png?text=V" alt={product.vendorName} data-ai-hint="vendor avatar"/>
+                                    <AvatarFallback>{product.vendorName?.substring(0,1)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Sold by</p>
+                                    <Link href={`/store/${product.vendorId}`} className="font-semibold hover:text-primary transition-colors">{product.vendorName}</Link>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button size="sm" variant="outline" asChild>
+                                    <Link href={`/store/${product.vendorId}`}><Store className="mr-2 h-4 w-4"/>Visit Shop</Link>
+                                </Button>
+                                 <Button size="sm" variant="ghost" onClick={() => toast({title: "Coming Soon!", description: "Messaging feature is under development."})}>
+                                    <MessageSquare className="mr-2 h-4 w-4"/> Message
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                 </div>
             </div>
             
             <Separator className="my-12"/>
 
-            {/* Reviews Section */}
-            <ProductReviews productId={product.id!} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div className="lg:col-span-2">
+                     <ProductReviews productId={product.id!} />
+                </div>
+                <div className="lg:col-span-1">
+                    <Card className="sticky top-24 shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-yellow-500"/> Best Deals Today</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="flex items-center gap-3 p-2 rounded-md hover:bg-secondary/50">
+                                    <Image src={`https://placehold.co/80x80.png`} alt={`Deal ${i}`} width={60} height={60} className="rounded-md" data-ai-hint="product deal"/>
+                                    <div>
+                                        <p className="text-sm font-medium line-clamp-2">Premium Tech Gadget {i}</p>
+                                        <p className="text-xs text-primary font-semibold">$99.99 <span className="text-muted-foreground line-through ml-1">$129.99</span></p>
+                                    </div>
+                                </div>
+                            ))}
+                             <Button className="w-full mt-2" variant="outline">View All Deals</Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            <Separator className="my-12"/>
+            <RelatedProducts categoryId={product.category} currentProductId={product.id!} />
 
         </div>
     );

@@ -2,6 +2,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getProductById, updateProduct, deleteProduct, type Product } from '@/lib/products-data';
 import { z } from 'zod';
+import { ObjectId } from 'mongodb';
+
 
 // This would come from an authenticated session
 const MOCK_VENDOR_ID = "freelancer123";
@@ -51,7 +53,15 @@ export async function GET(
 ) {
   try {
     const productId = params.productId;
-    const product = await getProductById(productId);
+    // It's possible the identifier is a slug, not an ID. Let's try to fetch by both.
+    let product: Product | null = null;
+    if (ObjectId.isValid(productId)) {
+        product = await getProductById(productId);
+    } else {
+        // If it's not a valid ObjectId, we assume it's a slug.
+        // This is a common pattern for pages that can be accessed via slug or ID.
+        product = await getProductBySlug(productId);
+    }
 
     if (product) {
       return NextResponse.json(product);
@@ -76,7 +86,8 @@ export async function PUT(
     }
 
     // --- Authorization Check ---
-    if (productToUpdate.vendorId !== MOCK_VENDOR_ID) {
+    // In a real app, this might also check for an admin role.
+    if (productToUpdate.vendorId !== MOCK_VENDOR_ID && productToUpdate.vendorId !== 'admin') {
         return NextResponse.json({ message: "Unauthorized: You do not own this product." }, { status: 403 });
     }
     // ---
@@ -128,7 +139,7 @@ export async function DELETE(
     }
 
     // --- Authorization Check ---
-    if (productToDelete.vendorId !== MOCK_VENDOR_ID) {
+    if (productToDelete.vendorId !== MOCK_VENDOR_ID && productToDelete.vendorId !== 'admin') {
       return NextResponse.json({ message: "Unauthorized: You do not own this product." }, { status: 403 });
     }
     // ---

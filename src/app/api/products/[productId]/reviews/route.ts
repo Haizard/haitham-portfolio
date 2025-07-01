@@ -21,8 +21,11 @@ export async function GET(
 ) {
   try {
     const { productId } = params;
+    // Note: productId from the URL could be a slug. The review system requires an ObjectId.
+    // The calling component on the product detail page MUST fetch the product by slug first,
+    // then use its actual ObjectId to call this review endpoint.
     if (!ObjectId.isValid(productId)) {
-      return NextResponse.json({ message: "Invalid Product ID." }, { status: 400 });
+      return NextResponse.json({ message: "Invalid Product ID provided for reviews." }, { status: 400 });
     }
     const reviews = await getReviewsForProduct(productId);
     return NextResponse.json(reviews);
@@ -40,7 +43,7 @@ export async function POST(
   try {
     const { productId } = params;
     if (!ObjectId.isValid(productId)) {
-      return NextResponse.json({ message: "Invalid Product ID." }, { status: 400 });
+      return NextResponse.json({ message: "Invalid Product ID provided for review submission." }, { status: 400 });
     }
 
     const body = await request.json();

@@ -1,6 +1,7 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { getFreelancerProfile } from './user-profile-data'; // To enrich with vendor names
 
 const PRODUCTS_COLLECTION = 'products';
 const ORDERS_COLLECTION = 'orders'; // Need this for top selling products
@@ -81,7 +82,14 @@ async function isProductSlugUnique(slug: string, excludeId?: string): Promise<bo
   return count === 0;
 }
 
-export async function getAllProducts(category?: string, productType?: ProductType, vendorId?: string): Promise<Product[]> {
+export async function getAllProducts(
+  category?: string, 
+  productType?: ProductType, 
+  vendorId?: string,
+  slug?: string,
+  limit?: number,
+  excludeId?: string
+): Promise<Product[]> {
   const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const ordersCollection = await getCollection('orders');
 
@@ -111,7 +119,18 @@ export async function getAllProducts(category?: string, productType?: ProductTyp
   if (vendorId) {
     query.vendorId = vendorId;
   }
-  const productDocs = await productsCollection.find(query).sort({ name: 1 }).toArray();
+  if (slug) {
+      query.slug = slug;
+  }
+  if (excludeId && ObjectId.isValid(excludeId)) {
+      query._id = { $ne: new ObjectId(excludeId) };
+  }
+
+  const cursor = productsCollection.find(query).sort({ name: 1 });
+  if (limit) {
+      cursor.limit(limit);
+  }
+  const productDocs = await cursor.toArray();
 
   // 3. Enrich products with sales data
   const enrichedProducts = productDocs.map(doc => {
@@ -132,13 +151,32 @@ export async function getProductById(id: string): Promise<Product | null> {
   }
   const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const productDoc = await collection.findOne({ _id: new ObjectId(id) });
-  return productDoc ? docToProduct(productDoc) : null;
+  if (!productDoc) return null;
+
+  const product = docToProduct(productDoc);
+
+  // Enrich with vendor name
+  if (product.vendorId) {
+      const vendorProfile = await getFreelancerProfile(product.vendorId);
+      product.vendorName = vendorProfile?.name || 'Unknown Vendor';
+  }
+
+  return product;
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const productDoc = await collection.findOne({ slug });
-  return productDoc ? docToProduct(productDoc) : null;
+  if (!productDoc) return null;
+  
+  const product = docToProduct(productDoc);
+
+  // Enrich with vendor name
+  if (product.vendorId) {
+      const vendorProfile = await getFreelancerProfile(product.vendorId);
+      product.vendorName = vendorProfile?.name || 'Unknown Vendor';
+  }
+  return product;
 }
 
 export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug'>): Promise<Product> {
@@ -258,11 +296,11 @@ export async function getTopSellingProducts(limit: number = 5): Promise<Product[
     }
 
     // 2. Fetch product details for the top selling product IDs
-    const topProductIds = topProductsData.map(p => p._id);
-    const productDocs = await productsCollection.find({ id: { $in: topProductIds } }).toArray();
+    const topProductIds = topProductsData.map(p => new ObjectId(p._id));
+    const productDocs = await productsCollection.find({ _id: { $in: topProductIds } }).toArray();
 
     // 3. Combine sales data with product details
-    const productsById = new Map(productDocs.map(p => [p.id, docToProduct(p)]));
+    const productsById = new Map(productDocs.map(p => [p._id.toString(), docToProduct(p)]));
     
     const enrichedTopProducts = topProductsData.map(salesData => {
         const productInfo = productsById.get(salesData._id);

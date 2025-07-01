@@ -4,80 +4,18 @@
 import { useEffect, useState } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, ArrowLeft, Star, ShoppingCart, ExternalLink, Rss } from 'lucide-react';
+import { Loader2, Star, Rss } from 'lucide-react';
 import type { Product } from '@/lib/products-data';
 import type { FreelancerProfile } from '@/lib/user-profile-data';
 import Image from "next/image";
-import Link from "next/link";
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { ProductCard } from '@/components/products/ProductCard';
 
 interface VendorData {
   profile: FreelancerProfile;
   products: Product[];
 }
-
-const ProductCard: React.FC<{ product: Product, className?: string }> = ({ product, className }) => {
-  const originalPrice = product.price ? product.price * 1.2 : null;
-  return (
-    <Card className={cn("shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden group", className)}>
-      <div className="bg-muted overflow-hidden relative aspect-[4/3]">
-        <Link href={`/ecommerce?product=${product.slug}`} legacyBehavior={false}>
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            data-ai-hint={product.imageHint || "product image"}
-          />
-        </Link>
-        {product.price && originalPrice && product.price < originalPrice && (
-            <Badge variant="destructive" className="absolute top-2 left-2 text-xs z-10">
-                -{Math.round(((originalPrice - product.price) / originalPrice) * 100)}%
-            </Badge>
-        )}
-      </div>
-      <CardContent className="p-3 flex-grow flex flex-col">
-        {product.category && <span className="text-xs text-muted-foreground mb-1">{product.category}</span>}
-        <CardTitle className="font-semibold line-clamp-2 text-sm">
-            <Link href={`/ecommerce?product=${product.slug}`} className="hover:text-primary transition-colors">
-                {product.name}
-            </Link>
-        </CardTitle>
-        <div className="mt-auto pt-2">
-            {product.productType === 'creator' && product.price !== undefined ? (
-            <div className="flex items-baseline gap-1.5">
-                <span className="font-bold text-primary text-base">${product.price.toFixed(2)}</span>
-                {originalPrice && <span className="text-xs text-muted-foreground line-through">${originalPrice.toFixed(2)}</span>}
-            </div>
-            ) : product.productType === 'affiliate' && product.links && product.links.length > 0 ? (
-            <span className="font-bold text-primary text-base">{product.links[0].priceDisplay}</span>
-            ) : (
-            <span className="font-bold text-primary text-base">Price N/A</span>
-            )}
-        </div>
-      </CardContent>
-       <CardFooter className="p-3 border-t">
-            {product.productType === 'creator' && (
-                <Button size="sm" variant="outline" className="w-full text-xs h-9">
-                    <ShoppingCart className="mr-1.5 h-4 w-4" /> Add to Cart
-                </Button>
-            )}
-            {product.productType === 'affiliate' && product.links && product.links.length > 0 && (
-                 <Button size="sm" variant="secondary" className="w-full text-xs h-9" asChild>
-                    <Link href={product.links[0].url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="mr-1.5 h-4 w-4" /> View Offer
-                    </Link>
-                </Button>
-            )}
-        </CardFooter>
-    </Card>
-  );
-};
-
 
 export default function VendorStorefrontPage() {
   const params = useParams<{ vendorId: string }>();
@@ -131,7 +69,7 @@ export default function VendorStorefrontPage() {
         <h2 className="text-xl font-semibold text-destructive">Error Loading Storefront</h2>
         <p className="text-muted-foreground mt-2">{error}</p>
         <Button onClick={() => router.back()} className="mt-4">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+          Go Back
         </Button>
       </div>
     );
@@ -167,7 +105,6 @@ export default function VendorStorefrontPage() {
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="outline"><Rss className="mr-2 h-4 w-4"/> Follow</Button>
-                <Button><ShoppingCart className="mr-2 h-4 w-4"/> Contact Vendor</Button>
             </div>
         </header>
         

@@ -52,24 +52,37 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || undefined;
     const productType = searchParams.get('productType') as ProductType | undefined;
     const vendorId = searchParams.get('vendorId') || undefined;
+    const slug = searchParams.get('slug') || undefined;
     
-    const products = await getAllProducts(category, productType, vendorId);
+    // Pass all filters to the data function
+    const products = await getAllProducts(category, productType, vendorId, slug);
 
     // --- ENRICHMENT STEP ---
     if (products.length > 0) {
         // Get unique vendor IDs from the products
-        const vendorIds = [...new Set(products.map(p => p.vendorId))];
+        const vendorIds = [...new Set(products.map(p => p.vendorId))].filter(Boolean);
         // Fetch the corresponding freelancer profiles
-        const vendorProfiles = await getFreelancerProfilesByUserIds(vendorIds);
-        // Create a map for easy lookup
-        const vendorMap = new Map(vendorProfiles.map(p => [p.userId, p.name]));
-        
-        // Add vendorName to each product
-        products.forEach(p => {
-            p.vendorName = vendorMap.get(p.vendorId) || 'Unknown Vendor';
-        });
+        if (vendorIds.length > 0) {
+            const vendorProfiles = await getFreelancerProfilesByUserIds(vendorIds);
+            // Create a map for easy lookup
+            const vendorMap = new Map(vendorProfiles.map(p => [p.userId, p.name]));
+            
+            // Add vendorName to each product
+            products.forEach(p => {
+                p.vendorName = vendorMap.get(p.vendorId) || 'Unknown Vendor';
+            });
+        }
     }
     // --- END ENRICHMENT ---
+    
+    // If fetching by slug, expect one result and return it as an object, not an array.
+    if (slug) {
+        if (products.length > 0) {
+            return NextResponse.json(products[0]);
+        } else {
+            return NextResponse.json({ message: `Product with slug "${slug}" not found.` }, { status: 404 });
+        }
+    }
 
     return NextResponse.json(products);
   } catch (error: any) {
