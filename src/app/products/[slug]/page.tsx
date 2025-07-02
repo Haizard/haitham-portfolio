@@ -194,7 +194,7 @@ export default function ProductDetailPage() {
                             </div>
                             <div className="flex gap-2">
                                 <Button size="sm" variant="outline" asChild>
-                                    <Link href={`/store/${product.vendorId}`}><Store className="mr-2 h-4 w-4"/>Visit Shop</Link>
+                                    <Link href={`/store/${MOCK_VENDOR_ID}`}><Store className="mr-2 h-4 w-4"/>Visit Shop</Link>
                                 </Button>
                                  <Button size="sm" variant="ghost" onClick={() => toast({title: "Coming Soon!", description: "Messaging feature is under development."})}>
                                     <MessageSquare className="mr-2 h-4 w-4"/> Message
@@ -265,3 +265,5 @@ export default function ProductDetailPage() {
         </div>
     );
 }
+
+    
