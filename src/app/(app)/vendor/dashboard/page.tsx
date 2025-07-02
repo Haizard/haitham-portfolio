@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, DollarSign, Package, ShoppingCart, User, MoreHorizontal, Store, Landmark, ArrowRight, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from '@/lib/products-data';
