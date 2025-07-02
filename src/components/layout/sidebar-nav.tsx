@@ -95,8 +95,6 @@ const navItems = [
     items: [
       { href: "/social-media", label: "Social Media", icon: MessagesSquare },
       { href: "/chat", label: "Chat", icon: MessageCircle },
-      { href: "/affiliate-showcase", label: "Affiliate Showcase", icon: Layers },
-      { href: "/ecommerce", label: "E-commerce Store", icon: Package },
     ],
   },
   {
