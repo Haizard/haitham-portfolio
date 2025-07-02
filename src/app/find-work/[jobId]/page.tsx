@@ -292,7 +292,7 @@ export default function JobDetailPage() {
     <>
       <div className="container mx-auto py-8">
         <Button variant="outline" onClick={() => router.back()} className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -480,3 +480,4 @@ export default function JobDetailPage() {
     </>
   );
 }
+    

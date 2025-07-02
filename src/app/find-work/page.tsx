@@ -47,12 +47,12 @@ export default function FindWorkPage() {
   
   return (
     <div className="container mx-auto py-8">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight font-headline flex items-center">
+      <header className="mb-8 text-center bg-primary/10 py-10 rounded-lg">
+        <h1 className="text-4xl font-bold tracking-tight font-headline flex items-center justify-center">
           <Search className="mr-3 h-10 w-10 text-primary" />
-          Find Work
+          Freelancer Marketplace
         </h1>
-        <p className="text-xl text-muted-foreground mt-2">
+        <p className="text-xl text-muted-foreground mt-2 max-w-2xl mx-auto">
           Browse, search, and filter through the latest job postings to find your next project.
         </p>
       </header>
@@ -80,3 +80,4 @@ export default function FindWorkPage() {
     </div>
   );
 }
+    
