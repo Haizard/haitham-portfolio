@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Sparkles,
@@ -19,17 +18,14 @@ import {
   FolderKanban,
   Tags,
   FileText,
-  Layers,
   Package, 
   BarChartHorizontalBig, 
   PackageSearch,
   CalendarCheck2,
   MessageCircle,
   FilePlus2,
-  Search,
   ClipboardList, 
   Store,
-  UserPlus,
   ShoppingCart,
   Landmark,
   Users,
@@ -42,21 +38,43 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  roles?: string[]; // Roles that can see this item
+};
+
+type NavGroup = {
+  group: string;
+  roles: string[]; // Roles that can see this group
+  items: Omit<NavItem, 'roles'>[];
+};
+
+// All available navigation items, structured by role/feature set
+const navConfig: (NavItem | NavGroup)[] = [
+  // Always visible items
   { href: "/dashboard", label: "Hub", icon: LayoutDashboard },
   { href: "/profile", label: "My Profile", icon: UserCircle },
   {
-    group: "Freelancer Suite",
+    group: "Freelancer Tools",
+    roles: ['freelancer'],
     items: [
-      { href: "/find-work", label: "Find Work", icon: Search },
       { href: "/my-proposals", label: "My Proposals", icon: FileText },
       { href: "/my-projects", label: "My Projects", icon: Briefcase },
+    ],
+  },
+  {
+    group: "Client Tools",
+    roles: ['client'],
+    items: [
       { href: "/post-job", label: "Post a Job", icon: FilePlus2 },
       { href: "/my-jobs", label: "Manage My Jobs", icon: ClipboardList },
     ],
   },
   {
     group: "Services Marketplace",
+    roles: ['freelancer'],
     items: [
       { href: "/my-services", label: "Manage My Services", icon: PackageSearch },
       { href: "/my-bookings", label: "Manage Bookings", icon: CalendarCheck2 },
@@ -65,16 +83,17 @@ const navItems = [
   },
   {
     group: "E-commerce Marketplace",
+    roles: ['vendor'],
     items: [
       { href: "/vendor/dashboard", label: "Vendor Dashboard", icon: Store },
       { href: "/vendor/products", label: "My Products", icon: Package },
       { href: "/vendor/orders", label: "Order Management", icon: ShoppingCart },
       { href: "/vendor/finances", label: "Finances", icon: Landmark },
-      { href: "/become-a-vendor", label: "Become a Vendor", icon: UserPlus },
     ],
   },
   {
     group: "AI Content Tools",
+    roles: ['creator', 'admin'],
     items: [
       { href: "/content-studio", label: "Content Studio", icon: Sparkles },
       {
@@ -92,6 +111,7 @@ const navItems = [
   },
   {
     group: "Platform Tools",
+    roles: ['admin', 'vendor', 'freelancer', 'client'],
     items: [
       { href: "/social-media", label: "Social Media", icon: MessagesSquare },
       { href: "/chat", label: "Chat", icon: MessageCircle },
@@ -99,6 +119,7 @@ const navItems = [
   },
   {
     group: "Admin",
+    roles: ['admin'],
     items: [
       { href: "/admin/dashboard", label: "Platform Dashboard", icon: BarChartHorizontalBig },
       { href: "/admin/orders", label: "Manage Orders", icon: ShoppingCart },
@@ -114,7 +135,7 @@ const navItems = [
 ];
 
 
-export function SidebarNav() {
+export function SidebarNav({ userRoles }: { userRoles: string[] }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
 
@@ -123,15 +144,20 @@ export function SidebarNav() {
   };
   
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/profile') { // Hub and Profile should be exact matches
+    if (href === '/dashboard' || href === '/profile') {
         return pathname === href;
     }
     return pathname.startsWith(href);
   };
 
+  const hasAccess = (requiredRoles?: string[]) => {
+    if (!requiredRoles || requiredRoles.length === 0) return true; // Accessible to all if no roles are defined
+    return requiredRoles.some(role => userRoles.includes(role));
+  }
+
   return (
     <SidebarMenu>
-      {navItems.map((item, index) => {
+      {navConfig.filter(hasAccess).map((item, index) => {
         if ('group' in item) {
           return (
             <SidebarMenuItem key={`group-${index}`} className="mt-2">
