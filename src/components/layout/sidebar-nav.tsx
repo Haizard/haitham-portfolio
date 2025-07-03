@@ -157,7 +157,7 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
 
   return (
     <SidebarMenu>
-      {navConfig.filter(hasAccess).map((item, index) => {
+      {navConfig.filter(item => hasAccess(item.roles)).map((item, index) => {
         if ('group' in item) {
           return (
             <SidebarMenuItem key={`group-${index}`} className="mt-2">
