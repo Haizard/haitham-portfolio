@@ -18,8 +18,8 @@ export interface ClientProfile {
   averageRating?: number;
   reviewCount?: number;
   
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // Changed from Date
+  updatedAt: string; // Changed from Date
 }
 
 function docToClientProfile(doc: any): ClientProfile {
@@ -58,8 +58,8 @@ export async function createClientProfileIfNotExists(userId: string, initialData
   const profileToInsert: Omit<ClientProfile, 'id' | '_id'> = {
     ...defaultClientProfileData(userId),
     ...initialData,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
   };
 
   const result = await collection.insertOne(profileToInsert as any);
@@ -80,7 +80,7 @@ export async function getClientProfile(userId: string): Promise<ClientProfile | 
 export async function updateClientProfile(userId: string, data: Partial<Omit<ClientProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<ClientProfile | null> {
   const collection = await getCollection<ClientProfile>(CLIENT_PROFILES_COLLECTION);
   
-  const updateData = { ...data, updatedAt: new Date() };
+  const updateData = { ...data, updatedAt: new Date().toISOString() };
   
   const result = await collection.findOneAndUpdate(
     { userId },

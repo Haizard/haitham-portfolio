@@ -54,8 +54,8 @@ export interface FreelancerProfile {
   storeName: string;
   vendorStatus: VendorStatus;
 
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // Changed from Date to string
+  updatedAt: string; // Changed from Date to string
 }
 
 function docToFreelancerProfile(doc: any): FreelancerProfile {
@@ -105,8 +105,8 @@ export async function createFreelancerProfileIfNotExists(userId: string, initial
   const profileToInsert: Omit<FreelancerProfile, 'id' | '_id'> = {
     ...defaultFreelancerProfileData(userId),
     ...initialData,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
   };
 
   const result = await collection.insertOne(profileToInsert as any);
@@ -137,7 +137,7 @@ export async function getFreelancerProfilesByUserIds(userIds: string[]): Promise
 export async function updateFreelancerProfile(userId: string, data: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile | null> {
   const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
   
-  const updateData = { ...data, updatedAt: new Date() };
+  const updateData: any = { ...data, updatedAt: new Date().toISOString() };
   
   if (updateData.portfolioLinks) {
     updateData.portfolioLinks = updateData.portfolioLinks.map(link => ({
@@ -171,7 +171,7 @@ export async function updateVendorStatus(vendorId: string, status: VendorStatus)
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
     const result = await collection.findOneAndUpdate(
         { _id: new ObjectId(vendorId) },
-        { $set: { vendorStatus: status, updatedAt: new Date() } },
+        { $set: { vendorStatus: status, updatedAt: new Date().toISOString() } },
         { returnDocument: 'after' }
     );
     return result ? docToFreelancerProfile(result) : null;
@@ -193,7 +193,7 @@ export async function toggleWishlistItem(userId: string, productId: string): Pro
 
   const result = await collection.findOneAndUpdate(
     { userId },
-    { ...updateOperation, $set: { updatedAt: new Date() } },
+    { ...updateOperation, $set: { updatedAt: new Date().toISOString() } },
     { returnDocument: 'after' }
   );
   
