@@ -30,10 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
-
-// This is a placeholder until we have real user auth.
-const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
-const MOCK_CURRENT_USER_AS_FREELANCER_ID = "mockFreelancer456";
+import { useUser } from '@/hooks/use-user';
 
 export default function JobDetailPage() {
   const params = useParams<{ jobId: string }>();
@@ -50,6 +47,7 @@ export default function JobDetailPage() {
   
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const fetchJobAndProposals = useCallback(async () => {
     if (!params.jobId) {
@@ -87,7 +85,7 @@ export default function JobDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [params.jobId, notFound]);
+  }, [params.jobId]);
 
   useEffect(() => {
     fetchJobAndProposals();
@@ -112,12 +110,11 @@ export default function JobDetailPage() {
     }
   }, [job]);
   
-  // This could be determined by a global auth context in a real app
-  const isOwner = job?.clientId === MOCK_CURRENT_USER_AS_CLIENT_ID;
-  const hasApplied = proposals.some(p => p.freelancerId === MOCK_CURRENT_USER_AS_FREELANCER_ID);
+  const isOwner = user && job?.clientId === user.id;
+  const hasApplied = user && proposals.some(p => p.freelancerId === user.id);
   const acceptedProposal = proposals.find(p => p.status === 'accepted');
   const hiredFreelancerId = acceptedProposal?.freelancerId;
-  const amIHiredFreelancer = hiredFreelancerId === MOCK_CURRENT_USER_AS_FREELANCER_ID;
+  const amIHiredFreelancer = user && hiredFreelancerId === user.id;
 
   const handleReleaseEscrow = async () => {
     if (!job?.id) return;
@@ -316,7 +313,7 @@ export default function JobDetailPage() {
                     </CardContent>
                 </Card>
             )}
-             {isOwner && job.status === 'completed' && !job.clientReviewId && hiredFreelancerId && (
+             {isOwner && job.status === 'completed' && !job.clientReviewId && hiredFreelancerId && user && (
                 <Card className="shadow-xl">
                     <CardHeader><CardTitle>Project Complete!</CardTitle></CardHeader>
                     <CardContent>
@@ -433,7 +430,7 @@ export default function JobDetailPage() {
           </aside>
         </div>
       </div>
-      {job && (
+      {job && user && (
         <ProposalSubmitDialog 
           isOpen={isProposalDialogOpen}
           onClose={() => setIsProposalDialogOpen(false)}
@@ -444,12 +441,12 @@ export default function JobDetailPage() {
           }}
         />
       )}
-      {job && job.status === 'completed' && hiredFreelancerId && (
+      {job && job.status === 'completed' && hiredFreelancerId && user && (
         <ReviewSubmitDialog
           isOpen={isReviewDialogOpen}
           onClose={() => setIsReviewDialogOpen(false)}
           jobId={job.id!}
-          reviewerId={MOCK_CURRENT_USER_AS_CLIENT_ID}
+          reviewerId={user.id!}
           revieweeId={hiredFreelancerId}
           jobTitle={job.title}
           revieweeName="Mock Freelancer" // In a real app, fetch freelancer name
@@ -480,4 +477,3 @@ export default function JobDetailPage() {
     </>
   );
 }
-    

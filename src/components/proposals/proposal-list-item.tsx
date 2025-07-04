@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useUser } from '@/hooks/use-user';
 
 interface ProposalListItemProps {
   proposal: Proposal;
@@ -20,20 +21,15 @@ interface ProposalListItemProps {
   onAcceptSuccess: () => void; // Callback to refresh job details on parent
 }
 
-const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
-
 export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: ProposalListItemProps) {
   const [isAccepting, setIsAccepting] = useState(false);
   const [isMessaging, setIsMessaging] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useUser();
 
-  // In a real app, we'd fetch freelancer details from the DB using proposal.freelancerId
-  const mockFreelancer = {
-    name: "Mock Freelancer",
-    avatarUrl: `https://placehold.co/100x100.png?text=MF`,
-  };
-  
+  const freelancer = proposal.freelancer;
+
   const handleAccept = async () => {
     if (!isJobOwner) return;
     setIsAccepting(true);
@@ -47,7 +43,7 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
       }
       toast({
         title: "Proposal Accepted!",
-        description: `You have hired ${mockFreelancer.name}. The job is now in progress.`,
+        description: `You have hired ${freelancer?.name}. The job is now in progress.`,
       });
       onAcceptSuccess(); // Trigger parent component to re-fetch data
     } catch (error: any) {
@@ -62,13 +58,14 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
   };
   
   const handleMessage = async () => {
+    if (!user?.id) return;
     setIsMessaging(true);
     try {
       const response = await fetch('/api/chat/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          currentUserId: MOCK_CURRENT_USER_AS_CLIENT_ID,
+          currentUserId: user.id,
           participantIds: [proposal.freelancerId]
         }),
       });
@@ -109,14 +106,14 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
         <div className="flex items-center gap-3">
           <Link href={`/freelancer/${proposal.freelancerId}`}>
             <Avatar className="h-12 w-12">
-              <AvatarImage src={mockFreelancer.avatarUrl} alt={mockFreelancer.name} data-ai-hint="freelancer avatar"/>
-              <AvatarFallback>{mockFreelancer.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarImage src={freelancer?.avatarUrl} alt={freelancer?.name} data-ai-hint="freelancer avatar"/>
+              <AvatarFallback>{freelancer?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
           </Link>
           <div>
             <CardTitle className="text-lg font-semibold hover:text-primary">
               <Link href={`/freelancer/${proposal.freelancerId}`}>
-                {mockFreelancer.name}
+                {freelancer?.name || "Unknown Freelancer"}
               </Link>
             </CardTitle>
             <CardDescription className="text-xs">Submitted {formatDistanceToNow(new Date(proposal.createdAt), { addSuffix: true })}</CardDescription>

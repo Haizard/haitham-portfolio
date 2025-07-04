@@ -2,10 +2,10 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { getJobsByIds, type Job } from './jobs-data';
+import { getFreelancerProfilesByUserIds, type FreelancerProfile } from './user-profile-data';
 
 const PROPOSALS_COLLECTION = 'proposals';
 const JOBS_COLLECTION = 'jobs';
-const MOCK_FREELANCER_ID = "mockFreelancer456"; // For now, all proposals come from this mock user
 
 export type ProposalStatus = 'submitted' | 'shortlisted' | 'rejected' | 'accepted';
 
@@ -19,6 +19,8 @@ export interface Proposal {
   status: ProposalStatus;
   createdAt: Date;
   updatedAt: Date;
+  // Enriched fields
+  freelancer?: FreelancerProfile;
 }
 
 function docToProposal(doc: any): Proposal {
@@ -45,7 +47,6 @@ export async function addProposal(proposalData: Omit<Proposal, 'id' | '_id' | 'c
 
   const docToInsert = {
     ...proposalData,
-    freelancerId: proposalData.freelancerId || MOCK_FREELANCER_ID, // Use mock ID for now
     status: 'submitted' as ProposalStatus,
     createdAt: now,
     updatedAt: now,
@@ -67,7 +68,20 @@ export async function getProposalsForJob(jobId: string): Promise<Proposal[]> {
   if (!ObjectId.isValid(jobId)) return [];
   const collection = await getCollection<Proposal>(PROPOSALS_COLLECTION);
   const proposalDocs = await collection.find({ jobId }).sort({ createdAt: -1 }).toArray();
-  return proposalDocs.map(docToProposal);
+
+  const proposals = proposalDocs.map(docToProposal);
+
+  if (proposals.length === 0) return [];
+
+  // Enrich with freelancer profiles
+  const freelancerIds = proposals.map(p => p.freelancerId);
+  const freelancerProfiles = await getFreelancerProfilesByUserIds(freelancerIds);
+  const freelancerMap = new Map(freelancerProfiles.map(f => [f.userId, f]));
+
+  return proposals.map(p => ({
+    ...p,
+    freelancer: freelancerMap.get(p.freelancerId),
+  }));
 }
 
 export async function getProposalsByFreelancerId(freelancerId: string): Promise<(Proposal & { job?: Job })[]> {

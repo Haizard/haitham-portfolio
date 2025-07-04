@@ -23,6 +23,7 @@ import { Loader2, Send, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Job } from '@/lib/jobs-data';
 import { ScrollArea } from '../ui/scroll-area';
+import { useUser } from '@/hooks/use-user';
 
 const proposalSubmitSchema = z.object({
   coverLetter: z.string().min(20, "Cover letter must be at least 20 characters.").max(5000),
@@ -41,6 +42,7 @@ interface ProposalSubmitDialogProps {
 export function ProposalSubmitDialog({ isOpen, onClose, job, onSuccess }: ProposalSubmitDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useUser();
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSubmitSchema),
@@ -51,12 +53,16 @@ export function ProposalSubmitDialog({ isOpen, onClose, job, onSuccess }: Propos
   });
 
   const handleSubmit = async (values: ProposalFormValues) => {
+    if (!user?.id) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to submit a proposal.", variant: "destructive" });
+        return;
+    }
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/jobs/${job.id}/proposals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify({...values, freelancerId: user.id}),
       });
 
       const responseData = await response.json();
