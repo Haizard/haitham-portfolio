@@ -4,14 +4,17 @@
 import { useEffect, useState } from 'react';
 import type { User } from '@/lib/auth-data';
 
+// The user object from the session will not have a password.
+type SessionUser = Omit<User, 'password'>;
+
 interface UseUserResult {
-  user: User | null;
+  user: SessionUser | null;
   isLoading: boolean;
   mutate: () => void; // Function to trigger a re-fetch
 }
 
 export function useUser(): UseUserResult {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUser = async () => {

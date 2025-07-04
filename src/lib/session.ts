@@ -15,7 +15,7 @@ export const sessionOptions = {
 
 // This is the shape of our session data
 export interface SessionData extends IronSessionData {
-  user?: User;
+  user?: Omit<User, 'password'>; // Don't store password in session
 }
 
 // Helper to get the session from a server component/route handler
@@ -25,7 +25,7 @@ export async function getSession() {
 }
 
 // Helper to save the session
-export async function saveSession(user: User) {
+export async function saveSession(user: Omit<User, 'password'>) { // Accepts user object without password
   const session = await getSession();
   session.user = user;
   await session.save();
