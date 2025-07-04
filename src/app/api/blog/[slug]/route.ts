@@ -5,9 +5,7 @@ import type { BlogPost } from '@/lib/blog-data';
 import { findOrCreateTagsByNames, getTagsByIds, type Tag } from '@/lib/tags-data';
 import { getCategoryPath } from '@/lib/categories-data';
 import { ObjectId } from 'mongodb';
-
-// This would come from auth in a real app
-const MOCK_FREELANCER_ID = "mockFreelancer456";
+import { getSession } from '@/lib/session';
 
 export async function GET(
   request: NextRequest,
@@ -32,22 +30,29 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  const session = await getSession();
+  if (!session.user || !session.user.id) {
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+  }
+
   try {
     const slug = params.slug;
     const body = await request.json();
     const { 
-      title, content, author, authorAvatar, tags, 
+      title, content, tags, 
       featuredImageUrl, featuredImageHint, galleryImages, downloads, 
       originalLanguage, categoryId 
     } = body;
 
-    const existingPost = await getPostBySlug(slug); // Don't need enriched data for update check
+    const existingPost = await getPostBySlug(slug);
     if (!existingPost || !existingPost.id) {
       return NextResponse.json({ message: "Post to update not found" }, { status: 404 });
     }
     
-    // In a real app, this would be a check for admin role, e.g., if (user.role !== 'admin' && post.authorId !== user.id).
-    // For now, we are removing the check to allow admin edits.
+    // Check if the current user is the author or an admin
+    if (existingPost.authorId !== session.user.id && !session.user.roles.includes('admin')) {
+      return NextResponse.json({ message: "You are not authorized to edit this post." }, { status: 403 });
+    }
     
     if (!title || !content || !categoryId) {
       return NextResponse.json({ message: "Missing required fields for update: title, content, categoryId are mandatory." }, { status: 400 });
@@ -62,11 +67,9 @@ export async function PUT(
       tagIds = createdOrFoundTags.map(t => t.id!);
     }
 
-    const updateData: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' | 'categoryName' | 'categorySlugPath' | 'resolvedTags' | 'authorId'>> = {
+    const updateData: Partial<Omit<BlogPost, 'id' | '_id' | 'slug' | 'date' | 'comments' | 'categoryName' | 'categorySlugPath' | 'resolvedTags' | 'authorId' | 'author' | 'authorAvatar'>> = {
       title,
       content,
-      author: author || existingPost.author,
-      authorAvatar: authorAvatar || existingPost.authorAvatar,
       tagIds: tagIds,
       featuredImageUrl: featuredImageUrl !== undefined ? featuredImageUrl : existingPost.featuredImageUrl,
       featuredImageHint: featuredImageHint !== undefined ? featuredImageHint : existingPost.featuredImageHint,
@@ -91,6 +94,11 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  const session = await getSession();
+  if (!session.user || !session.user.id) {
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+  }
+
   try {
     const slug = params.slug;
     
@@ -99,8 +107,9 @@ export async function DELETE(
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
 
-    // In a real app, this would be a check for admin role.
-    // For now, we are removing the check to allow admin deletes.
+    if (existingPost.authorId !== session.user.id && !session.user.roles.includes('admin')) {
+      return NextResponse.json({ message: "You are not authorized to delete this post." }, { status: 403 });
+    }
 
     const success = await deletePostBySlug(slug);
 

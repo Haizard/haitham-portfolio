@@ -4,9 +4,8 @@ import { getAllPosts, addPost, type BlogPost, getPostBySlug as getExistingPostBy
 import { findOrCreateTagsByNames, getTagsByIds, type Tag } from '@/lib/tags-data';
 import { getCategoryPath, type CategoryNode } from '@/lib/categories-data';
 import { ObjectId } from 'mongodb';
-
-// This would come from auth in a real app
-const MOCK_FREELANCER_ID = "mockFreelancer456";
+import { getSession } from '@/lib/session';
+import { getFreelancerProfile } from '@/lib/user-profile-data';
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,16 +43,21 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getSession();
+  if (!session.user || !session.user.id) {
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+  }
+  
   try {
     const body = await request.json();
     const { 
-      title, content, slug, author, authorAvatar, tags, 
+      title, content, slug, tags, 
       featuredImageUrl, featuredImageHint, galleryImages, downloads, 
       originalLanguage, categoryId 
     } = body;
     
-    // In a real app, this would come from the authenticated session
-    const authorId = MOCK_FREELANCER_ID; 
+    const authorId = session.user.id; 
+    const authorProfile = await getFreelancerProfile(authorId);
 
     if (!title || !content || !slug || !categoryId) {
       return NextResponse.json({ message: "Missing required fields: title, content, slug, categoryId are all mandatory." }, { status: 400 });
@@ -77,9 +81,9 @@ export async function POST(request: NextRequest) {
       slug,
       title,
       content,
-      authorId: authorId, // Set the author ID
-      author: author || "CreatorOS Freelancer", // Use a dynamic name in the future
-      authorAvatar: authorAvatar || "https://placehold.co/100x100.png?text=F", 
+      authorId: authorId,
+      author: authorProfile?.name || session.user.name,
+      authorAvatar: authorProfile?.avatarUrl || "https://placehold.co/100x100.png?text=A", 
       tagIds: tagIds,
       featuredImageUrl: featuredImageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(title.substring(0,20))}`,
       featuredImageHint: featuredImageHint || "abstract content topic",

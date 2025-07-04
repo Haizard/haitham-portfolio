@@ -2,10 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getFreelancerProfile, updateFreelancerProfile, type FreelancerProfile } from '@/lib/user-profile-data';
 import { z } from 'zod';
-
-// This is the hardcoded user ID for demo purposes until auth is implemented.
-// In a real app, this would come from the authenticated session.
-const MOCK_USER_ID = "mockFreelancer456"; 
+import { getSession } from '@/lib/session';
 
 const portfolioLinkSchema = z.object({
   id: z.string().optional(),
@@ -30,8 +27,13 @@ const profileUpdateSchema = z.object({
 
 
 export async function GET(request: NextRequest) {
+  const session = await getSession();
+  if (!session.user) {
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+  }
+
   try {
-    let profile = await getFreelancerProfile(MOCK_USER_ID);
+    let profile = await getFreelancerProfile(session.user.id!);
     return NextResponse.json(profile);
   } catch (error: any) {
     console.error("[API /profile GET] Error:", error);
@@ -40,6 +42,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getSession();
+  if (!session.user) {
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+  }
+  
   try {
     const body = await request.json();
     const validation = profileUpdateSchema.safeParse(body);
@@ -51,14 +58,12 @@ export async function POST(request: NextRequest) {
     
     const validatedData = validation.data;
     
-    // The data type for the update function.
-    // Note: The concept of `role` is now implicit; this API manages the 'freelancer' role profile.
     const updateData: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>> = {
         ...validatedData,
         hourlyRate: validatedData.hourlyRate,
     };
 
-    const updatedProfile = await updateFreelancerProfile(MOCK_USER_ID, updateData);
+    const updatedProfile = await updateFreelancerProfile(session.user.id!, updateData);
 
     if (!updatedProfile) {
       return NextResponse.json({ message: "Profile not found or update failed" }, { status: 404 });

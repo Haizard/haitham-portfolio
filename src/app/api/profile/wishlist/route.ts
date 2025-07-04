@@ -2,9 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getFreelancerProfile, toggleWishlistItem } from '@/lib/user-profile-data';
 import { z } from 'zod';
-
-// This would come from an authenticated session in a real app
-const MOCK_USER_ID = "mockFreelancer456";
+import { getSession } from '@/lib/session';
 
 const wishlistToggleSchema = z.object({
   productId: z.string().min(1, "Product ID is required."),
@@ -12,8 +10,13 @@ const wishlistToggleSchema = z.object({
 
 // Get the user's current wishlist
 export async function GET(request: NextRequest) {
+  const session = await getSession();
+  if (!session.user) {
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+  }
+
   try {
-    const profile = await getFreelancerProfile(MOCK_USER_ID);
+    const profile = await getFreelancerProfile(session.user.id!);
     if (!profile) {
       return NextResponse.json({ message: "User profile not found." }, { status: 404 });
     }
@@ -26,6 +29,10 @@ export async function GET(request: NextRequest) {
 
 // Add or remove an item from the wishlist
 export async function POST(request: NextRequest) {
+  const session = await getSession();
+  if (!session.user) {
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const validation = wishlistToggleSchema.safeParse(body);
@@ -35,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
     const { productId } = validation.data;
     
-    const result = await toggleWishlistItem(MOCK_USER_ID, productId);
+    const result = await toggleWishlistItem(session.user.id!, productId);
     
     return NextResponse.json(result);
 

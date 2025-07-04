@@ -3,20 +3,35 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake } from 'lucide-react';
+import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
+import { useUser } from '@/hooks/use-user';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
-
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export function GlobalNav() {
   const { cartCount, setIsCartOpen } = useCart();
+  const { user, mutate } = useUser();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    await mutate(); // Re-fetch user state, which will be null
+    router.push('/');
+    router.refresh();
+  };
 
   return (
     <>
@@ -58,9 +73,35 @@ export function GlobalNav() {
             </DropdownMenu>
           </div>
           <div className="flex items-center gap-2">
-             <Button variant="ghost" asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
+            {user ? (
+              <>
+                <Button variant="ghost" asChild><Link href="/dashboard">Dashboard</Link></Button>
+                 <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={`https://placehold.co/100x100.png?text=${user.name.substring(0,2)}`} alt={user.name} data-ai-hint="profile avatar" />
+                        <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                     <DropdownMenuItem asChild>
+                        <Link href="/profile"><UserCircle className="mr-2 h-4 w-4" />My Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" /> Log Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" asChild><Link href="/login">Login</Link></Button>
+                <Button asChild><Link href="/signup">Sign Up</Link></Button>
+              </>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(true)} className="relative">
                 <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (
