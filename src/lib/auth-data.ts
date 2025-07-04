@@ -14,7 +14,7 @@ export interface User {
   email: string;
   password?: string; // Will be the hashed password
   roles: UserRole[];
-  createdAt: Date;
+  createdAt: string; // Changed from Date to string for better serialization
 }
 
 function docToUser(doc: any): User {
@@ -42,7 +42,7 @@ export async function createUser(userData: Omit<User, 'id' | '_id' | 'createdAt'
     email: userData.email,
     password: hashedPassword,
     roles: userData.roles,
-    createdAt: now,
+    createdAt: now.toISOString(), // Store as ISO string
   };
 
   const result = await collection.insertOne(docToInsert as any);
