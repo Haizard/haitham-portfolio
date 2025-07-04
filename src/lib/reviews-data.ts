@@ -2,8 +2,8 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { updateJobReviewStatus } from './jobs-data';
-import { updateFreelancerProfile } from './user-profile-data';
-import { updateClientProfile } from './client-profile-data';
+import { updateFreelancerProfile, getFreelancerProfile } from './user-profile-data';
+import { updateClientProfile, getClientProfile } from './client-profile-data';
 
 const REVIEWS_COLLECTION = 'reviews';
 
@@ -77,12 +77,20 @@ export async function getReviewsForFreelancer(freelancerId: string): Promise<Rev
   const collection = await getCollection<Review>(REVIEWS_COLLECTION);
   // For now, only fetch reviews left by clients for freelancers
   const reviewDocs = await collection.find({ revieweeId: freelancerId, reviewerRole: 'client' }).sort({ createdAt: -1 }).toArray();
-  // In a real app, you would enrich with reviewer details (name, avatar) from the users collection
+  
+  const reviewerIds = [...new Set(reviewDocs.map(r => r.reviewerId))];
+  if(reviewerIds.length === 0) return reviewDocs.map(docToReview);
+
+  // In a real app, you would have a central users collection. Here we fetch from client profiles.
+  const reviewerProfiles = await Promise.all(reviewerIds.map(id => getClientProfile(id)));
+  const reviewerMap = new Map(reviewerProfiles.map(p => p ? [p.userId, p] : [null, null]));
+
+  // Enrich with reviewer details
   return reviewDocs.map(doc => {
       const review = docToReview(doc);
-      // Mock enrichment
-      review.reviewerName = "Mock Client";
-      review.reviewerAvatar = `https://placehold.co/100x100.png?text=MC`;
+      const reviewer = reviewerMap.get(review.reviewerId);
+      review.reviewerName = reviewer?.name || "Client";
+      review.reviewerAvatar = reviewer?.avatarUrl;
       return review;
   });
 }
@@ -92,12 +100,20 @@ export async function getReviewsForClient(clientId: string): Promise<Review[]> {
   const collection = await getCollection<Review>(REVIEWS_COLLECTION);
   // Fetch reviews where the client was the one being reviewed
   const reviewDocs = await collection.find({ revieweeId: clientId, reviewerRole: 'freelancer' }).sort({ createdAt: -1 }).toArray();
-  // In a real app, you would enrich with reviewer details (freelancer name, avatar) from the users collection
+  
+  const reviewerIds = [...new Set(reviewDocs.map(r => r.reviewerId))];
+  if(reviewerIds.length === 0) return reviewDocs.map(docToReview);
+
+  // Fetch from freelancer profiles
+  const reviewerProfiles = await Promise.all(reviewerIds.map(id => getFreelancerProfile(id)));
+  const reviewerMap = new Map(reviewerProfiles.map(p => p ? [p.userId, p] : [null, null]));
+
+  // Enrich with reviewer details
   return reviewDocs.map(doc => {
       const review = docToReview(doc);
-      // Mock enrichment
-      review.reviewerName = "Mock Freelancer";
-      review.reviewerAvatar = `https://placehold.co/100x100.png?text=MF`;
+      const reviewer = reviewerMap.get(review.reviewerId);
+      review.reviewerName = reviewer?.name || "Freelancer";
+      review.reviewerAvatar = reviewer?.avatarUrl;
       return review;
   });
 }

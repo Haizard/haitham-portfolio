@@ -1,6 +1,7 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { ClientProfile, getClientProfile } from './client-profile-data';
 
 const JOBS_COLLECTION = 'jobs';
 
@@ -13,7 +14,7 @@ export interface Job {
   id?: string;
   title: string;
   description: string;
-  clientId: string; // In a real system, this would be the authenticated user's ID
+  clientId: string; 
   status: JobStatus;
   budgetType: BudgetType;
   budgetAmount?: number;
@@ -22,9 +23,11 @@ export interface Job {
   proposalCount?: number;
   clientReviewId?: string; // ID of the review left by the client
   freelancerReviewId?: string; // ID of the review left by the freelancer
-  escrowStatus: EscrowStatus; // New field for escrow
+  escrowStatus: EscrowStatus;
   createdAt: Date;
   updatedAt: Date;
+  // Enriched field
+  clientProfile?: ClientProfile;
 }
 
 // Interface for filter options passed to getAllJobs
@@ -99,7 +102,12 @@ export async function getJobById(id: string): Promise<Job | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<Job>(JOBS_COLLECTION);
   const jobDoc = await collection.findOne({ _id: new ObjectId(id) });
-  return jobDoc ? docToJob(jobDoc) : null;
+  if (!jobDoc) return null;
+  
+  const job = docToJob(jobDoc);
+  // Enrich with client profile
+  job.clientProfile = await getClientProfile(job.clientId);
+  return job;
 }
 
 export async function getJobsByIds(ids: string[]): Promise<Job[]> {
@@ -109,7 +117,16 @@ export async function getJobsByIds(ids: string[]): Promise<Job[]> {
 
   const collection = await getCollection<Job>(JOBS_COLLECTION);
   const jobDocs = await collection.find({ _id: { $in: validObjectIds } }).toArray();
-  return jobDocs.map(docToJob);
+
+  const clientIds = [...new Set(jobDocs.map(j => j.clientId))];
+  const clientProfiles = await Promise.all(clientIds.map(id => getClientProfile(id)));
+  const clientProfileMap = new Map(clientProfiles.map(p => p ? [p.userId, p] : [null, null]));
+
+  return jobDocs.map(doc => {
+    const job = docToJob(doc);
+    job.clientProfile = clientProfileMap.get(job.clientId);
+    return job;
+  });
 }
 
 export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount' | 'escrowStatus'>): Promise<Job> {

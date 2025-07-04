@@ -55,8 +55,7 @@ export function MyProjectListItem({ proposal, onLeaveReview }: MyProjectListItem
         }
     };
     
-    // In a real app, client details would be fetched.
-    const mockClientName = "Mock Client";
+    const clientName = job.clientProfile?.name || 'Client';
     const escrowInfo = getEscrowStatusBadgeInfo(job.escrowStatus);
     const canLeaveReview = job.status === 'completed' && !job.freelancerReviewId;
 
@@ -64,7 +63,7 @@ export function MyProjectListItem({ proposal, onLeaveReview }: MyProjectListItem
         <Card className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">{job.title}</CardTitle>
-                <CardDescription>Client: {mockClientName}</CardDescription>
+                <CardDescription>Client: {clientName}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm flex-grow">
                  <div className="flex justify-between items-center">

@@ -3,19 +3,24 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { addReview, getReviewsForFreelancer } from '@/lib/reviews-data';
 import { z } from 'zod';
 import { getJobById } from '@/lib/jobs-data';
-
-// This would come from auth in a real app
-const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
+import { getSession } from '@/lib/session';
 
 const reviewSubmitSchema = z.object({
   jobId: z.string().min(1, "Job ID is required."),
+  reviewerId: z.string().min(1, "Reviewer ID is required."),
   revieweeId: z.string().min(1, "User being reviewed is required."),
+  reviewerRole: z.enum(['client', 'freelancer']),
   rating: z.coerce.number().min(1).max(5),
   comment: z.string().min(10, "Comment must be at least 10 characters.").max(2000),
 });
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session.user || !session.user.id) {
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+    }
+
     const body = await request.json();
     const validation = reviewSubmitSchema.safeParse(body);
 
@@ -23,28 +28,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid review data.", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { jobId, revieweeId, rating, comment } = validation.data;
-    const reviewerId = MOCK_CURRENT_USER_AS_CLIENT_ID; // In real app, get from session
+    const { jobId, reviewerId, revieweeId, reviewerRole, rating, comment } = validation.data;
+    
+    if (session.user.id !== reviewerId) {
+        return NextResponse.json({ message: "Unauthorized: You cannot submit a review for another user." }, { status: 403 });
+    }
 
     const job = await getJobById(jobId);
     if (!job) {
       return NextResponse.json({ message: "Associated job not found." }, { status: 404 });
     }
-    if (job.clientId !== reviewerId) {
-      return NextResponse.json({ message: "Unauthorized: You are not the client for this job." }, { status: 403 });
-    }
     if (job.status !== 'completed') {
       return NextResponse.json({ message: "Cannot leave a review for a job that is not completed." }, { status: 400 });
     }
-    if (job.clientReviewId) {
-      return NextResponse.json({ message: "You have already submitted a review for this job." }, { status: 409 });
+    
+    // Check if the user has already left a review for this role
+    if (reviewerRole === 'client' && job.clientReviewId) {
+       return NextResponse.json({ message: "You have already submitted a review for this job." }, { status: 409 });
     }
+    if (reviewerRole === 'freelancer' && job.freelancerReviewId) {
+       return NextResponse.json({ message: "You have already submitted a review for this job." }, { status: 409 });
+    }
+
 
     const newReview = await addReview({
       jobId,
       reviewerId,
       revieweeId,
-      reviewerRole: 'client',
+      reviewerRole,
       rating,
       comment,
     });

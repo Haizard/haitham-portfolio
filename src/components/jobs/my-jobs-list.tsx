@@ -142,7 +142,7 @@ export function MyJobsList({ jobs, onJobUpdate }: MyJobsListProps) {
                       <TableCell className="text-right space-x-1">
                           <Button asChild variant="outline" size="sm">
                           <Link href={`/find-work/${job.id}`}>
-                              <Eye className="mr-2 h-4 w-4" /> View Proposals
+                              <Eye className="mr-2 h-4 w-4" /> View Job
                           </Link>
                           </Button>
                           {job.status === 'in-progress' && (

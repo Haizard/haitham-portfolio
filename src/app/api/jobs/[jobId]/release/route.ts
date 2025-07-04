@@ -3,14 +3,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getJobById, updateJobEscrowStatus } from '@/lib/jobs-data';
 import { ObjectId } from 'mongodb';
-
-const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
+import { getSession } from '@/lib/session';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
+    const session = await getSession();
+    if (!session.user || !session.user.id) {
+        return NextResponse.json({ message: "Not authenticated." }, { status: 401 });
+    }
+
     const { jobId } = params;
     if (!ObjectId.isValid(jobId)) {
       return NextResponse.json({ message: "Invalid Job ID." }, { status: 400 });
@@ -22,7 +26,7 @@ export async function PUT(
     }
 
     // --- Authorization Check ---
-    if (job.clientId !== MOCK_CURRENT_USER_AS_CLIENT_ID) {
+    if (job.clientId !== session.user.id) {
       return NextResponse.json({ message: "Unauthorized. You are not the owner of this job." }, { status: 403 });
     }
     // ---

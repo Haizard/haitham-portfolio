@@ -8,9 +8,8 @@ import type { Proposal } from '@/lib/proposals-data';
 import type { Job } from '@/lib/jobs-data';
 import { useToast } from '@/hooks/use-toast';
 import { ReviewSubmitDialog } from '@/components/reviews/ReviewSubmitDialog';
+import { useUser } from '@/hooks/use-user';
 
-// This would come from auth in a real app
-const MOCK_FREELANCER_ID = "mockFreelancer456";
 
 interface ReviewDialogState {
   isOpen: boolean;
@@ -25,11 +24,13 @@ export default function MyProjectsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [reviewState, setReviewState] = useState<ReviewDialogState | null>(null);
+  const { user } = useUser();
 
   const fetchMyProjects = useCallback(async () => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/proposals?freelancerId=${MOCK_FREELANCER_ID}`);
+      const response = await fetch(`/api/proposals?freelancerId=${user.id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch your projects.');
       }
@@ -46,20 +47,22 @@ export default function MyProjectsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, user?.id]);
 
   useEffect(() => {
-    fetchMyProjects();
-  }, [fetchMyProjects]);
+    if (user) {
+        fetchMyProjects();
+    }
+  }, [fetchMyProjects, user]);
 
   const handleOpenReviewDialog = (project: Proposal & { job?: Job }) => {
-    if (!project.job) return;
+    if (!project.job || !project.job.clientProfile) return;
     setReviewState({
       isOpen: true,
       jobId: project.job.id!,
       jobTitle: project.job.title,
       revieweeId: project.job.clientId, // The client is being reviewed
-      revieweeName: "Mock Client", // In real app, fetch client name
+      revieweeName: project.job.clientProfile.name, // Use real client name
     });
   };
 
@@ -88,13 +91,13 @@ export default function MyProjectsPage() {
             )}
         </main>
 
-        {reviewState?.isOpen && (
+        {reviewState?.isOpen && user && (
             <ReviewSubmitDialog
                 isOpen={reviewState.isOpen}
                 onClose={() => setReviewState(null)}
                 jobId={reviewState.jobId}
                 jobTitle={reviewState.jobTitle}
-                reviewerId={MOCK_FREELANCER_ID}
+                reviewerId={user.id}
                 revieweeId={reviewState.revieweeId}
                 revieweeName={reviewState.revieweeName}
                 reviewerRole="freelancer"
