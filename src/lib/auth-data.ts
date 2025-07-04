@@ -14,7 +14,7 @@ export interface User {
   email: string;
   password?: string; // Will be the hashed password
   roles: UserRole[];
-  createdAt: string; // Changed from Date to string for better serialization
+  createdAt: string; 
 }
 
 function docToUser(doc: any): User {
@@ -23,7 +23,7 @@ function docToUser(doc: any): User {
   return { id: _id?.toString(), ...rest } as User;
 }
 
-export async function createUser(userData: Omit<User, 'id' | '_id' | 'createdAt'>): Promise<Omit<User, 'password'>> {
+export async function createUser(userData: Omit<User, 'id' | '_id' | 'createdAt'>): Promise<Omit<User, 'password' | '_id'>> {
   const collection = await getCollection<Omit<User, 'id' | '_id'>>(USERS_COLLECTION);
 
   const existingUser = await collection.findOne({ email: userData.email });
@@ -42,7 +42,7 @@ export async function createUser(userData: Omit<User, 'id' | '_id' | 'createdAt'
     email: userData.email,
     password: hashedPassword,
     roles: userData.roles,
-    createdAt: now.toISOString(), // Store as ISO string
+    createdAt: now.toISOString(),
   };
 
   const result = await collection.insertOne(docToInsert as any);

@@ -4,8 +4,8 @@
 import { useEffect, useState } from 'react';
 import type { User } from '@/lib/auth-data';
 
-// The user object from the session will not have a password.
-type SessionUser = Omit<User, 'password'>;
+// The user object from the session. MUST be serializable.
+type SessionUser = Omit<User, 'password' | '_id'>;
 
 interface UseUserResult {
   user: SessionUser | null;
