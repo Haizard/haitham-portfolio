@@ -9,19 +9,19 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
-
-// This would come from auth in a real app
-const MOCK_CLIENT_ID = "mockClient123";
+import { useUser } from '@/hooks/use-user';
 
 export default function MyJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useUser();
 
   const fetchMyJobs = useCallback(async () => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/jobs?clientId=${MOCK_CLIENT_ID}`);
+      const response = await fetch(`/api/jobs?clientId=${user.id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch your jobs.');
       }
@@ -36,11 +36,13 @@ export default function MyJobsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, user?.id]);
 
   useEffect(() => {
-    fetchMyJobs();
-  }, [fetchMyJobs]);
+    if (user) {
+        fetchMyJobs();
+    }
+  }, [fetchMyJobs, user]);
 
   return (
     <div className="container mx-auto py-8">

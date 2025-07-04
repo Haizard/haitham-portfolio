@@ -5,16 +5,18 @@ import { getProposalById, updateProposalStatus, rejectOtherProposalsForJob } fro
 import { getJobById, updateJobStatus } from '@/lib/jobs-data';
 import { addClientProject } from '@/lib/client-projects-data'; // Import addClientProject
 import { ObjectId } from 'mongodb';
-
-// This is a placeholder until we have real user auth.
-// This should match the clientId used when creating jobs.
-const MOCK_CURRENT_USER_AS_CLIENT_ID = "mockClient123";
+import { getSession } from '@/lib/session';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { proposalId: string } }
 ) {
   try {
+    const session = await getSession();
+    if (!session.user) {
+        return NextResponse.json({ message: "Not authenticated." }, { status: 401 });
+    }
+
     const { proposalId } = params;
     if (!ObjectId.isValid(proposalId)) {
       return NextResponse.json({ message: "Invalid Proposal ID." }, { status: 400 });
@@ -32,7 +34,7 @@ export async function PUT(
     
     // --- Authorization Check (crucial in a real app) ---
     // Here we check if the person making the request is the one who posted the job.
-    if (job.clientId !== MOCK_CURRENT_USER_AS_CLIENT_ID) {
+    if (job.clientId !== session.user.id) {
         return NextResponse.json({ message: "Unauthorized. You are not the owner of this job." }, { status: 403 });
     }
     // ---

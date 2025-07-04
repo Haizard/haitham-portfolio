@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { addJob, getAllJobs } from '@/lib/jobs-data';
 import { z } from 'zod';
 import type { BudgetType, JobFilters } from '@/lib/jobs-data';
+import { getSession } from '@/lib/session';
 
 const jobPostSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters.").max(150),
@@ -38,8 +39,10 @@ export async function GET(request: NextRequest) {
 // POST a new job
 export async function POST(request: NextRequest) {
   try {
-    // In a real app, clientId would come from the authenticated session
-    const clientId = "mockClient123";
+    const session = await getSession();
+    if (!session.user || !session.user.roles.includes('client')) {
+      return NextResponse.json({ message: "Unauthorized or not a client." }, { status: 403 });
+    }
     
     const body = await request.json();
     const validation = jobPostSchema.safeParse(body);
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     const jobData = {
       ...validation.data,
-      clientId,
+      clientId: session.user.id!,
       deadline: validation.data.deadline || undefined,
     };
     

@@ -7,20 +7,20 @@ import { Loader2, FileText } from 'lucide-react';
 import type { Proposal } from '@/lib/proposals-data';
 import type { Job } from '@/lib/jobs-data';
 import { useToast } from '@/hooks/use-toast';
-
-// This would come from auth in a real app
-const MOCK_FREELANCER_ID = "mockFreelancer456";
+import { useUser } from '@/hooks/use-user';
 
 export default function MyProposalsPage() {
   const [proposals, setProposals] = useState<(Proposal & { job?: Job })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useUser();
 
   const fetchMyProposals = useCallback(async () => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
       // Pass the freelancer ID to the API
-      const response = await fetch(`/api/proposals?freelancerId=${MOCK_FREELANCER_ID}`);
+      const response = await fetch(`/api/proposals?freelancerId=${user.id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch your proposals.');
       }
@@ -35,12 +35,14 @@ export default function MyProposalsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, user?.id]);
 
   // Initial fetch
   useEffect(() => {
-    fetchMyProposals();
-  }, [fetchMyProposals]);
+    if (user) {
+        fetchMyProposals();
+    }
+  }, [fetchMyProposals, user]);
 
   return (
     <div className="container mx-auto py-8">
