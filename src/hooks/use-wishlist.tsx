@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
+import { useUser } from './use-user';
 
 interface WishlistContextType {
   wishlist: string[];
@@ -26,28 +27,60 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user, isLoading: isUserLoading } = useUser();
 
   useEffect(() => {
     async function fetchWishlist() {
+      // Don't fetch if the user session is still loading or if there is no user.
+      if (isUserLoading || !user) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
         const response = await fetch('/api/profile/wishlist');
         if (!response.ok) {
-          throw new Error('Failed to fetch wishlist data.');
+           // We don't throw an error here for non-logged-in users as it's an expected state.
+           // The !user check above should handle this gracefully. If we get here with a user, it's a real error.
+           if (response.status === 401) {
+             console.log("Not logged in, can't fetch wishlist.");
+             setWishlist([]);
+           } else {
+             throw new Error('Failed to fetch wishlist data.');
+           }
+           return;
         }
         const data = await response.json();
         setWishlist(data.wishlist || []);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch wishlist from server:", error);
         toast({ title: "Error", description: "Could not load your wishlist.", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     }
-    fetchWishlist();
-  }, [toast]);
+    
+    // If the user logs out, clear the wishlist.
+    if (!user && !isUserLoading) {
+        setWishlist([]);
+        setIsLoading(false);
+    } else {
+        fetchWishlist();
+    }
+  }, [user, isUserLoading, toast]);
 
   const toggleWishlist = useCallback(async (productId: string, productName?: string) => {
+    // Prevent toggle if not logged in.
+    if (!user) {
+        toast({
+            title: "Please log in",
+            description: "You need to be logged in to manage your wishlist.",
+            variant: "destructive"
+        });
+        return;
+    }
+
     const originalWishlist = [...wishlist];
     const wasInWishlist = originalWishlist.includes(productId);
 
@@ -95,7 +128,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         variant: "destructive"
       });
     }
-  }, [wishlist, toast]);
+  }, [wishlist, toast, user]);
 
   const isInWishlist = useCallback((productId: string) => {
     return wishlist.includes(productId);
