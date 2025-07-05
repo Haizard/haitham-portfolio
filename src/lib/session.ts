@@ -13,9 +13,13 @@ export const sessionOptions = {
   },
 };
 
-// This is the shape of our session data - it must be serializable
+// Define the exact shape of the user object that is safe to store in the session.
+// It must be fully serializable (no complex objects like `ObjectId` or `Date`).
+export type SessionUser = Omit<User, 'password' | '_id'>;
+
+// This is the shape of our session data.
 export interface SessionData extends IronSessionData {
-  user?: Omit<User, 'password' | '_id'>; 
+  user?: SessionUser;
 }
 
 // Helper to get the session from a server component/route handler
@@ -24,8 +28,8 @@ export async function getSession() {
   return session;
 }
 
-// Helper to save the session
-export async function saveSession(user: Omit<User, 'password' | '_id'>) {
+// Helper to save the session, now strongly typed to SessionUser
+export async function saveSession(user: SessionUser) {
   const session = await getSession();
   session.user = user;
   await session.save();

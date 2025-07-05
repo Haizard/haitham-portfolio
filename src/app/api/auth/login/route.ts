@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { getFullUserByEmail, verifyPassword } from '@/lib/auth-data';
-import { saveSession } from '@/lib/session';
+import { saveSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -30,12 +30,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid email or password." }, { status: 401 });
     }
     
-    // Remove password from the user object before creating session
-    const { password: _, ...userToSave } = user;
+    // Explicitly create a serializable user object for the session.
+    // This prevents any database-specific objects (like ObjectId) from being saved.
+    const sessionUser: SessionUser = {
+      id: user.id!,
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+      createdAt: user.createdAt,
+    };
 
-    await saveSession(userToSave);
+    await saveSession(sessionUser);
 
-    return NextResponse.json(userToSave);
+    return NextResponse.json(sessionUser);
 
   } catch (error: any) {
     console.error("[API /login POST] Error:", error);
