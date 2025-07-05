@@ -14,7 +14,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Loader2, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from '@/hooks/use-user'; // Import useUser
 
 const loginFormSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -27,12 +26,6 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const { mutate } = useUser(); // Get mutate function from the hook
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginFormSchema),
-    defaultValues: { email: "", password: "" },
-  });
 
   const handleLogin = async (values: LoginFormValues) => {
     setIsSubmitting(true);
@@ -54,9 +47,8 @@ export default function LoginPage() {
           description: "Welcome back! Redirecting you to your dashboard..."
       });
       
-      await mutate(); // Re-fetch user session state globally
+      // Navigate to the dashboard. The AppLayout will handle fetching user state.
       router.push('/dashboard');
-      router.refresh(); // Refresh to ensure layout updates with user state
 
     } catch (error: any) {
       toast({
