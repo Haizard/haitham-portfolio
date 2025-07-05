@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Github, Linkedin, Loader2, Twitter, UserCircle } from "lucide-react"; // Added UserCircle
+import { Github, Linkedin, Loader2, Twitter, UserCircle } from "lucide-react";
 
 interface UserProfile {
   name: string;
@@ -26,14 +26,24 @@ export function AuthorCard() {
       setIsLoading(true);
       try {
         const response = await fetch('/api/profile');
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile');
+        if (response.ok) {
+          const data: UserProfile = await response.json();
+          setProfile(data);
+        } else {
+          // Handle non-ok responses (like 401 for guests) by setting the default profile
+          // without treating it as a thrown error.
+          console.log('Could not fetch logged-in user profile, showing default author card.');
+          setProfile({
+              name: "CreatorOS User",
+              email: "user@creatoros.app",
+              bio: "Welcome to the CreatorOS blog! Discover insights, tutorials, and updates.",
+              avatarUrl: "https://placehold.co/100x100.png?text=CO",
+              occupation: "Content Creator"
+          });
         }
-        const data: UserProfile = await response.json();
-        setProfile(data);
       } catch (error) {
-        console.error(error);
-        // Set a fallback profile or handle error display
+        // This catches network errors etc.
+        console.error("Network error fetching profile:", error);
         setProfile({
             name: "CreatorOS User",
             email: "user@creatoros.app",
