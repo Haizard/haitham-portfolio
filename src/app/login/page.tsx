@@ -27,6 +27,14 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
   const handleLogin = async (values: LoginFormValues) => {
     setIsSubmitting(true);
     try {
