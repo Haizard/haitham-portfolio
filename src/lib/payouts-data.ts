@@ -13,8 +13,8 @@ export interface Payout {
   vendorId: string;
   amount: number;
   status: PayoutStatus;
-  requestedAt: Date;
-  completedAt?: Date;
+  requestedAt: string;
+  completedAt?: string;
 }
 
 export interface VendorFinanceSummary {
@@ -32,7 +32,7 @@ function docToPayout(doc: any): Payout {
 }
 
 export async function getVendorFinanceSummary(vendorId: string): Promise<VendorFinanceSummary> {
-  const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
+  const ordersCollection = await getCollection<Order>('orders');
   const payoutsCollection = await getCollection<Payout>(PAYOUTS_COLLECTION);
 
   // Calculate total earnings from delivered items for a specific vendor
@@ -93,7 +93,7 @@ export async function createPayoutRequest(vendorId: string, amount: number): Pro
     vendorId,
     amount,
     status: "pending" as PayoutStatus,
-    requestedAt: new Date(),
+    requestedAt: new Date().toISOString(),
   };
 
   const result = await collection.insertOne(docToInsert as any);
@@ -106,7 +106,7 @@ export async function updatePayoutStatus(payoutId: string, status: 'completed' |
   
   const updatePayload: any = { status };
   if (status === 'completed') {
-    updatePayload.completedAt = new Date();
+    updatePayload.completedAt = new Date().toISOString();
   }
 
   const result = await collection.findOneAndUpdate(

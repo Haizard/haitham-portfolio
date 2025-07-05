@@ -19,8 +19,8 @@ export interface Booking {
   requestedTimeRaw: string; // Store as string directly from user input for now
   clientNotes?: string;
   status: BookingStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 function docToBooking(doc: any): Booking {
@@ -38,7 +38,7 @@ export async function addBooking(bookingData: Omit<Booking, 'id' | '_id' | 'stat
     throw new Error("Cannot create booking for a non-existent service.");
   }
 
-  const now = new Date();
+  const now = new Date().toISOString();
   const docToInsert = {
     ...bookingData,
     freelancerId: service.freelancerId, // Associate booking with the service owner
@@ -86,7 +86,7 @@ export async function updateBookingStatus(id: string, status: BookingStatus): Pr
   
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
-    { $set: { status: status, updatedAt: new Date() } },
+    { $set: { status: status, updatedAt: new Date().toISOString() } },
     { returnDocument: 'after' }
   );
 

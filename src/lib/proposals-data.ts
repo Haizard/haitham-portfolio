@@ -17,8 +17,8 @@ export interface Proposal {
   coverLetter: string;
   proposedRate: number;
   status: ProposalStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   // Enriched fields
   freelancer?: FreelancerProfile;
 }
@@ -34,7 +34,7 @@ function docToProposal(doc: any): Proposal {
 
 export async function addProposal(proposalData: Omit<Proposal, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Proposal> {
   const proposalsCollection = await getCollection<Omit<Proposal, 'id' | '_id'>>(PROPOSALS_COLLECTION);
-  const now = new Date();
+  const now = new Date().toISOString();
   
   // Check if this freelancer has already applied for this job
   const existingProposal = await proposalsCollection.findOne({ 
@@ -120,7 +120,7 @@ export async function updateProposalStatus(proposalId: string, status: ProposalS
     const collection = await getCollection<Proposal>(PROPOSALS_COLLECTION);
     const result = await collection.findOneAndUpdate(
         { _id: new ObjectId(proposalId) },
-        { $set: { status, updatedAt: new Date() } },
+        { $set: { status, updatedAt: new Date().toISOString() } },
         { returnDocument: 'after' }
     );
     return result ? docToProposal(result) : null;
@@ -135,7 +135,7 @@ export async function rejectOtherProposalsForJob(jobId: string, acceptedProposal
             _id: { $ne: new ObjectId(acceptedProposalId) },
             status: 'submitted' // Only reject proposals that are still pending
         },
-        { $set: { status: 'rejected', updatedAt: new Date() } }
+        { $set: { status: 'rejected', updatedAt: new Date().toISOString() } }
     );
     return result.acknowledged;
 }

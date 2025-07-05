@@ -18,7 +18,7 @@ export interface Review {
   reviewerRole: ReviewerRole;
   rating: number; // 1-5
   comment: string;
-  createdAt: Date;
+  createdAt: string;
   // Enriched data
   reviewerName?: string;
   reviewerAvatar?: string;
@@ -33,7 +33,7 @@ function docToReview(doc: any): Review {
 export async function addReview(reviewData: Omit<Review, 'id' | '_id' | 'createdAt'>): Promise<Review> {
   const reviewsCollection = await getCollection<Omit<Review, 'id' | '_id'>>(REVIEWS_COLLECTION);
   
-  const now = new Date();
+  const now = new Date().toISOString();
   const docToInsert = { ...reviewData, createdAt: now };
 
   const result = await reviewsCollection.insertOne(docToInsert as any);

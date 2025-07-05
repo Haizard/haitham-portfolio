@@ -13,8 +13,8 @@ export interface ClientProject {
   description?: string;
   startDate?: string; // ISO Date string
   endDate?: string; // ISO Date string
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 function docToClientProject(doc: any): ClientProject {
@@ -40,7 +40,7 @@ async function seedInitialProjects() {
       { name: "Mobile App - Phase 1", status: "Planning", client: "Gamma Inc", description: "Initial design and core feature planning for new mobile app." },
       { name: "Branding Refresh", status: "On Hold", client: "Delta Solutions", description: "Revisiting brand identity and visual assets.", startDate: "2024-06-15" },
     ];
-    const now = new Date();
+    const now = new Date().toISOString();
     await collection.insertMany(initialProjects.map(p => ({ ...p, createdAt: now, updatedAt: now })) as any[]);
     console.log("Initial client projects seeded.");
   }
@@ -64,7 +64,7 @@ export async function getClientProjectById(id: string): Promise<ClientProject | 
 
 export async function addClientProject(projectData: Omit<ClientProject, 'id' | '_id' | 'createdAt' | 'updatedAt'>): Promise<ClientProject> {
   const collection = await getCollection<Omit<ClientProject, 'id' | '_id'>>(CLIENT_PROJECTS_COLLECTION);
-  const now = new Date();
+  const now = new Date().toISOString();
   const docToInsert = {
     ...projectData,
     startDate: projectData.startDate ? new Date(projectData.startDate).toISOString() : undefined,
@@ -81,7 +81,7 @@ export async function updateClientProject(id: string, updates: Partial<Omit<Clie
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<ClientProject>(CLIENT_PROJECTS_COLLECTION);
   
-  const updatePayload = { ...updates, updatedAt: new Date() };
+  const updatePayload = { ...updates, updatedAt: new Date().toISOString() };
   if (updates.startDate) {
     updatePayload.startDate = new Date(updates.startDate).toISOString();
   }

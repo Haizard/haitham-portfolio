@@ -24,8 +24,8 @@ export interface Job {
   clientReviewId?: string; // ID of the review left by the client
   freelancerReviewId?: string; // ID of the review left by the freelancer
   escrowStatus: EscrowStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   // Enriched field
   clientProfile?: ClientProfile;
 }
@@ -131,7 +131,7 @@ export async function getJobsByIds(ids: string[]): Promise<Job[]> {
 
 export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount' | 'escrowStatus'>): Promise<Job> {
   const collection = await getCollection<Omit<Job, 'id' | '_id'>>(JOBS_COLLECTION);
-  const now = new Date();
+  const now = new Date().toISOString();
   const docToInsert = {
     ...jobData,
     status: 'open' as JobStatus, // New jobs are always 'open'
@@ -149,7 +149,7 @@ export async function updateJobStatus(jobId: string, status: JobStatus): Promise
     const collection = await getCollection<Job>(JOBS_COLLECTION);
     const result = await collection.findOneAndUpdate(
         { _id: new ObjectId(jobId) },
-        { $set: { status, updatedAt: new Date() } },
+        { $set: { status, updatedAt: new Date().toISOString() } },
         { returnDocument: 'after' }
     );
     return result ? docToJob(result) : null;
@@ -160,7 +160,7 @@ export async function updateJobEscrowStatus(jobId: string, escrowStatus: EscrowS
   const collection = await getCollection<Job>(JOBS_COLLECTION);
   const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(jobId) },
-      { $set: { escrowStatus, updatedAt: new Date() } },
+      { $set: { escrowStatus, updatedAt: new Date().toISOString() } },
       { returnDocument: 'after' }
   );
   return result ? docToJob(result) : null;
@@ -174,7 +174,7 @@ export async function updateJobReviewStatus(jobId: string, role: 'client' | 'fre
   
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(jobId) },
-    { $set: { [updateField]: reviewId, updatedAt: new Date() } },
+    { $set: { [updateField]: reviewId, updatedAt: new Date().toISOString() } },
     { returnDocument: 'after' }
   );
   return result ? docToJob(result) : null;
