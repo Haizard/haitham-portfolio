@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Loader2, UserPlus, Briefcase, Store, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useUser } from '@/hooks/use-user';
 
 const roleOptions = [
   { id: 'client', label: 'I want to hire freelancers', icon: UserCheck },
@@ -38,7 +37,6 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const { mutate } = useUser();
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema),
@@ -65,9 +63,9 @@ export default function SignupPage() {
           description: "Welcome! Redirecting you to your dashboard..."
       });
       
-      await mutate();
+      // The API has set the session cookie. A simple redirect is all we need.
+      // The AppLayout on the new page will use its hook to fetch the session.
       router.push('/dashboard');
-      router.refresh();
 
     } catch (error: any) {
       toast({
@@ -146,8 +144,12 @@ export default function SignupPage() {
                                   checked={field.value?.includes(item.id)}
                                   onCheckedChange={(checked) => {
                                     return checked
-                                      ? field.onChange([...field.value, item.id])
-                                      : field.onChange(field.value?.filter((value) => value !== item.id));
+                                      ? field.onChange([...(field.value || []), item.id])
+                                      : field.onChange(
+                                          (field.value || []).filter(
+                                            (value) => value !== item.id
+                                          )
+                                        );
                                   }}
                                 />
                               </FormControl>
