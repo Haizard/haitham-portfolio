@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createUser, type UserRole } from '@/lib/auth-data';
-import { saveSession } from '@/lib/session';
+import { saveSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
 import { createFreelancerProfileIfNotExists } from '@/lib/user-profile-data';
 import { createClientProfileIfNotExists } from '@/lib/client-profile-data';
@@ -38,8 +38,18 @@ export async function POST(request: NextRequest) {
         await createClientProfileIfNotExists(user.id!, { name });
     }
     
-    // Create a session for the new user
-    await saveSession(user);
+    // Create a clean, serializable user object for the session.
+    // This is the key fix to prevent non-serializable data from crashing the session.
+    const sessionUser: SessionUser = {
+      id: user.id!,
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+      createdAt: user.createdAt,
+    };
+    
+    // Save the clean session user object
+    await saveSession(sessionUser);
 
     return NextResponse.json({ ...user, message: "Signup successful!" });
 
