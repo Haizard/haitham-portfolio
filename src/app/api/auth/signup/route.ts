@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
     }
     
     // Create a clean, serializable user object for the session.
-    // This is the key fix to prevent non-serializable data from crashing the session.
     const sessionUser: SessionUser = {
       id: user.id!,
       name: user.name,
@@ -51,13 +50,16 @@ export async function POST(request: NextRequest) {
     // Save the clean session user object
     await saveSession(sessionUser);
 
-    return NextResponse.json({ ...user, message: "Signup successful!" });
+    // Return the sanitized sessionUser object, just like the login route.
+    // This is the key fix to prevent non-serializable data from crashing the response.
+    return NextResponse.json(sessionUser);
 
   } catch (error: any) {
     if (error.message.includes('already exists')) {
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
     console.error("[API /signup POST] Error:", error);
-    return NextResponse.json({ message: `Failed to sign up: ${error.message || "Unknown error"}` }, { status: 500 });
+    // Return a proper JSON error response instead of letting the server crash
+    return NextResponse.json({ message: `Signup failed: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }
