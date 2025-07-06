@@ -24,29 +24,28 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, roles } = validation.data;
     
-    // Add 'creator' role if 'freelancer' or 'vendor' is selected
     const finalRoles: UserRole[] = Array.from(new Set([...roles, ...(roles.some(r => ['freelancer', 'vendor'].includes(r)) ? ['creator'] : [])]));
 
-    // Step 1: Create the core user and profile records
+    // Step 1: Create the core user. This will throw an error if the email exists, which is handled by the catch block.
     const createdUser = await createUser({ name, email, password, roles: finalRoles });
-    
-    if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor')) {
+
+    // Step 2: Create associated profiles. These run after the main user is confirmed to be created.
+    if (finalRoles.includes('freelancer') || finalRoles.includes('vendor')) {
         await createFreelancerProfileIfNotExists(createdUser.id!, { name, email, storeName: `${name}'s Store` });
     }
-    if (createdUser.roles.includes('client')) {
+    if (finalRoles.includes('client')) {
         await createClientProfileIfNotExists(createdUser.id!, { name });
     }
     
-    // Step 2: Re-fetch the user directly from the database.
-    // This is the most robust way to ensure we have a clean, serializable object,
-    // mirroring the exact logic of the working login route.
+    // Step 3 (Crucial Fix): Re-fetch the user record directly from the database AFTER all creation operations.
+    // This ensures we have a clean, serializable object from the DB driver, free of any in-memory artifacts.
     const userFromDb = await getFullUserByEmail(email);
     if (!userFromDb) {
-        // This should never happen if createUser succeeded, but it's a safeguard.
+        // This should never happen if createUser succeeded, but it's a critical safeguard.
         throw new Error("Critical error: Failed to retrieve newly created user from database.");
     }
 
-    // Step 3: Create the session object from the clean, database-fetched record.
+    // Step 4: Construct the session user object from the clean, database-sourced record.
     const sessionUser: SessionUser = {
       id: userFromDb.id!,
       name: userFromDb.name,
@@ -55,8 +54,9 @@ export async function POST(request: NextRequest) {
       createdAt: userFromDb.createdAt,
     };
     
-    // Step 4: Save the session and return the clean user object to the client.
+    // Step 5: Save the session and return the clean user object to the client.
     await saveSession(sessionUser);
+
     return NextResponse.json(sessionUser);
 
   } catch (error: any) {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
     console.error("[API /signup POST] Error:", error);
-    // Return a proper JSON error response instead of letting the server crash
+    // This is the line that probably returns HTML on a server crash
     return NextResponse.json({ message: `Signup failed: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }
