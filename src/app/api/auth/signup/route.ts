@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { createUser, type UserRole } from '@/lib/auth-data';
+import { createUser, getFullUserByEmail, type UserRole } from '@/lib/auth-data';
 import { saveSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
 import { createFreelancerProfileIfNotExists } from '@/lib/user-profile-data';
@@ -27,31 +27,36 @@ export async function POST(request: NextRequest) {
     // Add 'creator' role if 'freelancer' or 'vendor' is selected
     const finalRoles: UserRole[] = Array.from(new Set([...roles, ...(roles.some(r => ['freelancer', 'vendor'].includes(r)) ? ['creator'] : [])]));
 
+    // Step 1: Create the core user and profile records
+    const createdUser = await createUser({ name, email, password, roles: finalRoles });
+    
+    if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor')) {
+        await createFreelancerProfileIfNotExists(createdUser.id!, { name, email, storeName: `${name}'s Store` });
+    }
+    if (createdUser.roles.includes('client')) {
+        await createClientProfileIfNotExists(createdUser.id!, { name });
+    }
+    
+    // Step 2: Re-fetch the user directly from the database.
+    // This is the most robust way to ensure we have a clean, serializable object,
+    // mirroring the exact logic of the working login route.
+    const userFromDb = await getFullUserByEmail(email);
+    if (!userFromDb) {
+        // This should never happen if createUser succeeded, but it's a safeguard.
+        throw new Error("Critical error: Failed to retrieve newly created user from database.");
+    }
 
-    const user = await createUser({ name, email, password, roles: finalRoles });
-    
-    // After creating the user, create their associated role profiles
-    if (user.roles.includes('freelancer') || user.roles.includes('vendor')) {
-        await createFreelancerProfileIfNotExists(user.id!, { name, email, storeName: `${name}'s Store` });
-    }
-    if (user.roles.includes('client')) {
-        await createClientProfileIfNotExists(user.id!, { name });
-    }
-    
-    // Create a clean, serializable user object for the session.
+    // Step 3: Create the session object from the clean, database-fetched record.
     const sessionUser: SessionUser = {
-      id: user.id!,
-      name: user.name,
-      email: user.email,
-      roles: user.roles,
-      createdAt: user.createdAt,
+      id: userFromDb.id!,
+      name: userFromDb.name,
+      email: userFromDb.email,
+      roles: userFromDb.roles,
+      createdAt: userFromDb.createdAt,
     };
     
-    // Save the clean session user object
+    // Step 4: Save the session and return the clean user object to the client.
     await saveSession(sessionUser);
-
-    // Return the sanitized sessionUser object, just like the login route.
-    // This is the key fix to prevent non-serializable data from crashing the response.
     return NextResponse.json(sessionUser);
 
   } catch (error: any) {
