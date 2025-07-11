@@ -3,9 +3,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, CheckCircle, Search, Star, Zap, Briefcase, Users, ShieldCheck, DollarSign, Award, Check } from "lucide-react";
+import { ArrowRight, CheckCircle, Search, Star, Zap, Briefcase, Users, ShieldCheck, DollarSign, Award, Check, ShoppingCart, Gem, Code, Palette, PenSquare, Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import type { Product } from "@/lib/products-data";
+import { ProductCard } from "@/components/products/ProductCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const categories = [
     "Website Design", "Mobile Apps", "SEO", "Illustration",
@@ -55,29 +59,59 @@ const workCategories = [
 ];
 
 const howItWorksSteps = [
-    { 
+    {
         icon: Briefcase,
         title: "Post a job (it’s free)",
         description: "Tell us about your project. CreatorOS connects you with top talent and agencies around the world, or right in your city."
     },
-    { 
+    {
         icon: Users,
         title: "Freelancers come to you",
         description: "Get qualified proposals within 24 hours. Compare bids, reviews, and prior work. Interview favorites and hire the best fit."
     },
-    { 
+    {
         icon: ShieldCheck,
         title: "Collaborate easily and securely",
         description: "Use CreatorOS to chat, share files, and track project milestones from your desktop or mobile."
     },
-    { 
+    {
         icon: DollarSign,
         title: "Payment simplified",
         description: "Pay hourly or a fixed-price and receive invoices through CreatorOS. Pay for work you authorize."
     }
 ];
 
+const eCommerceCategories = [
+    { title: "Digital Assets", icon: Gem },
+    { title: "Software", icon: Code },
+    { title: "Templates", icon: PenSquare },
+    { title: "Merchandise", icon: Package },
+];
+
 export default function HomePage() {
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const response = await fetch('/api/products?limit=8');
+        if (response.ok) {
+          const data: Product[] = await response.json();
+          setFeaturedProducts(data);
+        } else {
+          console.error("Failed to fetch featured products");
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 text-white font-body">
       <main className="flex-1">
@@ -88,14 +122,17 @@ export default function HomePage() {
           </div>
           <div className="container mx-auto px-4 relative z-10">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight font-headline mb-6">
-              Hire the best freelancers for any job, online.
+              Hire Talent, Buy Products, Grow your Vision.
             </h1>
             <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-                Millions of people use CreatorOS to turn their ideas into reality.
+                The all-in-one marketplace for creators. Millions of people use CreatorOS to turn their ideas into reality.
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-8 text-base">
                 <Link href="/find-work">Hire a Freelancer</Link>
+              </Button>
+               <Button size="lg" variant="secondary" asChild className="bg-white/90 text-primary hover:bg-white rounded-full px-8 text-base">
+                <Link href="/ecommerce">Explore the Store</Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="border-primary text-primary hover:bg-primary/10 rounded-full px-8 text-base">
                 <Link href="/my-proposals">Earn Money Freelancing</Link>
@@ -103,11 +140,54 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        
-        {/* New "Need something done?" section */}
+
+        {/* Featured Products Section */}
+        <section className="py-16 md:py-24 bg-gray-900">
+            <div className="container mx-auto px-4">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-bold font-headline">Featured Products from our Store</h2>
+                    <p className="text-lg text-gray-400 mt-2">Discover quality products from our top creators.</p>
+                </div>
+                {isLoadingProducts ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {[...Array(8)].map((_, i) => <Skeleton key={i} className="aspect-[3/4] bg-gray-800" />)}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {featuredProducts.map(product => (
+                            <ProductCard key={product.id} product={product} className="bg-gray-800 border-gray-700 hover:border-primary text-white" />
+                        ))}
+                    </div>
+                )}
+                <div className="text-center mt-12">
+                    <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 rounded-full px-8 text-base">
+                        <Link href="/ecommerce">Shop All Products <ArrowRight className="ml-2 h-4 w-4"/></Link>
+                    </Button>
+                </div>
+            </div>
+        </section>
+
+        {/* Shop by Category Section */}
         <section className="py-16 md:py-24 bg-gray-800/50">
             <div className="container mx-auto px-4">
-                <h2 className="text-4xl font-bold font-headline text-center mb-12">Need something done?</h2>
+                <h2 className="text-4xl font-bold font-headline text-center mb-12">Shop by Category</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {eCommerceCategories.map(category => (
+                        <Link href="/ecommerce" key={category.title}>
+                            <Card className="bg-gray-800 border-gray-700 hover:border-primary hover:-translate-y-2 transition-all text-center p-8 group h-full">
+                                <category.icon className="h-12 w-12 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform" />
+                                <CardTitle className="text-xl font-semibold text-white">{category.title}</CardTitle>
+                            </Card>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+        </section>
+
+        {/* New "Need something done?" section */}
+        <section className="py-16 md:py-24 bg-gray-900">
+            <div className="container mx-auto px-4">
+                <h2 className="text-4xl font-bold font-headline text-center mb-12">Need a Service?</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {workCategories.map((category) => (
                         <Card key={category.title} className="bg-gray-800 border-gray-700 hover:border-primary transition-colors text-center p-6 group">
@@ -120,9 +200,9 @@ export default function HomePage() {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-16 md:py-24 bg-gray-900">
+        <section className="py-16 md:py-24 bg-gray-800/50">
             <div className="container mx-auto px-4">
-                <h2 className="text-4xl font-bold font-headline text-center mb-16">How CreatorOS Works</h2>
+                <h2 className="text-4xl font-bold font-headline text-center mb-16">How CreatorOS Freelancing Works</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                     {howItWorksSteps.map((step) => (
                         <div key={step.title} className="text-center">
@@ -189,18 +269,6 @@ export default function HomePage() {
                         Explore more ways to use CreatorOS <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>
                 </div>
-            </div>
-        </section>
-
-        {/* Categories Section */}
-         <section className="py-16 bg-gray-800/50">
-            <div className="container mx-auto px-4">
-                 <h2 className="text-3xl font-bold font-headline mb-8 text-center">Get work done in over 2700 different categories</h2>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4">
-                    {categories.map(cat => (
-                        <Link key={cat} href="#" className="text-gray-300 hover:text-primary transition-colors">{cat}</Link>
-                    ))}
-                 </div>
             </div>
         </section>
 
