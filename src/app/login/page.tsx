@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Loader2, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from '@/hooks/use-user'; // Import the new useUser hook
 
 const loginFormSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const { login } = useUser(); // Get the login function from the context
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -50,12 +52,15 @@ export default function LoginPage() {
         throw new Error(result.message || "Failed to log in.");
       }
       
+      // Update the user state in the central provider
+      login(result);
+
       toast({
           title: "Login Successful!",
           description: "Welcome back! Redirecting you to your dashboard..."
       });
       
-      // Navigate to the dashboard. The AppLayout will handle fetching user state.
+      // Navigate to the dashboard. The AppLayout will now have the correct user state.
       router.push('/dashboard');
 
     } catch (error: any) {

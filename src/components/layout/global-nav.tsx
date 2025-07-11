@@ -8,8 +8,6 @@ import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
 import { useUser } from '@/hooks/use-user';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,19 +16,17 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useRouter } from 'next/navigation';
 
 export function GlobalNav() {
   const { cartCount, setIsCartOpen } = useCart();
-  const { user, mutate } = useUser();
-  const { toast } = useToast();
+  const { user, logout } = useUser();
   const router = useRouter();
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    await mutate(); // Re-fetch user state, which will be null
+    await logout();
     router.push('/');
-    router.refresh();
+    // No need to call mutate or refresh, the provider handles state change.
   };
 
   return (

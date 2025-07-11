@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, UserPlus, Briefcase, Store, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useUser } from '@/hooks/use-user'; // Import the new useUser hook
 
 const roleOptions = [
   { id: 'client', label: 'I want to hire freelancers', icon: UserCheck },
@@ -37,6 +38,7 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const { login } = useUser(); // Get the login function from the context
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema),
@@ -58,13 +60,15 @@ export default function SignupPage() {
         throw new Error(result.message || "Failed to sign up.");
       }
       
+      // Update the user state in the central provider
+      login(result);
+
       toast({
           title: "Account Created!",
           description: "Welcome! Redirecting you to your dashboard..."
       });
       
-      // The API has set the session cookie. A simple redirect is all we need.
-      // The AppLayout on the new page will use its hook to fetch the session.
+      // Navigate to the dashboard. The AppLayout will now have the correct user state.
       router.push('/dashboard');
 
     } catch (error: any) {

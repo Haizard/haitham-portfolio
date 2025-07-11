@@ -18,7 +18,7 @@ import { Logo } from './logo';
 import { Button } from '../ui/button';
 import { Loader2, Moon, Sun } from 'lucide-react'; 
 import { ScrollArea } from '../ui/scroll-area';
-import { useUser } from '@/hooks/use-user'; // Import the real useUser hook
+import { useUser } from '@/hooks/use-user';
 
 // Mock theme toggle functions for now
 const useTheme = () => {
@@ -37,7 +37,7 @@ const useTheme = () => {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
-  const { user, isLoading, mutate } = useUser();
+  const { user, isLoading } = useUser(); // isLoading now comes from the central provider
   const router = useRouter();
 
   useEffect(() => {
@@ -47,7 +47,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, router]);
   
-  // Display a loading state while checking the user session
+  // The UserProvider already shows a global loading screen.
+  // We can show a more specific one here if needed, or just return null
+  // while the redirect is happening.
   if (isLoading || !user) {
     return (
         <div className="flex h-screen w-screen items-center justify-center">

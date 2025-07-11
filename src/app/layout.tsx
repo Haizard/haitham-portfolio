@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { CartProvider } from '@/hooks/use-cart';
 import { WishlistProvider } from '@/hooks/use-wishlist';
 import { GlobalNav } from '@/components/layout/global-nav';
+import { UserProvider } from '@/providers/user-provider'; // Import the new UserProvider
 
 export const metadata: Metadata = {
   title: 'CreatorOS',
@@ -25,13 +26,15 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <WishlistProvider>
-          <CartProvider>
-            <GlobalNav />
-            <div className="min-h-[calc(100vh-4rem)]">{children}</div>
-            <Toaster />
-          </CartProvider>
-        </WishlistProvider>
+        <UserProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <GlobalNav />
+              <div className="min-h-[calc(100vh-4rem)]">{children}</div>
+              <Toaster />
+            </CartProvider>
+          </WishlistProvider>
+        </UserProvider>
       </body>
     </html>
   );
