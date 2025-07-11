@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, CheckCircle, Search, Star, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle, Search, Star, Zap, Briefcase, Users, ShieldCheck, DollarSign, Award, Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -43,6 +43,40 @@ const talentNetworkFeatures = [
     },
 ];
 
+const workCategories = [
+    { title: "Development & IT", skills: "1,853 skills" },
+    { title: "Design & Creative", skills: "968 skills" },
+    { title: "Sales & Marketing", skills: "392 skills" },
+    { title: "Writing & Translation", skills: "505 skills" },
+    { title: "Admin & Customer Support", skills: "508 skills" },
+    { title: "Finance & Accounting", skills: "214 skills" },
+    { title: "Engineering & Architecture", skills: "650 skills" },
+    { title: "Legal", skills: "125 skills" }
+];
+
+const howItWorksSteps = [
+    { 
+        icon: Briefcase,
+        title: "Post a job (it’s free)",
+        description: "Tell us about your project. CreatorOS connects you with top talent and agencies around the world, or right in your city."
+    },
+    { 
+        icon: Users,
+        title: "Freelancers come to you",
+        description: "Get qualified proposals within 24 hours. Compare bids, reviews, and prior work. Interview favorites and hire the best fit."
+    },
+    { 
+        icon: ShieldCheck,
+        title: "Collaborate easily and securely",
+        description: "Use CreatorOS to chat, share files, and track project milestones from your desktop or mobile."
+    },
+    { 
+        icon: DollarSign,
+        title: "Payment simplified",
+        description: "Pay hourly or a fixed-price and receive invoices through CreatorOS. Pay for work you authorize."
+    }
+];
+
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 text-white font-body">
@@ -70,6 +104,39 @@ export default function HomePage() {
           </div>
         </section>
         
+        {/* New "Need something done?" section */}
+        <section className="py-16 md:py-24 bg-gray-800/50">
+            <div className="container mx-auto px-4">
+                <h2 className="text-4xl font-bold font-headline text-center mb-12">Need something done?</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {workCategories.map((category) => (
+                        <Card key={category.title} className="bg-gray-800 border-gray-700 hover:border-primary transition-colors text-center p-6 group">
+                            <CardTitle className="text-lg font-semibold text-primary mb-2 group-hover:text-primary/90">{category.title}</CardTitle>
+                            <p className="text-gray-400 text-sm">{category.skills}</p>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="py-16 md:py-24 bg-gray-900">
+            <div className="container mx-auto px-4">
+                <h2 className="text-4xl font-bold font-headline text-center mb-16">How CreatorOS Works</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                    {howItWorksSteps.map((step) => (
+                        <div key={step.title} className="text-center">
+                            <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                                <step.icon className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                            <p className="text-gray-400">{step.description}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+
         {/* Make it real with CreatorOS */}
         <section className="py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
@@ -186,4 +253,3 @@ export default function HomePage() {
     </div>
   );
 }
-
