@@ -1,174 +1,189 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Briefcase, Sparkles, Store, Users } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, CheckCircle, Search, Star, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { ProductCard } from '@/components/products/ProductCard';
-import type { Product } from '@/lib/products-data';
-import type { Service } from '@/lib/services-data';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
+
+const categories = [
+    "Website Design", "Mobile Apps", "SEO", "Illustration",
+    "Data Entry", "Video Editing", "Copywriting", "Social Media",
+    "Content Writing", "Voice Talent", "Logo Design", "Translation"
+];
+
+const features = [
+    {
+        title: "The Best Talent",
+        description: "Discover reliable professionals for any skill imaginable.",
+    },
+    {
+        title: "Quality Work",
+        description: "Choose from a vast pool of specialized experts and agencies.",
+    },
+    {
+        title: "Track Progress",
+        description: "Use our desktop and mobile apps to work and communicate on the go.",
+    },
+];
+
+const talentNetworkFeatures = [
+    {
+        title: "Post a Job",
+        description: "Simply post a job you need completed and receive competitive bids from freelancers within minutes.",
+    },
+    {
+        title: "Choose Freelancers",
+        description: "Whatever your needs, there will be a freelancer to get it done: from web design, mobile app development, virtual assistants, and thousands of other projects.",
+    },
+    {
+        title: "Pay Safely",
+        description: "With protected payments and thousands of reviewed professionals to choose from, CreatorOS is the simplest and safest way to get work done online.",
+    },
+];
 
 export default function HomePage() {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [featuredServices, setFeaturedServices] = useState<Service[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    async function fetchShowcaseData() {
-      setIsLoading(true);
-      try {
-        const [productsRes, servicesRes] = await Promise.all([
-          fetch('/api/products?productType=creator&limit=4'),
-          fetch('/api/services?limit=3')
-        ]);
-        if (!productsRes.ok) throw new Error('Failed to fetch featured products.');
-        if (!servicesRes.ok) throw new Error('Failed to fetch featured services.');
-        
-        const productsData = await productsRes.json();
-        const servicesData = await servicesRes.json();
-
-        setFeaturedProducts(productsData);
-        setFeaturedServices(servicesData);
-
-      } catch (error: any) {
-        toast({ title: "Error loading page data", description: error.message, variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchShowcaseData();
-  }, [toast]);
-
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-900 text-white font-body">
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative py-20 md:py-32 text-center bg-gradient-to-br from-primary/10 via-background to-accent/10">
-          <div className="container mx-auto px-4 z-10">
+        <section className="relative py-20 md:py-32 text-center overflow-hidden">
+          <div className="absolute inset-0 bg-gray-900">
+             <Image src="https://placehold.co/1920x1080.png" alt="Abstract background" layout="fill" objectFit="cover" className="opacity-20" data-ai-hint="abstract geometric" />
+          </div>
+          <div className="container mx-auto px-4 relative z-10">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight font-headline mb-6">
-              The Operating System for Modern Creators
+              Hire the best freelancers for any job, online.
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              CreatorOS is an all-in-one platform to build your brand, sell products, offer services, and find freelance work. Your entire creative business, unified.
+            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+                Millions of people use CreatorOS to turn their ideas into reality.
             </p>
             <div className="flex justify-center gap-4">
-              <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <Link href="/dashboard">Get Started <ArrowRight className="ml-2 h-5 w-5"/></Link>
+              <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-8 text-base">
+                <Link href="/find-work">Hire a Freelancer</Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/ecommerce">Explore the Store</Link>
+              <Button size="lg" variant="outline" asChild className="border-primary text-primary hover:bg-primary/10 rounded-full px-8 text-base">
+                <Link href="/my-proposals">Earn Money Freelancing</Link>
               </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* Featured Products Section */}
-        <section className="py-16 bg-background">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold font-headline">Featured Products</h2>
-              <p className="text-muted-foreground">Discover top-quality goods from our talented vendors.</p>
-            </div>
-            {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-96 w-full"/>)}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {featuredProducts.map(product => <ProductCard key={product.id} product={product}/>)}
-              </div>
-            )}
-            <div className="text-center mt-12">
-              <Button asChild variant="outline">
-                <Link href="/ecommerce">View All Products <ArrowRight className="ml-2 h-4 w-4"/></Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* Platform Features Section */}
-        <section className="py-16 bg-secondary/30">
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
-                <h2 className="text-3xl font-bold font-headline">One Platform, Endless Possibilities</h2>
-                <p className="text-muted-foreground">
-                  Whether you're selling digital goods, offering bespoke services, or looking for your next gig, CreatorOS provides the tools you need to succeed.
-                </p>
-                <ul className="space-y-4">
-                  <li className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/20 text-primary rounded-full"><Store className="h-5 w-5"/></div>
-                    <div>
-                      <h4 className="font-semibold">Multi-Vendor Marketplace</h4>
-                      <p className="text-sm text-muted-foreground">Launch your own storefront and sell products directly to a dedicated community.</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/20 text-primary rounded-full"><Briefcase className="h-5 w-5"/></div>
-                    <div>
-                      <h4 className="font-semibold">Freelancer Hub</h4>
-                      <p className="text-sm text-muted-foreground">Find work, manage projects, and offer your professional services to clients.</p>
-                    </div>
-                  </li>
-                   <li className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/20 text-primary rounded-full"><Sparkles className="h-5 w-5"/></div>
-                    <div>
-                      <h4 className="font-semibold">AI-Powered Content Tools</h4>
-                      <p className="text-sm text-muted-foreground">Generate blog posts, social media content, and more with our integrated AI suite.</p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-              <div className="relative aspect-[4/3] w-full h-full">
-                <Image src="https://placehold.co/800x600.png" alt="CreatorOS dashboard preview" fill className="object-cover rounded-lg shadow-xl" data-ai-hint="dashboard interface"/>
-              </div>
             </div>
           </div>
         </section>
         
-        {/* Featured Services Section */}
-        <section className="py-16 bg-background">
-           <div className="container mx-auto px-4">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold font-headline">Popular Services</h2>
-                <p className="text-muted-foreground">Hire talented freelancers for your next project.</p>
-              </div>
-               {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full"/>)}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {featuredServices.map(service => (
-                      <Card key={service.id} className="shadow-md hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                          <h3 className="font-semibold text-lg">{service.name}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2 my-2">{service.description}</p>
-                          <div className="flex justify-between items-center pt-3 border-t">
-                            <span className="font-bold text-primary">${service.price}</span>
-                             <Button size="sm" variant="link" asChild className="p-0">
-                                <Link href={`/our-services/${service.slug}`}>View Service <ArrowRight className="ml-1 h-4 w-4"/></Link>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
+        {/* Make it real with CreatorOS */}
+        <section className="py-16 md:py-24 bg-gray-900">
+            <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+                <div className="space-y-8">
+                    <h2 className="text-4xl font-bold font-headline text-primary">Make it real with CreatorOS</h2>
+                    {features.map(feature => (
+                        <div key={feature.title}>
+                            <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                            <p className="text-gray-400">{feature.description}</p>
+                        </div>
                     ))}
-                  </div>
-                )}
-           </div>
+                    <Button variant="link" className="text-primary p-0 h-auto">
+                        Make your dreams real by hiring on CreatorOS <ArrowRight className="ml-2 h-4 w-4"/>
+                    </Button>
+                </div>
+                <div>
+                    <Image src="https://placehold.co/800x600.png" alt="Colorful abstract design with phones" width={800} height={600} className="rounded-lg shadow-2xl" data-ai-hint="abstract colorful" />
+                </div>
+            </div>
         </section>
 
+        {/* Image Grid */}
+        <section className="py-16 bg-gray-800/50">
+            <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <Image src="https://placehold.co/600x600.png" alt="Smartwatches" width={600} height={600} className="rounded-lg shadow-lg" data-ai-hint="smartwatch product"/>
+                <div className="grid grid-cols-2 gap-6">
+                    <Image src="https://placehold.co/400x400.png" alt="House" width={400} height={400} className="rounded-lg shadow-lg" data-ai-hint="modern house"/>
+                    <Image src="https://placehold.co/400x400.png" alt="Art prints" width={400} height={400} className="rounded-lg shadow-lg" data-ai-hint="art prints"/>
+                    <Image src="https://placehold.co/400x400.png" alt="Packaging design" width={400} height={400} className="rounded-lg shadow-lg" data-ai-hint="packaging design"/>
+                    <Image src="https://placehold.co/400x400.png" alt="Architectural model" width={400} height={400} className="rounded-lg shadow-lg" data-ai-hint="architectural model"/>
+                </div>
+            </div>
+        </section>
+
+        {/* Global Talent Network */}
+        <section className="py-16 md:py-24 bg-gray-900">
+            <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+                 <div>
+                    <Image src="https://placehold.co/800x600.png" alt="Global network" width={800} height={600} className="rounded-lg shadow-2xl" data-ai-hint="network community" />
+                </div>
+                <div className="space-y-8">
+                    <h2 className="text-4xl font-bold font-headline text-primary">Tap into a global talent network</h2>
+                    {talentNetworkFeatures.map(feature => (
+                        <div key={feature.title}>
+                            <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                            <p className="text-gray-400">{feature.description}</p>
+                        </div>
+                    ))}
+                     <Button variant="link" className="text-primary p-0 h-auto">
+                        Explore more ways to use CreatorOS <ArrowRight className="ml-2 h-4 w-4"/>
+                    </Button>
+                </div>
+            </div>
+        </section>
+
+        {/* Categories Section */}
+         <section className="py-16 bg-gray-800/50">
+            <div className="container mx-auto px-4">
+                 <h2 className="text-3xl font-bold font-headline mb-8 text-center">Get work done in over 2700 different categories</h2>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4">
+                    {categories.map(cat => (
+                        <Link key={cat} href="#" className="text-gray-300 hover:text-primary transition-colors">{cat}</Link>
+                    ))}
+                 </div>
+            </div>
+        </section>
+
+        {/* AI Agents */}
+        <section className="py-16 md:py-24 bg-gray-900">
+            <div className="container mx-auto px-4">
+                <Card className="bg-gray-800 border-primary/50 shadow-2xl grid md:grid-cols-2 overflow-hidden">
+                    <div className="p-8 md:p-12 flex flex-col justify-center">
+                        <h2 className="text-3xl font-bold font-headline mb-4">Automate your tasks with AI Agents</h2>
+                        <p className="text-gray-400 mb-6">Let our team of expert AI agents find you the right freelancer for your job, or allow them to automate your tasks and workflows. Free up your time for what's important.</p>
+                        <Button variant="link" className="text-primary p-0 h-auto self-start">
+                            Explore AI Agents <ArrowRight className="ml-2 h-4 w-4"/>
+                        </Button>
+                    </div>
+                    <div>
+                         <Image src="https://placehold.co/800x600.png" alt="AI development" width={800} height={600} className="object-cover h-full" data-ai-hint="AI development abstract" />
+                    </div>
+                </Card>
+            </div>
+        </section>
+
+         {/* Power your Organization */}
+        <section className="py-16 md:py-24 bg-gray-900">
+            <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+                <div className="space-y-8">
+                    <h2 className="text-4xl font-bold font-headline text-primary">Power your organization's competitive advantage</h2>
+                     <div className="space-y-6">
+                        <div>
+                            <h3 className="text-xl font-semibold mb-2">Freelancer Enterprise</h3>
+                            <p className="text-gray-400">Get your own private talent cloud and manage your freelance workforce with our advanced SaaS platform.</p>
+                        </div>
+                         <div>
+                            <h3 className="text-xl font-semibold mb-2">Innovation Challenges</h3>
+                            <p className="text-gray-400">Crowdsource ideas from our global community of 60m+ problem solvers.</p>
+                        </div>
+                     </div>
+                </div>
+                <div>
+                    <Image src="https://placehold.co/800x600.png" alt="Abstract hummingbird and globe" width={800} height={600} className="rounded-lg" data-ai-hint="hummingbird globe" />
+                </div>
+            </div>
+        </section>
       </main>
-      <footer className="text-center text-muted-foreground py-8 border-t bg-card">
-        <p>&copy; {new Date().getFullYear()} CreatorOS. All rights reserved.</p>
+
+      <footer className="bg-gray-900 border-t border-gray-700 py-12">
+        <div className="container mx-auto px-4 text-center text-gray-400">
+          <p>&copy; {new Date().getFullYear()} CreatorOS. All rights reserved.</p>
+        </div>
       </footer>
     </div>
   );
 }
-    
+
