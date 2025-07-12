@@ -177,7 +177,7 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
                         variant={isActive(subItem.href) ? "default" : "ghost"}
                         className={cn(
                           "w-full justify-start",
-                          isActive(subItem.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                          isActive(subItem.href) && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground",
                           !isActive(subItem.href) && "hover:bg-muted"
                         )}
                         isActive={isActive(subItem.href)}
@@ -204,7 +204,7 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
                 variant={isActive(item.href) ? "default" : "ghost"}
                 className={cn(
                   "w-full justify-start",
-                  isActive(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                  isActive(item.href) && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground",
                   !isActive(item.href) && "hover:bg-muted"
                 )}
                 isActive={isActive(item.href)}

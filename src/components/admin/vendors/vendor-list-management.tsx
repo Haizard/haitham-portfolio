@@ -80,10 +80,10 @@ export function VendorListManagement() {
   
   const getStatusIcon = (status: VendorStatus) => {
     switch (status) {
-        case "approved": return <ShieldCheck className="h-4 w-4 mr-1.5 text-green-500" />;
-        case "pending": return <UserCog className="h-4 w-4 mr-1.5 text-yellow-500" />;
-        case "rejected": return <ShieldX className="h-4 w-4 mr-1.5 text-red-500" />;
-        case "suspended": return <ShieldX className="h-4 w-4 mr-1.5 text-red-500" />;
+        case "approved": return <ShieldCheck className="h-4 w-4 mr-1.5 text-success" />;
+        case "pending": return <UserCog className="h-4 w-4 mr-1.5 text-warning" />;
+        case "rejected": return <ShieldX className="h-4 w-4 mr-1.5 text-destructive" />;
+        case "suspended": return <ShieldX className="h-4 w-4 mr-1.5 text-destructive" />;
         default: return null;
     }
   };
@@ -137,7 +137,7 @@ export function VendorListManagement() {
                         {isUpdatingStatus[vendor.id!] ? <Loader2 className="h-5 w-5 animate-spin"/> : (
                              vendor.vendorStatus === 'pending' ? (
                                 <>
-                                    <Button size="sm" onClick={() => handleUpdateStatus(vendor.id!, 'approved')} className="bg-green-600 hover:bg-green-700">
+                                    <Button size="sm" onClick={() => handleUpdateStatus(vendor.id!, 'approved')} className="bg-success text-success-foreground hover:bg-success/90">
                                         <UserCheck className="mr-1 h-4 w-4" /> Approve
                                     </Button>
                                     <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(vendor.id!, 'rejected')}>
@@ -149,7 +149,7 @@ export function VendorListManagement() {
                                     <UserX className="mr-1 h-4 w-4" /> Suspend
                                 </Button>
                             ) : (
-                                <Button size="sm" onClick={() => handleUpdateStatus(vendor.id!, 'approved')}>
+                                <Button size="sm" onClick={() => handleUpdateStatus(vendor.id!, 'approved')} className="bg-success text-success-foreground hover:bg-success/90">
                                     <UserCheck className="mr-1 h-4 w-4" /> Re-approve
                                 </Button>
                             )

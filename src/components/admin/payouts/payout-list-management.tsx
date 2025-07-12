@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -114,7 +115,7 @@ export function PayoutListManagement() {
                       {isUpdating[payout.id!] ? <Loader2 className="h-5 w-5 animate-spin"/> : (
                          payout.status === 'pending' ? (
                             <>
-                                <Button size="sm" onClick={() => handleUpdateStatus(payout.id!, 'completed')} className="bg-green-600 hover:bg-green-700"><Check className="mr-1 h-4 w-4" /> Approve</Button>
+                                <Button size="sm" onClick={() => handleUpdateStatus(payout.id!, 'completed')} className="bg-success text-success-foreground hover:bg-success/90"><Check className="mr-1 h-4 w-4" /> Approve</Button>
                                 <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(payout.id!, 'failed')}><X className="mr-1 h-4 w-4" /> Reject</Button>
                             </>
                          ) : (

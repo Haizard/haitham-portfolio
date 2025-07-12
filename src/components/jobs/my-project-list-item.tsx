@@ -6,7 +6,7 @@ import type { Job } from '@/lib/jobs-data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DollarSign, CheckSquare, Play, FolderClock, Pause, ExternalLink, MessageSquare, Lock, Star } from 'lucide-react';
+import { DollarSign, CheckSquare, Play, FolderClock, Pause, ExternalLink, MessageSquare, Lock, Star, Unlock } from 'lucide-react';
 import Link from 'next/link';
 
 interface MyProjectListItemProps {
@@ -39,18 +39,18 @@ export function MyProjectListItem({ proposal, onLeaveReview }: MyProjectListItem
     const getJobStatusIcon = (status: Job['status']) => {
         switch (status) {
             case "open": return <FolderClock className="h-3 w-3 mr-1" />;
-            case "in-progress": return <Play className="h-3 w-3 mr-1" />;
-            case "completed": return <CheckSquare className="h-3 w-3 mr-1" />;
-            case "cancelled": return <Pause className="h-3 w-3 mr-1" />;
+            case "in-progress": return <Play className="h-3 w-3 mr-1 text-yellow-500" />;
+            case "completed": return <CheckSquare className="h-3 w-3 mr-1 text-green-500" />;
+            case "cancelled": return <Pause className="h-3 w-3 mr-1 text-red-500" />;
             default: return null;
         }
     };
 
     const getEscrowStatusBadgeInfo = (status: Job['escrowStatus']) => {
         switch (status) {
-            case "funded": return { variant: "default", text: "Funded", icon: Lock, className: "bg-green-600 hover:bg-green-700" };
+            case "funded": return { variant: "default", text: "Funded", icon: Lock, className: "bg-success hover:bg-success/90" };
             case "unfunded": return { variant: "secondary", text: "Unfunded", icon: null, className: "" };
-            case "released": return { variant: "outline", text: "Paid Out", icon: null, className: "" };
+            case "released": return { variant: "outline", text: "Paid Out", icon: Unlock, className: "" };
             default: return { variant: "outline", text: "Unknown", icon: null, className: "" };
         }
     };
@@ -87,16 +87,16 @@ export function MyProjectListItem({ proposal, onLeaveReview }: MyProjectListItem
             <CardFooter className="border-t pt-4 mt-auto flex justify-between gap-2">
                  <Button variant="outline" size="sm" asChild>
                     <Link href={`/find-work/${job.id}`}>
-                        <ExternalLink className="mr-2 h-4 w-4" /> View Project
+                        <ExternalLink className="mr-2 h-4 w-4 text-info" /> View Project
                     </Link>
                 </Button>
                 {canLeaveReview ? (
                     <Button onClick={() => onLeaveReview(proposal)} size="sm">
-                        <Star className="mr-2 h-4 w-4" /> Leave a Review
+                        <Star className="mr-2 h-4 w-4 text-yellow-400" /> Leave a Review
                     </Button>
                 ) : (
                     <Button size="sm">
-                        <MessageSquare className="mr-2 h-4 w-4" /> Go to Workspace
+                        <MessageSquare className="mr-2 h-4 w-4 text-primary" /> Go to Workspace
                     </Button>
                 )}
             </CardFooter>

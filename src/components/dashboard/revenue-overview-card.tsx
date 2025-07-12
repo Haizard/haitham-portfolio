@@ -19,7 +19,7 @@ const initialChartData = [
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "hsl(var(--primary))",
+    color: "hsl(var(--success))",
   },
 };
 
@@ -54,7 +54,7 @@ export function RevenueOverviewCard() {
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-6 w-6 text-primary" />
+          <DollarSign className="h-6 w-6 text-success" />
           Revenue Overview
         </CardTitle>
         <CardDescription>Your financial performance over the past months.</CardDescription>
@@ -74,7 +74,7 @@ export function RevenueOverviewCard() {
                 <div>
                     <p className="text-sm text-muted-foreground">Last Month Change</p>
                     {percentageChange !== null ? (
-                        <p className={`text-2xl font-bold flex items-center ${percentageChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <p className={`text-2xl font-bold flex items-center ${percentageChange >= 0 ? "text-success" : "text-destructive"}`}>
                             {percentageChange >= 0 ? <TrendingUp className="h-5 w-5 mr-1"/> : <TrendingDown className="h-5 w-5 mr-1"/>}
                             {percentageChange.toFixed(1)}%
                         </p>
