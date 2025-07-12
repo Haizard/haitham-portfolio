@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
     const tagId = searchParams.get('tagId');
+    const authorId = searchParams.get('authorId'); // New parameter for filtering by author
     const limitStr = searchParams.get('limit');
-    const excludeSlugsStr = searchParams.get('excludeSlugs'); // Changed from excludeSlug
+    const excludeSlugsStr = searchParams.get('excludeSlugs'); 
     const limit = limitStr ? parseInt(limitStr, 10) : undefined;
     const enriched = searchParams.get('enriched') === 'true';
     const searchQuery = searchParams.get('search'); 
@@ -33,7 +34,15 @@ export async function GET(request: NextRequest) {
       }
       postsData = await getPostsByTagId(tagId, limit, excludeSlugsArray, enriched, getCategoryPath, getTagsByIds);
     } else {
-      postsData = await getAllPosts(enriched, getCategoryPath, getTagsByIds, searchQuery || undefined, limit, excludeSlugsArray);
+      postsData = await getAllPosts(
+        enriched, 
+        getCategoryPath, 
+        getTagsByIds, 
+        searchQuery || undefined, 
+        limit, 
+        excludeSlugsArray,
+        authorId || undefined // Pass authorId to getAllPosts
+      );
     }
     return NextResponse.json(postsData);
   } catch (error) {

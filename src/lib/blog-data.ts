@@ -51,7 +51,7 @@ export interface BlogPost {
 
   // Fields for enriched data, typically added by API resolvers
   categoryName?: string;
-  categorySlugPath?: string; // e.g. "parent-slug/child-slug"
+  categorySlugPath?: string; // e.g., "parent-slug/child-slug"
   resolvedTags?: Tag[];
 }
 
@@ -77,9 +77,10 @@ export async function getAllPosts(
   tagDataFetcher?: typeof getTagsByIdsType,
   searchQuery?: string,
   limit?: number,
-  excludeSlugs?: string[] // Changed from excludeSlug: string to excludeSlugs: string[]
+  excludeSlugs?: string[],
+  authorId?: string // New parameter
 ): Promise<BlogPost[]> {
-  console.log(`Attempting to fetch posts from DB. Search: "${searchQuery || ''}", Limit: ${limit}, ExcludeSlugs: ${excludeSlugs?.join(',')}`);
+  console.log(`Attempting to fetch posts from DB. Search: "${searchQuery || ''}", Limit: ${limit}, ExcludeSlugs: ${excludeSlugs?.join(',')}, AuthorId: ${authorId}`);
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
   
   const query: Filter<BlogPost> = {};
@@ -93,6 +94,10 @@ export async function getAllPosts(
 
   if (excludeSlugs && excludeSlugs.length > 0) {
     query.slug = { $nin: excludeSlugs };
+  }
+
+  if (authorId) {
+    query.authorId = authorId;
   }
 
   const postsCursor = collection.find(query).sort({ date: -1 });

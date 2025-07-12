@@ -87,6 +87,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     items: [
       { href: "/vendor/dashboard", label: "Vendor Dashboard", icon: Store },
       { href: "/vendor/products", label: "My Products", icon: Package },
+      { href: "/vendor/posts", label: "My Blog Posts", icon: FileText },
       { href: "/vendor/orders", label: "Order Management", icon: ShoppingCart },
       { href: "/vendor/finances", label: "Finances", icon: Landmark },
     ],
