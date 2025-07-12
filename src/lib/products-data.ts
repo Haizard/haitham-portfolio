@@ -83,10 +83,12 @@ async function isProductSlugUnique(slug: string, excludeId?: string): Promise<bo
 }
 
 export async function getAllProducts(
-  category?: string, 
-  productType?: ProductType, 
-  vendorId?: string,
-  slug?: string,
+  filters: { 
+      category?: string, 
+      productType?: ProductType, 
+      vendorId?: string,
+      slug?: string
+  } = {},
   limit?: number,
   excludeId?: string,
   sortBy?: 'sales' | 'name'
@@ -111,17 +113,17 @@ export async function getAllProducts(
 
   // 2. Fetch products based on filters
   const query: Filter<ProductDocument> = {};
-  if (category && category.toLowerCase() !== 'all') {
-    query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+  if (filters.category && filters.category.toLowerCase() !== 'all') {
+    query.category = { $regex: new RegExp(`^${filters.category}$`, 'i') };
   }
-  if (productType) {
-    query.productType = productType;
+  if (filters.productType) {
+    query.productType = filters.productType;
   }
-  if (vendorId) {
-    query.vendorId = vendorId;
+  if (filters.vendorId) {
+    query.vendorId = filters.vendorId;
   }
-  if (slug) {
-      query.slug = slug;
+  if (filters.slug) {
+      query.slug = filters.slug;
   }
   if (excludeId && ObjectId.isValid(excludeId)) {
       query._id = { $ne: new ObjectId(excludeId) };

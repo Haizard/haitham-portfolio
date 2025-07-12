@@ -50,13 +50,15 @@ const productCreateSchema = z.discriminatedUnion("productType", [
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('categoryId') || undefined;
+    const category = searchParams.get('category') || undefined; // Changed from categoryId
     const productType = searchParams.get('productType') as ProductType | undefined;
     const vendorId = searchParams.get('vendorId') || undefined;
     const slug = searchParams.get('slug') || undefined;
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : undefined;
     
     // Pass all filters to the data function
-    const products = await getAllProducts({categoryId, productType, vendorId, slug});
+    const products = await getAllProducts({category, productType, vendorId, slug}, limit);
 
     // --- ENRICHMENT STEP ---
     if (products.length > 0) {
