@@ -1,6 +1,7 @@
 
 import { ObjectId } from 'mongodb';
 import { getCollection } from './mongodb';
+import type { UserRole } from './auth-data';
 
 // ARCHITECTURAL NOTE: User Identity vs. Role Profiles
 // To support multiple user types (freelancers, clients, shop owners, etc.),
@@ -38,6 +39,7 @@ export interface FreelancerProfile {
   name: string;
   email: string;
   avatarUrl: string;
+  roles: UserRole[]; // Added roles here
   
   // Freelancer-specific fields
   occupation: string;
@@ -65,6 +67,7 @@ function docToFreelancerProfile(doc: any): FreelancerProfile {
   return {
     id: _id?.toString(),
     ...rest,
+    roles: rest.roles || [], // Ensure roles is always an array
     portfolioLinks: (rest.portfolioLinks || []).map((link: any) => ({
         id: link._id?.toString() || link.id || new ObjectId().toString(),
         title: link.title,
@@ -79,9 +82,10 @@ function docToFreelancerProfile(doc: any): FreelancerProfile {
 
 const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
   userId,
-  name: 'New Freelancer',
-  email: 'freelancer@example.com',
-  avatarUrl: `https://placehold.co/200x200.png?text=${userId.substring(0,1) || 'F'}`,
+  name: 'New User',
+  email: 'user@example.com',
+  roles: [],
+  avatarUrl: `https://placehold.co/200x200.png?text=${userId.substring(0,1) || 'U'}`,
   occupation: 'Creative Professional',
   bio: 'Ready to take on new projects!',
   skills: [],

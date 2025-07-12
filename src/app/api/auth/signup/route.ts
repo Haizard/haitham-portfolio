@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Create associated profiles. These run after the main user is confirmed to be created.
     if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor')) {
-        await createFreelancerProfileIfNotExists(createdUser.id!, { name, email, storeName: `${name}'s Store` });
+        // Pass the roles to the freelancer profile creation function
+        await createFreelancerProfileIfNotExists(createdUser.id!, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
     }
     if (createdUser.roles.includes('client')) {
         await createClientProfileIfNotExists(createdUser.id!, { name });

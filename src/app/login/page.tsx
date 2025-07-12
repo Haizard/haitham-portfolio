@@ -49,7 +49,8 @@ export default function LoginPage() {
         throw new Error(result.message || "Failed to log in.");
       }
       
-      // Update the user state in the central provider
+      // The API now returns the SessionUser object directly.
+      // Pass this to the central login function.
       login(result);
 
       toast({

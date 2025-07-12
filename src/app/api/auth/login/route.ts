@@ -3,7 +3,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getFullUserByEmail, verifyPassword } from '@/lib/auth-data';
 import { saveSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
-import { getFreelancerProfile } from '@/lib/user-profile-data';
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address."),
@@ -43,15 +42,9 @@ export async function POST(request: NextRequest) {
     
     await saveSession(sessionUser);
 
-    // Fetch the full profile to return to the client, which now expects it.
-    const fullProfile = await getFreelancerProfile(user.id!);
-    if (!fullProfile) {
-        // This should not happen if a user exists, but it's a safe check.
-        return NextResponse.json({ message: "Could not find user profile after login." }, { status: 500 });
-    }
-    
-    // Return the full, serializable profile to the client
-    return NextResponse.json(fullProfile);
+    // Return just the serializable session user, not the full profile.
+    // The client-side UserProvider will now use this directly.
+    return NextResponse.json(sessionUser);
 
   } catch (error: any) {
     console.error("[API /login POST] Error:", error);
