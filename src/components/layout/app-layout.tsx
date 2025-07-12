@@ -47,15 +47,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, router]);
   
-  // The UserProvider already shows a global loading screen.
-  // We can show a more specific one here if needed, or just return null
-  // while the redirect is happening.
-  if (isLoading || !user) {
+  // This is the critical fix. We must wait for the initial loading to complete.
+  // While isLoading is true, we show a full-screen loader.
+  // The user object might be null briefly during the initial check.
+  // By waiting for isLoading to be false, we ensure we have the definitive user state.
+  if (isLoading) {
     return (
         <div className="flex h-screen w-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary"/>
         </div>
     );
+  }
+
+  // If loading is done and there's still no user, the useEffect will handle the redirect.
+  // Rendering null here prevents a brief flash of the dashboard layout.
+  if (!user) {
+    return null;
   }
 
   return (
