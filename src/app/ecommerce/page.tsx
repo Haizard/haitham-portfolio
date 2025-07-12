@@ -2,30 +2,39 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, ExternalLink, Star, Search, ChevronRight, Gamepad2, Watch, Armchair, Zap, Sparkles, Tag, ArrowRight, Flame, Newspaper, Award, Info, ThumbsUp, PackageCheck, Heart, Eye, Store } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ArrowRight, ChevronRight, Gamepad2, Headphones, Layers, List, Monitor, Newspaper, Percent, Smartphone, Star, Tv2 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import type { Product } from '@/lib/products-data';
 import type { BlogPost } from '@/lib/blog-data';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
-import { ProductCard } from '@/components/products/ProductCard';
-import { StarRating } from '@/components/reviews/StarRating';
+import { ProductCard } from '@/components/products/ProductCard'; // We will use the updated ProductCard
+import { Skeleton } from '@/components/ui/skeleton';
 
-const mockHotCategories = [
-    { name: "Fridges", products: 217, image: "https://placehold.co/300x200.png", imageHint: "refrigerator appliance" },
-    { name: "Cameras", products: 35, image: "https://placehold.co/300x200.png", imageHint: "dslr camera photography" },
-    { name: "Smartphones", products: 120, image: "https://placehold.co/300x200.png", imageHint: "smartphone mobile" },
-    { name: "Audio Gear", products: 88, image: "https://placehold.co/300x200.png", imageHint: "headphones speaker" },
+
+const categoryIcons = {
+  "Laptops & Computers": Monitor,
+  "Cameras & Photography": Headphones, // Placeholder, no camera icon
+  "Smartphones & Tablets": Smartphone,
+  "Video Games & Consoles": Gamepad2,
+  "TV & Audio": Tv2,
+};
+
+const departments = [
+    { name: "Value of The Day", icon: Percent },
+    { name: "Top 100 Offers", icon: Star },
+    { name: "New Arrivals", icon: Layers },
+    ...Object.keys(categoryIcons).map(name => ({ name, icon: categoryIcons[name as keyof typeof categoryIcons] }))
 ];
 
 
 export default function EcommerceStorePage() {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [newProducts, setNewProducts] = useState<Product[]>([]);
+  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [latestArticles, setLatestArticles] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -34,13 +43,18 @@ export default function EcommerceStorePage() {
       setIsLoading(true);
       try {
         const [productsResponse, articlesResponse] = await Promise.all([
-          fetch(`/api/products`),
-          fetch(`/api/blog?enriched=true&limit=2`) // Fetch 2 latest articles
+          fetch(`/api/products?limit=12`),
+          fetch(`/api/blog?enriched=true&limit=2`) 
         ]);
 
         if (!productsResponse.ok) throw new Error('Failed to fetch products.');
         const productsData: Product[] = await productsResponse.json();
-        setAllProducts(productsData);
+        
+        // Split product data for different sections
+        setNewProducts(productsData.slice(0, 5));
+        setBestSellers(productsData.slice(5, 10));
+        setFeaturedProducts(productsData.slice(2, 7)); // Overlap for variety
+        
 
         if (!articlesResponse.ok) throw new Error('Failed to fetch latest articles.');
         const articlesData: BlogPost[] = await articlesResponse.json();
@@ -54,150 +68,151 @@ export default function EcommerceStorePage() {
       }
   }, [toast]);
 
-
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData]);
 
-  const featuredProducts = allProducts.slice(0, 10); 
-  const latestProducts = allProducts.slice(0, 4); 
-  const bestPickOfTheWeek = allProducts.length > 0 ? allProducts.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))[0] : null;
+  const renderProductRow = (products: Product[], isLoading: boolean, count: number) => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {[...Array(count)].map((_, i) => <Skeleton key={i} className="h-64 w-full bg-muted" />)}
+        </div>
+      );
+    }
+    if (products.length === 0) return <p className="text-muted-foreground">No products to display in this section.</p>;
+    
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {products.map(p => <ProductCard key={p.id} product={p}/>)}
+        </div>
+    );
+  };
+  
 
   return (
-    <div className="bg-background text-foreground">
-      <header className="py-16 text-center bg-primary/10 border-b border-primary/20">
-        <div className="container mx-auto px-4">
-          <Store className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h1 className="text-5xl font-bold tracking-tight font-headline text-primary">CreatorOS Store</h1>
-          <p className="text-xl text-muted-foreground mt-3 max-w-2xl mx-auto">
-            Discover a curated selection of products from our community of talented creators and vendors.
-          </p>
-        </div>
-      </header>
-      
-      {/* Main content with a little top margin to lift it over the header bottom */}
-      <main className="-mt-8">
-        {bestPickOfTheWeek && (
-          <section className="container mx-auto py-8 md:py-12">
-            <div className="bg-card border border-border rounded-xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 shadow-xl">
-              <div className="md:w-2/5 relative aspect-square w-full max-w-sm mx-auto md:mx-0">
-                <Image src={bestPickOfTheWeek.imageUrl} alt={bestPickOfTheWeek.name} fill className="object-contain rounded-lg drop-shadow-lg" data-ai-hint={bestPickOfTheWeek.imageHint || "highlighted product"}/>
+    <div className="bg-background">
+      <div className="container mx-auto py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <aside className="lg:col-span-1">
+            <Card>
+              <CardHeader className="bg-muted/50">
+                <CardTitle className="flex items-center gap-2 text-base"><List className="h-5 w-5"/> Shop By Department</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2">
+                <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+                  {departments.map((dept, index) => (
+                     <AccordionItem value={`item-${index}`} key={dept.name} className="border-b-0">
+                      <AccordionTrigger className="text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-1.5 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                           <dept.icon className="h-4 w-4 text-primary"/> {dept.name}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-4 py-1 text-sm">
+                        {/* Placeholder for sub-categories */}
+                        <Link href="#" className="block py-1 hover:text-primary">Sub-category 1</Link>
+                        <Link href="#" className="block py-1 hover:text-primary">Sub-category 2</Link>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          </aside>
+
+          {/* Main Content */}
+          <main className="lg:col-span-3 space-y-12">
+            {/* Hero Section */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 rounded-lg overflow-hidden relative aspect-[2/1]">
+                 <Image src="https://placehold.co/800x400.png" alt="Books for Cooks" fill className="object-cover" data-ai-hint="cooking books"/>
+                 <div className="absolute inset-0 bg-black/30 flex flex-col justify-center p-8">
+                    <h2 className="text-4xl font-bold text-white">BOOKS FOR COOKS</h2>
+                    <p className="text-white/90 mt-2">Find your next new recipe</p>
+                    <Button className="mt-4 w-fit bg-accent text-accent-foreground hover:bg-accent/80">Shop Now</Button>
+                 </div>
               </div>
-              <div className="md:w-3/5 text-center md:text-left">
-                <Badge variant="default" className="mb-2 bg-accent text-accent-foreground"><Award className="mr-1.5 h-4 w-4"/>Best Pick of the Week</Badge>
-                <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground mb-3">{bestPickOfTheWeek.name}</h2>
-                <p className="text-muted-foreground mb-2 line-clamp-3">{bestPickOfTheWeek.description}</p>
-                <div className="flex items-center justify-center md:justify-start gap-2 text-yellow-500 mb-4">
-                    <StarRating rating={bestPickOfTheWeek.averageRating || 0} disabled/>
-                    <span className="text-sm text-muted-foreground ml-1">({bestPickOfTheWeek.reviewCount || 0} reviews)</span>
-                </div>
-                <div className="text-2xl font-bold text-primary mb-6">
-                  {bestPickOfTheWeek.productType === 'creator' && bestPickOfTheWeek.price ? `$${bestPickOfTheWeek.price.toFixed(2)}` : bestPickOfTheWeek.links?.[0]?.priceDisplay || 'Check Price'}
-                </div>
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" asChild>
-                  <Link href={`/products/${bestPickOfTheWeek.slug}`}>
-                      <ShoppingCart className="mr-2 h-5 w-5"/> View Product
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </section>
-        )}
-        {!bestPickOfTheWeek && !isLoading && (
-          <section className="container mx-auto py-8 md:py-12 text-center">
-            <p className="text-muted-foreground">No products available to feature as Best Pick of the Week.</p>
-          </section>
-        )}
-
-        {/* Featured Products Section */}
-        <section className="container mx-auto py-6 md:py-10">
-          <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold font-headline flex items-center gap-2"><ThumbsUp className="text-primary h-7 w-7"/>Featured Products</h2>
-          </div>
-          {isLoading && featuredProducts.length === 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                  {[...Array(10)].map((_,i) => <Card key={i} className="aspect-[3/4] bg-muted animate-pulse"></Card>)}
-              </div>
-          ) : featuredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-5">
-              {featuredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">No featured products available.</p>
-          )}
-        </section>
-
-        {/* Latest Products Section */}
-        {latestProducts.length > 0 && (
-          <section className="container mx-auto py-6 md:py-10">
-            <h2 className="text-2xl md:text-3xl font-bold font-headline mb-6 flex items-center gap-2"><PackageCheck className="text-primary h-7 w-7"/>Latest Arrivals</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-              {latestProducts.map(product => (
-                <ProductCard key={`latest-${product.id}`} product={product} size="small"/>
-              ))}
-            </div>
-          </section>
-        )}
-        {!isLoading && latestProducts.length === 0 && allProducts.length > 0 && (
-          <section className="container mx-auto py-6 md:py-10 text-center">
-            <p className="text-muted-foreground">No new products marked as latest arrivals from the current product list.</p>
-          </section>
-        )}
-
-        {/* Hot Categories Section */}
-        <section className="container mx-auto py-6 md:py-10">
-          <h2 className="text-2xl md:text-3xl font-bold font-headline mb-6 text-center flex items-center justify-center gap-2"><Flame className="text-destructive h-7 w-7"/>Hot Categories This Week</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {mockHotCategories.map(cat => (
-              <Card key={cat.name} className="shadow-lg overflow-hidden group hover:shadow-2xl transition-shadow duration-300 border-2 border-transparent hover:border-primary">
-                <div className="relative aspect-[3/2]">
-                  <Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform" data-ai-hint={cat.imageHint}/>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <h3 className="text-xl font-semibold">{cat.name}</h3>
-                    <p className="text-xs">{cat.products} products</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* Latest Articles Section */}
-        {latestArticles.length > 0 && (
-          <section className="container mx-auto py-6 md:py-10">
-            <h2 className="text-2xl md:text-3xl font-bold font-headline mb-6 flex items-center gap-2"><Newspaper className="text-primary h-7 w-7"/>From Our Blog</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {latestArticles.map(article => (
-                <Card key={article.slug} className="shadow-lg hover:shadow-xl transition-shadow flex group">
-                  {article.featuredImageUrl && (
-                    <div className="w-1/3 relative overflow-hidden rounded-l-lg">
-                      <Image src={article.featuredImageUrl} alt={article.title} fill className="object-cover group-hover:scale-105 transition-transform" data-ai-hint={article.featuredImageHint || "blog article"}/>
+              <div className="space-y-4">
+                <div className="rounded-lg overflow-hidden relative aspect-[3/2]">
+                    <Image src="https://placehold.co/400x300.png" alt="Headphones deal" fill className="object-cover" data-ai-hint="headphones product"/>
+                    <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4">
+                        <h3 className="font-semibold text-white">Big Sale -50%</h3>
+                        <p className="text-xs text-white/80">Headphones & Headsets</p>
                     </div>
-                  )}
-                  <div className={cn("w-2/3 flex flex-col", !article.featuredImageUrl && "w-full")}>
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold line-clamp-2 group-hover:text-primary">{article.title}</CardTitle>
-                      <CardDescription className="text-xs">By {article.author} on {new Date(article.date).toLocaleDateString()}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                      <p className="text-sm text-muted-foreground line-clamp-2">{article.content.replace(/<[^>]+>/g, '').substring(0, 80)}...</p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button variant="link" asChild className="p-0 text-primary">
-                        <Link href={`/blog/${article.slug}`}>Read More <ArrowRight className="ml-1 h-4 w-4"/></Link>
-                      </Button>
-                    </CardFooter>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </section>
-        )}
-      </main>
+                </div>
+                 <div className="rounded-lg overflow-hidden relative aspect-[3/2]">
+                    <Image src="https://placehold.co/400x300.png" alt="Gaming console" fill className="object-cover" data-ai-hint="gaming console"/>
+                     <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4">
+                        <h3 className="font-semibold text-white">New Arrivals</h3>
+                        <p className="text-xs text-white/80">Game Console</p>
+                    </div>
+                </div>
+              </div>
+            </section>
+            
+            {/* New Products */}
+            <section>
+                <h2 className="text-2xl font-bold mb-4">New Products</h2>
+                {renderProductRow(newProducts, isLoading, 5)}
+            </section>
+
+             {/* Ad Banners */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 1" fill className="object-cover" data-ai-hint="smartphone ad"/></div>
+                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 2" fill className="object-cover" data-ai-hint="camera ad"/></div>
+                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 3" fill className="object-cover" data-ai-hint="fruit juicy"/></div>
+            </section>
+
+            {/* Best Sellers */}
+            <section>
+                <h2 className="text-2xl font-bold mb-4">Best Sellers</h2>
+                {renderProductRow(bestSellers, isLoading, 5)}
+            </section>
+
+            {/* Featured Products */}
+            <section>
+                <h2 className="text-2xl font-bold mb-4">Featured Products</h2>
+                 {renderProductRow(featuredProducts, isLoading, 5)}
+            </section>
+
+            {/* From Our Blog */}
+            <section>
+                <h2 className="text-2xl font-bold mb-4">From Our Blog</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {isLoading ? (
+                    <>
+                        <Skeleton className="h-48 w-full bg-muted" />
+                        <Skeleton className="h-48 w-full bg-muted" />
+                    </>
+                ) : latestArticles.length > 0 ? (
+                    latestArticles.map(article => (
+                    <Card key={article.slug} className="shadow-none border-none flex gap-4">
+                        <div className="flex-shrink-0">
+                             <Image src={article.featuredImageUrl || 'https://placehold.co/150x150.png'} alt={article.title} width={150} height={150} className="object-cover rounded-lg aspect-square" data-ai-hint={article.featuredImageHint || "blog post"}/>
+                        </div>
+                        <div className="flex flex-col">
+                            <CardHeader className="p-0 mb-2">
+                                <CardTitle className="text-base font-semibold leading-snug hover:text-primary"><Link href={`/blog/${article.slug}`}>{article.title}</Link></CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0 text-xs text-muted-foreground flex-grow">
+                                <p className="line-clamp-3">{article.content.replace(/<[^>]+>/g, '').substring(0, 100)}...</p>
+                            </CardContent>
+                            <Button variant="link" asChild className="p-0 h-auto mt-2 justify-start text-primary">
+                                <Link href={`/blog/${article.slug}`}>Read More <ArrowRight className="ml-1 h-4 w-4"/></Link>
+                            </Button>
+                        </div>
+                    </Card>
+                    ))
+                ) : (
+                    <p className="text-muted-foreground">No recent articles.</p>
+                )}
+                </div>
+            </section>
+
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
-    
