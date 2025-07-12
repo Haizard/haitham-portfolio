@@ -52,70 +52,71 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <Card 
         className={cn(
-            "shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden h-full group",
+            "group relative flex h-full w-full flex-col overflow-hidden rounded-lg border-2 border-transparent bg-card shadow-md transition-all duration-300 ease-in-out hover:border-primary hover:shadow-xl",
             className
         )}
     >
-      <Link href={`/products/${product.slug || product.id}`} className="block">
-        <div className="bg-card border-b border-border p-4 flex-grow flex items-center justify-center relative">
-            <div className="aspect-square w-full relative">
-                <Image
-                    src={product.imageUrl}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 768px) 50vw, 25vw"
-                    className="object-contain group-hover:scale-105 transition-transform duration-300"
-                    data-ai-hint={product.imageHint || "product image"}
-                />
+        <Link href={`/products/${product.slug || product.id}`} className="block h-full flex flex-col">
+            <div className="relative flex-1 overflow-hidden bg-muted/30 p-4">
+                <div className="relative aspect-square w-full">
+                    <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        className="object-contain transition-transform duration-500 group-hover:scale-105"
+                        data-ai-hint={product.imageHint || "product image"}
+                    />
+                </div>
+                {product.price && originalPrice && product.price < originalPrice && (
+                    <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">
+                        SALE
+                    </span>
+                )}
             </div>
-             {product.price && originalPrice && product.price < originalPrice && (
-                <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">
-                    - {Math.round(((originalPrice - product.price) / originalPrice) * 100)}%
-                </span>
+
+            <CardContent className="flex flex-col p-4">
+                <p className="text-xs font-medium text-muted-foreground">{product.categoryName || 'Category'}</p>
+                <h3 className="mt-1 text-base font-semibold text-foreground line-clamp-2">{product.name}</h3>
+                <div className="mt-2 flex items-center">
+                    <StarRating rating={product.averageRating || 0} size={16} disabled/>
+                    <span className="ml-2 text-xs text-muted-foreground">({product.reviewCount})</span>
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                    {product.productType === 'creator' && product.price !== undefined ? (
+                        <>
+                            <span className="font-bold text-primary text-lg">${product.price.toFixed(2)}</span>
+                            {originalPrice && <span className="text-sm text-muted-foreground line-through">${originalPrice.toFixed(2)}</span>}
+                        </>
+                    ) : product.productType === 'affiliate' && product.links && product.links.length > 0 ? (
+                        <span className="font-bold text-primary text-lg">{product.links[0].priceDisplay}</span>
+                    ) : null}
+                </div>
+            </CardContent>
+        </Link>
+        
+        {/* Absolute positioned actions for hover state */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md" onClick={handleWishlistClick} aria-label="Add to wishlist">
+                <Heart className={cn("h-5 w-5", isWishlisted && "fill-current text-destructive")} />
+            </Button>
+            {onQuickView && (
+                 <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md" onClick={handleQuickViewClick} aria-label="Quick view">
+                    <Eye className="h-5 w-5" />
+                </Button>
             )}
-             {onQuickView && <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                 <Button variant="secondary" size="icon" className="h-8 w-8" onClick={handleQuickViewClick} aria-label="Quick view">
-                    <Eye className="h-4 w-4" />
-                </Button>
-            </div>}
         </div>
-      </Link>
-      <CardContent className="p-3 text-center flex flex-col flex-grow bg-background">
-          {product.categoryName && <p className="text-xs text-muted-foreground mb-1">{product.categoryName}</p>}
-          <h3 className="text-sm font-semibold line-clamp-2 flex-grow group-hover:text-primary transition-colors">
-              <Link href={`/products/${product.slug || product.id}`}>{product.name}</Link>
-          </h3>
-          <div className="flex justify-center my-2">
-                <StarRating rating={product.averageRating || 0} size={14} disabled/>
-          </div>
-          <div className="flex items-baseline justify-center gap-2">
-          {product.productType === 'creator' && product.price !== undefined ? (
-              <>
-                  <span className="font-bold text-primary text-base">${product.price.toFixed(2)}</span>
-                  {originalPrice && <span className="text-xs text-muted-foreground line-through">${originalPrice.toFixed(2)}</span>}
-              </>
-          ) : product.productType === 'affiliate' && product.links && product.links.length > 0 ? (
-              <span className="font-bold text-primary text-base">{product.links[0].priceDisplay}</span>
-          ) : null}
-          </div>
-      </CardContent>
-       <CardFooter className="p-3 pt-0 border-t-transparent group-hover:border-t-border transition-colors duration-300">
-          <div className="w-full h-10 flex items-center justify-center">
-            {/* This content shows on hover */}
-            <div className="flex w-full justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleWishlistClick} aria-label="Add to wishlist">
-                    <Heart className={cn("h-4 w-4", isWishlisted && "fill-current text-destructive")} />
-                </Button>
-                <Button variant="default" size="sm" onClick={handleAddToCartClick} aria-label="Add to cart" className="text-xs px-3 h-8">
-                    <ShoppingCart className="mr-2 h-4 w-4"/> Add to cart
-                </Button>
-            </div>
-            {/* This content shows by default (when not hovered) */}
-            <div className="text-xs text-muted-foreground opacity-100 group-hover:opacity-0 transition-opacity duration-300">
-              Hover to see actions
-            </div>
-          </div>
-        </CardFooter>
+
+        <div className="absolute bottom-4 left-4 right-4 z-10">
+            <Button
+                size="sm"
+                className="w-full translate-y-4 text-sm font-bold opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
+                onClick={handleAddToCartClick}
+                aria-label="Add to cart"
+            >
+                <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
+            </Button>
+        </div>
     </Card>
   );
 };
