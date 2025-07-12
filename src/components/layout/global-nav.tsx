@@ -42,7 +42,7 @@ export function GlobalNav() {
               <Link href="/blog">Blog</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href="/ecommerce">Store</Link>
+              <Link href="/shop">Shop</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/find-work">Freelancers</Link>

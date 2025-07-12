@@ -88,7 +88,8 @@ export async function getAllProducts(
   vendorId?: string,
   slug?: string,
   limit?: number,
-  excludeId?: string
+  excludeId?: string,
+  sortBy?: 'sales' | 'name'
 ): Promise<Product[]> {
   const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const ordersCollection = await getCollection('orders');
@@ -126,20 +127,33 @@ export async function getAllProducts(
       query._id = { $ne: new ObjectId(excludeId) };
   }
 
-  const cursor = productsCollection.find(query).sort({ name: 1 });
+  const sortOptions: any = {};
+  if (sortBy === 'name') {
+      sortOptions.name = 1;
+  } else {
+      // Default sort can be by creation date or name
+      sortOptions.name = 1;
+  }
+
+  const cursor = productsCollection.find(query).sort(sortOptions);
   if (limit) {
       cursor.limit(limit);
   }
   const productDocs = await cursor.toArray();
 
   // 3. Enrich products with sales data
-  const enrichedProducts = productDocs.map(doc => {
+  let enrichedProducts = productDocs.map(doc => {
     const product = docToProduct(doc);
     const saleInfo = salesMap.get(product.id!);
     product.sales = saleInfo?.sales || 0;
     product.revenue = saleInfo?.revenue || 0;
     return product;
   });
+
+  if (sortBy === 'sales') {
+    enrichedProducts = enrichedProducts.sort((a, b) => (b.sales || 0) - (a.sales || 0));
+  }
+
 
   return enrichedProducts;
 }
