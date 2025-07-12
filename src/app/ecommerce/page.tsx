@@ -16,6 +16,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FeaturedVendorsCarousel } from '@/components/products/FeaturedVendorsCarousel';
 import { ProductQuickView } from '@/components/products/ProductQuickView';
+import { Separator } from '@/components/ui/separator';
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -259,3 +260,4 @@ export default function EcommerceStorePage() {
     </>
   );
 }
+
