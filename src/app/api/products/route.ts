@@ -18,10 +18,10 @@ const affiliateLinkSchema = z.object({
 const baseProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters").max(150),
   description: z.string().min(10, "Description must be at least 10 characters").max(5000),
-  categoryId: z.string().min(1, "Category is required"), // Changed from category string
+  categoryId: z.string().min(1, "Category is required"),
   imageUrl: z.string().url("Image URL must be valid"),
   imageHint: z.string().min(1, "Image hint is required").max(50),
-  tagIds: z.array(z.string()).optional(), // Changed from tags string array
+  tags: z.array(z.string()).optional(), // Expect an array of strings now
   productType: z.enum(['creator', 'affiliate'], { required_error: "Product type is required." }),
 });
 
@@ -50,15 +50,16 @@ const productCreateSchema = z.discriminatedUnion("productType", [
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') || undefined; // Changed from categoryId
+    const categoryId = searchParams.get('categoryId') || undefined;
     const productType = searchParams.get('productType') as ProductType | undefined;
     const vendorId = searchParams.get('vendorId') || undefined;
     const slug = searchParams.get('slug') || undefined;
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam) : undefined;
+    const sortBy = searchParams.get('sortBy') as 'sales' | 'name' | undefined;
     
     // Pass all filters to the data function
-    const products = await getAllProducts({category, productType, vendorId, slug}, limit);
+    const products = await getAllProducts({categoryId, productType, vendorId, slug}, limit, undefined, sortBy);
 
     // --- ENRICHMENT STEP ---
     if (products.length > 0) {
@@ -116,8 +117,8 @@ export async function POST(request: NextRequest) {
     } as Omit<Product, 'id' | '_id' | 'slug' | 'categoryName'>;
     
     // Ensure tagIds array is present, even if empty, to avoid MongoDB errors if schema expects it
-    if (!productData.tagIds) {
-      productData.tagIds = [];
+    if (!productData.tags) {
+      productData.tags = [];
     }
     
     const newProduct = await addProduct(productData);

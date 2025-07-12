@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,7 +24,10 @@ import { Loader2, PlusCircle, Trash2, DollarSign, Package, LinkIcon as LinkIconL
 import { useToast } from "@/hooks/use-toast";
 import type { Product, AffiliateLink, ProductType } from '@/lib/products-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from "@/components/ui/card"; // Added missing Card import
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { ProductCategoryNode } from '@/lib/product-categories-data';
+
 
 const affiliateLinkSchemaDialog = z.object({
   vendorName: z.string().min(1, "Vendor name is required.").max(100),
@@ -32,10 +35,11 @@ const affiliateLinkSchemaDialog = z.object({
   priceDisplay: z.string().min(1, "Price display is required.").max(50),
 });
 
+// Updated schema to use categoryId
 const baseProductFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters.").max(150),
   description: z.string().min(10, "Description must be at least 10 characters.").max(5000),
-  category: z.string().min(1, "Category is required.").max(50),
+  categoryId: z.string().min(1, "Category is required."),
   imageUrl: z.string().url("Image URL must be a valid URL."),
   imageHint: z.string().min(1, "Image hint is required (max 2 words).").max(50).refine(s => s.split(' ').length <= 2, "Hint should be max 2 words."),
   tags: z.string().optional().transform(val => val ? val.split(',').map(tag => tag.trim()).filter(Boolean) : []),
@@ -72,34 +76,46 @@ interface ProductFormDialogProps {
   onSuccess: (product: Product) => void;
 }
 
+interface FlattenedCategory {
+  value: string;
+  label: string;
+  level: number;
+}
+
+const flattenCategories = (categories: ProductCategoryNode[], level = 0): FlattenedCategory[] => {
+  let flatList: FlattenedCategory[] = [];
+  const indent = "\u00A0\u00A0".repeat(level * 2); 
+  for (const category of categories) {
+    if (!category.id) continue; 
+    flatList.push({ value: category.id, label: `${indent}${category.name}`, level });
+    if (category.children && category.children.length > 0) {
+      flatList = flatList.concat(flattenCategories(category.children, level + 1));
+    }
+  }
+  return flatList;
+};
+
 export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: ProductFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [categories, setCategories] = useState<ProductCategoryNode[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormDialogSchema),
-    defaultValues: product 
-      ? {
-          ...product,
-          tags: product.tags?.join(', ') || "", // Convert array to string for form
-          price: product.productType === 'creator' ? product.price : undefined,
-          stock: product.productType === 'creator' ? product.stock : undefined,
-          sku: product.productType === 'creator' ? product.sku : undefined,
-          links: product.productType === 'affiliate' ? product.links : [],
-        }
-      : {
+    defaultValues: {
           name: "",
           description: "",
-          category: "",
-          imageUrl: "https://placehold.co/600x400.png", // Default placeholder
+          categoryId: "",
+          imageUrl: "https://placehold.co/600x400.png",
           imageHint: "product image",
-          tags: "",
-          productType: "creator", // Default to creator
+          tags: [],
+          productType: "creator",
           price: 0,
           stock: 0,
           sku: "",
           links: [],
-        },
+    },
   });
   
   const { fields: linkFields, append: appendLink, remove: removeLink } = useFieldArray({
@@ -109,23 +125,43 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
 
   useEffect(() => {
     if (isOpen) {
+        async function fetchInitialData() {
+            setIsLoadingCategories(true);
+            try {
+                const response = await fetch('/api/product-categories');
+                if (!response.ok) throw new Error('Failed to fetch product categories');
+                const catData: ProductCategoryNode[] = await response.json();
+                setCategories(catData);
+            } catch (error) {
+                console.error("Error fetching product categories:", error);
+                toast({ title: "Error", description: "Could not load product categories.", variant: "destructive" });
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        }
+        fetchInitialData();
+    }
+  }, [isOpen, toast]);
+
+  useEffect(() => {
+    if (isOpen) {
       if (product) {
         form.reset({
           ...product,
-          tags: product.tags?.join(', ') || "",
+          tags: product.tags || [],
           price: product.productType === 'creator' ? product.price : undefined,
           stock: product.productType === 'creator' ? product.stock : undefined,
-          sku: product.productType === 'creator' ? (product.sku || "") : undefined, // ensure sku is string or undefined
+          sku: product.productType === 'creator' ? (product.sku || "") : undefined,
           links: product.productType === 'affiliate' ? (product.links || [{ vendorName: "", url: "", priceDisplay: "" }]) : [],
         });
       } else {
         form.reset({
           name: "",
           description: "",
-          category: "",
-          imageUrl: "https://placehold.co/600x400.png", // Default placeholder
+          categoryId: "",
+          imageUrl: "https://placehold.co/600x400.png",
           imageHint: "product image",
-          tags: "",
+          tags: [],
           productType: "creator",
           price: 0,
           stock: 0,
@@ -152,6 +188,8 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
       }
     }
   }, [productType, form, appendLink]);
+  
+  const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
 
   const handleSubmit = async (values: ProductFormValues) => {
     setIsSaving(true);
@@ -214,12 +252,41 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
                   <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Detailed product description..." {...field} className="min-h-[100px]"/></FormControl><FormMessage /></FormItem>
               )}/>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem><FormLabel>Category</FormLabel><FormControl><Input placeholder="e.g., Software, Hardware" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField control={form.control} name="tags" render={({ field }) => (
-                    <FormItem><FormLabel>Tags (comma-separated)</FormLabel><FormControl><Input placeholder="e.g., productivity, design, code" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                 <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCategories || flattenedCategoryOptions.length === 0}>
+                          <FormControl><SelectTrigger><SelectValue placeholder={isLoadingCategories ? "Loading..." : "Select category"} /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {isLoadingCategories ? <SelectItem value="loading" disabled>Loading...</SelectItem> : 
+                             flattenedCategoryOptions.length === 0 ? <SelectItem value="no-cat" disabled>No categories found.</SelectItem> :
+                             flattenedCategoryOptions.map(opt => <SelectItem key={opt.value} value={opt.value} style={{ paddingLeft: `${opt.level * 1 + 0.5}rem`}}>{opt.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                 <FormField
+                    control={form.control}
+                    name="tags"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tags (comma-separated)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., productivity, design, code"
+                            {...field}
+                            value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="imageUrl" render={({ field }) => (

@@ -2,6 +2,7 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { getFreelancerProfile } from './user-profile-data'; // To enrich with vendor names
+import { findOrCreateProductTagsByNames } from './product-tags-data';
 
 const PRODUCTS_COLLECTION = 'products';
 const ORDERS_COLLECTION = 'orders'; // Need this for top selling products
@@ -41,7 +42,8 @@ export interface Product {
   galleryImages?: GalleryImage[];
   colorOptions?: ColorOption[];
   productType: ProductType;
-  tags?: string[]; 
+  tagIds?: string[];
+  tags?: string[]; // Kept for compatibility, but tagIds is preferred
 
   // For affiliate products
   links?: AffiliateLink[];
@@ -221,11 +223,19 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
   if (!productData.vendorId) {
       throw new Error("Cannot add product: vendorId is missing.");
   }
+  
+  // Handle tags: convert names to IDs
+  let tagIds: string[] = [];
+  if (productData.tags && Array.isArray(productData.tags) && productData.tags.length > 0) {
+      const foundOrCreatedTags = await findOrCreateProductTagsByNames(productData.tags);
+      tagIds = foundOrCreatedTags.map(t => t.id!);
+  }
 
   const docToInsert: Omit<ProductDocument, '_id'> = {
     ...productData,
     slug,
-    tags: productData.tags || [],
+    tagIds: tagIds,
+    tags: undefined, // Clear out the string array
     links: productData.productType === 'affiliate' ? (productData.links || []) : undefined,
     price: productData.productType === 'creator' ? (productData.price || 0) : undefined,
     stock: productData.productType === 'creator' ? (productData.stock || 0) : undefined,
@@ -257,7 +267,7 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, '
     return null;
   }
 
-  const updatePayload = { ...updates };
+  const updatePayload: Partial<Product> = { ...updates };
 
   if (updates.name && updates.name !== existingProduct.name) {
     let newSlug = createProductSlug(updates.name);
@@ -266,7 +276,14 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, '
       newSlug = `${createProductSlug(updates.name)}-${counter}`;
       counter++;
     }
-    (updatePayload as Product).slug = newSlug;
+    updatePayload.slug = newSlug;
+  }
+  
+  // Handle tags update
+  if (updates.tags && Array.isArray(updates.tags)) {
+      const foundOrCreatedTags = await findOrCreateProductTagsByNames(updates.tags);
+      updatePayload.tagIds = foundOrCreatedTags.map(t => t.id!);
+      delete updatePayload.tags; // Remove the old tags string array
   }
   
   const result = await collection.findOneAndUpdate(
@@ -281,6 +298,7 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, '
   }
   return docToProduct(result);
 }
+
 
 export async function deleteProduct(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) {

@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getProductById, updateProduct, deleteProduct, type Product } from '@/lib/products-data';
+import { getProductById, getProductBySlug, updateProduct, deleteProduct, type Product } from '@/lib/products-data';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
 
@@ -20,10 +20,10 @@ const affiliateLinkUpdateSchema = z.object({
 const productUpdateSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters").max(150).optional(),
   description: z.string().min(10, "Description must be at least 10 characters").max(5000).optional(),
-  categoryId: z.string().min(1, "Category is required").optional(), // Changed from category
+  categoryId: z.string().min(1, "Category is required").optional(),
   imageUrl: z.string().url("Image URL must be valid").optional(),
   imageHint: z.string().min(1, "Image hint is required").max(50).optional(),
-  tagIds: z.array(z.string()).optional(), // Changed from tags
+  tags: z.array(z.string()).optional(), // Changed to array of strings
   // For 'creator' type products
   price: z.number().min(0, "Price must be non-negative").optional(),
   stock: z.number().int().min(0, "Stock must be a non-negative integer").optional(),
