@@ -23,7 +23,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    setIsLoading(true);
+    // Only set loading to true when explicitly fetching, not on initial load.
+    // setIsLoading(true); 
     try {
       const res = await fetch('/api/auth/session');
       const data = await res.json();
@@ -37,11 +38,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Fetch user on initial load
     fetchUser();
   }, [fetchUser]);
 
   const login = (userData: SessionUser) => {
+    // This is the key change: Directly set the user, don't re-fetch.
+    // This eliminates the race condition after login.
     setUser(userData);
+    setIsLoading(false); // Ensure loading is false after login.
   };
 
   const logout = async () => {
@@ -59,7 +64,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Render a loading state for the initial check to prevent layout shifts
-  if (isLoading) {
+  // This is important for the very first page load of the app.
+  if (isLoading && user === null) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
