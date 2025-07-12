@@ -52,13 +52,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <Card 
         className={cn(
-            "group relative flex h-full w-full flex-col overflow-hidden rounded-lg border bg-card shadow-md transition-all duration-300 ease-in-out hover:shadow-xl",
-            "border-l-4 border-transparent hover:border-primary",
+            "group relative flex h-full w-full flex-col overflow-hidden rounded-lg border bg-card shadow-md transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-1",
             className
         )}
     >
         <Link href={`/products/${product.slug || product.id}`} className="block h-full flex flex-col">
-            <div className="relative flex-1 overflow-hidden bg-gradient-to-br from-muted/30 to-background p-4">
+            <div className="relative flex-1 overflow-hidden bg-muted/50 p-4">
                 <div className="relative aspect-square w-full">
                     <Image
                         src={product.imageUrl}
@@ -76,7 +75,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                 )}
             </div>
 
-            <CardContent className="flex flex-col p-4 bg-secondary/20">
+            <CardContent className="flex flex-col p-4">
                 <p className="text-xs font-medium text-muted-foreground">{product.categoryName || 'Category'}</p>
                 <h3 className="mt-1 text-base font-semibold text-foreground line-clamp-2">{product.name}</h3>
                 <div className="mt-2 flex items-center">
@@ -97,18 +96,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         </Link>
         
         {/* Absolute positioned actions for hover state */}
-        <div className="absolute top-3 right-3 z-10 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md" onClick={handleWishlistClick} aria-label="Add to wishlist">
+        <div className="absolute top-3 right-3 z-20 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md bg-background" onClick={handleWishlistClick} aria-label="Add to wishlist">
                 <Heart className={cn("h-5 w-5", isWishlisted && "fill-current text-destructive")} />
             </Button>
             {onQuickView && (
-                 <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md" onClick={handleQuickViewClick} aria-label="Quick view">
+                 <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md bg-background" onClick={handleQuickViewClick} aria-label="Quick view">
                     <Eye className="h-5 w-5" />
                 </Button>
             )}
         </div>
 
-        <div className="absolute bottom-4 left-4 right-4 z-10">
+        <div className="absolute bottom-4 left-4 right-4 z-20">
             <Button
                 size="sm"
                 className="w-full translate-y-4 text-sm font-bold opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
