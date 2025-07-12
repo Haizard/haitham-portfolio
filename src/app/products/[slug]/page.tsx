@@ -182,7 +182,7 @@ export default function ProductDetailPage() {
                          <Button size="lg" variant="outline" className="flex-1" onClick={() => toggleWishlist(product.id!, product.name)}>
                            <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-current text-destructive")} />
                            {isWishlisted ? 'In Wishlist' : 'Add to Wishlist'}
-                        </Button>
+                         </Button>
                     </div>
 
                     <Card className="bg-secondary/50">
@@ -202,7 +202,7 @@ export default function ProductDetailPage() {
                             </div>
                             <div className="flex gap-2">
                                 <Button size="sm" variant="outline" asChild>
-                                    <Link href={`/store/${MOCK_VENDOR_ID}`}><Store className="mr-2 h-4 w-4"/>Visit Shop</Link>
+                                    <Link href={`/store/${product.vendorId}`}><Store className="mr-2 h-4 w-4"/>Visit Shop</Link>
                                 </Button>
                                  <Button size="sm" variant="ghost" onClick={() => toast({title: "Coming Soon!", description: "Messaging feature is under development."})}>
                                     <MessageSquare className="mr-2 h-4 w-4"/> Message
