@@ -69,6 +69,15 @@ export default function ProfilePage() {
     name: "portfolioLinks",
   });
 
+  const resetFormWithProfileData = useCallback((data: FreelancerProfile) => {
+    form.reset({
+        ...data,
+        skills: data.skills?.join(', ') || '',
+        hourlyRate: data.hourlyRate ?? null,
+        portfolioLinks: data.portfolioLinks || [],
+    });
+  }, [form]);
+
   useEffect(() => {
     async function fetchProfile() {
       if (!user) return; 
@@ -87,12 +96,7 @@ export default function ProfilePage() {
         }
         const data: FreelancerProfile = await response.json();
         setProfileData(data);
-        form.reset({
-          ...data,
-          skills: data.skills ? data.skills.join(', ') : "", // THE FIX: Ensure skills is always a string.
-          hourlyRate: data.hourlyRate ?? null,
-          portfolioLinks: data.portfolioLinks || [],
-        });
+        resetFormWithProfileData(data);
       } catch (error: any) {
         console.error(error);
         toast({ title: "Error", description: `Could not load your profile data: ${error.message}`, variant: "destructive" });
@@ -100,8 +104,12 @@ export default function ProfilePage() {
         setIsLoading(false);
       }
     }
-    fetchProfile();
-  }, [form, toast, user, logout, router]);
+    if (user) {
+      fetchProfile();
+    } else {
+      setIsLoading(false);
+    }
+  }, [toast, user, logout, router, resetFormWithProfileData]);
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
@@ -122,12 +130,7 @@ export default function ProfilePage() {
       }
       const updatedProfile: FreelancerProfile = await response.json();
       setProfileData(updatedProfile);
-      form.reset({
-         ...updatedProfile,
-         skills: updatedProfile.skills ? updatedProfile.skills.join(', ') : "", // THE FIX: Also apply fix here.
-         hourlyRate: updatedProfile.hourlyRate ?? null,
-         portfolioLinks: updatedProfile.portfolioLinks || [],
-      });
+      resetFormWithProfileData(updatedProfile);
       toast({ title: "Success", description: "Profile updated successfully!" });
     } catch (error: any) {
       console.error("Error saving profile:", error);
