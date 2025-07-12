@@ -21,7 +21,8 @@ export interface Product {
   slug: string;
   name: string;
   description: string;
-  category: string; 
+  categoryId?: string; // Changed from category
+  categoryName?: string; // Enriched field
   vendorId: string; // ID of the freelancer/vendor who owns this product
   vendorName?: string;
   imageUrl: string;
@@ -84,7 +85,7 @@ async function isProductSlugUnique(slug: string, excludeId?: string): Promise<bo
 
 export async function getAllProducts(
   filters: { 
-      category?: string, 
+      categoryId?: string, 
       productType?: ProductType, 
       vendorId?: string,
       slug?: string
@@ -113,8 +114,8 @@ export async function getAllProducts(
 
   // 2. Fetch products based on filters
   const query: Filter<ProductDocument> = {};
-  if (filters.category && filters.category.toLowerCase() !== 'all') {
-    query.category = { $regex: new RegExp(`^${filters.category}$`, 'i') };
+  if (filters.categoryId && ObjectId.isValid(filters.categoryId)) {
+    query.categoryId = filters.categoryId;
   }
   if (filters.productType) {
     query.productType = filters.productType;
@@ -195,7 +196,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return product;
 }
 
-export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug'>): Promise<Product> {
+export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug' | 'categoryName'>): Promise<Product> {
   const collection = await getCollection<Omit<ProductDocument, '_id'>>(PRODUCTS_COLLECTION);
   let slug = createProductSlug(productData.name);
   let counter = 1;
@@ -231,7 +232,7 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
   return newProduct;
 }
 
-export async function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | '_id' | 'slug'>>): Promise<Product | null> {
+export async function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | '_id' | 'slug' | 'categoryName'>>): Promise<Product | null> {
   if (!ObjectId.isValid(id)) {
     console.warn(`updateProduct: Invalid ID format: ${id}`);
     return null;

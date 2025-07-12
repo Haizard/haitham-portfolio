@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ProductCard } from '@/components/products/ProductCard'; 
 import { Skeleton } from '@/components/ui/skeleton';
 import { FeaturedVendorsCarousel } from '@/components/products/FeaturedVendorsCarousel';
+import { ProductQuickView } from '@/components/products/ProductQuickView';
 
 
 const categoryIcons = {
@@ -39,6 +40,14 @@ export default function EcommerceStorePage() {
   const [latestArticles, setLatestArticles] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
+  const handleQuickView = (product: Product) => {
+    setQuickViewProduct(product);
+    setIsQuickViewOpen(true);
+  };
 
   const fetchAllData = useCallback(async () => {
       setIsLoading(true);
@@ -84,13 +93,14 @@ export default function EcommerceStorePage() {
     
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {products.map(p => <ProductCard key={p.id} product={p}/>)}
+            {products.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
         </div>
     );
   };
   
 
   return (
+    <>
     <div className="bg-background">
       <div className="container mx-auto py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -219,5 +229,7 @@ export default function EcommerceStorePage() {
         </div>
       </div>
     </div>
+    <ProductQuickView product={quickViewProduct} isOpen={isQuickViewOpen} onOpenChange={setIsQuickViewOpen} />
+    </>
   );
 }

@@ -12,10 +12,11 @@ import { Loader2, List, LayoutGrid, ChevronRight, Home, Star } from "lucide-reac
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from '@/lib/products-data';
-import type { CategoryNode } from '@/lib/categories-data';
+import type { ProductCategoryNode } from '@/lib/product-categories-data';
 import { useToast } from '@/hooks/use-toast';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProductQuickView } from '@/components/products/ProductQuickView';
 
 const priceRanges = [
   { label: "$0.00 - $50.00", min: 0, max: 50 },
@@ -28,13 +29,21 @@ const priceRanges = [
 export default function ShopPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<CategoryNode[]>([]);
+  const [categories, setCategories] = useState<ProductCategoryNode[]>([]);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<number[][]>([]);
   const [sortOption, setSortOption] = useState("featured");
+  
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
+  const handleQuickView = (product: Product) => {
+    setQuickViewProduct(product);
+    setIsQuickViewOpen(true);
+  };
 
   const { toast } = useToast();
 
@@ -44,7 +53,7 @@ export default function ShopPage() {
       try {
         const [productsRes, categoriesRes, bestSellersRes] = await Promise.all([
           fetch('/api/products'),
-          fetch('/api/categories'),
+          fetch('/api/product-categories'), // Use product categories
           fetch('/api/products?sortBy=sales&limit=5')
         ]);
         if (!productsRes.ok || !categoriesRes.ok || !bestSellersRes.ok) throw new Error("Failed to fetch shop data.");
@@ -72,23 +81,23 @@ export default function ShopPage() {
 
     // Category filtering
     if (selectedCategories.length > 0) {
-      tempProducts = tempProducts.filter(p => selectedCategories.includes(p.category));
+      tempProducts = tempProducts.filter(p => p.categoryId && selectedCategories.includes(p.categoryId));
     }
     
     // Price filtering
     if (selectedPriceRanges.length > 0) {
       tempProducts = tempProducts.filter(p => 
-        selectedPriceRanges.some(range => p.price! >= range[0] && p.price! <= range[1])
+        p.price !== undefined && selectedPriceRanges.some(range => p.price! >= range[0] && p.price! < range[1])
       );
     }
     
     // Sorting
     switch(sortOption) {
       case 'price-asc':
-        tempProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+        tempProducts.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
         break;
       case 'price-desc':
-        tempProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+        tempProducts.sort((a, b) => (b.price || -1) - (a.price || -1));
         break;
       case 'name-asc':
         tempProducts.sort((a, b) => a.name.localeCompare(b.name));
@@ -107,9 +116,9 @@ export default function ShopPage() {
     applyFiltersAndSort();
   }, [applyFiltersAndSort]);
   
-  const handleCategoryChange = (categoryName: string, checked: boolean | 'indeterminate') => {
+  const handleCategoryChange = (categoryId: string, checked: boolean | 'indeterminate') => {
     setSelectedCategories(prev => 
-      checked ? [...prev, categoryName] : prev.filter(c => c !== categoryName)
+      checked ? [...prev, categoryId] : prev.filter(c => c !== categoryId)
     );
   };
   
@@ -122,15 +131,15 @@ export default function ShopPage() {
   const Sidebar = () => (
     <aside className="lg:col-span-1 space-y-6">
       <Card>
-        <CardHeader><CardTitle className="text-base">Shop By Department</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Shop By Category</CardTitle></CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm">
             {categories.map(cat => (
               <li key={cat.id} className="flex items-center justify-between">
                 <label htmlFor={`cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary">
-                   <Checkbox id={`cat-${cat.id}`} onCheckedChange={(c) => handleCategoryChange(cat.name, c)} /> {cat.name}
+                   <Checkbox id={`cat-${cat.id}`} onCheckedChange={(c) => handleCategoryChange(cat.id!, c)} /> {cat.name}
                 </label>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                <span className="text-xs">({cat.productCount})</span>
               </li>
             ))}
           </ul>
@@ -169,6 +178,7 @@ export default function ShopPage() {
   );
 
   return (
+    <>
     <div className="bg-background">
       <div className="container mx-auto py-8">
         <div className="mb-6 flex items-center text-sm text-muted-foreground">
@@ -207,7 +217,7 @@ export default function ShopPage() {
               </div>
             ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                {filteredProducts.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
               </div>
             ) : (
                 <div className="text-center py-20">
@@ -220,5 +230,7 @@ export default function ShopPage() {
         </div>
       </div>
     </div>
+    <ProductQuickView product={quickViewProduct} isOpen={isQuickViewOpen} onOpenChange={setIsQuickViewOpen} />
+    </>
   );
 }
