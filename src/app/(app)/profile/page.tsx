@@ -48,13 +48,11 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
-  const [profileData, setProfileData] = useState<FreelancerProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const { user, logout } = useUser();
+  // The user hook now provides the full, reliable profile data.
+  const { user: profileData, isLoading: isUserLoading } = useUser();
   const router = useRouter();
-
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -63,57 +61,29 @@ export default function ProfilePage() {
       skills: [], portfolioLinks: [], hourlyRate: null, availabilityStatus: "available",
     },
   });
-
+  
   const { fields: portfolioFields, append: appendPortfolioLink, remove: removePortfolioLink } = useFieldArray({
     control: form.control,
     name: "portfolioLinks",
   });
 
-  const resetFormWithProfileData = useCallback((data: FreelancerProfile) => {
-    form.reset({
-      name: data.name || "",
-      email: data.email || "",
-      avatarUrl: data.avatarUrl || "",
-      occupation: data.occupation || "",
-      bio: data.bio || "",
-      skills: data.skills?.join(', ') || '',
-      hourlyRate: data.hourlyRate ?? null,
-      portfolioLinks: data.portfolioLinks || [],
-      availabilityStatus: data.availabilityStatus || 'available'
-    });
-  }, [form]);
-
+  // This effect now simply syncs the form state with the reliable user data from the context.
   useEffect(() => {
-    async function fetchProfile() {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }; 
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/profile`);
-        if (!response.ok) {
-            if(response.status === 401) {
-                toast({ title: "Session Expired", description: "Please log in again.", variant: "destructive"});
-                logout();
-                router.push('/login');
-                return;
-            }
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to fetch profile');
-        }
-        const data: FreelancerProfile = await response.json();
-        setProfileData(data);
-        resetFormWithProfileData(data);
-      } catch (error: any) {
-        console.error(error);
-        toast({ title: "Error", description: `Could not load your profile data: ${error.message}`, variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
+    if (profileData) {
+      form.reset({
+        name: profileData.name || "",
+        email: profileData.email || "",
+        avatarUrl: profileData.avatarUrl || "",
+        occupation: profileData.occupation || "",
+        bio: profileData.bio || "",
+        skills: profileData.skills?.join(', ') || '',
+        hourlyRate: profileData.hourlyRate ?? null,
+        portfolioLinks: profileData.portfolioLinks || [],
+        availabilityStatus: profileData.availabilityStatus || 'available'
+      });
     }
-    fetchProfile();
-  }, [toast, user, logout, router, resetFormWithProfileData]);
+  }, [profileData, form]);
+
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
@@ -133,8 +103,17 @@ export default function ProfilePage() {
         throw new Error(errorData.message || 'Failed to save profile');
       }
       const updatedProfile: FreelancerProfile = await response.json();
-      setProfileData(updatedProfile);
-      resetFormWithProfileData(updatedProfile);
+      
+      // We don't need to manually update state here. The provider will handle it if we
+      // call mutate, or we can just let the form be re-synced on next load. For now,
+      // just resetting the form with the new data is sufficient.
+      form.reset({
+        ...updatedProfile,
+        skills: updatedProfile.skills?.join(', ') || '',
+        hourlyRate: updatedProfile.hourlyRate ?? null,
+        portfolioLinks: updatedProfile.portfolioLinks || [],
+      });
+      
       toast({ title: "Success", description: "Profile updated successfully!" });
     } catch (error: any) {
       console.error("Error saving profile:", error);
@@ -144,7 +123,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading || !user) {
+  if (isUserLoading || !profileData) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -152,15 +131,6 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profileData) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-xl text-muted-foreground">Could not load profile data.</p>
-        <Button onClick={() => window.location.reload()} className="mt-4">Retry</Button>
-      </div>
-    );
-  }
-  
   const currentAvatar = form.watch("avatarUrl") || profileData.avatarUrl;
   const currentName = form.watch("name") || profileData.name;
   const currentOccupation = form.watch("occupation") || profileData.occupation;
@@ -258,7 +228,7 @@ export default function ProfilePage() {
                     </ScrollArea>
                     </CardContent>
                     <CardFooter className="border-t pt-6 flex justify-end">
-                    <Button type="submit" disabled={isSaving || isLoading} size="lg" className="bg-primary hover:bg-primary/90">
+                    <Button type="submit" disabled={isSaving || isUserLoading} size="lg" className="bg-primary hover:bg-primary/90">
                         {isSaving ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving...</> : <><Save className="mr-2 h-5 w-5" /> Save Changes</>}
                     </Button>
                     </CardFooter>
@@ -285,7 +255,7 @@ export default function ProfilePage() {
                     <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary"/>Client Feedback</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {user?.id && <ReviewsList freelancerId={user.id} />}
+                    {profileData?.userId && <ReviewsList freelancerId={profileData.userId} />}
                 </CardContent>
             </Card>
         </aside>

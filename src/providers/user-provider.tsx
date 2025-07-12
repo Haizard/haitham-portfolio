@@ -2,10 +2,12 @@
 "use client";
 
 import { createContext, useState, useEffect, useCallback } from 'react';
-import type { User } from '@/lib/auth-data';
+import type { FreelancerProfile } from '@/lib/user-profile-data'; // Use the more specific profile type
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-export type SessionUser = Omit<User, 'password' | '_id'>;
+// The SessionUser is now the full FreelancerProfile, as we will fetch it.
+export type SessionUser = FreelancerProfile;
 
 export interface UserContextType {
   user: SessionUser | null;
@@ -23,12 +25,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    // This is only called on initial load now
     setIsLoading(true); 
     try {
-      const res = await fetch('/api/auth/session');
-      const data = await res.json();
-      setUser(data.user || null);
+      // First, check for a basic session.
+      const sessionRes = await fetch('/api/auth/session');
+      const sessionData = await sessionRes.json();
+      
+      if (sessionData.user) {
+        // If a session exists, fetch the full profile data.
+        const profileRes = await fetch('/api/profile');
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setUser(profileData);
+        } else {
+          // If profile fetch fails, clear the session.
+          setUser(null);
+          await fetch('/api/auth/logout', { method: 'POST' });
+        }
+      } else {
+        setUser(null);
+      }
     } catch (error) {
       console.error('Failed to fetch user session', error);
       setUser(null);
@@ -42,6 +58,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUser]);
 
   const login = (userData: SessionUser) => {
+    // When login happens, we receive the full user object (now including profile data)
+    // and set it directly. No need for an immediate re-fetch.
     setUser(userData);
     setIsLoading(false); 
   };
@@ -60,7 +78,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     mutate: fetchUser,
   };
 
-  // This initial loading state is crucial for preventing the redirect loop
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
@@ -75,6 +92,3 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     </UserContext.Provider>
   );
 }
-
-// Re-export useToast to be used within the provider if needed
-import { useToast } from '@/hooks/use-toast';
