@@ -29,6 +29,11 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useUser(); // Get the login function from the context
 
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
   const handleLogin = async (values: LoginFormValues) => {
     setIsSubmitting(true);
     try {
