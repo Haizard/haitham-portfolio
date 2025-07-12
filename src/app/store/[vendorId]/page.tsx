@@ -13,6 +13,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ProductQuickView } from '@/components/products/ProductQuickView';
 
 interface VendorData {
   profile: FreelancerProfile;
@@ -56,6 +57,14 @@ export default function VendorStorefrontPage() {
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
+  const handleQuickView = (product: Product) => {
+    setQuickViewProduct(product);
+    setIsQuickViewOpen(true);
+  };
 
   useEffect(() => {
     if (!vendorId) {
@@ -114,6 +123,7 @@ export default function VendorStorefrontPage() {
   const { profile, products } = vendorData;
 
   return (
+    <>
     <div className="bg-background">
       <div className="container mx-auto py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -165,7 +175,7 @@ export default function VendorStorefrontPage() {
                 <div>
                 {products.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.map(product => <ProductCard key={product.id} product={product} />)}
+                        {products.map(product => <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />)}
                     </div>
                 ) : (
                     <Card className="text-center py-12">
@@ -182,5 +192,7 @@ export default function VendorStorefrontPage() {
         </div>
       </div>
     </div>
+    <ProductQuickView product={quickViewProduct} isOpen={isQuickViewOpen} onOpenChange={setIsQuickViewOpen} />
+    </>
   )
 }
