@@ -71,16 +71,24 @@ export default function ProfilePage() {
 
   const resetFormWithProfileData = useCallback((data: FreelancerProfile) => {
     form.reset({
-        ...data,
-        skills: data.skills?.join(', ') || '',
-        hourlyRate: data.hourlyRate ?? null,
-        portfolioLinks: data.portfolioLinks || [],
+      name: data.name || "",
+      email: data.email || "",
+      avatarUrl: data.avatarUrl || "",
+      occupation: data.occupation || "",
+      bio: data.bio || "",
+      skills: data.skills?.join(', ') || '',
+      hourlyRate: data.hourlyRate ?? null,
+      portfolioLinks: data.portfolioLinks || [],
+      availabilityStatus: data.availabilityStatus || 'available'
     });
   }, [form]);
 
   useEffect(() => {
     async function fetchProfile() {
-      if (!user) return; 
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }; 
       setIsLoading(true);
       try {
         const response = await fetch(`/api/profile`);
@@ -104,18 +112,14 @@ export default function ProfilePage() {
         setIsLoading(false);
       }
     }
-    if (user) {
-      fetchProfile();
-    } else {
-      setIsLoading(false);
-    }
+    fetchProfile();
   }, [toast, user, logout, router, resetFormWithProfileData]);
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
     const dataToSave = {
       ...values,
-      hourlyRate: values.hourlyRate === null || values.hourlyRate === undefined ? null : Number(values.hourlyRate),
+      hourlyRate: values.hourlyRate,
     };
 
     try {
@@ -193,7 +197,7 @@ export default function ProfilePage() {
                     <div className="space-y-6">
                     {/* --- General User Info (Part of profile for now) --- */}
                     <FormField control={form.control} name="avatarUrl" render={({ field }) => (
-                        <FormItem><FormLabel className="flex items-center"><Palette className="mr-2 h-4 w-4 text-muted-foreground" />Avatar URL</FormLabel><Input {...field} placeholder="https://example.com/avatar.png" className="text-base p-3" /><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="flex items-center"><Palette className="mr-2 h-4 w-4 text-muted-foreground" />Avatar URL</FormLabel><Input {...field} placeholder="https://example.com/avatar.png" className="text-base p-3" /></FormItem>
                     )}/>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField control={form.control} name="name" render={({ field }) => (
