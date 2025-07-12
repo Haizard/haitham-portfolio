@@ -28,12 +28,11 @@ export function FeaturedVendorsCarousel() {
     async function fetchVendors() {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/vendors');
-        if (!response.ok) throw new Error("Failed to fetch vendors");
-        const allVendors: FreelancerProfile[] = await response.json();
-        // For now, we'll just take the first 6 as "featured"
-        // In a real app, you'd filter by a `isFeatured` flag.
-        setFeaturedVendors(allVendors.slice(0, 6));
+        // Fetch only featured vendors
+        const response = await fetch('/api/vendors?featured=true');
+        if (!response.ok) throw new Error("Failed to fetch featured vendors");
+        const featuredVendorsData: FreelancerProfile[] = await response.json();
+        setFeaturedVendors(featuredVendorsData);
       } catch (error) {
         console.error("Error fetching featured vendors:", error);
       } finally {

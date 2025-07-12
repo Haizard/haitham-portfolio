@@ -53,6 +53,7 @@ export interface FreelancerProfile {
   // Vendor-specific fields
   storeName: string;
   vendorStatus: VendorStatus;
+  isFeatured?: boolean; // NEW: Flag for featured vendors
 
   createdAt: string; // Changed from Date to string
   updatedAt: string; // Changed from Date to string
@@ -92,6 +93,7 @@ const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, '
   wishlist: [],
   storeName: `${userId}'s Store`,
   vendorStatus: 'pending',
+  isFeatured: false, // Default to not featured
 });
 
 export async function createFreelancerProfileIfNotExists(userId: string, initialData?: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile> {
@@ -160,9 +162,13 @@ export async function updateFreelancerProfile(userId: string, data: Partial<Omit
   return docToFreelancerProfile(result);
 }
 
-export async function getAllVendorProfiles(): Promise<FreelancerProfile[]> {
+export async function getAllVendorProfiles(filters: { isFeatured?: boolean } = {}): Promise<FreelancerProfile[]> {
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
-    const vendorDocs = await collection.find({}).sort({ createdAt: -1 }).toArray();
+    const query: any = {};
+    if (filters.isFeatured) {
+        query.isFeatured = true;
+    }
+    const vendorDocs = await collection.find(query).sort({ createdAt: -1 }).toArray();
     return vendorDocs.map(docToFreelancerProfile);
 }
 
