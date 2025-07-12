@@ -11,8 +11,9 @@ import Image from "next/image";
 import type { Product } from '@/lib/products-data';
 import type { BlogPost } from '@/lib/blog-data';
 import { useToast } from '@/hooks/use-toast';
-import { ProductCard } from '@/components/products/ProductCard'; // We will use the updated ProductCard
+import { ProductCard } from '@/components/products/ProductCard'; 
 import { Skeleton } from '@/components/ui/skeleton';
+import { FeaturedVendorsCarousel } from '@/components/products/FeaturedVendorsCarousel';
 
 
 const categoryIcons = {
@@ -50,10 +51,9 @@ export default function EcommerceStorePage() {
         if (!productsResponse.ok) throw new Error('Failed to fetch products.');
         const productsData: Product[] = await productsResponse.json();
         
-        // Split product data for different sections
         setNewProducts(productsData.slice(0, 5));
         setBestSellers(productsData.slice(5, 10));
-        setFeaturedProducts(productsData.slice(2, 7)); // Overlap for variety
+        setFeaturedProducts(productsData.slice(2, 7)); 
         
 
         if (!articlesResponse.ok) throw new Error('Failed to fetch latest articles.');
@@ -110,7 +110,6 @@ export default function EcommerceStorePage() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="pl-4 py-1 text-sm">
-                        {/* Placeholder for sub-categories */}
                         <Link href="#" className="block py-1 hover:text-primary">Sub-category 1</Link>
                         <Link href="#" className="block py-1 hover:text-primary">Sub-category 2</Link>
                       </AccordionContent>
@@ -123,6 +122,12 @@ export default function EcommerceStorePage() {
 
           {/* Main Content */}
           <main className="lg:col-span-3 space-y-12">
+            
+            {/* Featured Vendors Section */}
+            <section>
+              <FeaturedVendorsCarousel />
+            </section>
+            
             {/* Hero Section */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 rounded-lg overflow-hidden relative aspect-[2/1]">
