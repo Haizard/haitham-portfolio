@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createUser, getFullUserByEmail, type UserRole } from '@/lib/auth-data';
 import { saveSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
-import { createFreelancerProfileIfNotExists } from '@/lib/user-profile-data';
+import { createFreelancerProfileIfNotExists, getFreelancerProfile } from '@/lib/user-profile-data';
 import { createClientProfileIfNotExists } from '@/lib/client-profile-data';
 
 const signupSchema = z.object({
@@ -52,10 +52,15 @@ export async function POST(request: NextRequest) {
       createdAt: userFromDb.createdAt,
     };
     
-    // Step 5: Save the session and return the clean user object to the client.
+    // Step 5: Save the session and return the full profile object to the client.
     await saveSession(sessionUser);
 
-    return NextResponse.json(sessionUser);
+    const fullProfile = await getFreelancerProfile(userFromDb.id!);
+     if (!fullProfile) {
+        throw new Error("Critical error: Failed to retrieve newly created user profile from database.");
+    }
+
+    return NextResponse.json(fullProfile);
 
   } catch (error: any) {
     if (error.message.includes('already exists')) {

@@ -15,6 +15,7 @@ export const sessionOptions = {
 
 // Define the exact shape of the user object that is safe to store in the session.
 // It must be fully serializable (no complex objects like `ObjectId` or `Date`).
+// It contains only the core identity information.
 export type SessionUser = Omit<User, 'password' | '_id'>;
 
 // This is the shape of our session data.

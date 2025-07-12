@@ -2,11 +2,11 @@
 "use client";
 
 import { createContext, useState, useEffect, useCallback } from 'react';
-import type { FreelancerProfile } from '@/lib/user-profile-data'; // Use the more specific profile type
+import type { FreelancerProfile } from '@/lib/user-profile-data';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// The SessionUser is now the full FreelancerProfile, as we will fetch it.
+// The SessionUser is the full FreelancerProfile, which is what the app components expect.
 export type SessionUser = FreelancerProfile;
 
 export interface UserContextType {
@@ -25,20 +25,24 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    setIsLoading(true); 
+    // No need to set isLoading(true) here, as it's handled by the initial load state.
+    // This function is mainly for re-validation (mutate).
     try {
-      // First, check for a basic session.
+      // First, check for a basic session. This is very fast.
       const sessionRes = await fetch('/api/auth/session');
+      if (!sessionRes.ok) { // Handle network or server errors
+          throw new Error(`Session check failed with status ${sessionRes.status}`);
+      }
       const sessionData = await sessionRes.json();
       
       if (sessionData.user) {
-        // If a session exists, fetch the full profile data.
+        // If a session exists, fetch the full, up-to-date profile data.
         const profileRes = await fetch('/api/profile');
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           setUser(profileData);
         } else {
-          // If profile fetch fails, clear the session.
+          // If profile fetch fails, the session is stale. Log the user out.
           setUser(null);
           await fetch('/api/auth/logout', { method: 'POST' });
         }
@@ -46,22 +50,24 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
       }
     } catch (error) {
-      console.error('Failed to fetch user session', error);
+      console.error('Failed to fetch user session:', error);
       setUser(null);
     } finally {
+      // Only set loading to false after the entire check is complete.
       setIsLoading(false);
     }
   }, []);
 
+  // The initial fetch on component mount
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
   const login = (userData: SessionUser) => {
-    // When login happens, we receive the full user object (now including profile data)
-    // and set it directly. No need for an immediate re-fetch.
+    // When login/signup happens, the API returns the full profile.
+    // We set it directly, and the session cookie has already been set by the API.
     setUser(userData);
-    setIsLoading(false); 
+    setIsLoading(false); // Ensure loading is false after a direct login.
   };
 
   const logout = async () => {
@@ -75,9 +81,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     login,
     logout,
-    mutate: fetchUser,
+    mutate: fetchUser, // Expose fetchUser as mutate for re-validation.
   };
 
+  // While the initial fetch is happening, show a full-screen loader.
+  // This prevents layout shifts or flashes of content that shouldn't be visible.
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
