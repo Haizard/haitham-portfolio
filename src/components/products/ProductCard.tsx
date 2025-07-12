@@ -14,7 +14,7 @@ import type { Product } from '@/lib/products-data';
 
 interface ProductCardProps {
   product: Product;
-  onQuickView: (product: Product) => void;
+  onQuickView?: (product: Product) => void;
   className?: string;
 }
 
@@ -30,7 +30,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   const handleQuickViewClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    onQuickView(product);
+    if(onQuickView) {
+      onQuickView(product);
+    }
   };
 
   const originalPrice = product.price ? product.price * 1.2 : null;
@@ -59,11 +61,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                     - {Math.round(((originalPrice - product.price) / originalPrice) * 100)}%
                 </span>
             )}
-             <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+             {onQuickView && <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                  <Button variant="secondary" size="sm" onClick={handleQuickViewClick}>
                     <Eye className="mr-2 h-4 w-4" /> Quick View
                 </Button>
-            </div>
+            </div>}
         </div>
         <CardContent className="p-3 text-center flex flex-col flex-grow bg-background">
             {product.categoryName && <p className="text-xs text-muted-foreground mb-1">{product.categoryName}</p>}

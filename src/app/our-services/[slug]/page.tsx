@@ -128,7 +128,7 @@ export default function ServiceDetailPage() {
                 src={service.imageUrl}
                 alt={service.name}
                 fill
-                className="object-cover"
+                className="object-contain"
                 data-ai-hint={service.imageHint || "service details"}
               />
                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -256,5 +256,3 @@ export default function ServiceDetailPage() {
     </>
   );
 }
-
-    

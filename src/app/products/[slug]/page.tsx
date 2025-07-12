@@ -135,7 +135,7 @@ export default function ProductDetailPage() {
                             src={selectedImage}
                             alt={product.name}
                             fill
-                            className="object-cover animate-in fade-in-50 duration-300"
+                            className="object-contain animate-in fade-in-50 duration-300"
                             priority
                             data-ai-hint={product.imageHint || "product image"}
                         />
@@ -159,7 +159,7 @@ export default function ProductDetailPage() {
                                     src={image.url}
                                     alt={`${product.name} thumbnail ${index + 1}`}
                                     fill
-                                    className="object-cover"
+                                    className="object-contain"
                                     data-ai-hint={image.hint || "product thumbnail"}
                                 />
                             </button>
@@ -303,7 +303,7 @@ export default function ProductDetailPage() {
                                     return (
                                         <Link href={`/products/${deal.slug}`} key={deal.id} className="block group">
                                             <div className="flex items-center gap-3 p-2 rounded-md group-hover:bg-secondary/50 transition-colors">
-                                                <Image src={deal.imageUrl} alt={deal.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={deal.imageHint || "product deal"}/>
+                                                <Image src={deal.imageUrl} alt={deal.name} width={60} height={60} className="rounded-md object-contain" data-ai-hint={deal.imageHint || "product deal"}/>
                                                 <div>
                                                     <p className="text-sm font-medium line-clamp-2 group-hover:text-primary">{deal.name}</p>
                                                     <p className="text-xs text-primary font-semibold">

@@ -64,7 +64,7 @@ export function RecentPostsWidget({ limit = 4, excludeSlug }: RecentPostsWidgetP
                       alt={post.title}
                       width={64}
                       height={64}
-                      className="rounded-md object-cover aspect-square group-hover:opacity-80 transition-opacity"
+                      className="rounded-md object-contain aspect-square group-hover:opacity-80 transition-opacity"
                       data-ai-hint={post.featuredImageHint || "article thumbnail"}
                     />
                   </Link>

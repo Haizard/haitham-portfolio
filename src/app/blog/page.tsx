@@ -179,7 +179,7 @@ export default function BlogIndexPage() {
                         alt={post.title}
                         fill
                         sizes={viewMode === 'list' ? "(max-width: 768px) 100vw, (max-width: 1200px) 40vw, 33vw" : "(max-width: 768px) 100vw, 50vw"}
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="object-contain group-hover:scale-105 transition-transform duration-300"
                         data-ai-hint={post.featuredImageHint || 'blog list item'}
                       />
                     </Link>

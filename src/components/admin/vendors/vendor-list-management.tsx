@@ -122,7 +122,7 @@ export function VendorListManagement() {
                 {vendors.map(vendor => (
                   <TableRow key={vendor.id}>
                     <TableCell className="hidden md:table-cell">
-                      <Image src={vendor.avatarUrl} alt={vendor.name} width={40} height={40} className="rounded-full object-cover aspect-square"/>
+                      <Image src={vendor.avatarUrl} alt={vendor.name} width={40} height={40} className="rounded-full object-contain aspect-square"/>
                     </TableCell>
                     <TableCell className="font-medium">{vendor.name}</TableCell>
                     <TableCell>{vendor.storeName}</TableCell>

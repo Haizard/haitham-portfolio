@@ -138,7 +138,7 @@ export default function AffiliateShowcasePage() {
                   alt={product.name}
                   width={600}
                   height={375} 
-                  className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                  className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
                   data-ai-hint={product.imageHint}
                 />
               </div>

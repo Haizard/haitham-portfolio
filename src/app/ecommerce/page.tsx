@@ -141,7 +141,7 @@ export default function EcommerceStorePage() {
             {/* Hero Section */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 rounded-lg overflow-hidden relative aspect-[2/1]">
-                 <Image src="https://placehold.co/800x400.png" alt="Books for Cooks" fill className="object-cover" data-ai-hint="cooking books"/>
+                 <Image src="https://placehold.co/800x400.png" alt="Books for Cooks" fill className="object-contain" data-ai-hint="cooking books"/>
                  <div className="absolute inset-0 bg-black/30 flex flex-col justify-center p-8">
                     <h2 className="text-4xl font-bold text-white">BOOKS FOR COOKS</h2>
                     <p className="text-white/90 mt-2">Find your next new recipe</p>
@@ -150,14 +150,14 @@ export default function EcommerceStorePage() {
               </div>
               <div className="space-y-4">
                 <div className="rounded-lg overflow-hidden relative aspect-[3/2]">
-                    <Image src="https://placehold.co/400x300.png" alt="Headphones deal" fill className="object-cover" data-ai-hint="headphones product"/>
+                    <Image src="https://placehold.co/400x300.png" alt="Headphones deal" fill className="object-contain" data-ai-hint="headphones product"/>
                     <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4">
                         <h3 className="font-semibold text-white">Big Sale -50%</h3>
                         <p className="text-xs text-white/80">Headphones & Headsets</p>
                     </div>
                 </div>
                  <div className="rounded-lg overflow-hidden relative aspect-[3/2]">
-                    <Image src="https://placehold.co/400x300.png" alt="Gaming console" fill className="object-cover" data-ai-hint="gaming console"/>
+                    <Image src="https://placehold.co/400x300.png" alt="Gaming console" fill className="object-contain" data-ai-hint="gaming console"/>
                      <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4">
                         <h3 className="font-semibold text-white">New Arrivals</h3>
                         <p className="text-xs text-white/80">Game Console</p>
@@ -174,9 +174,9 @@ export default function EcommerceStorePage() {
 
              {/* Ad Banners */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 1" fill className="object-cover" data-ai-hint="smartphone ad"/></div>
-                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 2" fill className="object-cover" data-ai-hint="camera ad"/></div>
-                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 3" fill className="object-cover" data-ai-hint="fruit juicy"/></div>
+                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 1" fill className="object-contain" data-ai-hint="smartphone ad"/></div>
+                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 2" fill className="object-contain" data-ai-hint="camera ad"/></div>
+                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 3" fill className="object-contain" data-ai-hint="fruit juicy"/></div>
             </section>
 
             {/* Best Sellers */}
@@ -204,7 +204,7 @@ export default function EcommerceStorePage() {
                     latestArticles.map(article => (
                     <Card key={article.slug} className="shadow-none border-none flex gap-4">
                         <div className="flex-shrink-0">
-                             <Image src={article.featuredImageUrl || 'https://placehold.co/150x150.png'} alt={article.title} width={150} height={150} className="object-cover rounded-lg aspect-square" data-ai-hint={article.featuredImageHint || "blog post"}/>
+                             <Image src={article.featuredImageUrl || 'https://placehold.co/150x150.png'} alt={article.title} width={150} height={150} className="object-contain rounded-lg aspect-square" data-ai-hint={article.featuredImageHint || "blog post"}/>
                         </div>
                         <div className="flex flex-col">
                             <CardHeader className="p-0 mb-2">

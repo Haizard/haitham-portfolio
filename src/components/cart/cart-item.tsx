@@ -29,7 +29,7 @@ export function CartItem({ item }: CartItemProps) {
           alt={item.name}
           fill
           sizes="64px"
-          className="object-cover"
+          className="object-contain"
           data-ai-hint={item.imageHint}
         />
       </div>

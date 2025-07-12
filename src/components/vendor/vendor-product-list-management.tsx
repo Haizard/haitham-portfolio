@@ -91,7 +91,7 @@ export function VendorProductListManagement({ isAdminView = false }: { isAdminVi
       toast({ title: "Product Deleted", description: `"${productToDelete.name}" has been removed.` });
       fetchProducts();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Could not delete product.", variant: "destructive" });
     } finally {
       setIsDeleting(false);
       setProductToDelete(null);
@@ -146,7 +146,7 @@ export function VendorProductListManagement({ isAdminView = false }: { isAdminVi
                   {products.map(product => (
                     <TableRow key={product.id} className="hover:bg-muted/50">
                       <TableCell className="hidden md:table-cell">
-                        <Image src={product.imageUrl} alt={product.name} width={50} height={50} className="rounded object-cover aspect-square" data-ai-hint={product.imageHint}/>
+                        <Image src={product.imageUrl} alt={product.name} width={50} height={50} className="rounded object-contain aspect-square" data-ai-hint={product.imageHint}/>
                       </TableCell>
                       <TableCell className="font-medium">
                         <Link href={`/products/${product.slug}`} target="_blank" className="hover:text-primary hover:underline">

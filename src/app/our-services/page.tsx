@@ -82,7 +82,7 @@ export default function OurServicesPage() {
                           alt={service.name} 
                           width={600} 
                           height={400} 
-                          className="rounded-t-lg object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                          className="rounded-t-lg object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
                           data-ai-hint={service.imageHint || "service offering"}
                         />
                     </div>
@@ -129,5 +129,3 @@ export default function OurServicesPage() {
     </div>
   );
 }
-
-    

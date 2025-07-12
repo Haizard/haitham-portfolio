@@ -170,7 +170,7 @@ export function VendorOrderList() {
                         {order.lineItems.map(item => (
                           <TableRow key={item._id.toString()}>
                             <TableCell>
-                              <Image src={item.productImageUrl} alt={item.productName} width={50} height={50} className="rounded object-cover aspect-square"/>
+                              <Image src={item.productImageUrl} alt={item.productName} width={50} height={50} className="rounded object-contain aspect-square"/>
                             </TableCell>
                             <TableCell className="font-medium text-xs">{item.productName}</TableCell>
                             <TableCell className="text-xs">x{item.quantity}</TableCell>

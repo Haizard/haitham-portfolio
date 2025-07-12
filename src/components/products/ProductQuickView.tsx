@@ -48,7 +48,7 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, isO
               src={product.imageUrl}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-contain"
               data-ai-hint={product.imageHint || "product image"}
             />
           </div>

@@ -55,7 +55,7 @@ export function TrendingPostsCarousel({ posts }: TrendingPostsCarouselProps) {
                   src={post.featuredImageUrl}
                   alt={post.title}
                   fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-contain transition-transform duration-500 group-hover:scale-105"
                   data-ai-hint={post.featuredImageHint || "trending background"}
                   priority={posts.indexOf(post) === 0} // Prioritize loading the first image
                 />

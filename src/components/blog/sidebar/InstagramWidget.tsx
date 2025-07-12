@@ -32,7 +32,7 @@ export function InstagramWidget() {
                 alt={`Instagram placeholder ${index + 1}`}
                 width={150}
                 height={150}
-                className="object-cover w-full h-full group-hover:scale-105 transition-transform"
+                className="object-contain w-full h-full group-hover:scale-105 transition-transform"
                 data-ai-hint="social media photo"
               />
             </div>

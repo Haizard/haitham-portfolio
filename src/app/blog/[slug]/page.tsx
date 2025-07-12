@@ -297,7 +297,7 @@ export default function BlogPostPage() {
                 alt={post.title}
                 width={800}
                 height={400}
-                className="rounded-lg mb-8 shadow-lg w-full object-cover aspect-[2/1]"
+                className="rounded-lg mb-8 shadow-lg w-full object-contain aspect-[2/1]"
                 data-ai-hint={post.featuredImageHint || "featured image"}
               />
             )}
@@ -318,7 +318,7 @@ export default function BlogPostPage() {
                             alt={image.caption || `Gallery image ${index + 1}`}
                             width={400}
                             height={300}
-                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                            className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
                             data-ai-hint={image.hint || "gallery photo"}
                           />
                         </div>
