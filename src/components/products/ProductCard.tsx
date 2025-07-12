@@ -52,12 +52,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <Card 
         className={cn(
-            "group relative flex h-full w-full flex-col overflow-hidden rounded-lg border bg-card shadow-md transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-1",
+            "group relative flex w-full flex-col overflow-hidden rounded-lg border-l-4 border-transparent bg-card shadow-sm transition-all duration-300 ease-in-out hover:border-primary hover:shadow-2xl hover:-translate-y-1",
             className
         )}
     >
+        <div className="absolute top-2 right-2 z-20 flex flex-col items-center gap-1.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-background/70 backdrop-blur-sm" onClick={handleWishlistClick} aria-label="Add to wishlist">
+                <Heart className={cn("h-4 w-4", isWishlisted && "fill-current text-red-500")} />
+            </Button>
+            {onQuickView && (
+                 <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-background/70 backdrop-blur-sm" onClick={handleQuickViewClick} aria-label="Quick view">
+                    <Eye className="h-4 w-4" />
+                </Button>
+            )}
+        </div>
+
         <Link href={`/products/${product.slug || product.id}`} className="block h-full flex flex-col">
-            <div className="relative flex-1 overflow-hidden bg-muted/50 p-4">
+            <div className="relative flex-1 overflow-hidden bg-muted/20 p-4">
                 <div className="relative aspect-square w-full">
                     <Image
                         src={product.imageUrl}
@@ -68,55 +79,41 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                         data-ai-hint={product.imageHint || "product image"}
                     />
                 </div>
-                {product.price && originalPrice && product.price < originalPrice && (
-                    <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">
+                 {product.price && originalPrice && product.price < originalPrice && (
+                    <span className="absolute top-2 left-2 bg-red-500 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full z-10">
                         SALE
                     </span>
                 )}
             </div>
-
-            <CardContent className="flex flex-col p-4">
+            
+            <div className="p-4 flex flex-col bg-background/30 flex-grow">
                 <p className="text-xs font-medium text-muted-foreground">{product.categoryName || 'Category'}</p>
-                <h3 className="mt-1 text-base font-semibold text-foreground line-clamp-2">{product.name}</h3>
+                <h3 className="mt-1 text-sm font-semibold text-foreground line-clamp-2 flex-grow">{product.name}</h3>
                 <div className="mt-2 flex items-center">
-                    <StarRating rating={product.averageRating || 0} size={16} disabled/>
-                    <span className="ml-2 text-xs text-muted-foreground">({product.reviewCount})</span>
+                    <StarRating rating={product.averageRating || 0} size={14} disabled/>
+                    <span className="ml-1.5 text-xs text-muted-foreground">({product.reviewCount})</span>
                 </div>
-                <div className="mt-3 flex items-baseline gap-2">
+                <div className="mt-3 flex items-center justify-between">
                     {product.productType === 'creator' && product.price !== undefined ? (
-                        <>
+                        <div className="flex items-baseline gap-1.5">
                             <span className="font-bold text-primary text-lg">${product.price.toFixed(2)}</span>
                             {originalPrice && <span className="text-sm text-muted-foreground line-through">${originalPrice.toFixed(2)}</span>}
-                        </>
+                        </div>
                     ) : product.productType === 'affiliate' && product.links && product.links.length > 0 ? (
-                        <span className="font-bold text-primary text-lg">{product.links[0].priceDisplay}</span>
-                    ) : null}
-                </div>
-            </CardContent>
-        </Link>
-        
-        {/* Absolute positioned actions for hover state */}
-        <div className="absolute top-3 right-3 z-20 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md bg-background" onClick={handleWishlistClick} aria-label="Add to wishlist">
-                <Heart className={cn("h-5 w-5", isWishlisted && "fill-current text-destructive")} />
-            </Button>
-            {onQuickView && (
-                 <Button variant="secondary" size="icon" className="h-9 w-9 shadow-md bg-background" onClick={handleQuickViewClick} aria-label="Quick view">
-                    <Eye className="h-5 w-5" />
-                </Button>
-            )}
-        </div>
+                        <span className="font-bold text-primary text-base">{product.links[0].priceDisplay}</span>
+                    ) :  <div />}
 
-        <div className="absolute bottom-4 left-4 right-4 z-20">
-            <Button
-                size="sm"
-                className="w-full translate-y-4 text-sm font-bold opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
-                onClick={handleAddToCartClick}
-                aria-label="Add to cart"
-            >
-                <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
-            </Button>
-        </div>
+                     <Button
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={handleAddToCartClick}
+                        aria-label="Add to cart"
+                    >
+                        <ShoppingCart className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+        </Link>
     </Card>
   );
 };
