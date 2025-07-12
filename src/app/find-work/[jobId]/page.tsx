@@ -296,23 +296,24 @@ export default function JobDetailPage() {
           <main className="lg:col-span-2 space-y-8">
             {showWorkspaceView ? renderWorkspaceView() : renderPublicView()}
             
-            {isOwner && job.status === "open" && (
+            {job.status === "open" && (
                 <Card className="shadow-xl animate-in fade-in-50 duration-300">
                     <CardHeader>
                         <CardTitle className="text-2xl font-headline flex items-center gap-2">
                            <Users className="h-7 w-7 text-primary"/> Proposals Received ({proposals.length})
                         </CardTitle>
-                        <CardDescription>Review applications from interested freelancers. Job status is now '<strong>{job.status}</strong>'.</CardDescription>
+                        <CardDescription>Review applications from interested freelancers.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ProposalList 
                             proposals={proposals} 
-                            isJobOwner={isOwner}
+                            isJobOwner={!!isOwner}
                             onAcceptSuccess={fetchJobAndProposals}
                         />
                     </CardContent>
                 </Card>
             )}
+
              {isOwner && job.status === 'completed' && !job.clientReviewId && hiredFreelancerId && user && (
                 <Card className="shadow-xl">
                     <CardHeader><CardTitle>Project Complete!</CardTitle></CardHeader>

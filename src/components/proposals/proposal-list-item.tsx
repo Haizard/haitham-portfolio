@@ -14,6 +14,7 @@ import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
+import { StarRating } from '../reviews/StarRating';
 
 interface ProposalListItemProps {
   proposal: Proposal;
@@ -99,48 +100,45 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
     }
   };
 
-
   return (
-    <Card className="shadow-md hover:shadow-lg transition-shadow bg-card">
-      <CardHeader>
-        <div className="flex items-center gap-3">
+    <Card className="shadow-sm hover:shadow-lg transition-shadow bg-card">
+      <div className="p-4 flex flex-col sm:flex-row gap-4">
+        <div className="flex-shrink-0">
           <Link href={`/freelancer/${proposal.freelancerId}`}>
-            <Avatar className="h-12 w-12">
+            <Avatar className="h-16 w-16">
               <AvatarImage src={freelancer?.avatarUrl} alt={freelancer?.name} data-ai-hint="freelancer avatar"/>
               <AvatarFallback>{freelancer?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
           </Link>
-          <div>
-            <CardTitle className="text-lg font-semibold hover:text-primary">
-              <Link href={`/freelancer/${proposal.freelancerId}`}>
-                {freelancer?.name || "Unknown Freelancer"}
-              </Link>
-            </CardTitle>
-            <CardDescription className="text-xs">Submitted {formatDistanceToNow(new Date(proposal.createdAt), { addSuffix: true })}</CardDescription>
+        </div>
+        <div className="flex-1">
+          <div className="flex flex-col sm:flex-row justify-between items-start">
+            <div>
+              <CardTitle className="text-lg font-semibold hover:text-primary">
+                <Link href={`/freelancer/${proposal.freelancerId}`}>
+                  {freelancer?.name || "Unknown Freelancer"}
+                </Link>
+              </CardTitle>
+              {freelancer && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                  <StarRating rating={freelancer.averageRating || 0} size={14} disabled/>
+                  <span>{freelancer.averageRating?.toFixed(1)}</span>
+                  <span>({freelancer.reviewCount} reviews)</span>
+                </div>
+              )}
+            </div>
+            <div className="text-sm sm:text-right mt-2 sm:mt-0">
+              <p className="font-bold text-lg text-primary">${proposal.proposedRate.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">in {formatDistanceToNow(new Date(proposal.createdAt))}</p>
+            </div>
+          </div>
+          <div className="text-sm mt-3 p-3 bg-muted/30 rounded-md border max-h-24 overflow-y-auto">
+            <p className="whitespace-pre-wrap leading-relaxed text-foreground/80">{proposal.coverLetter}</p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-sm p-4 bg-muted/50 rounded-lg border max-h-48 overflow-y-auto">
-          <p className="whitespace-pre-wrap leading-relaxed">{proposal.coverLetter}</p>
-        </div>
-        <Separator/>
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold">Proposed Rate:</span>
-          <span className="flex items-center gap-1.5 font-bold text-green-600">
-            <DollarSign className="h-4 w-4" /> {proposal.proposedRate.toLocaleString()}
-          </span>
-        </div>
-         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span className="font-semibold">Status:</span>
-          <Badge variant={getStatusBadgeVariant(proposal.status)} className="capitalize flex items-center">
-            {getStatusIcon(proposal.status)}
-            {proposal.status}
-          </Badge>
-        </div>
-      </CardContent>
+      </div>
       {isJobOwner && (
-        <CardFooter className="flex justify-end gap-2 border-t pt-4">
+        <CardFooter className="flex justify-end gap-2 border-t pt-3 pb-3 bg-muted/20">
             <Button variant="outline" size="sm" onClick={handleMessage} disabled={isAccepting || isMessaging}>
                 {isMessaging ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MessageSquare className="mr-2 h-4 w-4"/>} Message
             </Button>
@@ -152,7 +150,7 @@ export function ProposalListItem({ proposal, isJobOwner, onAcceptSuccess }: Prop
                 disabled={isAccepting || isMessaging || proposal.status !== 'submitted'}
             >
                 {isAccepting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4"/>}
-                {proposal.status === 'accepted' ? 'Accepted' : 'Accept Proposal'}
+                {proposal.status === 'accepted' ? 'Hired' : 'Hire'}
             </Button>
         </CardFooter>
       )}
