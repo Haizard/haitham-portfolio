@@ -93,7 +93,7 @@ const navConfig: (NavItem | NavGroup)[] = [
   },
   {
     group: "AI Content Tools",
-    roles: ['creator', 'admin'],
+    roles: ['creator', 'admin', 'vendor'],
     items: [
       { href: "/content-studio", label: "Content Studio", icon: Sparkles },
       {
