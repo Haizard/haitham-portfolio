@@ -28,12 +28,17 @@ const profileUpdateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session.user) {
+  if (!session.user || !session.user.id) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
   try {
-    let profile = await getFreelancerProfile(session.user.id!);
+    let profile = await getFreelancerProfile(session.user.id);
+    if (!profile) {
+      // This case should be rare since getFreelancerProfile creates a default one,
+      // but it's good practice to handle it.
+      return NextResponse.json({ message: "Freelancer profile not found." }, { status: 404 });
+    }
     return NextResponse.json(profile);
   } catch (error: any) {
     console.error("[API /profile GET] Error:", error);
@@ -43,7 +48,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
-  if (!session.user) {
+  if (!session.user || !session.user.id) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
   
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
         hourlyRate: validatedData.hourlyRate,
     };
 
-    const updatedProfile = await updateFreelancerProfile(session.user.id!, updateData);
+    const updatedProfile = await updateFreelancerProfile(session.user.id, updateData);
 
     if (!updatedProfile) {
       return NextResponse.json({ message: "Profile not found or update failed" }, { status: 404 });

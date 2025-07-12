@@ -81,7 +81,7 @@ export function AuthorCard() {
       <CardContent className="flex flex-col items-center text-center">
         <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
           <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="author portrait" />
-          <AvatarFallback>{profile.name?.substring(0, 2).toUpperCase() || 'CO'}</AvatarFallback>
+          <AvatarFallback>{profile.name?.substring(0, 2)?.toUpperCase() || 'CO'}</AvatarFallback>
         </Avatar>
         <h3 className="text-xl font-semibold font-headline">{profile.name}</h3>
         <p className="text-sm text-muted-foreground mb-1">{profile.occupation}</p>

@@ -21,9 +21,8 @@ import { Separator } from '@/components/ui/separator';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { cn } from "@/lib/utils";
 import { StarRating } from '@/components/reviews/StarRating';
-
-// This would come from auth in a real app
-const MOCK_FREELANCER_ID = "mockFreelancer456";
+import { useUser } from '@/hooks/use-user';
+import { useRouter } from 'next/navigation';
 
 const portfolioLinkSchema = z.object({
   id: z.string().optional(),
@@ -53,6 +52,9 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const { user, logout } = useUser();
+  const router = useRouter();
+
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -69,10 +71,19 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchProfile() {
+      if (!user) return; // Don't fetch if user is not available yet.
       setIsLoading(true);
       try {
         const response = await fetch(`/api/profile`);
-        if (!response.ok) throw new Error('Failed to fetch profile');
+        if (!response.ok) {
+            if(response.status === 401) {
+                toast({ title: "Session Expired", description: "Please log in again.", variant: "destructive"});
+                logout();
+                router.push('/login');
+                return;
+            }
+            throw new Error('Failed to fetch profile');
+        }
         const data: FreelancerProfile = await response.json();
         setProfileData(data);
         form.reset({
@@ -89,7 +100,7 @@ export default function ProfilePage() {
       }
     }
     fetchProfile();
-  }, [form, toast]);
+  }, [form, toast, user, logout, router]);
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
@@ -125,7 +136,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -266,7 +277,7 @@ export default function ProfilePage() {
                     <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary"/>Client Feedback</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ReviewsList freelancerId={MOCK_FREELANCER_ID} />
+                    {user?.id && <ReviewsList freelancerId={user.id} />}
                 </CardContent>
             </Card>
         </aside>
