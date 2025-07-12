@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,10 +19,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Loader2, PlusCircle, Trash2, Image as ImageIcon, Shield, ListChecks, Gift, CheckSquare, Info, PackageCheck, RefreshCw } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, PlusCircle, Trash2, Image as ImageIcon, Shield, ListChecks, Gift, CheckSquare, Info, PackageCheck, RefreshCw, FolderKanban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Service, Testimonial } from '@/lib/services-data';
+import type { ServiceCategoryNode } from '@/lib/service-categories-data';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +39,7 @@ const testimonialSchemaDialog = z.object({
 
 const serviceFormSchema = z.object({
   name: z.string().min(3, "Service name must be at least 3 characters."),
+  categoryId: z.string().min(1, "Please select a category for your service."),
   price: z.string().refine(value => !isNaN(parseFloat(value)) && parseFloat(value) >= 0, {
     message: "Price must be a valid non-negative number.",
   }),
@@ -64,14 +67,36 @@ interface ServiceFormDialogProps {
   onSuccess: () => void;
 }
 
+interface FlattenedCategory {
+  value: string;
+  label: string;
+  level: number;
+}
+
+const flattenCategories = (categories: ServiceCategoryNode[], level = 0): FlattenedCategory[] => {
+  let flatList: FlattenedCategory[] = [];
+  const indent = "\u00A0\u00A0".repeat(level * 2); 
+  for (const category of categories) {
+    if (!category.id) continue; 
+    flatList.push({ value: category.id, label: `${indent}${category.name}`, level });
+    if (category.children && category.children.length > 0) {
+      flatList = flatList.concat(flattenCategories(category.children, level + 1));
+    }
+  }
+  return flatList;
+};
+
 export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: ServiceFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = React.useState(false);
+  const [categories, setCategories] = useState<ServiceCategoryNode[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceFormSchema),
     defaultValues: {
       name: "",
+      categoryId: "",
       price: "",
       duration: "",
       description: "",
@@ -94,10 +119,31 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
   const { fields: testimonialFields, append: appendTestimonial, remove: removeTestimonial } = useFieldArray({ control: form.control, name: "testimonials" });
 
   useEffect(() => {
+    async function fetchCategories() {
+      setIsLoadingCategories(true);
+      try {
+        const response = await fetch('/api/service-categories');
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        const catData: ServiceCategoryNode[] = await response.json();
+        setCategories(catData);
+      } catch (error) {
+        console.error("Error fetching service categories:", error);
+        toast({ title: "Error", description: "Could not load service categories.", variant: "destructive" });
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    }
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen, toast]);
+
+  useEffect(() => {
     if (isOpen) {
       if (service) {
         form.reset({
           name: service.name,
+          categoryId: service.categoryId || "",
           price: service.price.toString(),
           duration: service.duration,
           description: service.description,
@@ -119,7 +165,7 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
         });
       } else {
         form.reset({
-          name: "", price: "", duration: "", description: "",
+          name: "", categoryId: "", price: "", duration: "", description: "",
           imageUrl: "", imageHint: "", detailedDescription: "",
           howItWorks: [], benefits: [], offers: [], securityInfo: "",
           testimonials: [],
@@ -128,6 +174,8 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
       }
     }
   }, [service, form, isOpen]);
+  
+  const flattenedCategoryOptions = useMemo(() => flattenCategories(categories), [categories]);
 
   const handleSubmit = async (values: ServiceFormValues) => {
     setIsSaving(true);
@@ -151,21 +199,18 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
       if (!response.ok) {
         let errorDetail = `Failed to ${service ? 'update' : 'create'} service. Status: ${response.status}`;
         try {
-          // Attempt to parse the error response as JSON
           const errorData = await response.json();
           errorDetail = errorData.message || errorDetail;
         } catch (jsonError) {
-          // If JSON parsing fails, use the response text or a more generic message
-          const responseText = await response.text().catch(() => ""); // Attempt to get raw text
+          const responseText = await response.text().catch(() => "");
           if (responseText) {
-            errorDetail = `Server error (${response.status}): ${responseText.substring(0, 200)}...`; // Limit length
+            errorDetail = `Server error (${response.status}): ${responseText.substring(0, 200)}...`;
           }
           console.error("Failed to parse error response as JSON:", jsonError, "Raw response text:", responseText);
         }
         throw new Error(errorDetail);
       }
       
-      // If response.ok, we assume the API sends back the created/updated service object as JSON
       const savedService: Service = await response.json(); 
 
       toast({
@@ -198,6 +243,24 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
                 <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem><Label>Service Name</Label><Input placeholder="e.g., 1-on-1 Coaching" {...field} /><FormMessage /></FormItem>
                 )}/>
+                 <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Label>Service Category</Label>
+                        <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCategories || flattenedCategoryOptions.length === 0}>
+                          <FormControl><SelectTrigger><SelectValue placeholder={isLoadingCategories ? "Loading..." : "Select category"} /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {isLoadingCategories ? <SelectItem value="loading" disabled>Loading...</SelectItem> : 
+                             flattenedCategoryOptions.length === 0 ? <SelectItem value="no-cat" disabled>No categories found.</SelectItem> :
+                             flattenedCategoryOptions.map(opt => <SelectItem key={opt.value} value={opt.value} style={{ paddingLeft: `${opt.level * 1 + 0.5}rem`}}>{opt.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="price" render={({ field }) => (
                         <FormItem><Label>Price ($)</Label><Input type="text" placeholder="e.g., 150" {...field} /><FormMessage /></FormItem>

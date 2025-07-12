@@ -22,6 +22,7 @@ export interface Service {
   price: string;
   duration: string;
   description: string; // Short description for listing
+  categoryId?: string; // NEW: Link to the service category
   detailedDescription?: string; // Longer, potentially HTML content for detail page
   howItWorks?: string[]; // Array of steps or process points
   benefits?: string[]; // Array of benefits
