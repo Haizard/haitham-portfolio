@@ -74,7 +74,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent className="p-0">
           <ScrollArea className="h-full">
             <div className="p-4">
-             <SidebarNav userRoles={user.roles} />
+             <SidebarNav userRoles={user?.roles || []} />
             </div>
           </ScrollArea>
         </SidebarContent>
