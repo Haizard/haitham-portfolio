@@ -24,16 +24,14 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, roles } = validation.data;
     
-    const finalRoles: UserRole[] = Array.from(new Set([...roles, ...(roles.some(r => ['freelancer', 'vendor'].includes(r)) ? ['creator'] : [])]));
-
-    // Step 1: Create the core user. This will throw an error if the email exists, which is handled by the catch block.
-    const createdUser = await createUser({ name, email, password, roles: finalRoles });
+    // The role combination logic is now handled inside createUser
+    const createdUser = await createUser({ name, email, password, roles });
 
     // Step 2: Create associated profiles. These run after the main user is confirmed to be created.
-    if (finalRoles.includes('freelancer') || finalRoles.includes('vendor')) {
+    if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor')) {
         await createFreelancerProfileIfNotExists(createdUser.id!, { name, email, storeName: `${name}'s Store` });
     }
-    if (finalRoles.includes('client')) {
+    if (createdUser.roles.includes('client')) {
         await createClientProfileIfNotExists(createdUser.id!, { name });
     }
     

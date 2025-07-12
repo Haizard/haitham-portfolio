@@ -37,11 +37,21 @@ export async function createUser(userData: Omit<User, 'id' | '_id' | 'createdAt'
   const hashedPassword = await bcrypt.hash(userData.password, 10);
   
   const now = new Date();
+  
+  // Corrected Role Logic:
+  // Ensure 'creator' is added if 'freelancer' or 'vendor' are present, without removing 'client'.
+  const baseRoles = new Set(userData.roles);
+  if (baseRoles.has('freelancer') || baseRoles.has('vendor')) {
+    baseRoles.add('creator');
+  }
+  const finalRoles = Array.from(baseRoles);
+
+
   const docToInsert = {
     name: userData.name,
     email: userData.email,
     password: hashedPassword,
-    roles: userData.roles,
+    roles: finalRoles,
     createdAt: now.toISOString(),
   };
 
