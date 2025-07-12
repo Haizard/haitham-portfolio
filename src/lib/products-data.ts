@@ -13,6 +13,17 @@ export interface AffiliateLink {
   icon?: string;
 }
 
+export interface GalleryImage {
+  url: string;
+  caption?: string;
+  hint?: string;
+}
+
+export interface ColorOption {
+  name: string;
+  hex: string;
+}
+
 export type ProductType = 'affiliate' | 'creator';
 
 export interface Product {
@@ -21,12 +32,14 @@ export interface Product {
   slug: string;
   name: string;
   description: string;
-  categoryId?: string; // Changed from category
-  categoryName?: string; // Enriched field
-  vendorId: string; // ID of the freelancer/vendor who owns this product
+  categoryId?: string; 
+  categoryName?: string; 
+  vendorId: string;
   vendorName?: string;
   imageUrl: string;
   imageHint: string;
+  galleryImages?: GalleryImage[];
+  colorOptions?: ColorOption[];
   productType: ProductType;
   tags?: string[]; 
 
@@ -212,7 +225,6 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
   const docToInsert: Omit<ProductDocument, '_id'> = {
     ...productData,
     slug,
-    // Ensure default values for optional fields if not provided
     tags: productData.tags || [],
     links: productData.productType === 'affiliate' ? (productData.links || []) : undefined,
     price: productData.productType === 'creator' ? (productData.price || 0) : undefined,
@@ -286,12 +298,10 @@ export async function countProducts(): Promise<number> {
   return collection.countDocuments();
 }
 
-// --- NEW Function for Admin Dashboard ---
 export async function getTopSellingProducts(limit: number = 5): Promise<Product[]> {
     const ordersCollection = await getCollection('orders'); // No specific type needed for aggregation
     const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
 
-    // 1. Aggregate sales data from orders
     const salesPipeline = [
         { $unwind: "$lineItems" },
         { $match: { "lineItems.status": "Delivered" } },
@@ -312,11 +322,9 @@ export async function getTopSellingProducts(limit: number = 5): Promise<Product[
         return [];
     }
 
-    // 2. Fetch product details for the top selling product IDs
     const topProductIds = topProductsData.map(p => new ObjectId(p._id));
     const productDocs = await productsCollection.find({ _id: { $in: topProductIds } }).toArray();
 
-    // 3. Combine sales data with product details
     const productsById = new Map(productDocs.map(p => [p._id.toString(), docToProduct(p)]));
     
     const enrichedTopProducts = topProductsData.map(salesData => {
@@ -334,7 +342,6 @@ export async function getTopSellingProducts(limit: number = 5): Promise<Product[
     return enrichedTopProducts;
 }
 
-// New function to be called by review system to update a product's rating
 export async function updateProductRating(productId: string, newAverageRating: number, newReviewCount: number): Promise<boolean> {
   if (!ObjectId.isValid(productId)) {
     return false;

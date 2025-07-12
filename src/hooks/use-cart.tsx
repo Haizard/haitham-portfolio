@@ -11,7 +11,7 @@ export interface CartItem extends Product {
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -56,22 +56,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cartItems]);
 
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product, quantity: number = 1) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === product.id);
       if (existingItem) {
         // Increase quantity of existing item
         return prevItems.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
         );
       } else {
         // Add new item to cart
-        return [...prevItems, { ...product, quantity: 1 }];
+        return [...prevItems, { ...product, quantity }];
       }
     });
     toast({
         title: "Added to Cart",
-        description: `${product.name} has been added to your cart.`,
+        description: `${product.name} (x${quantity}) has been added to your cart.`,
     });
   }, [toast]);
 

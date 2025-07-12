@@ -6,6 +6,7 @@ import type { Product } from '@/lib/products-data';
 import { ProductCard } from './ProductCard';
 import { Loader2 } from 'lucide-react';
 import { ThumbsUp } from 'lucide-react';
+import { ProductQuickView } from './ProductQuickView'; // Import the quick view
 
 interface RelatedProductsProps {
   categoryId: string;
@@ -15,12 +16,17 @@ interface RelatedProductsProps {
 export function RelatedProducts({ categoryId, currentProductId }: RelatedProductsProps) {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     async function fetchRelated() {
+      if (!categoryId) {
+          setIsLoading(false);
+          return;
+      }
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/products?category=${categoryId}&limit=4`);
+        const response = await fetch(`/api/products?categoryId=${categoryId}&limit=4`);
         if (!response.ok) {
           throw new Error('Failed to fetch related products');
         }
@@ -51,15 +57,22 @@ export function RelatedProducts({ categoryId, currentProductId }: RelatedProduct
   }
 
   return (
-    <section>
-      <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
-        <ThumbsUp className="mr-3 h-7 w-7 text-primary" /> You Might Also Like
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {relatedProducts.map(product => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-    </section>
+    <>
+      <section>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
+          <ThumbsUp className="mr-3 h-7 w-7 text-primary" /> You Might Also Like
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {relatedProducts.map(product => (
+            <ProductCard key={product.id} product={product} onQuickView={setQuickViewProduct} />
+          ))}
+        </div>
+      </section>
+      <ProductQuickView 
+        isOpen={!!quickViewProduct} 
+        onOpenChange={(isOpen) => { if(!isOpen) setQuickViewProduct(null) }}
+        product={quickViewProduct}
+      />
+    </>
   );
 }

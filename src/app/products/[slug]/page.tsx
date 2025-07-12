@@ -5,14 +5,14 @@ import { useEffect, useState } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, DollarSign, Star, ShoppingCart, ExternalLink, Heart, Store, MessageSquare, ShieldCheck, Award } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Star, ShoppingCart, ExternalLink, Heart, Store, MessageSquare, ShieldCheck, Award, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { Product } from '@/lib/products-data';
+import type { Product, GalleryImage, ColorOption } from '@/lib/products-data';
 import { StarRating } from '@/components/reviews/StarRating';
 import { ProductReviews } from '@/components/products/ProductReviews';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -47,8 +47,12 @@ export default function ProductDetailPage() {
     const [product, setProduct] = useState<Product | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [bestDeals, setBestDeals] = useState<Product[]>([]);
-    const [isLoadingDeals, setIsLoadingDeals] = useState(true);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [isLoadingRelated, setIsLoadingRelated] = useState(true);
+
+    const [selectedImage, setSelectedImage] = useState<string>('');
+    const [selectedColor, setSelectedColor] = useState<ColorOption | null>(null);
+    const [quantity, setQuantity] = useState(1);
 
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
@@ -61,20 +65,27 @@ export default function ProductDetailPage() {
 
         async function fetchData() {
             setIsLoading(true);
-            setIsLoadingDeals(true);
             setError(null);
             
             try {
-                const [productData, dealsData] = await Promise.all([
-                    getProductData(slug as string),
-                    fetch(`/api/products?limit=4`).then(res => res.ok ? res.json() : []) // Fetch 4, might include current
-                ]);
+                const productData = await getProductData(slug as string);
 
                 if (productData) {
                     setProduct(productData);
-                    // Filter the current product out of the deals list and take the first 3
-                    const deals = (dealsData as Product[]).filter(p => p.id !== productData.id).slice(0, 3);
-                    setBestDeals(deals);
+                    setSelectedImage(productData.imageUrl); // Set initial image
+                    if (productData.colorOptions && productData.colorOptions.length > 0) {
+                        setSelectedColor(productData.colorOptions[0]); // Set initial color
+                    }
+                    
+                    // Fetch related products
+                    setIsLoadingRelated(true);
+                    const relatedRes = await fetch(`/api/products?categoryId=${productData.categoryId}&limit=5`);
+                    if (relatedRes.ok) {
+                        const relatedData: Product[] = await relatedRes.json();
+                        setRelatedProducts(relatedData.filter(p => p.id !== productData.id).slice(0, 4));
+                    }
+                    setIsLoadingRelated(false);
+
                 } else {
                     setError("Product not found.");
                     notFound();
@@ -84,7 +95,6 @@ export default function ProductDetailPage() {
                 setError(err.message || "An unknown error occurred.");
             } finally {
                 setIsLoading(false);
-                setIsLoadingDeals(false);
             }
         }
         fetchData();
@@ -108,6 +118,8 @@ export default function ProductDetailPage() {
     
     const originalPrice = product.price ? product.price * 1.2 : null;
     const isWishlisted = isInWishlist(product.id!);
+    const allImages: GalleryImage[] = [{ url: product.imageUrl, hint: product.imageHint }, ...(product.galleryImages || [])];
+
 
     return (
         <div className="container mx-auto py-8 px-4">
@@ -117,12 +129,13 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
                 {/* Image Gallery */}
                 <div>
-                     <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
+                     <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg mb-4">
                         <Image
-                            src={product.imageUrl}
+                            key={selectedImage} // Use key to force re-render on image change
+                            src={selectedImage}
                             alt={product.name}
                             fill
-                            className="object-cover"
+                            className="object-cover animate-in fade-in-50 duration-300"
                             priority
                             data-ai-hint={product.imageHint || "product image"}
                         />
@@ -132,12 +145,32 @@ export default function ProductDetailPage() {
                             </Badge>
                         )}
                     </div>
+                     <div className="grid grid-cols-5 gap-2">
+                        {allImages.map((image, index) => (
+                            <button 
+                                key={index} 
+                                className={cn(
+                                    "relative aspect-square w-full overflow-hidden rounded-md border-2 transition-all",
+                                    selectedImage === image.url ? "border-primary ring-2 ring-primary ring-offset-2" : "border-border hover:border-primary/50"
+                                )}
+                                onClick={() => setSelectedImage(image.url)}
+                            >
+                                <Image
+                                    src={image.url}
+                                    alt={`${product.name} thumbnail ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint={image.hint || "product thumbnail"}
+                                />
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Product Details */}
                 <div className="space-y-6">
                     <div>
-                        <Badge variant="secondary">{product.category}</Badge>
+                        {product.categoryName && <Badge variant="secondary">{product.categoryName}</Badge>}
                         <h1 className="text-3xl md:text-4xl font-bold font-headline mt-2">{product.name}</h1>
                         <div className="flex items-center gap-4 mt-2">
                            <div className="flex items-center">
@@ -148,6 +181,26 @@ export default function ProductDetailPage() {
                            <span className="text-sm text-muted-foreground">{product.sales || 0} sold</span>
                         </div>
                     </div>
+
+                     {product.colorOptions && product.colorOptions.length > 0 && (
+                        <div>
+                            <p className="text-sm font-medium mb-2">Color: <span className="font-bold">{selectedColor?.name}</span></p>
+                            <div className="flex flex-wrap gap-2">
+                                {product.colorOptions.map((color) => (
+                                    <button 
+                                        key={color.name}
+                                        onClick={() => setSelectedColor(color)}
+                                        className={cn(
+                                            "h-8 w-8 rounded-full border-2 transition-all",
+                                            selectedColor?.name === color.name ? "border-primary ring-2 ring-primary ring-offset-2" : "border-border"
+                                        )}
+                                        style={{ backgroundColor: color.hex }}
+                                        aria-label={`Select color ${color.name}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                     
                     <p className="text-muted-foreground leading-relaxed">{product.description}</p>
                     
@@ -168,9 +221,16 @@ export default function ProductDetailPage() {
                     
                      <div className="flex flex-col sm:flex-row gap-3">
                         {product.productType === 'creator' && (
-                            <Button size="lg" className="flex-1" onClick={() => addToCart(product)}>
+                            <>
+                             <div className="flex items-center border rounded-md p-1">
+                                <Button variant="ghost" size="icon" onClick={() => setQuantity(q => Math.max(1, q-1))}><Minus className="h-4 w-4"/></Button>
+                                <span className="w-12 text-center font-bold">{quantity}</span>
+                                <Button variant="ghost" size="icon" onClick={() => setQuantity(q => q+1)}><Plus className="h-4 w-4"/></Button>
+                            </div>
+                            <Button size="lg" className="flex-1" onClick={() => addToCart(product, quantity)}>
                                 <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
                             </Button>
+                            </>
                         )}
                         {product.productType === 'affiliate' && product.links?.[0] && (
                              <Button size="lg" className="flex-1" asChild>
@@ -179,9 +239,8 @@ export default function ProductDetailPage() {
                                 </Link>
                             </Button>
                         )}
-                         <Button size="lg" variant="outline" className="flex-1" onClick={() => toggleWishlist(product.id!, product.name)}>
+                         <Button size="lg" variant="outline" onClick={() => toggleWishlist(product.id!, product.name)}>
                            <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-current text-destructive")} />
-                           {isWishlisted ? 'In Wishlist' : 'Add to Wishlist'}
                          </Button>
                     </div>
 
@@ -226,7 +285,7 @@ export default function ProductDetailPage() {
                             <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-yellow-500"/> Best Deals Today</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                           {isLoadingDeals ? (
+                           {isLoadingRelated ? (
                                 <div className="space-y-4">
                                     {[...Array(3)].map((_, i) => (
                                         <div key={i} className="flex items-center gap-3">
@@ -238,8 +297,8 @@ export default function ProductDetailPage() {
                                         </div>
                                     ))}
                                 </div>
-                            ) : bestDeals.length > 0 ? (
-                                bestDeals.map((deal) => {
+                            ) : relatedProducts.length > 0 ? (
+                                relatedProducts.map((deal) => {
                                     const dealOriginalPrice = deal.price ? deal.price * 1.25 : null;
                                     return (
                                         <Link href={`/products/${deal.slug}`} key={deal.id} className="block group">
@@ -268,7 +327,7 @@ export default function ProductDetailPage() {
             </div>
 
             <Separator className="my-12"/>
-            <RelatedProducts categoryId={product.category} currentProductId={product.id!} />
+            <RelatedProducts categoryId={product.categoryId!} currentProductId={product.id!} />
 
         </div>
     );
