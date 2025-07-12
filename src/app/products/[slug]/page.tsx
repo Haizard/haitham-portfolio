@@ -23,17 +23,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 async function getProductData(slug: string): Promise<Product | null> {
-    try {
-        const response = await fetch(`/api/products/by-identifier/${slug}`);
-        if (!response.ok) {
-            if (response.status === 404) return null;
-            throw new Error('Failed to fetch product data');
+    const response = await fetch(`/api/products/by-identifier/${slug}`);
+    if (!response.ok) {
+        if (response.status === 404) return null;
+        let errorMsg = 'Failed to fetch product data';
+        try {
+            const errorData = await response.json();
+            errorMsg = errorData.message || errorMsg;
+        } catch (e) {
+            // Ignore if response is not JSON
         }
-        return response.json();
-    } catch (error) {
-        console.error(`Error fetching product ${slug}:`, error);
-        return null;
+        throw new Error(errorMsg);
     }
+    return response.json();
 }
 
 export default function ProductDetailPage() {
@@ -62,22 +64,28 @@ export default function ProductDetailPage() {
             setIsLoadingDeals(true);
             setError(null);
             
-            const [productData, dealsData] = await Promise.all([
-                getProductData(slug as string),
-                fetch(`/api/products?limit=4`).then(res => res.ok ? res.json() : []) // Fetch 4, might include current
-            ]);
+            try {
+                const [productData, dealsData] = await Promise.all([
+                    getProductData(slug as string),
+                    fetch(`/api/products?limit=4`).then(res => res.ok ? res.json() : []) // Fetch 4, might include current
+                ]);
 
-            if (productData) {
-                setProduct(productData);
-                // Filter the current product out of the deals list and take the first 3
-                const deals = (dealsData as Product[]).filter(p => p.id !== productData.id).slice(0, 3);
-                setBestDeals(deals);
-            } else {
-                setError("Product not found.");
-                notFound();
+                if (productData) {
+                    setProduct(productData);
+                    // Filter the current product out of the deals list and take the first 3
+                    const deals = (dealsData as Product[]).filter(p => p.id !== productData.id).slice(0, 3);
+                    setBestDeals(deals);
+                } else {
+                    setError("Product not found.");
+                    notFound();
+                }
+            } catch (err: any) {
+                console.error("Error fetching product page data:", err);
+                setError(err.message || "An unknown error occurred.");
+            } finally {
+                setIsLoading(false);
+                setIsLoadingDeals(false);
             }
-            setIsLoading(false);
-            setIsLoadingDeals(false);
         }
         fetchData();
     }, [slug]);
