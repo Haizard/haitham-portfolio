@@ -12,6 +12,7 @@ export interface ClientProfile {
   // Client-specific fields
   name: string; // Can be company or individual name
   avatarUrl: string;
+  location?: string;
   paymentVerified: boolean;
   projectsPosted: number;
   totalSpent: number; // Sum of all job budgets paid out
@@ -30,7 +31,7 @@ function docToClientProfile(doc: any): ClientProfile {
     ...rest,
     averageRating: rest.averageRating || 0,
     reviewCount: rest.reviewCount || 0,
-    paymentVerified: rest.paymentVerified || false,
+    paymentVerified: rest.paymentVerified !== undefined ? rest.paymentVerified : true, // Default to true for seeded data
     projectsPosted: rest.projectsPosted || 0,
     totalSpent: rest.totalSpent || 0,
   } as ClientProfile;
@@ -40,7 +41,8 @@ const defaultClientProfileData = (userId: string): Omit<ClientProfile, 'id' | '_
   userId,
   name: `Client ${userId.substring(0, 4)}`,
   avatarUrl: `https://placehold.co/200x200.png?text=C`,
-  paymentVerified: false,
+  location: "United States",
+  paymentVerified: true,
   projectsPosted: 0,
   totalSpent: 0,
   averageRating: 0,

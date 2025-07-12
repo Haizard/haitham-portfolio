@@ -97,14 +97,14 @@ export function JobFilters({ onFilterChange }: JobFiltersProps) {
                   control={form.control}
                   name="minBudget"
                   render={({ field }) => (
-                    <FormItem className="flex-1"><FormControl><Input type="number" placeholder="Min" {...field} /></FormControl></FormItem>
+                    <FormItem className="flex-1"><FormControl><Input type="number" placeholder="Min" {...field} value={field.value ?? ''} /></FormControl></FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
                   name="maxBudget"
                   render={({ field }) => (
-                    <FormItem className="flex-1"><FormControl><Input type="number" placeholder="Max" {...field} /></FormControl></FormItem>
+                    <FormItem className="flex-1"><FormControl><Input type="number" placeholder="Max" {...field} value={field.value ?? ''} /></FormControl></FormItem>
                   )}
                 />
               </div>

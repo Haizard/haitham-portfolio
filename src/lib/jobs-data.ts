@@ -95,7 +95,17 @@ export async function getAllJobs(filters: JobFilters = {}): Promise<Job[]> {
   }
 
   const jobDocs = await collection.find(query).sort({ createdAt: -1 }).toArray();
-  return jobDocs.map(docToJob);
+  
+  // Enrich all jobs with their client profile
+  const jobsWithProfiles = await Promise.all(
+    jobDocs.map(async (doc) => {
+      const job = docToJob(doc);
+      job.clientProfile = await getClientProfile(job.clientId);
+      return job;
+    })
+  );
+
+  return jobsWithProfiles;
 }
 
 export async function getJobById(id: string): Promise<Job | null> {

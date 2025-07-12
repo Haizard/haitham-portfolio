@@ -7,6 +7,8 @@ import { JobFilters, type JobFilterValues } from '@/components/jobs/job-filters'
 import { Search, Loader2 } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function FindWorkPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -21,7 +23,7 @@ export default function FindWorkPage() {
       if (filters.minBudget) queryParams.append('minBudget', filters.minBudget.toString());
       if (filters.maxBudget) queryParams.append('maxBudget', filters.maxBudget.toString());
       if (filters.budgetType) queryParams.append('budgetType', filters.budgetType);
-      if (filters.skills) queryParams.append('skills', filters.skills);
+      if (filters.skills) queryParams.append('skills', filters.skills.split(',').map(s => s.trim()).filter(Boolean).join(','));
 
       const response = await fetch(`/api/jobs?${queryParams.toString()}`);
       if (!response.ok) {
@@ -42,18 +44,17 @@ export default function FindWorkPage() {
 
   // Initial fetch
   useEffect(() => {
-    fetchJobs();
+    fetchJobs({});
   }, [fetchJobs]);
   
   return (
     <div className="container mx-auto py-8">
-      <header className="mb-8 text-center bg-primary/10 py-10 rounded-lg">
-        <h1 className="text-4xl font-bold tracking-tight font-headline flex items-center justify-center">
-          <Search className="mr-3 h-10 w-10 text-primary" />
-          Freelancer Marketplace
+      <header className="mb-8">
+        <h1 className="text-4xl font-bold tracking-tight font-headline">
+          Find Your Next Opportunity
         </h1>
-        <p className="text-xl text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Browse, search, and filter through the latest job postings to find your next project.
+        <p className="text-xl text-muted-foreground mt-2">
+          Browse, search, and filter through thousands of jobs to find your perfect match.
         </p>
       </header>
 
@@ -68,12 +69,8 @@ export default function FindWorkPage() {
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
-            ) : jobs.length > 0 ? (
-                <JobList jobs={jobs} />
             ) : (
-                <p className="text-center text-muted-foreground py-10">
-                    No open jobs found matching your criteria. Try adjusting your filters.
-                </p>
+                <JobList jobs={jobs} />
             )}
         </main>
       </div>
