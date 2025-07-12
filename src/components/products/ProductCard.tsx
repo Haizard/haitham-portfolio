@@ -52,12 +52,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <Card 
         className={cn(
-            "group relative flex h-full w-full flex-col overflow-hidden rounded-lg border-2 border-transparent bg-card shadow-md transition-all duration-300 ease-in-out hover:border-primary hover:shadow-xl",
+            "group relative flex h-full w-full flex-col overflow-hidden rounded-lg border bg-card shadow-md transition-all duration-300 ease-in-out hover:shadow-xl",
+            "border-l-4 border-transparent hover:border-primary",
             className
         )}
     >
         <Link href={`/products/${product.slug || product.id}`} className="block h-full flex flex-col">
-            <div className="relative flex-1 overflow-hidden bg-muted/30 p-4">
+            <div className="relative flex-1 overflow-hidden bg-gradient-to-br from-muted/30 to-background p-4">
                 <div className="relative aspect-square w-full">
                     <Image
                         src={product.imageUrl}
@@ -75,7 +76,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                 )}
             </div>
 
-            <CardContent className="flex flex-col p-4">
+            <CardContent className="flex flex-col p-4 bg-secondary/20">
                 <p className="text-xs font-medium text-muted-foreground">{product.categoryName || 'Category'}</p>
                 <h3 className="mt-1 text-base font-semibold text-foreground line-clamp-2">{product.name}</h3>
                 <div className="mt-2 flex items-center">
