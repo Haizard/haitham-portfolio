@@ -30,8 +30,6 @@ export function AuthorCard() {
           const data: UserProfile = await response.json();
           setProfile(data);
         } else {
-          // Handle non-ok responses (like 401 for guests) by setting the default profile
-          // without treating it as a thrown error.
           console.log('Could not fetch logged-in user profile, showing default author card.');
           setProfile({
               name: "CreatorOS User",
@@ -42,7 +40,6 @@ export function AuthorCard() {
           });
         }
       } catch (error) {
-        // This catches network errors etc.
         console.error("Network error fetching profile:", error);
         setProfile({
             name: "CreatorOS User",
@@ -84,11 +81,11 @@ export function AuthorCard() {
       <CardContent className="flex flex-col items-center text-center">
         <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
           <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="author portrait" />
-          <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+          <AvatarFallback>{profile.name?.substring(0, 2).toUpperCase() || 'CO'}</AvatarFallback>
         </Avatar>
         <h3 className="text-xl font-semibold font-headline">{profile.name}</h3>
         <p className="text-sm text-muted-foreground mb-1">{profile.occupation}</p>
-        <p className="text-xs text-muted-foreground px-2 mb-4">{profile.bio.substring(0,150)}{profile.bio.length > 150 ? '...' : ''}</p>
+        <p className="text-xs text-muted-foreground px-2 mb-4">{(profile.bio || "").substring(0,150)}{(profile.bio?.length || 0) > 150 ? '...' : ''}</p>
         <div className="flex space-x-2">
           <Button variant="outline" size="icon" asChild>
             <Link href="#" aria-label="Twitter">
@@ -105,7 +102,6 @@ export function AuthorCard() {
               <Github className="h-4 w-4" />
             </Link>
           </Button>
-          {/* Add more social links as needed */}
         </div>
       </CardContent>
     </Card>
