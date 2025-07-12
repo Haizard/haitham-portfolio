@@ -6,10 +6,11 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowRight, ChevronRight, Gamepad2, Headphones, Layers, List, Monitor, Newspaper, Percent, Smartphone, Star, Tv2 } from "lucide-react";
+import { ArrowRight, ChevronRight, Gamepad2, Headphones, Layers, List, Monitor, Newspaper, Percent, Smartphone, Star, Tv2, Package as PackageIcon } from "lucide-react";
 import Image from "next/image";
 import type { Product } from '@/lib/products-data';
 import type { BlogPost } from '@/lib/blog-data';
+import type { ProductCategoryNode } from '@/lib/product-categories-data';
 import { useToast } from '@/hooks/use-toast';
 import { ProductCard } from '@/components/products/ProductCard'; 
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,19 +18,19 @@ import { FeaturedVendorsCarousel } from '@/components/products/FeaturedVendorsCa
 import { ProductQuickView } from '@/components/products/ProductQuickView';
 
 
-const categoryIcons = {
-  "Laptops & Computers": Monitor,
-  "Cameras & Photography": Headphones, // Placeholder, no camera icon
-  "Smartphones & Tablets": Smartphone,
-  "Video Games & Consoles": Gamepad2,
-  "TV & Audio": Tv2,
+const categoryIcons: { [key: string]: React.ElementType } = {
+  "default": PackageIcon,
+  "laptops-computers": Monitor,
+  "cameras-photography": Headphones, // Placeholder
+  "smartphones-tablets": Smartphone,
+  "video-games-consoles": Gamepad2,
+  "tv-audio": Tv2,
 };
 
-const departments = [
-    { name: "Value of The Day", icon: Percent },
-    { name: "Top 100 Offers", icon: Star },
-    { name: "New Arrivals", icon: Layers },
-    ...Object.keys(categoryIcons).map(name => ({ name, icon: categoryIcons[name as keyof typeof categoryIcons] }))
+const staticDepartments = [
+    { name: "Value of The Day", icon: Percent, slug: "deals" },
+    { name: "Top 100 Offers", icon: Star, slug: "top-offers" },
+    { name: "New Arrivals", icon: Layers, slug: "new-arrivals" },
 ];
 
 
@@ -38,6 +39,7 @@ export default function EcommerceStorePage() {
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [latestArticles, setLatestArticles] = useState<BlogPost[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategoryNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -52,9 +54,10 @@ export default function EcommerceStorePage() {
   const fetchAllData = useCallback(async () => {
       setIsLoading(true);
       try {
-        const [productsResponse, articlesResponse] = await Promise.all([
+        const [productsResponse, articlesResponse, categoriesResponse] = await Promise.all([
           fetch(`/api/products?limit=12`),
-          fetch(`/api/blog?enriched=true&limit=2`) 
+          fetch(`/api/blog?enriched=true&limit=2`),
+          fetch('/api/product-categories'),
         ]);
 
         if (!productsResponse.ok) throw new Error('Failed to fetch products.');
@@ -64,10 +67,13 @@ export default function EcommerceStorePage() {
         setBestSellers(productsData.slice(5, 10));
         setFeaturedProducts(productsData.slice(2, 7)); 
         
-
         if (!articlesResponse.ok) throw new Error('Failed to fetch latest articles.');
         const articlesData: BlogPost[] = await articlesResponse.json();
         setLatestArticles(articlesData);
+
+        if (!categoriesResponse.ok) throw new Error('Failed to fetch product categories.');
+        const categoriesData: ProductCategoryNode[] = await categoriesResponse.json();
+        setProductCategories(categoriesData);
 
       } catch (error: any) {
         console.error("[EcommercePage] Error fetching store data:", error);
@@ -111,20 +117,40 @@ export default function EcommerceStorePage() {
                 <CardTitle className="flex items-center gap-2 text-base"><List className="h-5 w-5"/> Shop By Department</CardTitle>
               </CardHeader>
               <CardContent className="p-2">
-                <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
-                  {departments.map((dept, index) => (
-                     <AccordionItem value={`item-${index}`} key={dept.name} className="border-b-0">
-                      <AccordionTrigger className="text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-1.5 hover:no-underline">
+                <Accordion type="multiple" className="w-full">
+                  
+                  {staticDepartments.map((dept, index) => (
+                     <AccordionItem value={`item-static-${index}`} key={dept.slug} className="border-b-0">
+                      <Link href={`/shop?filter=${dept.slug}`} className="block text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-2.5 hover:no-underline">
                         <div className="flex items-center gap-2">
                            <dept.icon className="h-4 w-4 text-primary"/> {dept.name}
                         </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="pl-4 py-1 text-sm">
-                        <Link href="#" className="block py-1 hover:text-primary">Sub-category 1</Link>
-                        <Link href="#" className="block py-1 hover:text-primary">Sub-category 2</Link>
-                      </AccordionContent>
+                      </Link>
                     </AccordionItem>
                   ))}
+
+                  <Separator className="my-2"/>
+
+                  {isLoading ? <Skeleton className="h-24 w-full"/> : productCategories.map((cat, index) => {
+                     const Icon = categoryIcons[cat.slug] || categoryIcons.default;
+                     return (
+                     <AccordionItem value={`item-cat-${index}`} key={cat.id} className="border-b-0">
+                      <AccordionTrigger className="text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-1.5 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                           <Icon className="h-4 w-4 text-primary"/> {cat.name}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-4 py-1 text-sm">
+                        {cat.children && cat.children.length > 0 ? (
+                           cat.children.map(child => (
+                             <Link href={`/shop?category=${child.id}`} key={child.id} className="block py-1 hover:text-primary">{child.name}</Link>
+                           ))
+                        ) : (
+                           <Link href={`/shop?category=${cat.id}`} className="block py-1 italic text-muted-foreground hover:text-primary">View all {cat.name}</Link>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )})}
                 </Accordion>
               </CardContent>
             </Card>
