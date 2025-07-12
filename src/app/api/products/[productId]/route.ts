@@ -20,10 +20,10 @@ const affiliateLinkUpdateSchema = z.object({
 const productUpdateSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters").max(150).optional(),
   description: z.string().min(10, "Description must be at least 10 characters").max(5000).optional(),
-  category: z.string().min(1, "Category is required").max(50).optional(),
+  categoryId: z.string().min(1, "Category is required").optional(), // Changed from category
   imageUrl: z.string().url("Image URL must be valid").optional(),
   imageHint: z.string().min(1, "Image hint is required").max(50).optional(),
-  tags: z.array(z.string().max(30)).optional(),
+  tagIds: z.array(z.string()).optional(), // Changed from tags
   // For 'creator' type products
   price: z.number().min(0, "Price must be non-negative").optional(),
   stock: z.number().int().min(0, "Stock must be a non-negative integer").optional(),

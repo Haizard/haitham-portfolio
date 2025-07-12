@@ -18,10 +18,11 @@ const affiliateLinkSchema = z.object({
 const baseProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters").max(150),
   description: z.string().min(10, "Description must be at least 10 characters").max(5000),
-  category: z.string().min(1, "Category is required").max(50),
+  categoryId: z.string().min(1, "Category is required"), // Changed from category string
   imageUrl: z.string().url("Image URL must be valid"),
   imageHint: z.string().min(1, "Image hint is required").max(50),
-  tags: z.array(z.string().max(30)).optional(),
+  tagIds: z.array(z.string()).optional(), // Changed from tags string array
+  productType: z.enum(['creator', 'affiliate'], { required_error: "Product type is required." }),
 });
 
 const creatorProductSchema = baseProductSchema.extend({
@@ -49,13 +50,13 @@ const productCreateSchema = z.discriminatedUnion("productType", [
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') || undefined;
+    const categoryId = searchParams.get('categoryId') || undefined;
     const productType = searchParams.get('productType') as ProductType | undefined;
     const vendorId = searchParams.get('vendorId') || undefined;
     const slug = searchParams.get('slug') || undefined;
     
     // Pass all filters to the data function
-    const products = await getAllProducts(category, productType, vendorId, slug);
+    const products = await getAllProducts({categoryId, productType, vendorId, slug});
 
     // --- ENRICHMENT STEP ---
     if (products.length > 0) {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
         if (vendorIds.length > 0) {
             const vendorProfiles = await getFreelancerProfilesByUserIds(vendorIds);
             // Create a map for easy lookup
-            const vendorMap = new Map(vendorProfiles.map(p => [p.userId, p.name]));
+            const vendorMap = new Map(vendorProfiles.map(p => p ? [p.userId, p.name] : [null, null]));
             
             // Add vendorName to each product
             products.forEach(p => {
@@ -110,11 +111,11 @@ export async function POST(request: NextRequest) {
     const productData = {
       ...validation.data,
       vendorId: vendorId, // Assign the product to the logged-in vendor
-    } as Omit<Product, 'id' | '_id' | 'slug'>;
+    } as Omit<Product, 'id' | '_id' | 'slug' | 'categoryName'>;
     
-    // Ensure tags array is present, even if empty, to avoid MongoDB errors if schema expects it
-    if (!productData.tags) {
-      productData.tags = [];
+    // Ensure tagIds array is present, even if empty, to avoid MongoDB errors if schema expects it
+    if (!productData.tagIds) {
+      productData.tagIds = [];
     }
     
     const newProduct = await addProduct(productData);

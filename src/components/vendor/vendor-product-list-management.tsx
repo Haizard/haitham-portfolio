@@ -33,7 +33,7 @@ import Link from 'next/link';
 // This would come from an authenticated session
 const MOCK_VENDOR_ID = "freelancer123";
 
-export function VendorProductListManagement() {
+export function VendorProductListManagement({ isAdminView = false }: { isAdminView?: boolean }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -46,8 +46,9 @@ export function VendorProductListManagement() {
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch only products belonging to the mock vendor
-      const response = await fetch(`/api/products?vendorId=${MOCK_VENDOR_ID}`);
+      // Fetch only products belonging to the mock vendor unless it's an admin view
+      const apiUrl = isAdminView ? '/api/products' : `/api/products?vendorId=${MOCK_VENDOR_ID}`;
+      const response = await fetch(apiUrl);
       if (!response.ok) throw new Error('Failed to fetch your products');
       const data: Product[] = await response.json();
       setProducts(data);
@@ -58,7 +59,7 @@ export function VendorProductListManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, isAdminView]);
 
   useEffect(() => {
     fetchProducts();
@@ -116,8 +117,8 @@ export function VendorProductListManagement() {
       <Card className="shadow-xl mb-8">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <CardTitle className="text-2xl font-headline flex items-center"><Package className="mr-2 h-6 w-6 text-primary"/>My Product Listings</CardTitle>
-            <CardDescription>Add, edit, or remove products you are selling.</CardDescription>
+            <CardTitle className="text-2xl font-headline flex items-center"><Package className="mr-2 h-6 w-6 text-primary"/>{isAdminView ? "All Products" : "My Product Listings"}</CardTitle>
+            <CardDescription>{isAdminView ? "Oversee all products from all vendors." : "Add, edit, or remove products you are selling."}</CardDescription>
           </div>
           <Button onClick={handleCreateNewProduct} className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
             <PlusCircle className="mr-2 h-5 w-5" /> Add New Product
@@ -125,7 +126,7 @@ export function VendorProductListManagement() {
         </CardHeader>
         <CardContent>
           {products.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">You have no products yet. Click "Add New Product" to get started.</p>
+            <p className="text-muted-foreground text-center py-4">No products found. Click "Add New Product" to get started.</p>
           ) : (
             <div className="border rounded-lg overflow-x-auto">
               <Table>
@@ -133,6 +134,7 @@ export function VendorProductListManagement() {
                   <TableRow>
                     <TableHead className="w-[80px] hidden md:table-cell">Image</TableHead>
                     <TableHead className="min-w-[200px]">Name</TableHead>
+                     {isAdminView && <TableHead className="min-w-[150px]">Vendor</TableHead>}
                     <TableHead className="min-w-[120px]">Category</TableHead>
                     <TableHead className="min-w-[100px]">Type</TableHead>
                     <TableHead className="min-w-[120px]">Price / Links</TableHead>
@@ -147,11 +149,12 @@ export function VendorProductListManagement() {
                         <Image src={product.imageUrl} alt={product.name} width={50} height={50} className="rounded object-cover aspect-square" data-ai-hint={product.imageHint}/>
                       </TableCell>
                       <TableCell className="font-medium">
-                        <Link href={`/ecommerce?product=${product.slug}`} target="_blank" className="hover:text-primary hover:underline">
+                        <Link href={`/products/${product.slug}`} target="_blank" className="hover:text-primary hover:underline">
                             {product.name}
                         </Link>
                       </TableCell>
-                      <TableCell>{product.category}</TableCell>
+                       {isAdminView && <TableCell>{product.vendorName || "N/A"}</TableCell>}
+                      <TableCell>{product.categoryName || product.categoryId}</TableCell>
                       <TableCell>
                         <Badge variant={product.productType === 'creator' ? 'default' : 'secondary'}>
                           {product.productType.charAt(0).toUpperCase() + product.productType.slice(1)}

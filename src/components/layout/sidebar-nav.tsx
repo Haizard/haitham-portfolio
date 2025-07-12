@@ -127,8 +127,8 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },
-      { href: "/admin/categories", label: "Manage Categories", icon: FolderKanban },
-      { href: "/admin/tags", label: "Manage Tags", icon: Tags },
+      { href: "/admin/categories", label: "Manage Blog Categories", icon: FolderKanban },
+      { href: "/admin/tags", label: "Manage Blog Tags", icon: Tags },
       { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase },
     ],
   },
@@ -146,6 +146,10 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
   const isActive = (href: string) => {
     if (href === '/dashboard' || href === '/profile') {
         return pathname === href;
+    }
+    // For admin pages, do an exact match to avoid highlighting parent "Manage Products" when on "Product Categories"
+    if (href.startsWith('/admin/')) {
+      return pathname === href;
     }
     return pathname.startsWith(href);
   };
