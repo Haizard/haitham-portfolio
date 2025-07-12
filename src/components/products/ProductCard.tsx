@@ -56,7 +56,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, className }) 
             )}
         </div>
         <CardContent className="p-3 text-center flex flex-col flex-grow bg-background">
-            <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
+            {product.category && <p className="text-xs text-muted-foreground mb-1">{product.category}</p>}
             <h3 className="text-sm font-semibold line-clamp-2 flex-grow group-hover:text-primary transition-colors">
                 {product.name}
             </h3>
