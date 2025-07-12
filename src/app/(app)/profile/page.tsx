@@ -71,7 +71,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchProfile() {
-      if (!user) return; // Don't fetch if user is not available yet.
+      if (!user) return; 
       setIsLoading(true);
       try {
         const response = await fetch(`/api/profile`);
@@ -82,19 +82,20 @@ export default function ProfilePage() {
                 router.push('/login');
                 return;
             }
-            throw new Error('Failed to fetch profile');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to fetch profile');
         }
         const data: FreelancerProfile = await response.json();
         setProfileData(data);
         form.reset({
           ...data,
-          skills: data.skills?.join(', ') || "",
+          skills: data.skills ? data.skills.join(', ') : "", // THE FIX: Ensure skills is always a string.
           hourlyRate: data.hourlyRate ?? null,
           portfolioLinks: data.portfolioLinks || [],
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
-        toast({ title: "Error", description: "Could not load your profile data.", variant: "destructive" });
+        toast({ title: "Error", description: `Could not load your profile data: ${error.message}`, variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
@@ -123,7 +124,7 @@ export default function ProfilePage() {
       setProfileData(updatedProfile);
       form.reset({
          ...updatedProfile,
-         skills: updatedProfile.skills?.join(', ') || "",
+         skills: updatedProfile.skills ? updatedProfile.skills.join(', ') : "", // THE FIX: Also apply fix here.
          hourlyRate: updatedProfile.hourlyRate ?? null,
          portfolioLinks: updatedProfile.portfolioLinks || [],
       });
