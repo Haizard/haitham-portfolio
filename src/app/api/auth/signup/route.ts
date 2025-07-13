@@ -1,9 +1,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { createUser, getFullUserByEmail, type UserRole } from '@/lib/auth-data';
+import { createUser, type UserRole } from '@/lib/auth-data';
 import { saveSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
-import { createFreelancerProfileIfNotExists, getFreelancerProfile } from '@/lib/user-profile-data';
+import { createFreelancerProfileIfNotExists } from '@/lib/user-profile-data';
 import { createClientProfileIfNotExists } from '@/lib/client-profile-data';
 
 const signupSchema = z.object({
@@ -24,28 +24,31 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, roles } = validation.data;
     
-    // The role combination logic is now handled inside createUser
+    // Step 1: Create the core user account. This now correctly handles role expansion.
     const createdUser = await createUser({ name, email, password, roles });
 
-    // Step 2: Create associated profiles. These run after the main user is confirmed to be created.
+    // Step 2: Create associated profiles using the ID from the newly created user.
+    // This is the critical step that ensures data consistency.
     if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor')) {
-        await createFreelancerProfileIfNotExists(createdUser.id!, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
+        await createFreelancerProfileIfNotExists(createdUser.id, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
     }
     if (createdUser.roles.includes('client')) {
-        await createClientProfileIfNotExists(createdUser.id!, { name });
+        await createClientProfileIfNotExists(createdUser.id, { name });
     }
     
-    // Construct the session user object from the clean, database-sourced record.
+    // Step 3: Construct a clean, serializable session user object.
     const sessionUser: SessionUser = {
-      id: createdUser.id!,
+      id: createdUser.id,
       name: createdUser.name,
       email: createdUser.email,
       roles: createdUser.roles,
       createdAt: createdUser.createdAt,
     };
     
+    // Step 4: Save the session *after* all database operations are complete.
     await saveSession(sessionUser);
 
+    // Return the session user object to the client.
     return NextResponse.json(sessionUser);
 
   } catch (error: any) {

@@ -19,8 +19,8 @@ export interface ClientProfile {
   averageRating?: number;
   reviewCount?: number;
   
-  createdAt: string; // Changed from Date
-  updatedAt: string; // Changed from Date
+  createdAt: string;
+  updatedAt: string;
 }
 
 function docToClientProfile(doc: any): ClientProfile {
@@ -37,10 +37,10 @@ function docToClientProfile(doc: any): ClientProfile {
   } as ClientProfile;
 }
 
-const defaultClientProfileData = (userId: string): Omit<ClientProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
+const defaultClientProfileData = (userId: string, name: string): Omit<ClientProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
   userId,
-  name: `Client ${userId.substring(0, 4)}`,
-  avatarUrl: `https://placehold.co/200x200.png?text=C`,
+  name: name,
+  avatarUrl: `https://placehold.co/200x200.png?text=${name.substring(0,1) || 'C'}`,
   location: "United States",
   paymentVerified: true,
   projectsPosted: 0,
@@ -58,7 +58,7 @@ export async function createClientProfileIfNotExists(userId: string, initialData
 
   const now = new Date();
   const profileToInsert: Omit<ClientProfile, 'id' | '_id'> = {
-    ...defaultClientProfileData(userId),
+    ...defaultClientProfileData(userId, initialData?.name || `Client ${userId.substring(0,4)}`),
     ...initialData,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
@@ -73,7 +73,8 @@ export async function getClientProfile(userId: string): Promise<ClientProfile | 
   const profileDoc = await collection.findOne({ userId });
   
   if (!profileDoc) {
-    return await createClientProfileIfNotExists(userId);
+     // This should ideally not be hit in the main flow now, but is a good fallback.
+    return await createClientProfileIfNotExists(userId, {});
   }
   return docToClientProfile(profileDoc);
 }
@@ -87,7 +88,7 @@ export async function updateClientProfile(userId: string, data: Partial<Omit<Cli
   const result = await collection.findOneAndUpdate(
     { userId },
     { $set: updateData },
-    { returnDocument: 'after', upsert: true } // Upsert to create if it doesn't exist during an update
+    { returnDocument: 'after', upsert: true }
   );
 
   if (!result) {

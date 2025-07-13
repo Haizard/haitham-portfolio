@@ -11,7 +11,7 @@ const wishlistToggleSchema = z.object({
 // Get the user's current wishlist
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session.user || !session.user.id) {
+  if (!session.user?.id) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 // Add or remove an item from the wishlist
 export async function POST(request: NextRequest) {
   const session = await getSession();
-  if (!session.user || !session.user.id) {
+  if (!session.user?.id) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
   try {

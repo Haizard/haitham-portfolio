@@ -62,12 +62,12 @@ function docToFreelancerProfile(doc: any): FreelancerProfile {
   } as FreelancerProfile;
 }
 
-const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
+const defaultFreelancerProfileData = (userId: string, initialData?: any): Omit<FreelancerProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
   userId,
-  name: 'New User',
-  email: 'user@example.com',
-  roles: [],
-  avatarUrl: `https://placehold.co/200x200.png?text=${userId.substring(0,1) || 'U'}`,
+  name: initialData?.name || 'New User',
+  email: initialData?.email || 'user@example.com',
+  roles: initialData?.roles || [],
+  avatarUrl: `https://placehold.co/200x200.png?text=${(initialData?.name || 'U').substring(0,1)}`,
   occupation: 'Creative Professional',
   bio: 'Ready to take on new projects!',
   skills: [],
@@ -77,7 +77,7 @@ const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, '
   averageRating: 0,
   reviewCount: 0,
   wishlist: [],
-  storeName: 'My Store',
+  storeName: initialData?.storeName || 'My Store',
   vendorStatus: 'pending',
   isFeatured: false,
 });
@@ -91,7 +91,7 @@ export async function createFreelancerProfileIfNotExists(userId: string, initial
 
   const now = new Date();
   const profileToInsert: Omit<FreelancerProfile, 'id' | '_id'> = {
-    ...defaultFreelancerProfileData(userId),
+    ...defaultFreelancerProfileData(userId, initialData),
     ...initialData,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
@@ -107,6 +107,7 @@ export async function getFreelancerProfile(userId: string): Promise<FreelancerPr
   
   if (!profileDoc) {
     console.log(`Freelancer profile for userId ${userId} not found, creating default.`);
+    // In a real app, you might want to fetch the base user data to populate the profile
     return await createFreelancerProfileIfNotExists(userId);
   }
   return docToFreelancerProfile(profileDoc);
@@ -159,6 +160,7 @@ export async function getAllVendorProfiles(filters: { isFeatured?: boolean } = {
 }
 
 export async function updateVendorStatus(vendorId: string, status: VendorStatus): Promise<FreelancerProfile | null> {
+    // This function assumes `vendorId` is the `_id` of the freelancer profile.
     if (!ObjectId.isValid(vendorId)) return null;
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
     const result = await collection.findOneAndUpdate(
