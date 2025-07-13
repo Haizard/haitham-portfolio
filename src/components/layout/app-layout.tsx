@@ -41,19 +41,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // The UserProvider now handles the initial loading state.
     // This effect's only job is to redirect if, after loading, the user is still not present.
     if (!isLoading && !user) {
       router.push('/login');
     }
   }, [user, isLoading, router]);
   
-  // The initial loading screen is now handled by the UserProvider itself.
-  // This component will not even render until the initial load is complete.
-  // We just need to handle the "redirecting" state after the initial load confirms no user.
   if (isLoading || !user) {
-    // This provides a fallback loader during the brief moment between the isLoading=false state
-    // and the router.push() action completing.
     return (
         <div className="flex h-screen w-screen items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary"/>

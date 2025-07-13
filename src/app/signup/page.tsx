@@ -68,6 +68,7 @@ export default function SignupPage() {
       });
       
       router.push('/dashboard');
+      router.refresh(); // Force a hard refresh to ensure layout re-evaluates auth state
 
     } catch (error: any) {
       toast({

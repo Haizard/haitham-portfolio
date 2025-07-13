@@ -27,10 +27,10 @@ export const UserContext = createContext<UserContextType | undefined>(undefined)
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // Track initial client-side load
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
+    setIsLoading(true);
     try {
       const sessionRes = await fetch('/api/auth/session');
       if (!sessionRes.ok) {
@@ -47,10 +47,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchUser().then(() => {
-      // After the first fetch completes, we are no longer in the initial load state.
-      setIsInitialLoad(false);
-    });
+    fetchUser();
   }, [fetchUser]);
 
   const login = (userData: SessionUser) => {
@@ -65,7 +62,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Logout failed:", error);
       toast({ title: "Logout Error", description: "Could not log you out. Please try again.", variant: "destructive" });
-      fetchUser();
+      fetchUser(); // Attempt to re-sync state on error
     }
   };
 
@@ -75,44 +72,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
-    isLoading: isInitialLoad || isLoading, // Loading is true during initial load OR subsequent fetches
+    isLoading,
     login,
     logout,
     mutate,
   };
-
-  // During the very first render on the client, isInitialLoad is true,
-  // and we render the children to match the server output, preventing hydration error.
-  if (isInitialLoad) {
-    return (
-      <UserContext.Provider value={value}>
-        {children}
-      </UserContext.Provider>
-    );
-  }
-
-  // After the initial load, if we are still fetching (e.g., re-validating) or have no user,
-  // we can safely show a loader. This part now only runs on the client after hydration.
-  if (isLoading && !user) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );
-}
-
-// Custom hook remains the same
-export function useUser(): UserContextType {
-  const context = useContext(UserContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
-  }
-  return context;
 }
