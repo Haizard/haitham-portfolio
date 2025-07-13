@@ -1,4 +1,3 @@
-
 // src/lib/session.ts
 import { getIronSession, type IronSessionData } from "iron-session";
 import { cookies } from "next/headers";
@@ -29,23 +28,9 @@ export interface SessionData extends IronSessionData {
   user?: SessionUser;
 }
 
-// Helper to get the session from a server component/route handler
+// THIS IS THE PRIMARY FUNCTION to get the session.
+// It can be used to read, write, and save the session in one go.
 export async function getSession() {
   const session = await getIronSession<SessionData>(cookies(), sessionOptions);
   return session;
-}
-
-// Helper to save the session, now strongly typed to SessionUser
-export async function saveSession(user: SessionUser) {
-  const session = await getSession();
-  session.user = user;
-  await session.save();
-  return session;
-}
-
-// Helper to destroy the session (logout)
-export async function destroySession() {
-    const session = await getSession();
-    session.destroy();
-    return session;
 }

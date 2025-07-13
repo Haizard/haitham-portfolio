@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createUser, type UserRole } from '@/lib/auth-data';
-import { saveSession, type SessionUser } from '@/lib/session';
+import { getSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
 import { createFreelancerProfileIfNotExists } from '@/lib/user-profile-data';
 import { createClientProfileIfNotExists } from '@/lib/client-profile-data';
@@ -24,11 +24,10 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, roles } = validation.data;
     
-    // Step 1: Create the core user account. This now correctly handles role expansion.
+    // Step 1: Create the core user account.
     const createdUser = await createUser({ name, email, password, roles });
 
     // Step 2: Create associated profiles using the ID from the newly created user.
-    // This is the critical step that ensures data consistency.
     if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor')) {
         await createFreelancerProfileIfNotExists(createdUser.id, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
     }
@@ -45,8 +44,10 @@ export async function POST(request: NextRequest) {
       createdAt: createdUser.createdAt,
     };
     
-    // Step 4: Save the session *after* all database operations are complete.
-    await saveSession(sessionUser);
+    // Step 4: Get session, update it, and save.
+    const session = await getSession();
+    session.user = sessionUser;
+    await session.save();
 
     // Return the session user object to the client.
     return NextResponse.json(sessionUser);

@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { getFullUserByEmail, verifyPassword } from '@/lib/auth-data';
-import { saveSession, type SessionUser } from '@/lib/session';
+import { getSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -40,7 +40,10 @@ export async function POST(request: NextRequest) {
       createdAt: user.createdAt,
     };
     
-    await saveSession(sessionUser);
+    // Get the session, update it, and save it.
+    const session = await getSession();
+    session.user = sessionUser;
+    await session.save();
     
     return NextResponse.json(sessionUser);
 

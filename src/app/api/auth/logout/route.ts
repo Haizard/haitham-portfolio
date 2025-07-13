@@ -1,10 +1,11 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { destroySession } from '@/lib/session';
+import { getSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
   try {
-    await destroySession();
+    const session = await getSession();
+    session.destroy();
     return NextResponse.json({ message: "Logged out successfully." });
   } catch (error: any) {
     console.error("[API /logout POST] Error:", error);
