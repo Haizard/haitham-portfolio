@@ -1,7 +1,7 @@
 
 import { ObjectId } from 'mongodb';
 import { getCollection } from './mongodb';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 const USERS_COLLECTION = 'users';
 
