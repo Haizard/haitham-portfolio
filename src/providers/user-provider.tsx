@@ -30,7 +30,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    // No need to set isLoading(true) here as it's only for the initial load
+    // Only set loading to true on the very first fetch
+    if (user === null && !isLoading) {
+      setIsLoading(true);
+    }
     try {
       const sessionRes = await fetch('/api/auth/session');
       if (!sessionRes.ok) { 
@@ -47,16 +50,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to fetch user session:', error);
       setUser(null);
     } finally {
-      // This is the key change: only set loading to false after the *initial* fetch.
-      if(isLoading) {
-          setIsLoading(false);
-      }
+      setIsLoading(false);
     }
-  }, [isLoading]); // Depend on isLoading to run this logic correctly on mount
+  }, [isLoading, user]);
 
   useEffect(() => {
     fetchUser();
-  }, [fetchUser]);
+    // This effect should only run once on mount to get the initial session state.
+    // Subsequent updates will be handled by the `login`, `logout`, and `mutate` functions.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = (userData: SessionUser) => {
     setUser(userData);

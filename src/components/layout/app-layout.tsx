@@ -41,21 +41,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // This effect now reliably checks the user state *after* the initial load is complete.
     if (!isLoading && !user) {
       router.push('/login');
     }
   }, [user, isLoading, router]);
   
-  if (isLoading) {
+  // The initial loading state is now handled by the UserProvider itself,
+  // so we don't need a redundant loading spinner here. 
+  // We can just return null or a minimal layout until the redirect happens.
+  if (isLoading || !user) {
     return (
         <div className="flex h-screen w-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary"/>
         </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (
