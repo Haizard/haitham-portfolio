@@ -3,22 +3,8 @@ import { ObjectId } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { UserRole } from './auth-data';
 
-// ARCHITECTURAL NOTE: User Identity vs. Role Profiles
-// To support multiple user types (freelancers, clients, shop owners, etc.),
-// the database is designed with a central `users` collection for identity
-// and separate collections for each role's specific data.
-//
-// 1. `users` collection: Stores universal data (userId, email, name, password hash, active roles).
-// 2. `freelancerProfiles` collection: Stores data ONLY for freelancers (this file).
-// 3. `clientProfiles`, `shopOwnerProfiles`, etc.: Would be separate collections.
-//
-// This file, `user-profile-data.ts`, now exclusively manages the `FreelancerProfile`.
-// The generic name is kept for now to avoid breaking existing imports, but its
-// contents are now specific to the freelancer role.
-
 const FREELANCER_PROFILES_COLLECTION = 'freelancerProfiles';
 
-// Note: Availability status is specific to freelancers.
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available';
 export type VendorStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 
@@ -29,19 +15,16 @@ export interface PortfolioLink {
   url: string;
 }
 
-// This interface now defines the data specific to a FREELANCER.
 export interface FreelancerProfile {
   _id?: ObjectId;
   id?: string;
-  userId: string; // Foreign key to the main `users` collection.
+  userId: string; 
 
-  // General info - would eventually live in the `users` collection but is here for now.
   name: string;
   email: string;
   avatarUrl: string;
-  roles: UserRole[]; // Added roles here
+  roles: UserRole[];
   
-  // Freelancer-specific fields
   occupation: string;
   bio: string;
   skills: string[];
@@ -50,15 +33,14 @@ export interface FreelancerProfile {
   availabilityStatus: AvailabilityStatus;
   averageRating?: number;
   reviewCount?: number;
-  wishlist?: string[]; // Array of product IDs
+  wishlist?: string[]; 
 
-  // Vendor-specific fields
   storeName: string;
   vendorStatus: VendorStatus;
-  isFeatured?: boolean; // NEW: Flag for featured vendors
+  isFeatured?: boolean; 
 
-  createdAt: string; // Changed from Date to string
-  updatedAt: string; // Changed from Date to string
+  createdAt: string; 
+  updatedAt: string; 
 }
 
 function docToFreelancerProfile(doc: any): FreelancerProfile {
@@ -67,7 +49,7 @@ function docToFreelancerProfile(doc: any): FreelancerProfile {
   return {
     id: _id?.toString(),
     ...rest,
-    roles: rest.roles || [], // Ensure roles is always an array
+    roles: rest.roles || [], 
     portfolioLinks: (rest.portfolioLinks || []).map((link: any) => ({
         id: link._id?.toString() || link.id || new ObjectId().toString(),
         title: link.title,
@@ -95,9 +77,9 @@ const defaultFreelancerProfileData = (userId: string): Omit<FreelancerProfile, '
   averageRating: 0,
   reviewCount: 0,
   wishlist: [],
-  storeName: `${userId}'s Store`,
+  storeName: 'My Store',
   vendorStatus: 'pending',
-  isFeatured: false, // Default to not featured
+  isFeatured: false,
 });
 
 export async function createFreelancerProfileIfNotExists(userId: string, initialData?: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile> {
@@ -146,7 +128,7 @@ export async function updateFreelancerProfile(userId: string, data: Partial<Omit
   const updateData: any = { ...data, updatedAt: new Date().toISOString() };
   
   if (updateData.portfolioLinks) {
-    updateData.portfolioLinks = updateData.portfolioLinks.map(link => ({
+    updateData.portfolioLinks = updateData.portfolioLinks.map((link: any) => ({
       _id: link.id && ObjectId.isValid(link.id) ? new ObjectId(link.id) : new ObjectId(),
       title: link.title,
       url: link.url,
@@ -168,7 +150,7 @@ export async function updateFreelancerProfile(userId: string, data: Partial<Omit
 
 export async function getAllVendorProfiles(filters: { isFeatured?: boolean } = {}): Promise<FreelancerProfile[]> {
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
-    const query: any = {};
+    const query: any = { roles: 'vendor' }; // Ensure we only get vendors
     if (filters.isFeatured) {
         query.isFeatured = true;
     }

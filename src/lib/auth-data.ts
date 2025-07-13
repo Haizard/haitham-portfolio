@@ -38,8 +38,7 @@ export async function createUser(userData: Omit<User, 'id' | '_id' | 'createdAt'
   
   const now = new Date();
   
-  // Corrected Role Logic:
-  // Ensure 'creator' is added if 'freelancer' or 'vendor' are present, without removing 'client'.
+  // Ensure 'creator' is added if 'freelancer' or 'vendor' are present, without removing other roles.
   const baseRoles = new Set(userData.roles);
   if (baseRoles.has('freelancer') || baseRoles.has('vendor')) {
     baseRoles.add('creator');

@@ -2,12 +2,10 @@
 "use client";
 
 import { createContext, useState, useEffect, useCallback } from 'react';
-import type { FreelancerProfile } from '@/lib/user-profile-data';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/lib/auth-data';
 
-// SessionUser is now a simpler, more focused object. The full profile can be derived from it.
 export interface SessionUser {
   id: string;
   name: string;
@@ -32,8 +30,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
+    // No need to set isLoading(true) here as it's only for the initial load
     try {
-      // The session route now returns the clean `SessionUser` object.
       const sessionRes = await fetch('/api/auth/session');
       if (!sessionRes.ok) { 
           throw new Error(`Session check failed with status ${sessionRes.status}`);
@@ -49,16 +47,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to fetch user session:', error);
       setUser(null);
     } finally {
-      setIsLoading(false);
+      // This is the key change: only set loading to false after the *initial* fetch.
+      if(isLoading) {
+          setIsLoading(false);
+      }
     }
-  }, []);
+  }, [isLoading]); // Depend on isLoading to run this logic correctly on mount
 
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
   const login = (userData: SessionUser) => {
-    // The login/signup API now returns a clean SessionUser object.
     setUser(userData);
     setIsLoading(false); 
   };
@@ -76,7 +76,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     logout,
     mutate: fetchUser, 
   };
-
+  
+  // The UserProvider itself now handles the initial loading screen.
+  // This ensures no child component (like AppLayout) can render prematurely.
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">

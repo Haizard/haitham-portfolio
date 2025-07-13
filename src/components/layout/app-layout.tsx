@@ -37,20 +37,15 @@ const useTheme = () => {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
-  const { user, isLoading } = useUser(); // isLoading now comes from the central provider
+  const { user, isLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    // If loading is finished and there's no user, redirect to login
     if (!isLoading && !user) {
       router.push('/login');
     }
   }, [user, isLoading, router]);
   
-  // This is the critical fix. We must wait for the initial loading to complete.
-  // While isLoading is true, we show a full-screen loader.
-  // The user object might be null briefly during the initial check.
-  // By waiting for isLoading to be false, we ensure we have the definitive user state.
   if (isLoading) {
     return (
         <div className="flex h-screen w-screen items-center justify-center">
@@ -59,8 +54,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If loading is done and there's still no user, the useEffect will handle the redirect.
-  // Rendering null here prevents a brief flash of the dashboard layout.
   if (!user) {
     return null;
   }

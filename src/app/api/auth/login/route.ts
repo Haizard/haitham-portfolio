@@ -41,9 +41,7 @@ export async function POST(request: NextRequest) {
     };
     
     await saveSession(sessionUser);
-
-    // Return just the serializable session user, not the full profile.
-    // The client-side UserProvider will now use this directly.
+    
     return NextResponse.json(sessionUser);
 
   } catch (error: any) {
