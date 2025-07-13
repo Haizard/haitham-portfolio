@@ -1,7 +1,8 @@
 
+
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
-import { getFreelancerProfile } from './user-profile-data'; // To enrich with vendor names
+import { getFreelancerProfile, getFreelancerProfilesByUserIds } from './user-profile-data'; // To enrich with vendor names
 import { findOrCreateProductTagsByNames } from './product-tags-data';
 
 const PRODUCTS_COLLECTION = 'products';
@@ -159,12 +160,17 @@ export async function getAllProducts(
   }
   const productDocs = await cursor.toArray();
 
-  // 3. Enrich products with sales data
+  // 3. Enrich products with sales data and vendor names
+  const vendorIds = [...new Set(productDocs.map(p => p.vendorId))].filter(Boolean);
+  const vendorProfiles = vendorIds.length > 0 ? await getFreelancerProfilesByUserIds(vendorIds) : [];
+  const vendorMap = new Map(vendorProfiles.map(p => p ? [p.userId, p.name] : [null, null]));
+
   let enrichedProducts = productDocs.map(doc => {
     const product = docToProduct(doc);
     const saleInfo = salesMap.get(product.id!);
     product.sales = saleInfo?.sales || 0;
     product.revenue = saleInfo?.revenue || 0;
+    product.vendorName = vendorMap.get(product.vendorId) || 'Unknown Vendor';
     return product;
   });
 
