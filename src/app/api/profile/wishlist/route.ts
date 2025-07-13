@@ -11,12 +11,12 @@ const wishlistToggleSchema = z.object({
 // Get the user's current wishlist
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session.user) {
+  if (!session.user || !session.user.id) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
   try {
-    const profile = await getFreelancerProfile(session.user.id!);
+    const profile = await getFreelancerProfile(session.user.id);
     if (!profile) {
       return NextResponse.json({ message: "User profile not found." }, { status: 404 });
     }
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 // Add or remove an item from the wishlist
 export async function POST(request: NextRequest) {
   const session = await getSession();
-  if (!session.user) {
+  if (!session.user || !session.user.id) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
     const { productId } = validation.data;
     
-    const result = await toggleWishlistItem(session.user.id!, productId);
+    const result = await toggleWishlistItem(session.user.id, productId);
     
     return NextResponse.json(result);
 
