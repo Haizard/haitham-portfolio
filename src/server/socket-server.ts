@@ -1,4 +1,5 @@
 
+import 'dotenv/config'; // Load environment variables
 import http from 'http';
 import { Server, type Socket } from 'socket.io';
 import { addMessageToConversation } from '../lib/chat-data'; 
