@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Explicitly create a serializable user object for the session.
     // This prevents any database-specific objects (like ObjectId) from being saved.
     const sessionUser: SessionUser = {
-      id: user.id!,
+      id: user.id,
       name: user.name,
       email: user.email,
       roles: user.roles,

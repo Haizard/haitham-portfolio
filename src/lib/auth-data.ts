@@ -27,13 +27,15 @@ export interface User {
   createdAt: string;
 }
 
-function docToUser(doc: UserDocument): User {
+function docToUser(doc: UserDocument | null): User | null {
+  if (!doc) {
+    return null;
+  }
   const { _id, ...rest } = doc;
-  return { 
-    id: _id.toString(), 
+  return {
+    id: _id.toString(),
     ...rest,
-    // Explicitly handle the password field. If it's not in the doc, it's undefined.
-    password: rest.password, 
+    password: rest.password || undefined, // Ensure password is truly undefined if not present
   };
 }
 
@@ -80,7 +82,7 @@ export async function createUser(userData: Omit<User, 'id' | 'createdAt'>): Prom
 export async function findUserByEmail(email: string): Promise<User | null> {
     const collection = await getCollection<UserDocument>(USERS_COLLECTION);
     const userDoc = await collection.findOne({ email });
-    return userDoc ? docToUser(userDoc) : null;
+    return docToUser(userDoc);
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
@@ -92,5 +94,5 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 export async function getFullUserByEmail(email: string): Promise<User | null> {
     const collection = await getCollection<UserDocument>(USERS_COLLECTION);
     const userDoc = await collection.findOne({ email });
-    return userDoc ? docToUser(userDoc) : null;
+    return docToUser(userDoc);
 }
