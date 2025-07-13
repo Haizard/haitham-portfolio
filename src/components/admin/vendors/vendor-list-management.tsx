@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Check, X, UserCog, ShieldCheck, ShieldX, UserCheck, UserX } from "lucide-react";
+import { Loader2, Check, X, UserCog, ShieldCheck, ShieldX, UserCheck, UserX, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { FreelancerProfile, VendorStatus } from '@/lib/user-profile-data';
 import {
@@ -113,6 +114,7 @@ export function VendorListManagement() {
                   <TableHead className="w-[80px] hidden md:table-cell">Avatar</TableHead>
                   <TableHead className="min-w-[150px]">Name</TableHead>
                   <TableHead className="min-w-[150px]">Store Name</TableHead>
+                  <TableHead className="min-w-[100px] text-center">Products</TableHead>
                   <TableHead className="min-w-[120px]">Status</TableHead>
                   <TableHead className="min-w-[150px]">Joined</TableHead>
                   <TableHead className="text-right min-w-[200px]">Actions</TableHead>
@@ -126,6 +128,12 @@ export function VendorListManagement() {
                     </TableCell>
                     <TableCell className="font-medium">{vendor.name}</TableCell>
                     <TableCell>{vendor.storeName}</TableCell>
+                    <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                           <Package className="h-4 w-4 mr-1.5 text-muted-foreground" />
+                           {vendor.productCount ?? 0}
+                        </div>
+                    </TableCell>
                     <TableCell>
                        <Badge variant={getStatusBadgeVariant(vendor.vendorStatus)} className="text-xs flex items-center w-fit capitalize">
                           {getStatusIcon(vendor.vendorStatus)}

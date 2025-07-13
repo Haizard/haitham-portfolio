@@ -3,6 +3,8 @@
 import { ObjectId } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { UserRole } from './auth-data';
+import { getProductCountForVendor } from './data-aggregators';
+
 
 const FREELANCER_PROFILES_COLLECTION = 'freelancerProfiles';
 
@@ -39,6 +41,7 @@ export interface FreelancerProfile {
   storeName: string;
   vendorStatus: VendorStatus;
   isFeatured?: boolean; 
+  productCount?: number;
 
   createdAt: string; 
   updatedAt: string; 
@@ -63,7 +66,7 @@ function docToFreelancerProfile(doc: any): FreelancerProfile {
   } as FreelancerProfile;
 }
 
-const defaultFreelancerProfileData = (userId: string, initialData?: any): Omit<FreelancerProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
+const defaultFreelancerProfileData = (userId: string, initialData?: any): Omit<FreelancerProfile, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'productCount'> => ({
   userId,
   name: initialData?.name || 'New User',
   email: initialData?.email || 'user@example.com',
@@ -91,7 +94,7 @@ export async function createFreelancerProfileIfNotExists(userId: string, initial
   }
 
   const now = new Date();
-  const profileToInsert: Omit<FreelancerProfile, 'id' | '_id'> = {
+  const profileToInsert: Omit<FreelancerProfile, 'id' | '_id' | 'productCount'> = {
     ...defaultFreelancerProfileData(userId, initialData),
     ...initialData,
     createdAt: now.toISOString(),
@@ -124,7 +127,7 @@ export async function getFreelancerProfilesByUserIds(userIds: string[]): Promise
 }
 
 
-export async function updateFreelancerProfile(userId: string, data: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile | null> {
+export async function updateFreelancerProfile(userId: string, data: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt' | 'productCount'>>): Promise<FreelancerProfile | null> {
   const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
   
   const updateData: any = { ...data, updatedAt: new Date().toISOString() };
@@ -157,7 +160,17 @@ export async function getAllVendorProfiles(filters: { isFeatured?: boolean } = {
         query.isFeatured = true;
     }
     const vendorDocs = await collection.find(query).sort({ createdAt: -1 }).toArray();
-    return vendorDocs.map(docToFreelancerProfile);
+    
+    // Enrich with product counts after fetching
+    const enrichedVendors = await Promise.all(
+        vendorDocs.map(async (doc) => {
+            const profile = docToFreelancerProfile(doc);
+            profile.productCount = await getProductCountForVendor(profile.userId);
+            return profile;
+        })
+    );
+
+    return enrichedVendors;
 }
 
 export async function updateVendorStatus(vendorId: string, status: VendorStatus): Promise<FreelancerProfile | null> {
