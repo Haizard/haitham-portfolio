@@ -2,7 +2,7 @@
 // src/lib/session.ts
 import { getIronSession, type IronSessionData } from "iron-session";
 import { cookies } from "next/headers";
-import type { User } from "./auth-data";
+import type { UserRole } from "./auth-data";
 
 export const sessionOptions = {
   cookieName: "creatoros_session",
@@ -16,7 +16,13 @@ export const sessionOptions = {
 // Define the exact shape of the user object that is safe to store in the session.
 // It must be fully serializable (no complex objects like `ObjectId` or `Date`).
 // It contains only the core identity information.
-export type SessionUser = Omit<User, 'password' | '_id'>;
+export type SessionUser = {
+  id: string;
+  name: string;
+  email: string;
+  roles: UserRole[];
+  createdAt: string;
+};
 
 // This is the shape of our session data.
 export interface SessionData extends IronSessionData {
