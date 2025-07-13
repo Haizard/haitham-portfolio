@@ -18,12 +18,11 @@ export interface UserDocument {
 }
 
 // This interface is the clean, serializable object we use in our application code
-// For a full user object retrieved from the DB for auth purposes, the password hash is expected.
 export interface User {
   id: string;
   name: string;
   email: string;
-  password: string; // Made non-optional for full user objects
+  password?: string; // Password hash is optional as not all user objects will have it
   roles: UserRole[];
   createdAt: string;
 }
@@ -33,7 +32,8 @@ function docToUser(doc: UserDocument): User {
   return { 
     id: _id.toString(), 
     ...rest,
-    password: rest.password || '', // Ensure password is a string, even if it's empty (shouldn't happen for auth users)
+    // Explicitly handle the password field. If it's not in the doc, it's undefined.
+    password: rest.password, 
   };
 }
 

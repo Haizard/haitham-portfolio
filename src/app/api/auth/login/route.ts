@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = validation.data;
     const user = await getFullUserByEmail(email);
 
-    // Check for user and if the password hash exists.
+    // Check for user and if the password hash exists and is a non-empty string.
     if (!user || !user.password) {
       return NextResponse.json({ message: "Invalid email or password." }, { status: 401 });
     }
