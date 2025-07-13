@@ -118,7 +118,7 @@ export default function HomePage() {
         {/* Hero Section */}
         <section className="relative py-20 md:py-32 text-center overflow-hidden">
           <div className="absolute inset-0 bg-gray-900">
-             <Image src="https://placehold.co/1920x1080.png" alt="Abstract background" layout="fill" objectFit="contain" className="opacity-20" data-ai-hint="abstract geometric" />
+             <Image src="https://placehold.co/1920x1080.png" alt="Abstract background" fill className="object-cover opacity-20" data-ai-hint="abstract geometric" />
           </div>
           <div className="container mx-auto px-4 relative z-10">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight font-headline mb-6">
@@ -284,7 +284,7 @@ export default function HomePage() {
                         </Button>
                     </div>
                     <div>
-                         <Image src="https://placehold.co/800x600.png" alt="AI development" width={800} height={600} className="object-contain h-full" data-ai-hint="AI development abstract" />
+                         <Image src="https://placehold.co/800x600.png" alt="AI development" width={800} height={600} className="object-cover h-full" data-ai-hint="AI development abstract" />
                     </div>
                 </Card>
             </div>
