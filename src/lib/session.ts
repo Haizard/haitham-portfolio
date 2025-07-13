@@ -1,11 +1,21 @@
+
 // src/lib/session.ts
 import { getIronSession, type IronSessionData } from "iron-session";
 import { cookies } from "next/headers";
 import type { UserRole } from "./auth-data";
 
+// This is the one and only place where the session secret is read.
+// We must ensure it's defined, otherwise the app is misconfigured.
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+  throw new Error(
+    "SESSION_SECRET environment variable is not set. Please add it to your .env file."
+  );
+}
+
 export const sessionOptions = {
   cookieName: "creatoros_session",
-  password: process.env.SESSION_SECRET as string,
+  password: SESSION_SECRET,
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 7, // 1 week
