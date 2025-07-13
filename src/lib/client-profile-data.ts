@@ -1,6 +1,7 @@
 
 import { ObjectId } from 'mongodb';
 import { getCollection } from './mongodb';
+import type { UserRole } from './auth-data';
 
 const CLIENT_PROFILES_COLLECTION = 'clientProfiles';
 
@@ -11,6 +12,7 @@ export interface ClientProfile {
 
   // Client-specific fields
   name: string; // Can be company or individual name
+  email: string;
   avatarUrl: string;
   location?: string;
   paymentVerified: boolean;
@@ -37,9 +39,10 @@ function docToClientProfile(doc: any): ClientProfile {
   } as ClientProfile;
 }
 
-const defaultClientProfileData = (userId: string, name: string): Omit<ClientProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
+const defaultClientProfileData = (userId: string, name: string, email: string): Omit<ClientProfile, 'id' | '_id' | 'createdAt' | 'updatedAt'> => ({
   userId,
-  name: name,
+  name,
+  email,
   avatarUrl: `https://placehold.co/200x200.png?text=${name.substring(0,1) || 'C'}`,
   location: "United States",
   paymentVerified: true,
@@ -49,7 +52,7 @@ const defaultClientProfileData = (userId: string, name: string): Omit<ClientProf
   reviewCount: 0,
 });
 
-export async function createClientProfileIfNotExists(userId: string, initialData?: Partial<Omit<ClientProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<ClientProfile> {
+export async function createClientProfileIfNotExists(userId: string, initialData?: { name?: string, email?: string }): Promise<ClientProfile> {
   const collection = await getCollection<ClientProfile>(CLIENT_PROFILES_COLLECTION);
   const existingProfile = await collection.findOne({ userId });
   if (existingProfile) {
@@ -58,7 +61,7 @@ export async function createClientProfileIfNotExists(userId: string, initialData
 
   const now = new Date();
   const profileToInsert: Omit<ClientProfile, 'id' | '_id'> = {
-    ...defaultClientProfileData(userId, initialData?.name || `Client ${userId.substring(0,4)}`),
+    ...defaultClientProfileData(userId, initialData?.name || `Client ${userId.substring(0,4)}`, initialData?.email || 'user@example.com'),
     ...initialData,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),

@@ -54,7 +54,7 @@ export async function createUser(userData: Omit<User, 'id' | 'createdAt'>): Prom
   }
   const finalRoles = Array.from(baseRoles);
 
-  const docToInsert = {
+  const docToInsert: Omit<User, 'id'> = {
     name: userData.name,
     email: userData.email,
     password: hashedPassword,

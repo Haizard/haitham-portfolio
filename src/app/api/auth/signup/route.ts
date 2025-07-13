@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         await createFreelancerProfileIfNotExists(createdUser.id, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
     }
     if (createdUser.roles.includes('client')) {
-        await createClientProfileIfNotExists(createdUser.id, { name });
+        await createClientProfileIfNotExists(createdUser.id, { name, email });
     }
     
     // Step 3: Construct a clean, serializable session user object.
