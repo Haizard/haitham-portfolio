@@ -18,18 +18,23 @@ export interface UserDocument {
 }
 
 // This interface is the clean, serializable object we use in our application code
+// For a full user object retrieved from the DB for auth purposes, the password hash is expected.
 export interface User {
   id: string;
   name: string;
   email: string;
-  password?: string;
+  password: string; // Made non-optional for full user objects
   roles: UserRole[];
   createdAt: string;
 }
 
 function docToUser(doc: UserDocument): User {
   const { _id, ...rest } = doc;
-  return { id: _id.toString(), ...rest };
+  return { 
+    id: _id.toString(), 
+    ...rest,
+    password: rest.password || '', // Ensure password is a string, even if it's empty (shouldn't happen for auth users)
+  };
 }
 
 export async function createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {

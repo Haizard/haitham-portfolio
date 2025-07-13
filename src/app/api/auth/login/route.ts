@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = validation.data;
     const user = await getFullUserByEmail(email);
 
+    // Check for user and if the password hash exists.
     if (!user || !user.password) {
       return NextResponse.json({ message: "Invalid email or password." }, { status: 401 });
     }
@@ -45,10 +46,12 @@ export async function POST(request: NextRequest) {
     session.user = sessionUser;
     await session.save();
     
+    // Return only the safe-to-view session user object
     return NextResponse.json(sessionUser);
 
   } catch (error: any) {
     console.error("[API /login POST] Error:", error);
-    return NextResponse.json({ message: `Login failed: ${error.message || "Unknown error"}` }, { status: 500 });
+    // Return a generic JSON error response instead of letting the route crash
+    return NextResponse.json({ message: `Login failed: An unexpected server error occurred.` }, { status: 500 });
   }
 }
