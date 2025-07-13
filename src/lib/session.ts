@@ -7,9 +7,9 @@ import type { UserRole } from "./auth-data";
 // This is the one and only place where the session secret is read.
 // We must ensure it's defined, otherwise the app is misconfigured.
 const SESSION_SECRET = process.env.SESSION_SECRET;
-if (!SESSION_SECRET) {
+if (!SESSION_SECRET || SESSION_SECRET.length < 32) {
   throw new Error(
-    "SESSION_SECRET environment variable is not set. Please add it to your .env file."
+    "SESSION_SECRET environment variable is not set or is too short. Please add a secret of at least 32 characters to your .env file."
   );
 }
 
