@@ -26,33 +26,31 @@ export const UserContext = createContext<UserContextType | undefined>(undefined)
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Always start loading
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // Track initial client-side load
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    // This function will be called on mount and on explicit mutation.
-    // It should not set loading to true every time, only on initial mount.
     try {
       const sessionRes = await fetch('/api/auth/session');
-      if (!sessionRes.ok) { 
-          throw new Error(`Session check failed with status ${sessionRes.status}`);
+      if (!sessionRes.ok) {
+        throw new Error(`Session check failed with status ${sessionRes.status}`);
       }
       const sessionData = await sessionRes.json();
-      
       setUser(sessionData.user || null);
-
     } catch (error) {
       console.error('Failed to fetch user session:', error);
       setUser(null);
     } finally {
-      // This is the key: set loading to false *after* the first fetch attempt completes.
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    // Run the fetch function once on initial component mount.
-    fetchUser();
+    fetchUser().then(() => {
+      // After the first fetch completes, we are no longer in the initial load state.
+      setIsInitialLoad(false);
+    });
   }, [fetchUser]);
 
   const login = (userData: SessionUser) => {
@@ -60,36 +58,42 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    // Optimistically set user to null before making the API call for a faster UI response.
     setUser(null);
     try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      await fetch('/api/auth/logout', { method: 'POST' });
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch (error) {
-        console.error("Logout failed:", error);
-        toast({ title: "Logout Error", description: "Could not log you out. Please try again.", variant: "destructive" });
-        // If logout fails, we should probably refetch the user state to ensure consistency.
-        fetchUser();
+      console.error("Logout failed:", error);
+      toast({ title: "Logout Error", description: "Could not log you out. Please try again.", variant: "destructive" });
+      fetchUser();
     }
   };
-  
+
   const mutate = useCallback(async () => {
-      // This function allows other parts of the app to trigger a re-fetch of the user session.
-      // It should not set isLoading to true, as it's a background refresh.
-      await fetchUser();
+    await fetchUser();
   }, [fetchUser]);
 
   const value = {
     user,
-    isLoading,
+    isLoading: isInitialLoad || isLoading, // Loading is true during initial load OR subsequent fetches
     login,
     logout,
     mutate,
   };
-  
-  // The provider itself now acts as the loading boundary.
-  // It shows a full-screen loader ONLY during the initial, critical session check.
-  if (isLoading) {
+
+  // During the very first render on the client, isInitialLoad is true,
+  // and we render the children to match the server output, preventing hydration error.
+  if (isInitialLoad) {
+    return (
+      <UserContext.Provider value={value}>
+        {children}
+      </UserContext.Provider>
+    );
+  }
+
+  // After the initial load, if we are still fetching (e.g., re-validating) or have no user,
+  // we can safely show a loader. This part now only runs on the client after hydration.
+  if (isLoading && !user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
