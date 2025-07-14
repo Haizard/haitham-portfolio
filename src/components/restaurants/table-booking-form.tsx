@@ -93,7 +93,7 @@ export function TableBookingForm({ restaurantId }: { restaurantId: string }) {
                 <FormItem><FormLabel>Time</FormLabel><Input placeholder="e.g., 7:00 PM" {...field} /></FormItem>
             )}/>
             <FormField control={form.control} name="guestCount" render={({ field }) => (
-                <FormItem><FormLabel>Guests</FormLabel><Input type="number" min="1" {...field} /></FormItem>
+                <FormItem><FormLabel>Guests</FormLabel><Input type="number" min="1" {...field} value={field.value ?? ''} /></FormItem>
             )}/>
         </div>
         <Button type="submit" disabled={isSubmitting} className="w-full bg-red-600 hover:bg-red-700">
