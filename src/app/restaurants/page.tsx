@@ -18,6 +18,8 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { GlobalNav } from '@/components/layout/global-nav';
 import { cn } from '@/lib/utils';
+import { useComparison } from '@/hooks/use-comparison';
+import { ComparisonBar } from '@/components/restaurants/comparison-bar';
 
 const minOrderFilters = [
     { id: "5", label: "$5", count: 3 },
@@ -36,6 +38,17 @@ const sortOptions = [
 ];
 
 function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+    const { addToCompare, removeFromCompare, isComparing } = useComparison();
+    const isSelectedForCompare = isComparing(restaurant.id!);
+
+    const handleCompareChange = (checked: boolean | 'indeterminate') => {
+        if (checked) {
+            addToCompare(restaurant);
+        } else {
+            removeFromCompare(restaurant.id!);
+        }
+    };
+
     return (
         <Card className="flex flex-col sm:flex-row gap-4 p-4 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
              {restaurant.status === 'Closed' && (
@@ -71,7 +84,7 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
                  <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
                     <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4"/> {restaurant.location}</span>
                     <label htmlFor={`compare-${restaurant.id}`} className="flex items-center gap-1 cursor-pointer text-xs hover:text-primary">
-                        <Checkbox id={`compare-${restaurant.id}`} /> Add to compare
+                        <Checkbox id={`compare-${restaurant.id}`} onCheckedChange={handleCompareChange} checked={isSelectedForCompare} /> Add to compare
                     </label>
                 </div>
             </div>
@@ -308,6 +321,7 @@ export default function RestaurantsPage() {
                      </div>
                 </div>
             </footer>
+             <ComparisonBar />
         </div>
     );
 }
