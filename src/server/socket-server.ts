@@ -6,7 +6,7 @@ import { addMessageToConversation } from '../lib/chat-data';
 import type { Message as MessageType } from '../lib/chat-data'; 
 import type { ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData } from '../lib/socket-types'; 
 
-const PORT = process.env.WEBSOCKET_PORT || 3001;
+const PORT = process.env.WEBSOCKET_PORT || 3002; // Use a different port to avoid conflicts
 
 const httpServer = http.createServer(); 
 
@@ -75,3 +75,4 @@ httpServer.listen(PORT, () => {
   console.log(`Ensure your Next.js app (NEXT_PUBLIC_WEBSOCKET_URL) points to this address if run separately.`);
   console.log(`CORS is configured for origin: ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9003"}`);
 });
+
