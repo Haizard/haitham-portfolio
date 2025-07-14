@@ -100,6 +100,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     items: [
       { href: "/vendor/restaurant/dashboard", label: "Restaurant Dashboard", icon: Utensils },
       { href: "/vendor/restaurant/profile", label: "Restaurant Profile", icon: Settings },
+      { href: "/vendor/restaurant/menu-items", label: "Manage Menu", icon: ClipboardList },
       // Add more restaurant-specific links here as they are built
     ],
   },

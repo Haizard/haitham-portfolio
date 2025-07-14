@@ -1,4 +1,3 @@
-
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { SessionUser } from './session';
@@ -296,4 +295,64 @@ export async function getMenuForRestaurant(restaurantId: string): Promise<FullMe
         categories: categoriesDocs.map(docToMenuCategory),
         items: itemsDocs.map(docToMenuItem),
     };
+}
+
+
+// --- Menu Category Management ---
+
+export async function addMenuCategory(categoryData: Omit<MenuCategory, 'id' | '_id' | 'order'>): Promise<MenuCategory> {
+  const collection = await getCollection<MenuCategory>(MENU_CATEGORIES_COLLECTION);
+  const count = await collection.countDocuments({ restaurantId: categoryData.restaurantId });
+  const docToInsert = { ...categoryData, order: count + 1 };
+  const result = await collection.insertOne(docToInsert as any);
+  return { id: result.insertedId.toString(), ...docToInsert };
+}
+
+export async function updateMenuCategory(id: string, updates: Partial<Omit<MenuCategory, 'id' | '_id' | 'restaurantId'>>): Promise<MenuCategory | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<MenuCategory>(MENU_CATEGORIES_COLLECTION);
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updates },
+    { returnDocument: 'after' }
+  );
+  return result ? docToMenuCategory(result) : null;
+}
+
+export async function deleteMenuCategory(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const collection = await getCollection<MenuCategory>(MENU_CATEGORIES_COLLECTION);
+  const itemsCollection = await getCollection<MenuItem>(MENU_ITEMS_COLLECTION);
+  // Also delete all items within this category
+  await itemsCollection.deleteMany({ categoryId: id });
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
+}
+
+
+// --- Menu Item Management ---
+
+export async function addMenuItem(itemData: Omit<MenuItem, 'id' | '_id'>): Promise<MenuItem> {
+  const collection = await getCollection<MenuItem>(MENU_ITEMS_COLLECTION);
+  const docToInsert = { ...itemData };
+  const result = await collection.insertOne(docToInsert as any);
+  return { id: result.insertedId.toString(), ...docToInsert };
+}
+
+export async function updateMenuItem(id: string, updates: Partial<Omit<MenuItem, 'id' | '_id' | 'restaurantId'>>): Promise<MenuItem | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<MenuItem>(MENU_ITEMS_COLLECTION);
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updates },
+    { returnDocument: 'after' }
+  );
+  return result ? docToMenuItem(result) : null;
+}
+
+export async function deleteMenuItem(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const collection = await getCollection<MenuItem>(MENU_ITEMS_COLLECTION);
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
 }
