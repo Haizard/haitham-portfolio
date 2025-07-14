@@ -7,9 +7,12 @@ import { Card } from "../ui/card";
 import { X, GitCompareArrows } from "lucide-react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link"; // Import Link
 
 export function ComparisonBar() {
   const { selectedRestaurants, removeFromCompare, clearComparison, comparisonCount } = useComparison();
+
+  const comparisonUrl = `/restaurants/compare?ids=${selectedRestaurants.map(r => r.id).join(',')}`;
 
   return (
     <AnimatePresence>
@@ -39,9 +42,11 @@ export function ComparisonBar() {
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                  <Button variant="outline" onClick={clearComparison} className="flex-1 sm:flex-initial">Clear All</Button>
-                 <Button className="flex-1 sm:flex-initial bg-primary hover:bg-primary/90">
-                    <GitCompareArrows className="mr-2 h-4 w-4"/>
-                    Compare ({comparisonCount})
+                 <Button asChild className="flex-1 sm:flex-initial bg-primary hover:bg-primary/90">
+                    <Link href={comparisonUrl}>
+                      <GitCompareArrows className="mr-2 h-4 w-4"/>
+                      Compare ({comparisonCount})
+                    </Link>
                 </Button>
               </div>
             </div>
