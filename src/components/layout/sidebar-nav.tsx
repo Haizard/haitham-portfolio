@@ -1,4 +1,5 @@
 
+
 // src/components/layout/sidebar-nav.tsx
 "use client";
 
@@ -175,11 +176,15 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
     if (href === '/dashboard' || href === '/profile') {
         return pathname === href;
     }
-    if (href.startsWith('/admin/') || href.startsWith('/vendor/') || href.startsWith('/delivery/')) {
-      return pathname.startsWith(href);
+    // Updated to match specific prefixes more accurately
+    const appPrefixes = ['/admin', '/vendor', '/delivery', '/content-studio', '/my-jobs', '/my-proposals', '/my-projects', '/my-services', '/post-job', '/client-portal', '/social-media', '/chat'];
+    const matchingPrefix = appPrefixes.find(prefix => href.startsWith(prefix));
+    if (matchingPrefix) {
+        return pathname.startsWith(href);
     }
-    return pathname.startsWith(href);
+    return pathname === href; // Fallback for other routes
   };
+
 
   const hasAccess = (requiredRoles?: string[]) => {
     if (!requiredRoles || requiredRoles.length === 0) return true; // Accessible to all if no roles are defined

@@ -1,4 +1,5 @@
 
+
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 
@@ -112,4 +113,11 @@ export async function updateDeliveryStatus(deliveryId: string, status: 'in_trans
     );
     
     return result ? docToDelivery(result) : null;
+}
+
+// Function for an agent to view their accepted deliveries
+export async function getDeliveriesByAgentId(agentId: string): Promise<Delivery[]> {
+  const collection = await getCollection<Delivery>(DELIVERIES_COLLECTION);
+  const deliveryDocs = await collection.find({ assignedAgentId: agentId }).sort({ acceptedAt: -1 }).toArray();
+  return deliveryDocs.map(docToDelivery);
 }

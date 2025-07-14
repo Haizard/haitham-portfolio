@@ -1,4 +1,5 @@
 
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { createOrderFromCart } from '@/lib/orders-data';
 import { z } from 'zod';
@@ -6,6 +7,7 @@ import { z } from 'zod';
 const cartItemSchema = z.object({
   productId: z.string(),
   quantity: z.number().int().positive(),
+  description: z.string().optional(), // Include description for customizations
 });
 
 const checkoutRequestSchema = z.object({
@@ -15,6 +17,8 @@ const checkoutRequestSchema = z.object({
     address: z.string().min(1),
   }),
   cart: z.array(cartItemSchema).min(1, "Cart cannot be empty."),
+  orderType: z.enum(['delivery', 'pickup']).optional().nullable(),
+  fulfillmentTime: z.string().datetime().optional().nullable(),
 });
 
 export async function POST(request: NextRequest) {
@@ -26,12 +30,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid checkout data.", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { customerDetails, cart } = validation.data;
+    const { customerDetails, cart, orderType, fulfillmentTime } = validation.data;
 
     // This simulates payment processing. In a real app, you would integrate
     // with Stripe, PayPal, etc., here and only proceed upon successful payment.
 
-    const createdOrders = await createOrderFromCart(customerDetails, cart);
+    const createdOrders = await createOrderFromCart(
+        customerDetails, 
+        cart,
+        orderType || 'delivery',
+        fulfillmentTime ? new Date(fulfillmentTime) : new Date()
+    );
     
     // In a real app, you might email the customer their order confirmation here.
 
