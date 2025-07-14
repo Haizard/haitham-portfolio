@@ -6,7 +6,7 @@ import { addMessageToConversation } from '../lib/chat-data';
 import type { Message as MessageType } from '../lib/chat-data'; 
 import type { ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData } from '../lib/socket-types'; 
 
-const PORT = process.env.WEBSOCKET_PORT || 3002; // Use a different port to avoid conflicts
+const PORT = process.env.WEBSOCKET_PORT || 3001; // Revert to 3001 as default
 
 const httpServer = http.createServer(); 
 
