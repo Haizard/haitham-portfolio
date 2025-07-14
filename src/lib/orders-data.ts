@@ -3,9 +3,9 @@ import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { getProductById, type Product } from './products-data'; // Import Product type
 import { getFreelancerProfile } from './user-profile-data'; // To enrich with vendor names
+import { getPlatformSettings } from './settings-data'; // Import settings to get commission rate
 
 const ORDERS_COLLECTION = 'orders';
-const PLATFORM_COMMISSION_RATE = 0.15; // 15% platform fee
 
 export type LineItemStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
 export type OrderStatus = 'Pending' | 'Confirmed' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
@@ -82,6 +82,8 @@ export async function createOrderFromCart(
     const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
     const createdOrders: Order[] = [];
 
+    const { commissionRate } = await getPlatformSettings();
+
     // 1. Fetch all product details to get price, vendor, etc.
     const productIds = cart.map(item => item.productId.split('-')[0]); // Handle potentially customized IDs
     const productPromises = productIds.map(id => getProductById(id));
@@ -110,7 +112,7 @@ export async function createOrderFromCart(
             const product = productsById.get(item.productId.split('-')[0])!;
             const itemTotal = (product.price || 0) * item.quantity;
             totalAmount += itemTotal;
-            const commissionAmount = itemTotal * PLATFORM_COMMISSION_RATE;
+            const commissionAmount = itemTotal * commissionRate;
 
             return {
                 _id: new ObjectId(),
@@ -120,7 +122,7 @@ export async function createOrderFromCart(
                 quantity: item.quantity,
                 price: product.price || 0,
                 status: 'Pending',
-                commissionRate: PLATFORM_COMMISSION_RATE,
+                commissionRate: commissionRate,
                 vendorEarnings: itemTotal - commissionAmount,
                 description: item.description, // Pass customizations
             };

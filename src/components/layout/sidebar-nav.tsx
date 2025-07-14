@@ -1,3 +1,4 @@
+
 // src/components/layout/sidebar-nav.tsx
 "use client";
 
@@ -135,6 +136,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     roles: ['admin'],
     items: [
       { href: "/admin/dashboard", label: "Platform Dashboard", icon: BarChartHorizontalBig },
+      { href: "/admin/settings", label: "Platform Settings", icon: Settings },
       { href: "/admin/orders", label: "Manage Orders", icon: ShoppingCart },
       { href: "/admin/payouts", label: "Manage Payouts", icon: Banknote },
       { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
