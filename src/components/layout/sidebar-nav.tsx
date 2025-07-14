@@ -150,6 +150,7 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/admin/orders", label: "Manage Orders", icon: ShoppingCart },
       { href: "/admin/payouts", label: "Manage Payouts", icon: Banknote },
       { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
+      { href: "/admin/delivery-agents", label: "Manage Delivery Agents", icon: Truck },
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },
       { href: "/admin/categories", label: "Blog Categories", icon: FolderKanban },

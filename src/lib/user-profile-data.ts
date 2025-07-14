@@ -1,6 +1,6 @@
 
 
-import { ObjectId } from 'mongodb';
+import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { UserRole } from './auth-data';
 import { getProductCountForVendor } from './data-aggregators';
@@ -132,6 +132,13 @@ export async function getFreelancerProfilesByUserIds(userIds: string[]): Promise
     }
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
     const profileDocs = await collection.find({ userId: { $in: userIds } }).toArray();
+    return profileDocs.map(docToFreelancerProfile);
+}
+
+// NEW function to get profiles by a specific role
+export async function getProfilesByRole(role: UserRole): Promise<FreelancerProfile[]> {
+    const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
+    const profileDocs = await collection.find({ roles: role }).toArray();
     return profileDocs.map(docToFreelancerProfile);
 }
 
