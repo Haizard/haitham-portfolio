@@ -1,3 +1,4 @@
+
 // src/components/restaurants/restaurant-profile-form.tsx
 "use client";
 
@@ -16,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from '@/hooks/use-user';
 import type { Restaurant } from '@/lib/restaurants-data';
 import { Separator } from '../ui/separator';
+import { Label } from "@/components/ui/label";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Restaurant name is required."),
