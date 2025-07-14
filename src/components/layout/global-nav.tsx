@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils } from 'lucide-react';
+import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Map } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
@@ -16,12 +16,13 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export function GlobalNav() {
   const { cartCount, setIsCartOpen } = useCart();
   const { user, logout } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await logout();
@@ -29,6 +30,47 @@ export function GlobalNav() {
     // No need to call mutate or refresh, the provider handles state change.
   };
 
+  const isRestaurantPage = pathname.startsWith('/restaurants');
+
+  // Specific navigation for the Food Market section
+  if (isRestaurantPage) {
+    return (
+       <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-md">
+        <div className="container mx-auto px-4 h-20 flex items-center justify-between">
+          <Link href="/restaurants" className="flex items-center gap-2 group">
+            <div className="bg-red-600 text-white p-2 rounded-md group-hover:bg-red-700 transition-colors">
+              <Utensils className="h-6 w-6" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-800 group-hover:text-red-700 transition-colors font-headline">
+              Food Market
+            </h1>
+          </Link>
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" className="text-gray-700" asChild><Link href="/">Home</Link></Button>
+            <Button variant="ghost" className="text-gray-700" asChild><Link href="/restaurants">Restaurant</Link></Button>
+            <Button variant="ghost" className="text-gray-700" asChild><Link href="/our-services">Services</Link></Button>
+            <Button variant="ghost" className="text-gray-700" asChild><Link href="/blog">Blogs</Link></Button>
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-700">Pages <Layers className="ml-1 h-4 w-4"/></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild><Link href="/shop">Shop</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/find-work">Find Work</Link></DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="flex items-center gap-2">
+             <Button variant="ghost" className="text-gray-700" asChild><Link href="/login">Login</Link></Button>
+             <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" asChild><Link href="/signup">Register</Link></Button>
+             <Button className="bg-green-500 hover:bg-green-600" asChild><Link href="#">Post Your Ad</Link></Button>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  // Default CreatorOS navigation
   return (
     <>
       <nav className="bg-card border-b border-border sticky top-0 z-50">

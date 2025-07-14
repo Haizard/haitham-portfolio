@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Restaurant } from '@/lib/restaurants-data';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, MapPin, ThumbsUp, ChevronsUpDown, Star, DollarSign, Clock, Utensils, Heart } from 'lucide-react';
+import { Loader2, Search, MapPin, ThumbsUp, ChevronsUpDown, Star, DollarSign, Clock, Utensils, Heart, Check, Phone, Mail, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { StarRating } from '@/components/reviews/StarRating';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { GlobalNav } from '@/components/layout/global-nav'; // Import the new nav
 
 // Mock data for cuisines filter
 const cuisineFilters = [
@@ -26,6 +27,19 @@ const cuisineFilters = [
   { id: "cupcake", label: "Cupcake", count: 0 },
   { id: "doughnut", label: "Doughnut", count: 0 },
 ];
+
+const minOrderFilters = [
+    { id: "5", label: "$5", count: 3 },
+    { id: "10", label: "$10", count: 8 },
+    { id: "15", label: "$15", count: 4 },
+    { id: "20", label: "$20", count: 2 },
+];
+
+const foodTypeFilters = [
+    { id: "vegetarian", label: "Vegetarian", count: 8 },
+    { id: "non-vegetarian", label: "Non-Vegetarian", count: 9 },
+];
+
 
 const sortOptions = [
     { id: "best_match", label: "Best Match", icon: ThumbsUp },
@@ -57,15 +71,17 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
                             <span className="text-xs text-muted-foreground">({restaurant.reviewCount})</span>
                         </div>
                     </div>
-                     <Button variant="outline" asChild>
+                     <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" asChild>
                         <Link href="#">VIEW MENU</Link>
                     </Button>
                 </div>
                  <Separator className="my-2"/>
                  <p className="text-sm text-muted-foreground">Type of food: {restaurant.cuisineTypes.join(', ')}</p>
-                 <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                    <button className="text-red-500 hover:text-red-600"><Heart className="h-5 w-5"/></button>
+                 <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
                     <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4"/> {restaurant.location}</span>
+                    <label htmlFor={`compare-${restaurant.id}`} className="flex items-center gap-1 cursor-pointer text-xs hover:text-primary">
+                        <Checkbox id={`compare-${restaurant.id}`} /> Add to compare
+                    </label>
                 </div>
             </div>
         </Card>
@@ -96,7 +112,9 @@ export default function RestaurantsPage() {
     }, [fetchRestaurants]);
 
     return (
-        <div className="bg-gray-100 dark:bg-gray-900">
+        <div className="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+            {/* The GlobalNav will render the correct version based on the path */}
+            <GlobalNav />
             {/* Hero Section */}
             <section className="relative bg-black text-white">
                 <Image 
@@ -161,6 +179,38 @@ export default function RestaurantsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                         <Card>
+                            <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
+                                <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-5 w-5"/> Min. Order</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-3">
+                                {minOrderFilters.map(filter => (
+                                    <div key={filter.id} className="flex justify-between items-center text-sm">
+                                        <label htmlFor={`min-order-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
+                                            <Checkbox id={`min-order-${filter.id}`} />
+                                            {filter.label}
+                                        </label>
+                                        <span className="text-muted-foreground">({filter.count})</span>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
+                                <CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Food Type</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-3">
+                                {foodTypeFilters.map(filter => (
+                                    <div key={filter.id} className="flex justify-between items-center text-sm">
+                                        <label htmlFor={`food-type-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
+                                            <Checkbox id={`food-type-${filter.id}`} />
+                                            {filter.label}
+                                        </label>
+                                        <span className="text-muted-foreground">({filter.count})</span>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
                     </aside>
 
                     {/* Restaurant List */}
@@ -197,9 +247,66 @@ export default function RestaurantsPage() {
                                 RESTAURANT REQUEST
                             </Button>
                         </Card>
+
+                        <Card className="bg-teal-500 text-white p-6 text-center">
+                            <h3 className="text-xl font-bold">I'm not listed!</h3>
+                            <p className="text-sm mt-2 mb-4">Is your restaurant not listed here? You can add it now and start receiving orders!</p>
+                            <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-teal-600">
+                                ADD YOUR BUSINESS
+                            </Button>
+                        </Card>
                     </aside>
                 </div>
             </main>
+             <footer className="bg-gray-800 text-white mt-12">
+                <div className="container mx-auto px-4 py-8">
+                    <div className="text-center mb-8">
+                        <h3 className="text-xl font-bold">SUBSCRIBE TO OUR NEWSLETTER</h3>
+                        <p className="text-gray-400">Sign up for our weekly newsletter to get the latest news and updates.</p>
+                        <form className="mt-4 max-w-lg mx-auto flex">
+                            <Input type="email" placeholder="Enter your email address" className="bg-gray-700 border-gray-600 rounded-r-none text-white h-12"/>
+                            <Button type="submit" className="bg-red-600 hover:bg-red-700 rounded-l-none h-12">Subscribe</Button>
+                        </form>
+                    </div>
+                    <Separator className="bg-gray-700 my-8"/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
+                        <div>
+                            <h4 className="font-bold mb-3">About Us</h4>
+                            <p className="text-gray-400">Food Market is a leading global online food delivery marketplace, connecting consumers with their favorite local restaurants.</p>
+                        </div>
+                        <div>
+                            <h4 className="font-bold mb-3">Popular Cities</h4>
+                            <ul className="space-y-2 text-gray-400">
+                                <li><Link href="#" className="hover:text-red-500">New York</Link></li>
+                                <li><Link href="#" className="hover:text-red-500">London</Link></li>
+                                <li><Link href="#" className="hover:text-red-500">Paris</Link></li>
+                                <li><Link href="#" className="hover:text-red-500">Tokyo</Link></li>
+                            </ul>
+                        </div>
+                         <div>
+                            <h4 className="font-bold mb-3">Popular Cuisines</h4>
+                             <ul className="space-y-2 text-gray-400">
+                                <li><Link href="#" className="hover:text-red-500">Pizza</Link></li>
+                                <li><Link href="#" className="hover:text-red-500">Burger</Link></li>
+                                <li><Link href="#" className="hover:text-red-500">Thai</Link></li>
+                                <li><Link href="#" className="hover:text-red-500">Chinese</Link></li>
+                            </ul>
+                        </div>
+                         <div>
+                            <h4 className="font-bold mb-3">Contact</h4>
+                             <ul className="space-y-2 text-gray-400">
+                                <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-red-500"/> +1 234 567 8910</li>
+                                <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-red-500"/> contact@foodmarket.com</li>
+                                <li className="flex items-start gap-2"><MapPin className="h-4 w-4 text-red-500 mt-1"/> 2nd Floor, 123 Street, New York, USA</li>
+                            </ul>
+                        </div>
+                    </div>
+                     <Separator className="bg-gray-700 my-8"/>
+                     <div className="text-center text-gray-500 text-xs">
+                        <p>&copy; {new Date().getFullYear()} Food Market. All Rights Reserved.</p>
+                     </div>
+                </div>
+            </footer>
         </div>
     );
 }
