@@ -32,7 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const testimonialSchemaDialog = z.object({
   customerName: z.string().min(1, "Customer name is required."),
-  customerAvatar: z.string().url("Avatar URL must be valid.").optional().or(z.literal('')),
+  customerAvatar: z.string().url("Avatar URL must be valid").optional().or(z.literal('')),
   comment: z.string().min(5, "Comment must be at least 5 characters."),
   rating: z.coerce.number().min(1).max(5).optional(),
 });
