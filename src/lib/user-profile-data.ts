@@ -185,6 +185,18 @@ export async function updateVendorStatus(vendorId: string, status: VendorStatus)
     return result ? docToFreelancerProfile(result) : null;
 }
 
+export async function updateVendorFeaturedStatus(vendorId: string, isFeatured: boolean): Promise<FreelancerProfile | null> {
+    if (!ObjectId.isValid(vendorId)) return null;
+    const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
+    const result = await collection.findOneAndUpdate(
+        { _id: new ObjectId(vendorId) },
+        { $set: { isFeatured, updatedAt: new Date().toISOString() } },
+        { returnDocument: 'after' }
+    );
+    return result ? docToFreelancerProfile(result) : null;
+}
+
+
 export async function toggleWishlistItem(userId: string, productId: string): Promise<{ wishlist: string[] }> {
   const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
   const profile = await collection.findOne({ userId });

@@ -5,7 +5,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Check, X, UserCog, ShieldCheck, ShieldX, UserCheck, UserX, Package } from "lucide-react";
+import { Loader2, UserCog, ShieldCheck, ShieldX, UserCheck, UserX, Package, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { FreelancerProfile, VendorStatus } from '@/lib/user-profile-data';
 import {
@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
+import { Switch } from "@/components/ui/switch";
 import Image from 'next/image';
 import { format } from 'date-fns';
 
@@ -24,6 +25,7 @@ export function VendorListManagement() {
   const [vendors, setVendors] = useState<FreelancerProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<Record<string, boolean>>({});
+  const [isUpdatingFeatured, setIsUpdatingFeatured] = useState<Record<string, boolean>>({});
 
   const { toast } = useToast();
 
@@ -65,6 +67,27 @@ export function VendorListManagement() {
         toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
         setIsUpdatingStatus(prev => ({ ...prev, [vendorId]: false }));
+    }
+  };
+
+  const handleFeatureToggle = async (vendorId: string, isFeatured: boolean) => {
+    setIsUpdatingFeatured(prev => ({ ...prev, [vendorId]: true }));
+    try {
+        const response = await fetch(`/api/vendors/${vendorId}/feature`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isFeatured }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update featured status');
+        }
+        toast({ title: "Featured Status Updated", description: `Vendor is now ${isFeatured ? 'featured' : 'not featured'}.` });
+        fetchVendors();
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+        setIsUpdatingFeatured(prev => ({ ...prev, [vendorId]: false }));
     }
   };
 
@@ -113,10 +136,10 @@ export function VendorListManagement() {
                 <TableRow>
                   <TableHead className="w-[80px] hidden md:table-cell">Avatar</TableHead>
                   <TableHead className="min-w-[150px]">Name</TableHead>
-                  <TableHead className="min-w-[150px]">Store Name</TableHead>
                   <TableHead className="min-w-[100px] text-center">Products</TableHead>
                   <TableHead className="min-w-[120px]">Status</TableHead>
                   <TableHead className="min-w-[150px]">Joined</TableHead>
+                  <TableHead className="text-center min-w-[100px]">Featured</TableHead>
                   <TableHead className="text-right min-w-[200px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -127,7 +150,6 @@ export function VendorListManagement() {
                       <Image src={vendor.avatarUrl} alt={vendor.name} width={40} height={40} className="rounded-full object-contain aspect-square"/>
                     </TableCell>
                     <TableCell className="font-medium">{vendor.name}</TableCell>
-                    <TableCell>{vendor.storeName}</TableCell>
                     <TableCell className="text-center">
                         <div className="flex items-center justify-center">
                            <Package className="h-4 w-4 mr-1.5 text-muted-foreground" />
@@ -141,6 +163,17 @@ export function VendorListManagement() {
                         </Badge>
                     </TableCell>
                     <TableCell className="text-xs">{format(new Date(vendor.createdAt), "PPP")}</TableCell>
+                    <TableCell className="text-center">
+                        {isUpdatingFeatured[vendor.id!] ? (
+                            <Loader2 className="h-5 w-5 animate-spin mx-auto"/>
+                        ) : (
+                            <Switch
+                                checked={vendor.isFeatured}
+                                onCheckedChange={(checked) => handleFeatureToggle(vendor.id!, checked)}
+                                aria-label="Toggle featured status"
+                            />
+                        )}
+                    </TableCell>
                     <TableCell className="text-right space-x-1">
                         {isUpdatingStatus[vendor.id!] ? <Loader2 className="h-5 w-5 animate-spin"/> : (
                              vendor.vendorStatus === 'pending' ? (
