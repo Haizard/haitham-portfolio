@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,13 +17,16 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/hooks/use-cart';
-import type { MenuItem, MenuItemOption, MenuItemOptionGroup } from '@/lib/restaurants-data';
+import type { MenuItem } from '@/lib/restaurants-data';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface MenuItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  item: MenuItem;
+  item: MenuItem | null; // Allow item to be null
 }
 
 const formatPrice = (price: number) => {
@@ -33,10 +36,21 @@ const formatPrice = (price: number) => {
 
 export function MenuItemDialog({ isOpen, onClose, item }: MenuItemDialogProps) {
   const { addToCart } = useCart();
+  const { toast } = useToast();
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [quantity, setQuantity] = useState(1);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
-  const handleSelectionChange = (groupId: string, optionId: string, selectionType: 'single' | 'multi') => {
+  // Reset state when dialog opens with a new item or closes
+  useEffect(() => {
+    if (isOpen && item) {
+      setSelectedOptions({});
+      setQuantity(1);
+      setValidationMessage(null);
+    }
+  }, [isOpen, item]);
+  
+  const handleSelectionChange = (groupId: string, optionId: string, selectionType: 'single' | 'multi', maxSelections?: number) => {
     setSelectedOptions(prev => {
       const newSelection = { ...prev };
       const currentGroupSelection = newSelection[groupId] || [];
@@ -47,31 +61,43 @@ export function MenuItemDialog({ isOpen, onClose, item }: MenuItemDialogProps) {
         if (currentGroupSelection.includes(optionId)) {
           newSelection[groupId] = currentGroupSelection.filter(id => id !== optionId);
         } else {
+          if (maxSelections && currentGroupSelection.length >= maxSelections) {
+            // Optional: Provide feedback that max selections have been reached
+             toast({
+              title: "Selection limit reached",
+              description: `You can only select up to ${maxSelections} options for this group.`,
+              variant: "default",
+            });
+            return prev; // Do not add the new selection
+          }
           newSelection[groupId] = [...currentGroupSelection, optionId];
         }
       }
       return newSelection;
     });
+    // Clear validation message on any change, as it will be re-validated on add to cart.
+    setValidationMessage(null);
   };
-  
+
   const validationInfo = useMemo(() => {
-    let isValid = true;
-    let message = "";
+    if (!item) return { isValid: false, message: "No item selected." };
+
     for (const group of item.optionGroups || []) {
+      const selectionCount = selectedOptions[group.id]?.length || 0;
       if (group.isRequired) {
-        const selectionCount = selectedOptions[group.id]?.length || 0;
         const required = group.requiredCount || 1;
         if (selectionCount < required) {
-          isValid = false;
-          message = `Please select at least ${required} option(s) from "${group.title}".`;
-          break;
+          return { isValid: false, message: `Please select at least ${required} option(s) from "${group.title}".` };
         }
       }
+      // Assuming a simple max selection logic for now. Could be a property on the group.
+      // Example: if (group.maxSelections && selectionCount > group.maxSelections) { ... }
     }
-    return { isValid, message };
-  }, [selectedOptions, item.optionGroups]);
+    return { isValid: true, message: "" };
+  }, [selectedOptions, item]);
 
   const totalExtrasPrice = useMemo(() => {
+    if (!item) return 0;
     let total = 0;
     for (const groupId in selectedOptions) {
       const group = item.optionGroups?.find(g => g.id === groupId);
@@ -85,20 +111,21 @@ export function MenuItemDialog({ isOpen, onClose, item }: MenuItemDialogProps) {
       }
     }
     return total;
-  }, [selectedOptions, item.optionGroups]);
+  }, [selectedOptions, item]);
+
+  if (!item) return null; // Don't render the dialog if no item is selected
 
   const totalItemPrice = (item.price + totalExtrasPrice) * quantity;
   
   const handleAddToCart = () => {
     if (!validationInfo.isValid) {
-      alert(validationInfo.message); // Simple alert for now, could be a toast
+      setValidationMessage(validationInfo.message);
       return;
     }
     
     let customizedName = item.name;
     const descriptions: string[] = [];
     
-    // Add selected options to description
     item.optionGroups?.forEach(group => {
       const selectedIds = selectedOptions[group.id];
       if (selectedIds && selectedIds.length > 0) {
@@ -112,9 +139,9 @@ export function MenuItemDialog({ isOpen, onClose, item }: MenuItemDialogProps) {
     const customizedDescription = descriptions.join(' | ');
 
     const itemToAdd = {
-      id: `${item.id}-${JSON.stringify(selectedOptions)}`, // Create a unique ID for this specific customization
+      id: `${item.id}-${JSON.stringify(selectedOptions)}`,
       name: customizedName,
-      price: item.price + totalExtrasPrice, // Final price per item
+      price: item.price + totalExtrasPrice,
       imageUrl: item.imageUrl,
       description: customizedDescription,
       productType: 'creator' as const,
@@ -139,7 +166,7 @@ export function MenuItemDialog({ isOpen, onClose, item }: MenuItemDialogProps) {
               <div key={group.id}>
                 <div className="flex justify-between items-center mb-2">
                     <h4 className="font-semibold">{group.title}</h4>
-                    {group.isRequired && <Badge variant="outline">Required {group.requiredCount || 1}</Badge>}
+                    {group.isRequired && <Badge variant="outline">Required: {group.requiredCount || 1}</Badge>}
                 </div>
                 {group.selectionType === 'multi' ? (
                   <div className="space-y-2">
@@ -179,6 +206,15 @@ export function MenuItemDialog({ isOpen, onClose, item }: MenuItemDialogProps) {
             ))}
           </div>
         </ScrollArea>
+        {validationMessage && (
+           <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Selection Required</AlertTitle>
+            <AlertDescription>
+                {validationMessage}
+            </AlertDescription>
+            </Alert>
+        )}
         <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-4 pt-4">
             <div className="flex items-center gap-2">
                  <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.max(1, q - 1))}>-</Button>

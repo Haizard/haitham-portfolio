@@ -181,13 +181,11 @@ export default function RestaurantDetailPage() {
             </main>
         </div>
         
-        {selectedItem && (
-            <MenuItemDialog 
-                isOpen={isDialogOpen}
-                onClose={handleCloseDialog}
-                item={selectedItem}
-            />
-        )}
+        <MenuItemDialog 
+            isOpen={isDialogOpen}
+            onClose={handleCloseDialog}
+            item={selectedItem}
+        />
         </>
     );
 }

@@ -45,7 +45,7 @@ export interface MenuItem {
     description: string;
     price: number;
     imageUrl: string;
-    dietaryFlags?: ('vegetarian' | 'gluten-free' | 'spicy')[];
+    dietaryFlags?: ('vegetarian' | 'spicy' | 'gluten-free')[];
     optionGroups?: MenuItemOptionGroup[];
 }
 
@@ -130,24 +130,82 @@ async function seedInitialData() {
         if (menuItemCount === 0) {
             console.log(`Seeding menu items for restaurant ${restaurantId}...`);
             const initialItems: Omit<MenuItem, 'id' | '_id'>[] = [
-                { restaurantId, categoryId: categoryIdMap["Starters"], name: "Arpas kebab starters", description: "Freshly made with local ingredients.", price: 9.90, imageUrl: "https://placehold.co/100x100.png?text=Kebab", dietaryFlags: ['spicy'] },
-                { restaurantId, categoryId: categoryIdMap["Kebabs"], name: "Adana Kebab", description: "Spicy minced meat kebab.", price: 15.50, imageUrl: "https://placehold.co/100x100.png?text=Adana", dietaryFlags: ['spicy'] },
-                { restaurantId, categoryId: categoryIdMap["Burgers"], name: "Cheese Burger", description: "Classic beef burger with cheese.", price: 12.00, imageUrl: "https://placehold.co/100x100.png?text=Burger" },
-                { restaurantId, categoryId: categoryIdMap["Burgers"], name: "Veggie Burger", description: "A delicious vegetarian alternative.", price: 11.00, imageUrl: "https://placehold.co/100x100.png?text=Veggie", dietaryFlags: ['vegetarian'] },
-                { restaurantId, categoryId: categoryIdMap["Pizza"], name: "Marinara Pizza", description: "Cheese, tomatoes, tuna fish, sweetcorn and italian herbs.", price: 70.00, imageUrl: "https://placehold.co/100x100.png?text=Pizza", optionGroups: [
-                    { id: "g1", title: "Extra Topping", selectionType: 'multi', isRequired: true, requiredCount: 2, options: [
-                        { id: "t1", name: "Pepperoni", price: 9.00 },
-                        { id: "t2", name: "Tuna", price: 6.00 },
-                        { id: "t3", name: "Sweet corn", price: 0.00 },
-                        { id: "t4", name: "Asparagus", price: 1.00 },
-                        { id: "t5", name: "Jalapenos", price: 2.00 },
-                    ]},
-                    { id: "g2", title: "Sausages", selectionType: 'single', isRequired: true, requiredCount: 1, options: [
-                        { id: "s1", name: "Lime Sauce", price: 2.00 },
-                        { id: "s2", name: "Hot Chili", price: 2.50 },
-                    ]}
-                ]},
-                { restaurantId, categoryId: categoryIdMap["Drinks"], name: "Coca-Cola", description: "Refreshing soft drink.", price: 2.50, imageUrl: "https://placehold.co/100x100.png?text=Coke" },
+                {
+                    restaurantId,
+                    categoryId: categoryIdMap["Starters"],
+                    name: "Arpas kebab starters",
+                    description: "Freshly made with local ingredients.",
+                    price: 9.90,
+                    imageUrl: "https://placehold.co/100x100.png?text=Kebab",
+                    dietaryFlags: ['spicy']
+                },
+                {
+                    restaurantId,
+                    categoryId: categoryIdMap["Kebabs"],
+                    name: "Adana Kebab",
+                    description: "Spicy minced meat kebab.",
+                    price: 15.50,
+                    imageUrl: "https://placehold.co/100x100.png?text=Adana",
+                    dietaryFlags: ['spicy'],
+                    optionGroups: [
+                        { id: "g3", title: "Side Dish", selectionType: 'single', isRequired: true, options: [
+                            { id: "sd1", name: "Rice", price: 0.00 },
+                            { id: "sd2", name: "Fries", price: 1.00 },
+                        ]}
+                    ]
+                },
+                {
+                    restaurantId,
+                    categoryId: categoryIdMap["Burgers"],
+                    name: "Cheese Burger",
+                    description: "Classic beef burger with cheese.",
+                    price: 12.00,
+                    imageUrl: "https://placehold.co/100x100.png?text=Burger",
+                    optionGroups: [
+                         { id: "g4", title: "Add Ons", selectionType: 'multi', isRequired: false, options: [
+                            { id: "ao1", name: "Extra Bacon", price: 1.50 },
+                            { id: "ao2", name: "Extra Cheese", price: 1.00 },
+                         ]}
+                    ]
+                },
+                {
+                    restaurantId,
+                    categoryId: categoryIdMap["Burgers"],
+                    name: "Veggie Burger",
+                    description: "A delicious vegetarian alternative.",
+                    price: 11.00,
+                    imageUrl: "https://placehold.co/100x100.png?text=Veggie",
+                    dietaryFlags: ['vegetarian']
+                },
+                {
+                    restaurantId,
+                    categoryId: categoryIdMap["Pizza"],
+                    name: "Marinara Pizza",
+                    description: "Cheese, tomatoes, tuna fish, sweetcorn and italian herbs.",
+                    price: 70.00,
+                    imageUrl: "https://placehold.co/100x100.png?text=Pizza",
+                    optionGroups: [
+                        { id: "g1", title: "Extra Topping", selectionType: 'multi', isRequired: true, requiredCount: 2, options: [
+                            { id: "t1", name: "Pepperoni", price: 9.00 },
+                            { id: "t2", name: "Tuna", price: 6.00 },
+                            { id: "t3", name: "Sweet corn", price: 0.00 },
+                            { id: "t4", name: "Asparagus", price: 1.00 },
+                            { id: "t5", name: "Jalapenos", price: 2.00 },
+                        ]},
+                        { id: "g2", title: "Sauces", selectionType: 'single', isRequired: true, options: [
+                            { id: "s1", name: "Lime Sauce", price: 2.00 },
+                            { id: "s2", name: "Hot Chili", price: 2.50 },
+                        ]}
+                    ]
+                },
+                {
+                    restaurantId,
+                    categoryId: categoryIdMap["Drinks"],
+                    name: "Coca-Cola",
+                    description: "Refreshing soft drink.",
+                    price: 2.50,
+                    imageUrl: "https://placehold.co/100x100.png?text=Coke"
+                },
             ];
             await menuItemsCollection.insertMany(initialItems as any[]);
         }
