@@ -98,7 +98,8 @@ export async function createOrderFromCart(
     const itemsByVendor = new Map<string, typeof cart>();
     for (const item of cart) {
         const product = productsById.get(item.productId.split('-')[0]);
-        if (product && (product.productType === 'creator' || product.productType === 'restaurant-item')) { // Allow restaurant items
+        // This is the key check: it works for both creator products and restaurant items.
+        if (product && (product.productType === 'creator' || product.productType === 'restaurant-item')) {
             if (!itemsByVendor.has(product.vendorId)) {
                 itemsByVendor.set(product.vendorId, []);
             }
