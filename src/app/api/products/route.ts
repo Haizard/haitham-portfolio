@@ -19,7 +19,7 @@ const baseProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters").max(150),
   description: z.string().min(10, "Description must be at least 10 characters").max(5000),
   categoryId: z.string().min(1, "Category is required"),
-  imageUrl: z.string().url("Image URL must be valid"),
+  imageUrl: z.string().url("Image URL must be a valid URL"),
   imageHint: z.string().min(1, "Image hint is required").max(50),
   tags: z.array(z.string()).optional(), // Expect an array of strings now
   productType: z.enum(['creator', 'affiliate'], { required_error: "Product type is required." }),
@@ -50,16 +50,28 @@ const productCreateSchema = z.discriminatedUnion("productType", [
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('categoryId') || undefined;
+    const categoryIds = searchParams.get('categoryIds')?.split(',') || undefined;
+    const priceRangeStr = searchParams.get('priceRange')?.split(',');
+    const priceMin = priceRangeStr && !isNaN(parseFloat(priceRangeStr[0])) ? parseFloat(priceRangeStr[0]) : undefined;
+    const priceMax = priceRangeStr && priceRangeStr[1] && !isNaN(parseFloat(priceRangeStr[1])) ? parseFloat(priceRangeStr[1]) : undefined;
+    const sortBy = searchParams.get('sortBy') as 'sales' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'featured' | undefined;
+    
     const productType = searchParams.get('productType') as ProductType | undefined;
     const vendorId = searchParams.get('vendorId') || undefined;
     const slug = searchParams.get('slug') || undefined;
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam) : undefined;
-    const sortBy = searchParams.get('sortBy') as 'sales' | 'name' | undefined;
     
     // Pass all filters to the data function
-    const products = await getAllProducts({categoryId, productType, vendorId, slug}, limit, undefined, sortBy);
+    const products = await getAllProducts({
+      categoryIds, 
+      productType, 
+      vendorId, 
+      slug,
+      priceMin,
+      priceMax,
+      sortBy
+    }, limit);
 
     // --- ENRICHMENT STEP ---
     if (products.length > 0) {

@@ -101,14 +101,16 @@ async function isProductSlugUnique(slug: string, excludeId?: string): Promise<bo
 
 export async function getAllProducts(
   filters: { 
-      categoryId?: string, 
+      categoryIds?: string[], 
       productType?: ProductType, 
       vendorId?: string,
-      slug?: string
+      slug?: string,
+      priceMin?: number,
+      priceMax?: number,
+      sortBy?: 'sales' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'featured',
   } = {},
   limit?: number,
-  excludeId?: string,
-  sortBy?: 'sales' | 'name'
+  excludeId?: string
 ): Promise<Product[]> {
   const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const ordersCollection = await getCollection('orders');
@@ -130,8 +132,17 @@ export async function getAllProducts(
 
   // 2. Fetch products based on filters
   const query: Filter<ProductDocument> = {};
-  if (filters.categoryId && ObjectId.isValid(filters.categoryId)) {
-    query.categoryId = filters.categoryId;
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    query.categoryId = { $in: filters.categoryIds };
+  }
+   if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+    query.price = {};
+    if (filters.priceMin !== undefined) {
+      query.price.$gte = filters.priceMin;
+    }
+    if (filters.priceMax !== undefined) {
+      query.price.$lt = filters.priceMax;
+    }
   }
   if (filters.productType) {
     query.productType = filters.productType;
@@ -147,11 +158,12 @@ export async function getAllProducts(
   }
 
   const sortOptions: any = {};
-  if (sortBy === 'name') {
-      sortOptions.name = 1;
-  } else {
-      // Default sort can be by creation date or name
-      sortOptions.name = 1;
+  switch (filters.sortBy) {
+      case 'name-asc': sortOptions.name = 1; break;
+      case 'name-desc': sortOptions.name = -1; break;
+      case 'price-asc': sortOptions.price = 1; break;
+      case 'price-desc': sortOptions.price = -1; break;
+      default: sortOptions.name = 1; // Default sort
   }
 
   const cursor = productsCollection.find(query).sort(sortOptions);
@@ -174,7 +186,7 @@ export async function getAllProducts(
     return product;
   });
 
-  if (sortBy === 'sales') {
+  if (filters.sortBy === 'sales') {
     enrichedProducts = enrichedProducts.sort((a, b) => (b.sales || 0) - (a.sales || 0));
   }
 
@@ -282,7 +294,7 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, '
       newSlug = `${createProductSlug(updates.name)}-${counter}`;
       counter++;
     }
-    updatePayload.slug = newSlug;
+    (updatePayload as Product).slug = newSlug;
   }
   
   // Handle tags update

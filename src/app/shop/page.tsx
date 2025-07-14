@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductQuickView } from '@/components/products/ProductQuickView';
+import { useSearchParams } from 'next/navigation';
 
 const priceRanges = [
   { label: "$0.00 - $50.00", min: 0, max: 50 },
@@ -27,13 +28,15 @@ const priceRanges = [
 ];
 
 export default function ShopPage() {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategoryNode[]>([]);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get('category');
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<number[][]>([]);
   const [sortOption, setSortOption] = useState("featured");
   
@@ -47,74 +50,51 @@ export default function ShopPage() {
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        const [productsRes, categoriesRes, bestSellersRes] = await Promise.all([
-          fetch('/api/products'),
-          fetch('/api/product-categories'), // Use product categories
-          fetch('/api/products?sortBy=sales&limit=5')
-        ]);
-        if (!productsRes.ok || !categoriesRes.ok || !bestSellersRes.ok) throw new Error("Failed to fetch shop data.");
+  const fetchProductsAndMeta = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const query = new URLSearchParams();
+        if (selectedCategories.length > 0) {
+            query.append('categoryIds', selectedCategories.join(','));
+        }
+        if (selectedPriceRanges.length > 0) {
+            const min = Math.min(...selectedPriceRanges.map(r => r[0]));
+            const max = Math.max(...selectedPriceRanges.map(r => r[1]));
+            if (max !== Infinity) {
+              query.append('priceRange', `${min},${max}`);
+            } else {
+              query.append('priceRange', `${min}`);
+            }
+        }
+        if (sortOption !== 'featured') {
+            query.append('sortBy', sortOption);
+        }
         
-        const productsData = await productsRes.json();
-        const categoriesData = await categoriesRes.json();
-        const bestSellersData = await bestSellersRes.json();
-        
-        setAllProducts(productsData);
-        setFilteredProducts(productsData);
-        setCategories(categoriesData);
-        setBestSellers(bestSellersData);
+      const [productsRes, categoriesRes, bestSellersRes] = await Promise.all([
+        fetch(`/api/products?${query.toString()}`),
+        fetch('/api/product-categories'), 
+        fetch('/api/products?sortBy=sales&limit=5')
+      ]);
+      if (!productsRes.ok || !categoriesRes.ok || !bestSellersRes.ok) throw new Error("Failed to fetch shop data.");
+      
+      const productsData = await productsRes.json();
+      const categoriesData = await categoriesRes.json();
+      const bestSellersData = await bestSellersRes.json();
+      
+      setProducts(productsData);
+      setCategories(categoriesData);
+      setBestSellers(bestSellersData);
 
-      } catch (err: any) {
-        toast({ title: "Error", description: err.message, variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    fetchData();
-  }, [toast]);
-  
-  const applyFiltersAndSort = useCallback(() => {
-    let tempProducts = [...allProducts];
-
-    // Category filtering
-    if (selectedCategories.length > 0) {
-      tempProducts = tempProducts.filter(p => p.categoryId && selectedCategories.includes(p.categoryId));
-    }
-    
-    // Price filtering
-    if (selectedPriceRanges.length > 0) {
-      tempProducts = tempProducts.filter(p => 
-        p.price !== undefined && selectedPriceRanges.some(range => p.price! >= range[0] && p.price! < range[1])
-      );
-    }
-    
-    // Sorting
-    switch(sortOption) {
-      case 'price-asc':
-        tempProducts.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
-        break;
-      case 'price-desc':
-        tempProducts.sort((a, b) => (b.price || -1) - (a.price || -1));
-        break;
-      case 'name-asc':
-        tempProducts.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'name-desc':
-        tempProducts.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      // Default 'featured' does no sorting, keeps original order
-    }
-    
-    setFilteredProducts(tempProducts);
-
-  }, [allProducts, selectedCategories, selectedPriceRanges, sortOption]);
+  }, [toast, selectedCategories, selectedPriceRanges, sortOption]);
 
   useEffect(() => {
-    applyFiltersAndSort();
-  }, [applyFiltersAndSort]);
+    fetchProductsAndMeta();
+  }, [fetchProductsAndMeta]);
   
   const handleCategoryChange = (categoryId: string, checked: boolean | 'indeterminate') => {
     setSelectedCategories(prev => 
@@ -137,7 +117,7 @@ export default function ShopPage() {
             {categories.map(cat => (
               <li key={cat.id} className="flex items-center justify-between">
                 <label htmlFor={`cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary">
-                   <Checkbox id={`cat-${cat.id}`} onCheckedChange={(c) => handleCategoryChange(cat.id!, c)} /> {cat.name}
+                   <Checkbox id={`cat-${cat.id}`} checked={selectedCategories.includes(cat.id!)} onCheckedChange={(c) => handleCategoryChange(cat.id!, c)} /> {cat.name}
                 </label>
                 <span className="text-xs">({cat.productCount})</span>
               </li>
@@ -215,9 +195,9 @@ export default function ShopPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                  {[...Array(9)].map((_, i) => <Skeleton key={i} className="h-80 w-full" />)}
               </div>
-            ) : filteredProducts.length > 0 ? (
+            ) : products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
+                {products.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
               </div>
             ) : (
                 <div className="text-center py-20">
