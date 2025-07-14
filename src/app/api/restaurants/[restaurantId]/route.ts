@@ -36,6 +36,7 @@ const restaurantUpdateSchema = z.object({
   location: z.string().min(1, "Location is required."),
   cuisineTypes: z.array(z.string()).min(1, "At least one cuisine type is required."),
   status: z.enum(["Open", "Closed"]),
+  specialDeals: z.string().optional(),
 });
 
 export async function PUT(

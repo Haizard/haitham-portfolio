@@ -31,6 +31,7 @@ export interface Restaurant {
   reviewCount: number;
   status: 'Open' | 'Closed';
   isSponsored: boolean;
+  specialDeals?: string;
   // This would be the ID of the user who owns this restaurant
   ownerId: string;
 }
@@ -122,9 +123,9 @@ async function seedInitialData() {
     // Mock ownerId. In a real app, this would come from a real user.
     const mockOwnerId = 'user1'; 
     const initialRestaurants: Omit<Restaurant, 'id' | '_id'>[] = [
-      { name: "KFC - Kentucky", ownerId: mockOwnerId, logoUrl: "https://placehold.co/110x110.png?text=KFC", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "New York, New York State", rating: 4.5, reviewCount: 4, status: "Closed", isSponsored: true },
-      { name: "Subway", ownerId: "user2", logoUrl: "https://placehold.co/110x110.png?text=Subway", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "Berlin, City state of Berlin", rating: 4.2, reviewCount: 4, status: "Closed", isSponsored: true },
-      { name: "Pizza Hut", ownerId: "user3", logoUrl: "https://placehold.co/110x110.png?text=Pizza", cuisineTypes: ["Pizza", "Pasta", "Salads"], location: "London, UK", rating: 4.8, reviewCount: 15, status: "Open", isSponsored: false },
+      { name: "KFC - Kentucky", ownerId: mockOwnerId, logoUrl: "https://placehold.co/110x110.png?text=KFC", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "New York, New York State", rating: 4.5, reviewCount: 4, status: "Closed", isSponsored: true, specialDeals: "Family Bucket: 12 pieces of chicken, 4 fries, and a large drink for $29.99!" },
+      { name: "Subway", ownerId: "user2", logoUrl: "https://placehold.co/110x110.png?text=Subway", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "Berlin, City state of Berlin", rating: 4.2, reviewCount: 4, status: "Closed", isSponsored: true, specialDeals: "Footlong of the day for $5.99." },
+      { name: "Pizza Hut", ownerId: "user3", logoUrl: "https://placehold.co/110x110.png?text=Pizza", cuisineTypes: ["Pizza", "Pasta", "Salads"], location: "London, UK", rating: 4.8, reviewCount: 15, status: "Open", isSponsored: false, specialDeals: "Two large pizzas for the price of one on Tuesdays." },
     ];
     const result = await restaurantsCollection.insertMany(initialRestaurants as any[]);
     
@@ -252,6 +253,7 @@ export async function createRestaurantForUser(ownerId: string, initialData: { na
     reviewCount: 0,
     status: 'Closed' as const,
     isSponsored: false,
+    specialDeals: "",
   };
   const result = await collection.insertOne(docToInsert as any);
   return { id: result.insertedId.toString(), ...docToInsert };
@@ -425,4 +427,58 @@ export async function addRestaurantReview(reviewData: Omit<RestaurantReview, 'id
   );
 
   return newReview;
+}
+
+
+// --- Table Booking Management ---
+export type TableBookingStatus = 'pending' | 'confirmed' | 'cancelled';
+
+export interface TableBooking {
+  _id?: ObjectId;
+  id?: string;
+  restaurantId: string;
+  customerName: string;
+  customerEmail: string;
+  bookingDate: string; // ISO Date string
+  bookingTime: string;
+  guestCount: number;
+  status: TableBookingStatus;
+  createdAt: Date;
+}
+
+function docToTableBooking(doc: any): TableBooking {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: _id?.toString(), ...rest } as TableBooking;
+}
+
+
+export async function addTableBooking(bookingData: Omit<TableBooking, 'id' | '_id' | 'status' | 'createdAt'>): Promise<TableBooking> {
+    const collection = await getCollection<TableBooking>(`tableBookings`);
+    const docToInsert = {
+        ...bookingData,
+        status: 'pending' as TableBookingStatus,
+        createdAt: new Date(),
+    };
+    const result = await collection.insertOne(docToInsert as any);
+    return { id: result.insertedId.toString(), ...docToInsert };
+}
+
+
+export async function getBookingsForRestaurant(restaurantId: string): Promise<TableBooking[]> {
+    if (!ObjectId.isValid(restaurantId)) return [];
+    const collection = await getCollection<TableBooking>(`tableBookings`);
+    const bookingDocs = await collection.find({ restaurantId }).sort({ bookingDate: 1, bookingTime: 1 }).toArray();
+    return bookingDocs.map(docToTableBooking);
+}
+
+export async function updateTableBookingStatus(bookingId: string, status: TableBookingStatus): Promise<TableBooking | null> {
+    if (!ObjectId.isValid(bookingId)) return null;
+    const collection = await getCollection<TableBooking>(`tableBookings`);
+    const result = await collection.findOneAndUpdate(
+        { _id: new ObjectId(bookingId) },
+        { $set: { status } },
+        { returnDocument: 'after' }
+    );
+    return result ? docToTableBooking(result) : null;
 }

@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, Save, Utensils } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from '@/hooks/use-user';
 import type { Restaurant } from '@/lib/restaurants-data';
+import { Separator } from '../ui/separator';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Restaurant name is required."),
@@ -21,6 +23,7 @@ const profileFormSchema = z.object({
   location: z.string().min(5, "Location is required."),
   cuisineTypes: z.string().min(3, "Please enter at least one cuisine type."),
   status: z.enum(["Open", "Closed"]),
+  specialDeals: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -40,6 +43,7 @@ export function RestaurantProfileForm() {
       location: "",
       cuisineTypes: "",
       status: "Open",
+      specialDeals: "",
     },
   });
 
@@ -57,6 +61,7 @@ export function RestaurantProfileForm() {
           location: data.location,
           cuisineTypes: data.cuisineTypes.join(', '),
           status: data.status,
+          specialDeals: data.specialDeals || "",
         });
       } else if (response.status === 404) {
         toast({ title: "No Restaurant Found", description: "You don't have a restaurant profile yet. One will be created when you save.", variant: "default"});
@@ -140,6 +145,20 @@ export function RestaurantProfileForm() {
                     <FormItem className="flex items-center space-x-2"><RadioGroupItem value="Open" id="status-open"/><Label htmlFor="status-open">Open</Label></FormItem>
                     <FormItem className="flex items-center space-x-2"><RadioGroupItem value="Closed" id="status-closed"/><Label htmlFor="status-closed">Closed</Label></FormItem>
                 </RadioGroup>
+                </FormItem>
+            )}/>
+            <Separator />
+            <FormField control={form.control} name="specialDeals" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Special Deals & Offers</FormLabel>
+                    <FormControl>
+                        <Textarea
+                            placeholder="Describe your current deals, e.g., 'Happy Hour: 5-7 PM, 50% off appetizers!'"
+                            className="min-h-[120px]"
+                            {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
                 </FormItem>
             )}/>
           </CardContent>

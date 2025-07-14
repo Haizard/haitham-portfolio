@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import type { Restaurant, MenuItem, MenuCategory, FullMenu, RestaurantReview } from '@/lib/restaurants-data';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Utensils, Leaf, Flame, WheatOff, Star, Clock, MessageSquare, Calendar as CalendarIconLucide } from 'lucide-react';
+import { Loader2, Info, Utensils, Leaf, Flame, WheatOff, Star, Clock, MessageSquare, Calendar as CalendarIconLucide, BadgePercent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GlobalNav } from '@/components/layout/global-nav';
 import { Separator } from '@/components/ui/separator';
@@ -193,6 +193,24 @@ export default function RestaurantDetailPage() {
         </Card>
     );
 
+    const renderDealsTab = () => (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-2xl flex items-center gap-2"><BadgePercent className="h-6 w-6"/>Current Deals & Offers</CardTitle>
+                <CardDescription>Special promotions available at {restaurant.name}.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {restaurant.specialDeals ? (
+                    <div className="prose dark:prose-invert max-w-none whitespace-pre-line">
+                        {restaurant.specialDeals}
+                    </div>
+                ) : (
+                    <p className="text-center text-muted-foreground py-10">There are no special deals available at the moment.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+
 
     return (
         <>
@@ -241,6 +259,7 @@ export default function RestaurantDetailPage() {
                         {activeTab === 'Reviews' && renderReviewsTab()}
                         {activeTab === 'Restaurant Info' && renderInfoTab()}
                         {activeTab === 'Book a table' && renderBookTableTab()}
+                        {activeTab === 'Restaurant deals' && renderDealsTab()}
                     </div>
                     
                     <aside className="col-span-12 lg:col-span-3">
