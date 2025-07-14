@@ -5,11 +5,11 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import type { Restaurant, MenuItem, MenuCategory, FullMenu, RestaurantReview } from '@/lib/restaurants-data';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Utensils, Leaf, Flame, WheatOff, Star, Clock, MessageSquare } from 'lucide-react';
+import { Loader2, Info, Utensils, Leaf, Flame, WheatOff, Star, Clock, MessageSquare, Calendar as CalendarIconLucide } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GlobalNav } from '@/components/layout/global-nav';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ import { StarRating } from '@/components/reviews/StarRating';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RestaurantReviewSubmission } from '@/components/restaurants/restaurant-review-submission';
+import { TableBookingForm } from '@/components/restaurants/table-booking-form';
 
 const TABS = ["Menu", "Restaurant Info", "Reviews", "Book a table", "Restaurant deals"];
 
@@ -179,6 +180,18 @@ export default function RestaurantDetailPage() {
             </CardContent>
         </Card>
     );
+    
+    const renderBookTableTab = () => (
+        <Card>
+             <CardHeader>
+                <CardTitle className="text-2xl flex items-center gap-2"><CalendarIconLucide className="h-6 w-6"/>Book a Table</CardTitle>
+                <CardDescription>Request a reservation at {restaurant.name}.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <TableBookingForm restaurantId={restaurantId} />
+            </CardContent>
+        </Card>
+    );
 
 
     return (
@@ -227,6 +240,7 @@ export default function RestaurantDetailPage() {
                         {activeTab === 'Menu' && renderMenuTab()}
                         {activeTab === 'Reviews' && renderReviewsTab()}
                         {activeTab === 'Restaurant Info' && renderInfoTab()}
+                        {activeTab === 'Book a table' && renderBookTableTab()}
                     </div>
                     
                     <aside className="col-span-12 lg:col-span-3">
