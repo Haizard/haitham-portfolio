@@ -1,4 +1,4 @@
-
+// src/components/layout/sidebar-nav.tsx
 "use client";
 
 import Link from "next/link";
@@ -30,7 +30,8 @@ import {
   Landmark,
   Users,
   Banknote,
-  Leaf, // Added Leaf icon
+  Leaf,
+  Utensils,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -93,6 +94,15 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/vendor/finances", label: "Finances", icon: Landmark },
     ],
   },
+   {
+    group: "Restaurant Platform",
+    roles: ['vendor'], // Assuming restaurant owners have the 'vendor' role
+    items: [
+      { href: "/vendor/restaurant/dashboard", label: "Restaurant Dashboard", icon: Utensils },
+      { href: "/vendor/restaurant/profile", label: "Restaurant Profile", icon: Settings },
+      // Add more restaurant-specific links here as they are built
+    ],
+  },
   {
     group: "AI Content Tools",
     roles: ['creator', 'admin', 'vendor'],
@@ -151,8 +161,7 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
     if (href === '/dashboard' || href === '/profile') {
         return pathname === href;
     }
-    // For admin pages, do an exact match to avoid highlighting parent "Manage Products" when on "Product Categories"
-    if (href.startsWith('/admin/')) {
+    if (href.startsWith('/admin/') || href.startsWith('/vendor/')) {
       return pathname === href;
     }
     return pathname.startsWith(href);

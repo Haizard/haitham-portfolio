@@ -1,6 +1,7 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { SessionUser } from './session';
 
 const RESTAURANTS_COLLECTION = 'restaurants';
 const MENU_ITEMS_COLLECTION = 'menuItems';
@@ -18,6 +19,8 @@ export interface Restaurant {
   reviewCount: number;
   status: 'Open' | 'Closed';
   isSponsored: boolean;
+  // This would be the ID of the user who owns this restaurant
+  ownerId: string;
 }
 
 export interface MenuItemOption {
@@ -97,10 +100,12 @@ async function seedInitialData() {
   const restCount = await restaurantsCollection.countDocuments();
   if (restCount === 0) {
     console.log("Seeding initial restaurants...");
+    // Mock ownerId. In a real app, this would come from a real user.
+    const mockOwnerId = 'user1'; 
     const initialRestaurants: Omit<Restaurant, 'id' | '_id'>[] = [
-      { name: "KFC - Kentucky", logoUrl: "https://placehold.co/110x110.png?text=KFC", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "New York, New York State", rating: 4.5, reviewCount: 4, status: "Closed", isSponsored: true },
-      { name: "Subway", logoUrl: "https://placehold.co/110x110.png?text=Subway", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "Berlin, City state of Berlin", rating: 4.2, reviewCount: 4, status: "Closed", isSponsored: true },
-      { name: "Pizza Hut", logoUrl: "https://placehold.co/110x110.png?text=Pizza", cuisineTypes: ["Pizza", "Pasta", "Salads"], location: "London, UK", rating: 4.8, reviewCount: 15, status: "Open", isSponsored: false },
+      { name: "KFC - Kentucky", ownerId: mockOwnerId, logoUrl: "https://placehold.co/110x110.png?text=KFC", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "New York, New York State", rating: 4.5, reviewCount: 4, status: "Closed", isSponsored: true },
+      { name: "Subway", ownerId: "user2", logoUrl: "https://placehold.co/110x110.png?text=Subway", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "Berlin, City state of Berlin", rating: 4.2, reviewCount: 4, status: "Closed", isSponsored: true },
+      { name: "Pizza Hut", ownerId: "user3", logoUrl: "https://placehold.co/110x110.png?text=Pizza", cuisineTypes: ["Pizza", "Pasta", "Salads"], location: "London, UK", rating: 4.8, reviewCount: 15, status: "Open", isSponsored: false },
     ];
     const result = await restaurantsCollection.insertMany(initialRestaurants as any[]);
     
@@ -216,6 +221,24 @@ async function seedInitialData() {
 
 seedInitialData().catch(console.error);
 
+export async function createRestaurantForUser(ownerId: string, initialData: { name: string; email: string; }): Promise<Restaurant> {
+  const collection = await getCollection<Restaurant>(RESTAURANTS_COLLECTION);
+  const docToInsert = {
+    name: `${initialData.name}'s Restaurant`,
+    ownerId: ownerId,
+    logoUrl: `https://placehold.co/110x110.png?text=${initialData.name.substring(0,1) || 'R'}`,
+    cuisineTypes: ["New Cuisine"],
+    location: "Your City, Your State",
+    rating: 0,
+    reviewCount: 0,
+    status: 'Closed' as const,
+    isSponsored: false,
+  };
+  const result = await collection.insertOne(docToInsert as any);
+  return { id: result.insertedId.toString(), ...docToInsert };
+}
+
+
 export async function getAllRestaurants(filters: any = {}): Promise<Restaurant[]> {
   const collection = await getCollection<Restaurant>(RESTAURANTS_COLLECTION);
   const restaurantDocs = await collection.find(filters).toArray();
@@ -230,6 +253,32 @@ export async function getRestaurantById(id: string): Promise<Restaurant | null> 
     const restaurantDoc = await collection.findOne({ _id: new ObjectId(id) });
     return restaurantDoc ? docToRestaurant(restaurantDoc) : null;
 }
+
+export async function getRestaurantByOwnerId(ownerId: string): Promise<Restaurant | null> {
+    const collection = await getCollection<Restaurant>(RESTAURANTS_COLLECTION);
+    const restaurantDoc = await collection.findOne({ ownerId });
+    return restaurantDoc ? docToRestaurant(restaurantDoc) : null;
+}
+
+
+export async function updateRestaurantProfile(id: string, updates: Partial<Omit<Restaurant, 'id' | '_id' | 'ownerId'>>): Promise<Restaurant | null> {
+  if (!ObjectId.isValid(id)) {
+    return null;
+  }
+  const collection = await getCollection<Restaurant>(RESTAURANTS_COLLECTION);
+  
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updates },
+    { returnDocument: 'after' }
+  );
+
+  if (!result) {
+    return null;
+  }
+  return docToRestaurant(result);
+}
+
 
 export async function getMenuForRestaurant(restaurantId: string): Promise<FullMenu> {
     if (!ObjectId.isValid(restaurantId)) {
