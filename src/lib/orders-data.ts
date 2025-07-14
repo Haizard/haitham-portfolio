@@ -8,6 +8,7 @@ const ORDERS_COLLECTION = 'orders';
 const PLATFORM_COMMISSION_RATE = 0.15; // 15% platform fee
 
 export type LineItemStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
+export type OrderStatus = 'Pending' | 'Confirmed' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
 
 // LineItem no longer needs vendorId, as the parent Order will have it.
 export interface LineItem {
@@ -21,6 +22,7 @@ export interface LineItem {
   commissionRate: number;
   commissionAmount: number;
   vendorEarnings: number;
+  description?: string; // For selected customizations
 }
 
 // Order now has a vendorId
@@ -32,6 +34,7 @@ export interface Order {
   customerEmail: string;
   shippingAddress: string;
   orderDate: Date;
+  status: OrderStatus; // Add status to the main order
   totalAmount: number; // The total for this specific vendor's portion of the order
   lineItems: LineItem[];
   // Enriched field for admin views
@@ -56,13 +59,13 @@ function docToOrder(doc: any): Order {
 // The core order splitting logic.
 export async function createOrderFromCart(
     customerDetails: { name: string; email: string; address: string }, 
-    cart: { productId: string; quantity: number }[]
+    cart: { productId: string; quantity: number, description?: string }[]
 ): Promise<Order[]> {
     const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
     const createdOrders: Order[] = [];
 
     // 1. Fetch all product details to get price, vendor, etc.
-    const productIds = cart.map(item => item.productId);
+    const productIds = cart.map(item => item.productId.split('-')[0]); // Handle potentially customized IDs
     const productPromises = productIds.map(id => getProductById(id));
     const products = (await Promise.all(productPromises)).filter((p): p is Product => p !== null);
     
@@ -71,8 +74,8 @@ export async function createOrderFromCart(
     // 2. Group cart items by vendorId
     const itemsByVendor = new Map<string, typeof cart>();
     for (const item of cart) {
-        const product = productsById.get(item.productId);
-        if (product && product.productType === 'creator') {
+        const product = productsById.get(item.productId.split('-')[0]);
+        if (product && (product.productType === 'creator' || product.productType === 'restaurant-item')) { // Allow restaurant items
             if (!itemsByVendor.has(product.vendorId)) {
                 itemsByVendor.set(product.vendorId, []);
             }
@@ -86,7 +89,7 @@ export async function createOrderFromCart(
         let totalAmount = 0;
 
         const lineItems: LineItem[] = vendorItems.map(item => {
-            const product = productsById.get(item.productId)!;
+            const product = productsById.get(item.productId.split('-')[0])!;
             const itemTotal = (product.price || 0) * item.quantity;
             totalAmount += itemTotal;
             const commissionAmount = itemTotal * PLATFORM_COMMISSION_RATE;
@@ -102,6 +105,7 @@ export async function createOrderFromCart(
                 commissionRate: PLATFORM_COMMISSION_RATE,
                 commissionAmount,
                 vendorEarnings: itemTotal - commissionAmount,
+                description: item.description, // Pass customizations
             };
         });
 
@@ -111,6 +115,7 @@ export async function createOrderFromCart(
             customerEmail: customerDetails.email,
             shippingAddress: customerDetails.address,
             orderDate: now,
+            status: 'Pending', // Initial order status
             totalAmount,
             lineItems,
         };
@@ -192,6 +197,19 @@ export async function updateLineItemStatus(orderId: string, lineItemId: string, 
   );
 
   return result.modifiedCount === 1;
+}
+
+export async function updateOrderStatus(orderId: string, newStatus: OrderStatus): Promise<Order | null> {
+    if (!ObjectId.isValid(orderId)) {
+        return null;
+    }
+    const collection = await getCollection<Order>(ORDERS_COLLECTION);
+    const result = await collection.findOneAndUpdate(
+        { _id: new ObjectId(orderId) },
+        { $set: { status: newStatus } },
+        { returnDocument: 'after' }
+    );
+    return result ? docToOrder(result) : null;
 }
 
 // --- NEW Admin Dashboard Functions ---

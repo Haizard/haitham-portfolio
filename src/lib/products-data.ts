@@ -26,7 +26,7 @@ export interface ColorOption {
   hex: string;
 }
 
-export type ProductType = 'affiliate' | 'creator';
+export type ProductType = 'affiliate' | 'creator' | 'restaurant-item';
 
 export interface Product {
   _id?: ObjectId;
