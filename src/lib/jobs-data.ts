@@ -69,7 +69,6 @@ export async function getAllJobs(filters: JobFilters = {}): Promise<Job[]> {
     query.status = 'open'; // Default for public job board browsing
   }
 
-
   if (filters.search) {
     const regex = { $regex: filters.search, $options: 'i' };
     query.$or = [{ title: regex }, { description: regex }];
