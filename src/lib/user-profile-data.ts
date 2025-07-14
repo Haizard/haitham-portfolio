@@ -18,6 +18,7 @@ export interface PortfolioLink {
   url: string;
 }
 
+// This profile now serves Freelancers, Vendors, AND Delivery Agents
 export interface FreelancerProfile {
   _id?: ObjectId;
   id?: string;
@@ -28,6 +29,7 @@ export interface FreelancerProfile {
   avatarUrl: string;
   roles: UserRole[];
   
+  // Fields for Freelancers/Vendors
   occupation: string;
   bio: string;
   skills: string[];
@@ -38,11 +40,17 @@ export interface FreelancerProfile {
   reviewCount?: number;
   wishlist?: string[]; 
 
+  // Fields for Vendors
   storeName: string;
   vendorStatus: VendorStatus;
   isFeatured?: boolean; 
   productCount?: number;
 
+  // Fields for Delivery Agents
+  vehicleType?: 'car' | 'motorcycle' | 'bicycle' | 'van';
+  deliveryRange?: number; // in km
+  deliveryAgentStatus?: 'online' | 'offline' | 'on_delivery';
+  
   createdAt: string; 
   updatedAt: string; 
 }
@@ -84,6 +92,7 @@ const defaultFreelancerProfileData = (userId: string, initialData?: any): Omit<F
   storeName: initialData?.storeName || 'My Store',
   vendorStatus: 'pending',
   isFeatured: false,
+  deliveryAgentStatus: 'offline',
 });
 
 export async function createFreelancerProfileIfNotExists(userId: string, initialData?: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile> {

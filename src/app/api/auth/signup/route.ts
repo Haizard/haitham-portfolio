@@ -10,7 +10,7 @@ const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  roles: z.array(z.enum(['client', 'freelancer', 'vendor'])).min(1, "At least one role must be selected."),
+  roles: z.array(z.enum(['client', 'freelancer', 'vendor', 'delivery_agent'])).min(1, "At least one role must be selected."),
 });
 
 export async function POST(request: NextRequest) {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const createdUser = await createUser({ name, email, password, roles });
 
     // Step 2: Create associated profiles using the ID from the newly created user.
-    if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor')) {
+    if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor') || createdUser.roles.includes('delivery_agent')) {
         await createFreelancerProfileIfNotExists(createdUser.id, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
     }
     if (createdUser.roles.includes('client')) {

@@ -4,6 +4,7 @@ import { getCollection } from './mongodb';
 import { getProductById, type Product } from './products-data'; // Import Product type
 import { getFreelancerProfile } from './user-profile-data'; // To enrich with vendor names
 import { getPlatformSettings } from './settings-data'; // Import settings to get commission rate
+import { createDelivery } from './deliveries-data';
 
 const ORDERS_COLLECTION = 'orders';
 
@@ -40,6 +41,7 @@ export interface Order {
   fulfillmentTime: Date;
   totalAmount: number; // The total for this specific vendor's portion of the order
   lineItems: LineItem[];
+  deliveryId?: string | null; // ID of the associated delivery task
   // Enriched field for admin views
   vendorName?: string;
 }
@@ -142,7 +144,22 @@ export async function createOrderFromCart(
         };
         
         const result = await ordersCollection.insertOne(newOrderDoc as any);
-        createdOrders.push(docToOrder({ _id: result.insertedId, ...newOrderDoc }));
+        const createdOrder = docToOrder({ _id: result.insertedId, ...newOrderDoc });
+        
+        // If it's a delivery order, create a delivery task for it
+        if(orderType === 'delivery') {
+            const delivery = await createDelivery({
+                orderId: createdOrder.id!,
+                vendorId: vendorId,
+                customerName: customerDetails.name,
+                deliveryAddress: customerDetails.address,
+            });
+            // Link the delivery to the order
+            await ordersCollection.updateOne({ _id: createdOrder._id }, { $set: { deliveryId: delivery.id } });
+            createdOrder.deliveryId = delivery.id;
+        }
+
+        createdOrders.push(createdOrder);
     }
     
     console.log(`Split cart into ${createdOrders.length} orders.`);
