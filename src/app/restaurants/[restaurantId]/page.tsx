@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { OrderSummaryCard } from './order-summary-card';
 import { MenuItemCard } from './menu-item-card';
 import { MenuItemDialog } from './menu-item-dialog';
+import type { CartItem } from '@/hooks/use-cart';
 
 const TABS = ["Menu", "Restaurant Info", "Book a table", "Restaurant deals"];
 
@@ -71,9 +72,15 @@ export default function RestaurantDetailPage() {
         fetchRestaurantData();
     }, [fetchRestaurantData]);
     
-    const handleOpenItemDialog = (item: MenuItem) => {
-        setSelectedItem(item);
-        setIsDialogOpen(true);
+    const handleOpenItemDialog = (item: MenuItem | CartItem) => {
+        // Find the full menu item from the menu state to ensure we have all option groups
+        const fullMenuItem = menu?.items.find(menuItem => menuItem.id === item.id.split('-')[0]); // Handle potentially customized IDs from cart
+        if (fullMenuItem) {
+            setSelectedItem(fullMenuItem);
+            setIsDialogOpen(true);
+        } else {
+            toast({ title: "Error", description: "Could not find item details to edit.", variant: "destructive"});
+        }
     };
 
     const handleCloseDialog = () => {
@@ -163,7 +170,7 @@ export default function RestaurantDetailPage() {
                     {/* Right Sidebar */}
                     <aside className="col-span-12 lg:col-span-3">
                         <div className="sticky top-24 space-y-6">
-                            <OrderSummaryCard restaurantId={restaurantId}/>
+                            <OrderSummaryCard restaurantId={restaurantId} onEditItem={handleOpenItemDialog}/>
                             <Card>
                                 <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
                                     <CardTitle className="text-base flex items-center gap-2"><Info className="h-5 w-5"/> Restaurant Info</CardTitle>
