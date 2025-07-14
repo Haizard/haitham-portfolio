@@ -9,6 +9,7 @@ const PLATFORM_COMMISSION_RATE = 0.15; // 15% platform fee
 
 export type LineItemStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
 export type OrderStatus = 'Pending' | 'Confirmed' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
+export type OrderType = 'delivery' | 'pickup';
 
 // LineItem no longer needs vendorId, as the parent Order will have it.
 export interface LineItem {
@@ -35,6 +36,8 @@ export interface Order {
   shippingAddress: string;
   orderDate: Date;
   status: OrderStatus; // Add status to the main order
+  orderType: OrderType;
+  fulfillmentTime: Date;
   totalAmount: number; // The total for this specific vendor's portion of the order
   lineItems: LineItem[];
   // Enriched field for admin views
@@ -59,7 +62,9 @@ function docToOrder(doc: any): Order {
 // The core order splitting logic.
 export async function createOrderFromCart(
     customerDetails: { name: string; email: string; address: string }, 
-    cart: { productId: string; quantity: number, description?: string }[]
+    cart: { productId: string; quantity: number, description?: string }[],
+    orderType: OrderType,
+    fulfillmentTime: Date
 ): Promise<Order[]> {
     const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
     const createdOrders: Order[] = [];
@@ -116,6 +121,8 @@ export async function createOrderFromCart(
             shippingAddress: customerDetails.address,
             orderDate: now,
             status: 'Pending', // Initial order status
+            orderType,
+            fulfillmentTime,
             totalAmount,
             lineItems,
         };
@@ -161,7 +168,7 @@ async function seedInitialOrders() {
       address: "123 Fantasy Lane, Wonderland",
     };
     
-    await createOrderFromCart(customerDetails, mockCart);
+    await createOrderFromCart(customerDetails, mockCart, 'delivery', new Date());
     console.log("Initial orders seeded.");
   }
 }

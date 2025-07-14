@@ -1,9 +1,10 @@
+
 // src/components/restaurants/restaurant-order-management.tsx
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, BellRing, Package, Soup, CheckCircle, XCircle, Calendar, Users, Clock } from "lucide-react";
+import { Loader2, BellRing, Package, Soup, CheckCircle, XCircle, Calendar, Users, Clock, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Order, OrderStatus, TableBooking, TableBookingStatus } from '@/lib/restaurants-data';
 import { useUser } from '@/hooks/use-user';
@@ -179,10 +180,19 @@ export function RestaurantOrderManagement() {
               <div className="space-y-4">
                 {orders.map(order => (
                   <Card key={order.id} className="bg-muted/30">
-                    <CardHeader className="flex flex-row justify-between items-center p-4">
+                    <CardHeader className="flex flex-row justify-between items-start p-4">
                       <div>
                         <h3 className="font-semibold">Order #{order.id!.substring(0,8).toUpperCase()}</h3>
-                        <p className="text-xs text-muted-foreground">For: {order.customerName} | Received: {format(new Date(order.orderDate), 'PPP p')}</p>
+                        <p className="text-xs text-muted-foreground">For: {order.customerName}</p>
+                        <p className="text-xs text-muted-foreground">Received: {format(new Date(order.orderDate), 'PPP p')}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                           <Badge variant="outline" className="text-xs capitalize flex items-center gap-1.5">
+                               <ShoppingBag className="h-3 w-3"/>{order.orderType || 'delivery'}
+                           </Badge>
+                           <Badge variant="outline" className="text-xs capitalize flex items-center gap-1.5">
+                               <Clock className="h-3 w-3"/>{format(new Date(order.fulfillmentTime), 'p')}
+                           </Badge>
+                        </div>
                       </div>
                       <Badge variant={getOrderStatusBadgeVariant(order.status)} className="text-xs flex items-center gap-1.5 capitalize">{getOrderStatusIcon(order.status)} {order.status}</Badge>
                     </CardHeader>

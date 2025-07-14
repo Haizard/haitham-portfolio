@@ -11,9 +11,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2, ShoppingBag } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { format } from 'date-fns';
 
 const checkoutFormSchema = z.object({
   name: z.string().min(2, "Name is required."),
@@ -27,7 +28,11 @@ export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  const orderType = searchParams.get('orderType');
+  const fulfillmentTime = searchParams.get('fulfillmentTime');
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutFormSchema),
@@ -35,7 +40,6 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    // This effect runs on the client after hydration
     if (cartItems.length === 0 && !isProcessing) {
       toast({
         title: "Your cart is empty",
@@ -45,7 +49,6 @@ export default function CheckoutPage() {
     }
   }, [cartItems, isProcessing, router, toast]);
 
-
   const handlePlaceOrder = async (values: CheckoutFormValues) => {
     setIsProcessing(true);
     try {
@@ -54,22 +57,20 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerDetails: values,
-          cart: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })),
+          cart: cartItems.map(item => ({ productId: item.id, quantity: item.quantity, description: item.description })),
+          orderType,
+          fulfillmentTime,
         }),
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to place order.");
-      }
+      if (!response.ok) throw new Error(result.message || "Failed to place order.");
       
       toast({
           title: "Order Successful!",
           description: "Your order has been placed. Thank you for shopping with us."
       });
       clearCart();
-      // Redirect to a success page or home
       router.push('/'); 
 
     } catch (error: any) {
@@ -92,6 +93,9 @@ export default function CheckoutPage() {
       );
   }
 
+  const fulfillmentDate = fulfillmentTime ? new Date(fulfillmentTime) : null;
+  const isDelivery = orderType === 'delivery';
+
   return (
     <div className="container mx-auto py-8">
       <header className="mb-8">
@@ -101,7 +105,6 @@ export default function CheckoutPage() {
         </p>
       </header>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Shipping Details Form */}
         <div>
           <Card className="shadow-lg">
             <CardHeader>
@@ -140,7 +143,7 @@ export default function CheckoutPage() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Shipping Address</FormLabel>
+                        <FormLabel>{isDelivery ? "Delivery Address" : "Billing Address"}</FormLabel>
                         <FormControl><Input placeholder="123 Main St, Anytown, USA" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
@@ -156,22 +159,28 @@ export default function CheckoutPage() {
           </Card>
         </div>
 
-        {/* Order Summary */}
         <div>
           <Card className="shadow-lg sticky top-24">
             <CardHeader>
               <CardTitle>Order Summary</CardTitle>
-              <CardDescription>You are purchasing {cartItems.reduce((sum, item) => sum + item.quantity, 0)} item(s).</CardDescription>
+              <CardDescription>
+                {orderType && fulfillmentDate ? (
+                  `A ${orderType} order for ${format(fulfillmentDate, 'PPP @ p')}`
+                ) : (
+                  `You are purchasing ${cartItems.reduce((sum, item) => sum + item.quantity, 0)} item(s).`
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 max-h-96 overflow-y-auto">
               {cartItems.map(item => (
                 <div key={item.id} className="flex items-center gap-4">
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border">
-                    <Image src={item.imageUrl} alt={item.name} fill sizes="64px" className="object-cover" />
+                    <Image src={item.imageUrl} alt={item.name} fill sizes="64px" className="object-contain" />
                   </div>
                   <div className="flex-1 text-sm">
                     <p className="font-medium">{item.name}</p>
                     <p className="text-muted-foreground">Qty: {item.quantity}</p>
+                     {item.description && <p className="text-xs text-muted-foreground/80 italic">{item.description}</p>}
                   </div>
                   <p className="font-semibold text-sm">${(item.price! * item.quantity).toFixed(2)}</p>
                 </div>
@@ -189,5 +198,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    

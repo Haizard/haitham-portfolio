@@ -243,7 +243,7 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
     tagIds: tagIds,
     tags: undefined, // Clear out the string array
     links: productData.productType === 'affiliate' ? (productData.links || []) : undefined,
-    price: productData.productType === 'creator' ? (productData.price || 0) : undefined,
+    price: productData.productType === 'creator' || productData.productType === 'restaurant-item' ? (productData.price || 0) : undefined,
     stock: productData.productType === 'creator' ? (productData.stock || 0) : undefined,
     sku: productData.productType === 'creator' ? (productData.sku || '') : undefined,
     averageRating: 0,
