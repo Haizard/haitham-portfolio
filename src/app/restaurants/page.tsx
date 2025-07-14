@@ -3,8 +3,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { Restaurant } from '@/lib/restaurants-data';
+import type { ServiceCategoryNode } from '@/lib/service-categories-data';
+import type { FoodType } from '@/lib/food-types-data';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, MapPin, ThumbsUp, ChevronsUpDown, Star, DollarSign, Clock, Utensils, Heart, Check, Phone, Mail, Send } from 'lucide-react';
+import { Loader2, Search, MapPin, ThumbsUp, ChevronsUpDown, Star, DollarSign, Clock, Utensils, Heart, Check, Phone, Mail, Send, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,19 +16,7 @@ import Image from 'next/image';
 import { StarRating } from '@/components/reviews/StarRating';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { GlobalNav } from '@/components/layout/global-nav'; // Import the new nav
-
-// Mock data for cuisines filter
-const cuisineFilters = [
-  { id: "apple_juice", label: "Apple juice", count: 1 },
-  { id: "bbq", label: "BB-Q", count: 1 },
-  { id: "beef_roast", label: "Beef Roast", count: 1 },
-  { id: "carrot_juice", label: "Carrot Juice", count: 1 },
-  { id: "cheese_burger", label: "Cheese Burger", count: 8 },
-  { id: "cold_coffee", label: "Cold Coffee", count: 2 },
-  { id: "cupcake", label: "Cupcake", count: 0 },
-  { id: "doughnut", label: "Doughnut", count: 0 },
-];
+import { GlobalNav } from '@/components/layout/global-nav';
 
 const minOrderFilters = [
     { id: "5", label: "$5", count: 3 },
@@ -34,12 +24,6 @@ const minOrderFilters = [
     { id: "15", label: "$15", count: 4 },
     { id: "20", label: "$20", count: 2 },
 ];
-
-const foodTypeFilters = [
-    { id: "vegetarian", label: "Vegetarian", count: 8 },
-    { id: "non-vegetarian", label: "Non-Vegetarian", count: 9 },
-];
-
 
 const sortOptions = [
     { id: "best_match", label: "Best Match", icon: ThumbsUp },
@@ -57,7 +41,7 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
                 <Badge variant="destructive" className="absolute -top-2 -left-2 rotate-[-15deg] shadow-lg">CLOSED</Badge>
             )}
             <div className="flex-shrink-0">
-                <Image src={restaurant.logoUrl} alt={`${restaurant.name} logo`} width={110} height={110} className="rounded-md object-contain border" />
+                <Image src={restaurant.logoUrl} alt={`${restaurant.name} logo`} width={110} height={110} className="rounded-md object-contain border" data-ai-hint="restaurant logo" />
             </div>
             <div className="flex-1">
                 <div className="flex justify-between items-start">
@@ -72,7 +56,7 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
                         </div>
                     </div>
                      <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" asChild>
-                        <Link href="#">VIEW MENU</Link>
+                        <Link href={`/restaurants/${restaurant.id}`}>VIEW MENU</Link>
                     </Button>
                 </div>
                  <Separator className="my-2"/>
@@ -90,16 +74,32 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
 
 export default function RestaurantsPage() {
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+    const [cuisineFilters, setCuisineFilters] = useState<ServiceCategoryNode[]>([]);
+    const [foodTypeFilters, setFoodTypeFilters] = useState<FoodType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
-    const fetchRestaurants = useCallback(async () => {
+    const fetchPageData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/restaurants');
-            if (!response.ok) throw new Error("Failed to fetch restaurants");
-            const data: Restaurant[] = await response.json();
-            setRestaurants(data);
+            const [restaurantsRes, cuisinesRes, foodTypesRes] = await Promise.all([
+                fetch('/api/restaurants'),
+                fetch('/api/service-categories'),
+                fetch('/api/food-types')
+            ]);
+
+            if (!restaurantsRes.ok) throw new Error("Failed to fetch restaurants");
+            const restaurantsData: Restaurant[] = await restaurantsRes.json();
+            setRestaurants(restaurantsData);
+            
+            if (!cuisinesRes.ok) throw new Error("Failed to fetch cuisine categories");
+            const cuisinesData: ServiceCategoryNode[] = await cuisinesRes.json();
+            setCuisineFilters(cuisinesData);
+
+            if (!foodTypesRes.ok) throw new Error("Failed to fetch food types");
+            const foodTypesData: FoodType[] = await foodTypesRes.json();
+            setFoodTypeFilters(foodTypesData);
+
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {
@@ -108,14 +108,12 @@ export default function RestaurantsPage() {
     }, [toast]);
 
     useEffect(() => {
-        fetchRestaurants();
-    }, [fetchRestaurants]);
+        fetchPageData();
+    }, [fetchPageData]);
 
     return (
         <div className="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-            {/* The GlobalNav will render the correct version based on the path */}
             <GlobalNav />
-            {/* Hero Section */}
             <section className="relative bg-black text-white">
                 <Image 
                     src="https://placehold.co/1920x500.png"
@@ -140,23 +138,21 @@ export default function RestaurantsPage() {
                 </div>
             </section>
             
-            {/* Main Content */}
             <main className="container mx-auto px-4 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Sidebar */}
                     <aside className="lg:col-span-3 space-y-6">
                         <Card>
                             <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
                                 <CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Cuisines</CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 space-y-3">
-                                {cuisineFilters.map(filter => (
+                                {isLoading ? <Loader2 className="animate-spin" /> : cuisineFilters.map(filter => (
                                     <div key={filter.id} className="flex justify-between items-center text-sm">
-                                        <label htmlFor={filter.id} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                                            <Checkbox id={filter.id} />
-                                            {filter.label}
+                                        <label htmlFor={`cuisine-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
+                                            <Checkbox id={`cuisine-${filter.id}`} />
+                                            {filter.name}
                                         </label>
-                                        <span className="text-muted-foreground">({filter.count})</span>
+                                        <span className="text-muted-foreground">({filter.serviceCount})</span>
                                     </div>
                                 ))}
                                 <Link href="#" className="text-sm text-red-600 hover:underline">See more cuisines</Link>
@@ -200,22 +196,23 @@ export default function RestaurantsPage() {
                                 <CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Food Type</CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 space-y-3">
-                                {foodTypeFilters.map(filter => (
+                                {isLoading ? <Loader2 className="animate-spin" /> : foodTypeFilters.map(filter => (
                                     <div key={filter.id} className="flex justify-between items-center text-sm">
                                         <label htmlFor={`food-type-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
                                             <Checkbox id={`food-type-${filter.id}`} />
-                                            {filter.label}
+                                            {filter.name}
                                         </label>
-                                        <span className="text-muted-foreground">({filter.count})</span>
                                     </div>
                                 ))}
                             </CardContent>
                         </Card>
                     </aside>
 
-                    {/* Restaurant List */}
                     <div className="lg:col-span-6 space-y-6">
-                        <h2 className="text-xl font-bold">{restaurants.length} Restaurant's Found</h2>
+                        <div className="flex justify-between items-center">
+                             <h2 className="text-xl font-bold">{restaurants.length} Restaurant's Found</h2>
+                             <Button variant="outline" className="flex items-center gap-2"><Filter className="h-4 w-4"/>Filter</Button>
+                        </div>
                         {isLoading ? (
                             <div className="flex justify-center items-center h-64">
                                 <Loader2 className="h-12 w-12 animate-spin text-primary"/>
@@ -225,7 +222,6 @@ export default function RestaurantsPage() {
                         )}
                     </div>
                     
-                     {/* Right Sidebar */}
                     <aside className="lg:col-span-3 space-y-6">
                         <Card>
                             <CardHeader className="py-3">
@@ -239,7 +235,6 @@ export default function RestaurantsPage() {
                                 ))}
                             </CardContent>
                         </Card>
-
                          <Card className="bg-orange-400 text-white p-6 text-center">
                             <h3 className="text-xl font-bold">Can't find a Restaurant?</h3>
                             <p className="text-sm mt-2 mb-4">If you can't find the Restaurant that you want to Order, request to add in our list</p>
@@ -247,7 +242,6 @@ export default function RestaurantsPage() {
                                 RESTAURANT REQUEST
                             </Button>
                         </Card>
-
                         <Card className="bg-teal-500 text-white p-6 text-center">
                             <h3 className="text-xl font-bold">I'm not listed!</h3>
                             <p className="text-sm mt-2 mb-4">Is your restaurant not listed here? You can add it now and start receiving orders!</p>
