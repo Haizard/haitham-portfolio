@@ -5,6 +5,19 @@ import { SessionUser } from './session';
 const RESTAURANTS_COLLECTION = 'restaurants';
 const MENU_ITEMS_COLLECTION = 'menuItems';
 const MENU_CATEGORIES_COLLECTION = 'menuCategories';
+const RESTAURANT_REVIEWS_COLLECTION = 'restaurantReviews';
+
+export interface RestaurantReview {
+  _id?: ObjectId;
+  id?: string;
+  restaurantId: string;
+  reviewerId: string;
+  reviewerName: string;
+  reviewerAvatar?: string;
+  rating: number; // 1-5
+  comment: string;
+  createdAt: Date;
+}
 
 
 export interface Restaurant {
@@ -89,6 +102,13 @@ function docToMenuCategory(doc: any): MenuCategory {
     const { _id, ...rest } = doc;
     return { id: _id?.toString(), ...rest } as MenuCategory;
 }
+
+function docToRestaurantReview(doc: any): RestaurantReview {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: _id?.toString(), ...rest } as RestaurantReview;
+}
+
 
 // Seed some initial data if the collection is empty
 async function seedInitialData() {
@@ -355,4 +375,54 @@ export async function deleteMenuItem(id: string): Promise<boolean> {
   const collection = await getCollection<MenuItem>(MENU_ITEMS_COLLECTION);
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
+}
+
+// --- Restaurant Review Management ---
+
+export async function getReviewsForRestaurant(restaurantId: string): Promise<RestaurantReview[]> {
+  if (!ObjectId.isValid(restaurantId)) {
+    return [];
+  }
+  const collection = await getCollection<RestaurantReview>(RESTAURANT_REVIEWS_COLLECTION);
+  const reviewDocs = await collection.find({ restaurantId }).sort({ createdAt: -1 }).toArray();
+  return reviewDocs.map(docToRestaurantReview);
+}
+
+export async function updateRestaurantRating(restaurantId: string, newAverageRating: number, newReviewCount: number): Promise<boolean> {
+  if (!ObjectId.isValid(restaurantId)) {
+    return false;
+  }
+  const restaurantsCollection = await getCollection<Restaurant>(RESTAURANTS_COLLECTION);
+  const result = await restaurantsCollection.updateOne(
+    { _id: new ObjectId(restaurantId) },
+    { $set: { rating: newAverageRating, reviewCount: newReviewCount } }
+  );
+  return result.modifiedCount === 1;
+}
+
+export async function addRestaurantReview(reviewData: Omit<RestaurantReview, 'id' | '_id' | 'createdAt'>): Promise<RestaurantReview> {
+  const reviewsCollection = await getCollection<Omit<RestaurantReview, 'id' | '_id'>>(RESTAURANT_REVIEWS_COLLECTION);
+  
+  // TODO: Verify if user has ordered from this restaurant.
+
+  const now = new Date();
+  const docToInsert = { ...reviewData, createdAt: now };
+
+  const result = await reviewsCollection.insertOne(docToInsert as any);
+  const newReview = { _id: result.insertedId, id: result.insertedId.toString(), ...docToInsert };
+
+  // After adding the review, recalculate and update the restaurant's average rating
+  const allReviewsForRestaurant = await getReviewsForRestaurant(reviewData.restaurantId);
+  const totalReviews = allReviewsForRestaurant.length;
+  const averageRating = totalReviews > 0
+    ? allReviewsForRestaurant.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+    : 0;
+  
+  await updateRestaurantRating(
+    reviewData.restaurantId,
+    parseFloat(averageRating.toFixed(2)),
+    totalReviews
+  );
+
+  return newReview;
 }
