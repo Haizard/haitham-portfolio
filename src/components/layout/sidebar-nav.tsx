@@ -30,6 +30,7 @@ import {
   Landmark,
   Users,
   Banknote,
+  Leaf, // Added Leaf icon
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -131,6 +132,7 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/admin/categories", label: "Blog Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Blog Tags", icon: Tags },
       { href: "/admin/service-categories", label: "Service Categories", icon: FolderKanban },
+      { href: "/admin/food-types", label: "Food Types", icon: Leaf },
       { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase },
     ],
   },
