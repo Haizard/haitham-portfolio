@@ -5,13 +5,17 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { Product } from '@/lib/products-data';
 import { useToast } from './use-toast';
 
-export interface CartItem extends Product {
+export interface CartItem extends Partial<Product> { // Make fields partial to accommodate simpler restaurant items
+  id: string; // id is mandatory
+  name: string; // name is mandatory
+  price: number; // price is mandatory
   quantity: number;
+  imageUrl: string;
 }
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -56,7 +60,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cartItems]);
 
-  const addToCart = useCallback((product: Product, quantity: number = 1) => {
+  const addToCart = useCallback((product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
+    if (!product.id) {
+        toast({ title: "Error", description: "Product does not have an ID.", variant: "destructive"});
+        return;
+    }
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === product.id);
       if (existingItem) {
@@ -70,8 +78,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     });
     toast({
-        title: "Added to Cart",
-        description: `${product.name} (x${quantity}) has been added to your cart.`,
+        title: "Added to Order",
+        description: `${product.name} (x${quantity}) has been added.`,
     });
   }, [toast]);
 
@@ -79,7 +87,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
     toast({
         title: "Item Removed",
-        description: "The item has been removed from your cart.",
+        description: "The item has been removed from your order.",
         variant: "destructive"
     });
   }, [toast]);
