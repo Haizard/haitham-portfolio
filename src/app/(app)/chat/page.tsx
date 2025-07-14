@@ -128,32 +128,43 @@ export default function ChatPage() {
     });
     
     newSocket.on('newMessage', (newMessage: MessageType) => {
-      console.log('New message received via WebSocket:', newMessage);
-      // We need to use functional updates for states that depend on previous state inside socket handlers
-      setSelectedConversation(currentSelected => {
-          if (newMessage.conversationId === currentSelected?.id) {
-              setMessages(prevMessages => [...prevMessages, newMessage]);
+        console.log('New message received via WebSocket:', newMessage);
+      
+        // Update messages for the current conversation in real-time
+        if (newMessage.conversationId === selectedConversation?.id) {
+          setMessages(prevMessages => [...prevMessages, newMessage]);
+        }
+      
+        // Update the conversation list (last message preview, timestamp, order)
+        setConversations(prevConvs => {
+          const targetConv = prevConvs.find(c => c.id === newMessage.conversationId);
+      
+          if (!targetConv) {
+            // This could happen if it's a new conversation started by someone else.
+            // A more robust implementation might fetch the new conversation details here.
+            // For now, we'll log it and ignore it to prevent errors.
+            console.warn(`Received message for an unknown conversation: ${newMessage.conversationId}`);
+            return prevConvs;
           }
-          return currentSelected;
-      });
-
-      setConversations(prevConvs => {
-        const targetConv = prevConvs.find(c => c.id === newMessage.conversationId);
-        if (targetConv) {
-          const updatedConv = {
+      
+          const updatedConv: Conversation = {
             ...targetConv,
             lastMessage: {
               text: newMessage.text,
-              timestamp: new Date(newMessage.timestamp).toISOString(),
+              timestamp: newMessage.timestamp.toString(),
               senderId: newMessage.senderId,
             },
             lastMessageAt: new Date(newMessage.timestamp),
+            unreadCount: newMessage.conversationId !== selectedConversation?.id
+              ? (targetConv.unreadCount || 0) + 1
+              : 0,
           };
-          return [updatedConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)].sort((a,b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
-        }
-        return prevConvs;
+      
+          // Move updated conversation to the top and re-sort
+          return [updatedConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)]
+            .sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
+        });
       });
-    });
 
     newSocket.on('error', (errorData) => {
         toast({ title: "Chat Error", description: errorData.message, variant: "destructive" });
