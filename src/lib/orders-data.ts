@@ -53,6 +53,19 @@ export interface AdminDashboardStats {
     // topSellingProducts will be added in the API route from the products data lib
 }
 
+export interface RestaurantAnalyticsData {
+    totalRevenue: number;
+    totalOrders: number;
+    averageOrderValue: number;
+    monthlySales: { name: string; sales: number; orders: number }[];
+    topSellingItems: {
+        _id: string;
+        productName: string;
+        totalQuantity: number;
+        totalRevenue: number;
+    }[];
+}
+
 function docToOrder(doc: any): Order {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
@@ -108,7 +121,6 @@ export async function createOrderFromCart(
                 price: product.price || 0,
                 status: 'Pending',
                 commissionRate: PLATFORM_COMMISSION_RATE,
-                commissionAmount,
                 vendorEarnings: itemTotal - commissionAmount,
                 description: item.description, // Pass customizations
             };
@@ -271,5 +283,69 @@ export async function getAdminDashboardStats(): Promise<Omit<AdminDashboardStats
         totalOrders,
         monthlySales,
         recentOrders
+    };
+}
+
+// --- NEW Restaurant Analytics Function ---
+
+export async function getRestaurantAnalytics(restaurantId: string): Promise<RestaurantAnalyticsData> {
+    const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
+    
+    const completedOrdersFilter = { vendorId: restaurantId, status: 'Completed' };
+
+    // 1. Total Revenue, Orders, and Average Value
+    const summaryStats = await ordersCollection.aggregate([
+        { $match: completedOrdersFilter },
+        { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" }, totalOrders: { $sum: 1 } } }
+    ]).toArray();
+
+    const totalRevenue = summaryStats[0]?.totalRevenue || 0;
+    const totalOrders = summaryStats[0]?.totalOrders || 0;
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // 2. Monthly Sales Data for the chart
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const monthlySalesData = await ordersCollection.aggregate([
+        { $match: { vendorId: restaurantId, status: 'Completed', orderDate: { $gte: sixMonthsAgo } } },
+        {
+            $group: {
+                _id: { year: { $year: "$orderDate" }, month: { $month: "$orderDate" } },
+                sales: { $sum: "$totalAmount" },
+                orders: { $sum: 1 }
+            }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]).toArray();
+    
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlySales = monthlySalesData.map(d => ({
+        name: `${monthNames[d._id.month - 1]}`,
+        sales: d.sales,
+        orders: d.orders,
+    }));
+    
+    // 3. Top Selling Menu Items
+    const topItemsData = await ordersCollection.aggregate([
+        { $match: completedOrdersFilter },
+        { $unwind: "$lineItems" },
+        { 
+            $group: { 
+                _id: "$lineItems.productId", 
+                productName: { $first: "$lineItems.productName" },
+                totalQuantity: { $sum: "$lineItems.quantity" },
+                totalRevenue: { $sum: { $multiply: ["$lineItems.price", "$lineItems.quantity"] } }
+            } 
+        },
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 5 }
+    ]).toArray();
+
+    return {
+        totalRevenue,
+        totalOrders,
+        averageOrderValue,
+        monthlySales,
+        topSellingItems: topItemsData,
     };
 }
