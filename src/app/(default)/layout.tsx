@@ -1,4 +1,3 @@
-
 "use client";
 
 // This layout is now handled by the logic in the root layout.

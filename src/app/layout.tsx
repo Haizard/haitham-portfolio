@@ -1,16 +1,36 @@
 
-import type { Metadata } from 'next';
+"use client";
+
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { CartProvider } from '@/hooks/use-cart';
 import { WishlistProvider } from '@/hooks/use-wishlist';
 import { GlobalNav } from '@/components/layout/global-nav';
-import { UserProvider } from '@/providers/user-provider'; // Import the new UserProvider
+import { UserProvider } from '@/providers/user-provider'; 
+import { usePathname } from 'next/navigation';
+import { AppLayout } from '@/components/layout/app-layout';
 
-export const metadata: Metadata = {
-  title: 'CreatorOS',
-  description: 'The all-in-one platform for content creators.',
-};
+// Note: Metadata is usually static, but we're in a client component now.
+// For dynamic metadata, you would use the `generateMetadata` function in a server component layout.
+// export const metadata: Metadata = { ... };
+
+function RootLayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAppRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/vendor') || pathname.startsWith('/content-studio') || pathname.startsWith('/my-') || pathname.startsWith('/post-job') || pathname.startsWith('/client-portal') || pathname.startsWith('/social') || pathname.startsWith('/chat');
+  
+  if (isAppRoute) {
+    return <AppLayout>{children}</AppLayout>;
+  }
+
+  // Public routes
+  return (
+    <>
+      <GlobalNav />
+      <main>{children}</main>
+      <Toaster />
+    </>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -20,6 +40,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>CreatorOS</title>
+        <meta name="description" content="The all-in-one platform for content creators." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -29,9 +51,7 @@ export default function RootLayout({
         <UserProvider>
           <WishlistProvider>
             <CartProvider>
-              <GlobalNav />
-              <div className="min-h-[calc(100vh-4rem)]">{children}</div>
-              <Toaster />
+              <RootLayoutContent>{children}</RootLayoutContent>
             </CartProvider>
           </WishlistProvider>
         </UserProvider>

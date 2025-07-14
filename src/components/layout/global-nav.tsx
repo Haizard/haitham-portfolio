@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut } from 'lucide-react';
+import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
@@ -37,6 +37,9 @@ export function GlobalNav() {
           <div className="hidden md:flex items-center gap-1">
             <Button variant="ghost" asChild>
               <Link href="/">Home</Link>
+            </Button>
+             <Button variant="ghost" asChild>
+              <Link href="/restaurants">Restaurants</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/blog">Blog</Link>
