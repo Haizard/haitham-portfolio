@@ -33,6 +33,8 @@ import {
   Banknote,
   Leaf,
   Utensils,
+  Truck,
+  Map,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -106,6 +108,14 @@ const navConfig: (NavItem | NavGroup)[] = [
     ],
   },
   {
+    group: "Delivery Agent",
+    roles: ['delivery_agent'],
+    items: [
+      { href: "/delivery/find-work", label: "Find Deliveries", icon: Map },
+      { href: "/delivery/my-deliveries", label: "My Deliveries", icon: Truck },
+    ]
+  },
+  {
     group: "AI Content Tools",
     roles: ['creator', 'admin', 'vendor'],
     items: [
@@ -164,8 +174,8 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
     if (href === '/dashboard' || href === '/profile') {
         return pathname === href;
     }
-    if (href.startsWith('/admin/') || href.startsWith('/vendor/')) {
-      return pathname === href;
+    if (href.startsWith('/admin/') || href.startsWith('/vendor/') || href.startsWith('/delivery/')) {
+      return pathname.startsWith(href);
     }
     return pathname.startsWith(href);
   };

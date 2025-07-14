@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, UserPlus, Briefcase, Store, UserCheck } from "lucide-react";
+import { Loader2, UserPlus, Briefcase, Store, UserCheck, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUser } from '@/hooks/use-user';
@@ -21,6 +21,7 @@ const roleOptions = [
   { id: 'client', label: 'I want to hire freelancers', icon: UserCheck },
   { id: 'freelancer', label: 'I want to work as a freelancer', icon: Briefcase },
   { id: 'vendor', label: 'I want to sell products', icon: Store },
+  { id: 'delivery_agent', label: 'I want to be a delivery agent', icon: Truck },
 ] as const;
 
 const signupFormSchema = z.object({
