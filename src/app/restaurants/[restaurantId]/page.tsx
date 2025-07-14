@@ -1,3 +1,4 @@
+
 // src/app/restaurants/[restaurantId]/page.tsx
 "use client";
 

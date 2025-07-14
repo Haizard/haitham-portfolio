@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Leaf, Flame, WheatOff } from 'lucide-react';
-import { useCart } from '@/hooks/use-cart';
+import { useCart, type CartItem as CartItemType } from '@/hooks/use-cart';
 
 const DIETARY_ICONS: { [key: string]: React.ElementType } = {
   vegetarian: Leaf,
@@ -22,7 +22,7 @@ const DIETARY_COLORS: { [key: string]: string } = {
 
 interface MenuItemCardProps {
   item: MenuItem;
-  onOpenDialog: (item: MenuItem) => void;
+  onOpenDialog: (item: MenuItem | CartItemType) => void;
 }
 
 export function MenuItemCard({ item, onOpenDialog }: MenuItemCardProps) {
