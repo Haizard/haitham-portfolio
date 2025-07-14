@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm-run-all --parallel dev:chat \"dev:next -- {@}\" --",
+    "dev": "npm-run-all --parallel dev:chat \"dev:next -- {@}\" -- --port 9003",
     "dev:next": "next dev --turbopack",
     "dev:chat": "tsx src/server/socket-server.ts",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
