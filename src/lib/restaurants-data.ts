@@ -1,3 +1,4 @@
+
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { SessionUser } from './session';
@@ -124,7 +125,7 @@ async function seedInitialData() {
     const mockOwnerId = 'user1'; 
     const initialRestaurants: Omit<Restaurant, 'id' | '_id'>[] = [
       { name: "KFC - Kentucky", ownerId: mockOwnerId, logoUrl: "https://placehold.co/110x110.png?text=KFC", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "New York, New York State", rating: 4.5, reviewCount: 4, status: "Closed", isSponsored: true, specialDeals: "Family Bucket: 12 pieces of chicken, 4 fries, and a large drink for $29.99!" },
-      { name: "Subway", ownerId: "user2", logoUrl: "https://placehold.co/110x110.png?text=Subway", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "Berlin, City state of Berlin", rating: 4.2, reviewCount: 4, status: "Closed", isSponsored: true, specialDeals: "Footlong of the day for $5.99." },
+      { name: "Subway", ownerId: "user2", logoUrl: "https://placehold.co/110x110.png?text=Subway", cuisineTypes: ["Cheese Burger", "Ice Cream", "Potato Fries"], location: "Berlin, City state of Berlin", rating: 4.2, reviewCount: 4, status: "Open", isSponsored: true, specialDeals: "Footlong of the day for $5.99." },
       { name: "Pizza Hut", ownerId: "user3", logoUrl: "https://placehold.co/110x110.png?text=Pizza", cuisineTypes: ["Pizza", "Pasta", "Salads"], location: "London, UK", rating: 4.8, reviewCount: 15, status: "Open", isSponsored: false, specialDeals: "Two large pizzas for the price of one on Tuesdays." },
     ];
     const result = await restaurantsCollection.insertMany(initialRestaurants as any[]);

@@ -17,6 +17,7 @@ import { StarRating } from '@/components/reviews/StarRating';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { GlobalNav } from '@/components/layout/global-nav';
+import { cn } from '@/lib/utils';
 
 const minOrderFilters = [
     { id: "5", label: "$5", count: 3 },
@@ -36,9 +37,16 @@ const sortOptions = [
 
 function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
     return (
-        <Card className="flex flex-col sm:flex-row gap-4 p-4 shadow-md hover:shadow-lg transition-shadow relative">
-            {restaurant.status === 'Closed' && (
-                <Badge variant="destructive" className="absolute -top-2 -left-2 rotate-[-15deg] shadow-lg">CLOSED</Badge>
+        <Card className="flex flex-col sm:flex-row gap-4 p-4 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
+             {restaurant.status === 'Closed' && (
+                <Badge variant="destructive" className="absolute -top-2 -left-2 rotate-[-15deg] shadow-lg z-10">CLOSED</Badge>
+            )}
+             {restaurant.isSponsored && (
+                <div className="absolute top-0 right-0 h-16 w-16">
+                    <div className="absolute transform rotate-45 bg-orange-500 text-center text-white font-semibold py-1 right-[-34px] top-[15px] w-[120px] shadow-lg">
+                        <span className="text-xs">Sponsored</span>
+                    </div>
+                </div>
             )}
             <div className="flex-shrink-0">
                 <Image src={restaurant.logoUrl} alt={`${restaurant.name} logo`} width={110} height={110} className="rounded-md object-contain border" data-ai-hint="restaurant logo" />
@@ -48,7 +56,6 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
                     <div>
                         <h3 className="text-lg font-bold flex items-center gap-2">
                            {restaurant.name}
-                           {restaurant.isSponsored && <Badge className="text-xs bg-orange-500 text-white">sponsored</Badge>}
                         </h3>
                         <div className="flex items-center gap-1">
                             <StarRating rating={restaurant.rating} size={16} disabled />
