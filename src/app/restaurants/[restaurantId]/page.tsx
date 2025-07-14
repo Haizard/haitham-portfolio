@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { OrderSummaryCard } from './order-summary-card';
 import { MenuItemCard } from './menu-item-card';
+import { MenuItemDialog } from './menu-item-dialog';
 
 const TABS = ["Menu", "Restaurant Info", "Book a table", "Restaurant deals"];
 
@@ -34,6 +35,9 @@ export default function RestaurantDetailPage() {
     const [menu, setMenu] = useState<FullMenu | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("Menu");
+    
+    const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const fetchRestaurantData = useCallback(async () => {
         if (!restaurantId) return;
@@ -66,6 +70,17 @@ export default function RestaurantDetailPage() {
     useEffect(() => {
         fetchRestaurantData();
     }, [fetchRestaurantData]);
+    
+    const handleOpenItemDialog = (item: MenuItem) => {
+        setSelectedItem(item);
+        setIsDialogOpen(true);
+    };
+
+    const handleCloseDialog = () => {
+        setIsDialogOpen(false);
+        setSelectedItem(null);
+    };
+
 
     const menuItemsByCategory = useMemo(() => {
         if (!menu) return {};
@@ -88,6 +103,7 @@ export default function RestaurantDetailPage() {
     }
 
     return (
+        <>
         <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
             <GlobalNav />
             {/* Sub-navigation */}
@@ -137,7 +153,7 @@ export default function RestaurantDetailPage() {
                                <h2 className="text-2xl font-bold mb-4">{category.name}</h2>
                                <div className="space-y-4">
                                 {menuItemsByCategory[category.id!]?.map(item => (
-                                    <MenuItemCard key={item.id} item={item} />
+                                    <MenuItemCard key={item.id} item={item} onOpenDialog={handleOpenItemDialog} />
                                  ))}
                                </div>
                             </div>
@@ -164,5 +180,14 @@ export default function RestaurantDetailPage() {
                 </div>
             </main>
         </div>
+        
+        {selectedItem && (
+            <MenuItemDialog 
+                isOpen={isDialogOpen}
+                onClose={handleCloseDialog}
+                item={selectedItem}
+            />
+        )}
+        </>
     );
 }

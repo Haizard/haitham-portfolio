@@ -20,6 +20,22 @@ export interface Restaurant {
   isSponsored: boolean;
 }
 
+export interface MenuItemOption {
+    id: string;
+    name: string;
+    price: number;
+}
+
+export interface MenuItemOptionGroup {
+    id: string;
+    title: string;
+    selectionType: 'single' | 'multi';
+    isRequired: boolean;
+    requiredCount?: number;
+    options: MenuItemOption[];
+}
+
+
 export interface MenuItem {
     _id?: ObjectId;
     id?: string;
@@ -30,6 +46,7 @@ export interface MenuItem {
     price: number;
     imageUrl: string;
     dietaryFlags?: ('vegetarian' | 'gluten-free' | 'spicy')[];
+    optionGroups?: MenuItemOptionGroup[];
 }
 
 export interface MenuCategory {
@@ -54,7 +71,15 @@ function docToRestaurant(doc: any): Restaurant {
 function docToMenuItem(doc: any): MenuItem {
     if (!doc) return doc;
     const { _id, ...rest } = doc;
-    return { id: _id?.toString(), ...rest } as MenuItem;
+    const optionGroups = (rest.optionGroups || []).map((group: any) => ({
+        ...group,
+        id: group.id || new ObjectId().toString(),
+        options: (group.options || []).map((opt: any) => ({
+            ...opt,
+            id: opt.id || new ObjectId().toString(),
+        })),
+    }));
+    return { id: _id?.toString(), ...rest, optionGroups } as MenuItem;
 }
 
 function docToMenuCategory(doc: any): MenuCategory {
@@ -89,14 +114,16 @@ async function seedInitialData() {
             { restaurantId, name: "Starters", order: 1 },
             { restaurantId, name: "Kebabs", order: 2 },
             { restaurantId, name: "Burgers", order: 3 },
-            { restaurantId, name: "Drinks", order: 4 },
+            { restaurantId, name: "Pizza", order: 4 },
+            { restaurantId, name: "Drinks", order: 5 },
         ];
         const catResult = await menuCategoriesCollection.insertMany(initialCategories as any[]);
         const categoryIdMap = {
             "Starters": catResult.insertedIds[0].toString(),
             "Kebabs": catResult.insertedIds[1].toString(),
             "Burgers": catResult.insertedIds[2].toString(),
-            "Drinks": catResult.insertedIds[3].toString(),
+            "Pizza": catResult.insertedIds[3].toString(),
+            "Drinks": catResult.insertedIds[4].toString(),
         };
 
         const menuItemCount = await menuItemsCollection.countDocuments({ restaurantId });
@@ -107,6 +134,19 @@ async function seedInitialData() {
                 { restaurantId, categoryId: categoryIdMap["Kebabs"], name: "Adana Kebab", description: "Spicy minced meat kebab.", price: 15.50, imageUrl: "https://placehold.co/100x100.png?text=Adana", dietaryFlags: ['spicy'] },
                 { restaurantId, categoryId: categoryIdMap["Burgers"], name: "Cheese Burger", description: "Classic beef burger with cheese.", price: 12.00, imageUrl: "https://placehold.co/100x100.png?text=Burger" },
                 { restaurantId, categoryId: categoryIdMap["Burgers"], name: "Veggie Burger", description: "A delicious vegetarian alternative.", price: 11.00, imageUrl: "https://placehold.co/100x100.png?text=Veggie", dietaryFlags: ['vegetarian'] },
+                { restaurantId, categoryId: categoryIdMap["Pizza"], name: "Marinara Pizza", description: "Cheese, tomatoes, tuna fish, sweetcorn and italian herbs.", price: 70.00, imageUrl: "https://placehold.co/100x100.png?text=Pizza", optionGroups: [
+                    { id: "g1", title: "Extra Topping", selectionType: 'multi', isRequired: true, requiredCount: 2, options: [
+                        { id: "t1", name: "Pepperoni", price: 9.00 },
+                        { id: "t2", name: "Tuna", price: 6.00 },
+                        { id: "t3", name: "Sweet corn", price: 0.00 },
+                        { id: "t4", name: "Asparagus", price: 1.00 },
+                        { id: "t5", name: "Jalapenos", price: 2.00 },
+                    ]},
+                    { id: "g2", title: "Sausages", selectionType: 'single', isRequired: true, requiredCount: 1, options: [
+                        { id: "s1", name: "Lime Sauce", price: 2.00 },
+                        { id: "s2", name: "Hot Chili", price: 2.50 },
+                    ]}
+                ]},
                 { restaurantId, categoryId: categoryIdMap["Drinks"], name: "Coca-Cola", description: "Refreshing soft drink.", price: 2.50, imageUrl: "https://placehold.co/100x100.png?text=Coke" },
             ];
             await menuItemsCollection.insertMany(initialItems as any[]);
