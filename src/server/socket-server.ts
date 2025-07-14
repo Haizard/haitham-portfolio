@@ -12,7 +12,7 @@ const httpServer = http.createServer();
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
   cors: {
-    origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9002", // Your Next.js app URL
+    origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9003", // Your Next.js app URL
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -73,5 +73,5 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, 
 httpServer.listen(PORT, () => {
   console.log(`✅ WebSocket Server is listening on port ${PORT}`);
   console.log(`Ensure your Next.js app (NEXT_PUBLIC_WEBSOCKET_URL) points to this address if run separately.`);
-  console.log(`CORS is configured for origin: ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9002"}`);
+  console.log(`CORS is configured for origin: ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9003"}`);
 });
