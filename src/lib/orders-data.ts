@@ -10,7 +10,7 @@ import { createDelivery } from './deliveries-data';
 const ORDERS_COLLECTION = 'orders';
 
 export type LineItemStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
-export type OrderStatus = 'Pending' | 'Confirmed' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
+export type OrderStatus = 'pending_payment' | 'Pending' | 'Confirmed' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
 export type OrderType = 'delivery' | 'pickup';
 
 // LineItem no longer needs vendorId, as the parent Order will have it.
@@ -80,7 +80,8 @@ export async function createOrderFromCart(
     customerDetails: { name: string; email: string; address: string }, 
     cart: { productId: string; quantity: number, description?: string }[],
     orderType: OrderType,
-    fulfillmentTime: Date
+    fulfillmentTime: Date,
+    isPendingPayment: boolean = false // New flag
 ): Promise<Order[]> {
     const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
     const createdOrders: Order[] = [];
@@ -131,6 +132,8 @@ export async function createOrderFromCart(
                 description: item.description, // Pass customizations
             };
         });
+        
+        const initialStatus: OrderStatus = isPendingPayment ? 'pending_payment' : 'Pending';
 
         const newOrderDoc: Omit<Order, 'id' | '_id'> = {
             vendorId,
@@ -138,7 +141,7 @@ export async function createOrderFromCart(
             customerEmail: customerDetails.email,
             shippingAddress: customerDetails.address,
             orderDate: now,
-            status: 'Pending', // Initial order status
+            status: initialStatus,
             orderType,
             fulfillmentTime,
             totalAmount,
@@ -148,8 +151,8 @@ export async function createOrderFromCart(
         const result = await ordersCollection.insertOne(newOrderDoc as any);
         const createdOrder = docToOrder({ _id: result.insertedId, ...newOrderDoc });
         
-        // If it's a delivery order, create a delivery task for it
-        if(orderType === 'delivery') {
+        // If it's a delivery order AND payment is not pending, create a delivery task
+        if(orderType === 'delivery' && !isPendingPayment) {
             const delivery = await createDelivery({
                 orderId: createdOrder.id!,
                 vendorId: vendorId,
