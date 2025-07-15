@@ -35,6 +35,7 @@ import {
   Utensils,
   Truck,
   Map,
+  Star,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -105,7 +106,9 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/vendor/restaurant/profile", label: "Restaurant Profile", icon: Settings },
       { href: "/vendor/restaurant/menu-items", label: "Manage Menu", icon: ClipboardList },
       { href: "/vendor/restaurant/orders", label: "View Orders", icon: ShoppingCart },
+      { href: "/vendor/restaurant/reviews", label: "Reviews", icon: Star },
       { href: "/vendor/restaurant/analytics", label: "Analytics", icon: BarChartHorizontalBig },
+      { href: "/vendor/restaurant/settings", label: "Account Settings", icon: Settings },
     ],
   },
   {

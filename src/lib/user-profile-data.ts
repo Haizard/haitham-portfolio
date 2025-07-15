@@ -45,6 +45,7 @@ export interface FreelancerProfile {
   vendorStatus: VendorStatus;
   isFeatured?: boolean; 
   productCount?: number;
+  payoutPhoneNumber?: string; // New field for AzamPay
 
   // Fields for Delivery Agents
   vehicleType?: 'car' | 'motorcycle' | 'bicycle' | 'van';

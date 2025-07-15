@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Check, X, Banknote } from "lucide-react";
+import { Loader2, Check, X, Banknote, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Payout, PayoutStatus } from '@/lib/payouts-data';
 import {
@@ -17,9 +17,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { FreelancerProfile } from '@/lib/user-profile-data';
 
 interface EnrichedPayout extends Payout {
   vendorName?: string;
+  vendorPhone?: string; // Add vendor phone number
 }
 
 const formatCurrency = (amount: number) => {
@@ -98,6 +100,7 @@ export function PayoutListManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Vendor</TableHead>
+                  <TableHead>Payout Phone</TableHead>
                   <TableHead>Requested Date</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
@@ -108,6 +111,12 @@ export function PayoutListManagement() {
                 {payouts.map(payout => (
                   <TableRow key={payout.id}>
                     <TableCell className="font-medium">{payout.vendorName}</TableCell>
+                    <TableCell className="text-xs">
+                        <div className="flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5"/>
+                            {payout.vendorPhone || 'Not set'}
+                        </div>
+                    </TableCell>
                     <TableCell className="text-xs">{format(new Date(payout.requestedAt), "PPP")}</TableCell>
                     <TableCell className="font-semibold">{formatCurrency(payout.amount)}</TableCell>
                     <TableCell><Badge variant={getStatusBadgeVariant(payout.status)} className="capitalize text-xs">{payout.status}</Badge></TableCell>

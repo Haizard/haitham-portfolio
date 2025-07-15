@@ -1,4 +1,5 @@
 
+
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { Order } from './orders-data'; // Import Order type
@@ -75,7 +76,20 @@ export async function getPayoutsForVendor(vendorId: string): Promise<Payout[]> {
 export async function getAllPayouts(): Promise<Payout[]> {
   const collection = await getCollection<Payout>(PAYOUTS_COLLECTION);
   const payoutDocs = await collection.find({}).sort({ requestedAt: -1 }).toArray();
-  return payoutDocs.map(docToPayout);
+  
+  const enrichedPayouts = await Promise.all(
+    payoutDocs.map(async (doc) => {
+        const payout = docToPayout(doc);
+        const vendorProfile = await getFreelancerProfile(payout.vendorId);
+        return {
+            ...payout,
+            vendorName: vendorProfile?.name || "Unknown",
+            vendorPhone: vendorProfile?.payoutPhoneNumber || "Not Set",
+        }
+    })
+  );
+
+  return enrichedPayouts;
 }
 
 export async function createPayoutRequest(vendorId: string, amount: number): Promise<Payout> {
