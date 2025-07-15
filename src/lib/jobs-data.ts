@@ -138,13 +138,13 @@ export async function getJobsByIds(ids: string[]): Promise<Job[]> {
   });
 }
 
-export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount'>): Promise<Job> {
+export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount' | 'status' | 'escrowStatus'>): Promise<Job> {
   const collection = await getCollection<Omit<Job, 'id' | '_id'>>(JOBS_COLLECTION);
   const now = new Date().toISOString();
   const docToInsert = {
     ...jobData,
-    status: 'open' as JobStatus, // New jobs are always 'open'
-    escrowStatus: 'funded' as EscrowStatus, // New jobs are pre-funded now
+    status: 'open' as JobStatus,
+    escrowStatus: 'unfunded' as EscrowStatus, // Jobs now start as unfunded
     proposalCount: 0,
     createdAt: now,
     updatedAt: now,

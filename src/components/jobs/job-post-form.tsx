@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Loader2, FilePlus2, DollarSign, CalendarIcon, Shield } from "lucide-react";
+import { Loader2, FilePlus2, DollarSign, CalendarIcon, Shield, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -38,20 +38,26 @@ const jobPostFormSchema = z.object({
   budgetType: z.enum(['fixed', 'hourly'], { required_error: "You must select a budget type." }),
   budgetAmount: z.preprocess(
     (val) => (val === "" || val === null || val === undefined || Number.isNaN(parseFloat(String(val)))) ? undefined : parseFloat(String(val)),
-    z.number().min(0, "Budget must be non-negative.").optional()
+    z.number({required_error: "A budget amount is required."}).min(1, "Budget must be at least $1.")
   ),
   deadline: z.date().optional().nullable(),
 });
 
 type JobPostFormValues = z.infer<typeof jobPostFormSchema>;
 
+const phoneFormSchema = z.object({
+    phoneNumber: z.string().regex(/^[0-9]{9,12}$/, "Please enter a valid phone number (e.g., 255712345678)."),
+});
+type PhoneFormValues = z.infer<typeof phoneFormSchema>;
+
+
 export function JobPostForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmationData, setConfirmationData] = useState<JobPostFormValues | null>(null);
+  const [jobData, setJobData] = useState<any | null>(null); // Store the created job data
   const { toast } = useToast();
   const router = useRouter();
 
-  const form = useForm<JobPostFormValues>({
+  const jobForm = useForm<JobPostFormValues>({
     resolver: zodResolver(jobPostFormSchema),
     defaultValues: {
       title: "",
@@ -62,47 +68,61 @@ export function JobPostForm() {
       deadline: null,
     },
   });
-
-  // This function is now just for validation and opening the confirmation dialog
-  const handleInitialSubmit = (values: JobPostFormValues) => {
-    setConfirmationData(values);
-  };
   
-  const handleConfirmAndPost = async () => {
-    if (!confirmationData) return;
-    
+  const phoneForm = useForm<PhoneFormValues>({
+      resolver: zodResolver(phoneFormSchema),
+      defaultValues: { phoneNumber: "" }
+  });
+
+  const handleCreateJob = async (values: JobPostFormValues) => {
     setIsSubmitting(true);
     const payload = {
-      ...confirmationData,
-      skillsRequired: confirmationData.skillsRequired.split(',').map(skill => skill.trim()).filter(Boolean),
-      deadline: confirmationData.deadline ? confirmationData.deadline.toISOString() : null,
+        ...values,
+        skillsRequired: values.skillsRequired.split(',').map(skill => skill.trim()).filter(Boolean),
+        deadline: values.deadline ? values.deadline.toISOString() : null,
     };
-
     try {
       const response = await fetch('/api/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
+      const result = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to post job.");
+        throw new Error(result.message || 'Failed to create job.');
       }
-      toast({
-        title: "Job Posted Successfully!",
-        description: "Your job has been funded and is now live for freelancers to view.",
-      });
-      router.push('/find-work'); // Redirect to job list page
+      setJobData(result); // Open the payment dialog with the created job data
+      toast({ title: "Job Created Successfully", description: "Please fund the project to make it public."});
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
-      setIsSubmitting(false);
-      setConfirmationData(null);
+        setIsSubmitting(false);
+    }
+  };
+  
+  const handleFundJob = async (values: PhoneFormValues) => {
+    if (!jobData || !jobData.id) return;
+    setIsSubmitting(true);
+    try {
+        const response = await fetch('/api/payments/azampay/pay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobId: jobData.id, phoneNumber: values.phoneNumber }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || 'Payment initiation failed.');
+        }
+        toast({
+            title: "Payment Initiated",
+            description: "Please check your phone to approve the payment.",
+        });
+        setJobData(null); // Close dialog
+        router.push('/find-work'); // Redirect to job list page
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive"});
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -119,20 +139,20 @@ export function JobPostForm() {
             Fill out the details below to find the perfect freelancer for your project.
           </CardDescription>
         </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleInitialSubmit)}>
+        <Form {...jobForm}>
+          <form onSubmit={jobForm.handleSubmit(handleCreateJob)}>
             <CardContent className="space-y-6">
-              <FormField control={form.control} name="title" render={({ field }) => (
+              <FormField control={jobForm.control} name="title" render={({ field }) => (
                 <FormItem><FormLabel>Job Title</FormLabel><Input placeholder="e.g., Need a Logo for my new SaaS Startup" {...field} /><FormMessage /></FormItem>
               )}/>
-              <FormField control={form.control} name="description" render={({ field }) => (
+              <FormField control={jobForm.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Project Description</FormLabel><Textarea placeholder="Describe your project in detail..." className="min-h-[150px]" {...field} /><FormMessage /></FormItem>
               )}/>
-              <FormField control={form.control} name="skillsRequired" render={({ field }) => (
+              <FormField control={jobForm.control} name="skillsRequired" render={({ field }) => (
                 <FormItem><FormLabel>Required Skills (comma-separated)</FormLabel><Input placeholder="e.g., UI/UX, Figma, Webflow" {...field} /><FormMessage /></FormItem>
               )}/>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="budgetType" render={({ field }) => (
+                <FormField control={jobForm.control} name="budgetType" render={({ field }) => (
                   <FormItem><FormLabel>Budget Type</FormLabel>
                     <FormControl>
                       <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4 pt-2">
@@ -142,14 +162,14 @@ export function JobPostForm() {
                     </FormControl><FormMessage />
                   </FormItem>
                 )}/>
-                <FormField control={form.control} name="budgetAmount" render={({ field }) => (
+                <FormField control={jobForm.control} name="budgetAmount" render={({ field }) => (
                   <FormItem><FormLabel>Budget Amount ($)</FormLabel>
                       <div className="relative"><DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input type="number" placeholder="e.g., 500" className="pl-8" {...field} /></div>
                       <FormMessage />
                   </FormItem>
                 )}/>
               </div>
-              <FormField control={form.control} name="deadline" render={({ field }) => (
+              <FormField control={jobForm.control} name="deadline" render={({ field }) => (
                   <FormItem className="flex flex-col"><FormLabel>Application Deadline (Optional)</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -170,29 +190,45 @@ export function JobPostForm() {
             <CardFooter>
               <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90">
                 {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Shield className="mr-2 h-5 w-5" />}
-                Proceed to Fund & Post Job
+                Proceed to Fund Job
               </Button>
             </CardFooter>
           </form>
         </Form>
       </Card>
       
-      <AlertDialog open={!!confirmationData} onOpenChange={(open) => !open && setConfirmationData(null)}>
+      <AlertDialog open={!!jobData} onOpenChange={(open) => !open && setJobData(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Job & Funding</AlertDialogTitle>
+            <AlertDialogTitle>Fund Project via AzamPay</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to post the job "<strong>{confirmationData?.title}</strong>" with a budget of <strong>${confirmationData?.budgetAmount?.toLocaleString() || 0}</strong>.
-              This amount will be held securely in escrow. This action is final.
+              To make your job "{jobData?.title}" public, please fund the escrow amount of <strong>${jobData?.budgetAmount?.toLocaleString() || 0}</strong>. Enter your phone number to receive a payment prompt.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmationData(null)} disabled={isSubmitting}>Back to Edit</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmAndPost} disabled={isSubmitting} className="bg-primary hover:bg-primary/90">
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Confirm & Post Job
-            </AlertDialogAction>
-          </AlertDialogFooter>
+           <Form {...phoneForm}>
+             <form onSubmit={phoneForm.handleSubmit(handleFundJob)} className="space-y-4">
+               <FormField
+                control={phoneForm.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem><FormLabel>Phone Number</FormLabel>
+                    <div className="relative">
+                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/>
+                        <Input placeholder="e.g., 255712345678" className="pl-10" {...field}/>
+                    </div>
+                    <FormMessage/>
+                  </FormItem>
+                )}
+               />
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setJobData(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
+                  <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-primary/90">
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Pay ${jobData?.budgetAmount?.toLocaleString() || 0}
+                  </Button>
+                </AlertDialogFooter>
+             </form>
+           </Form>
         </AlertDialogContent>
       </AlertDialog>
     </>
