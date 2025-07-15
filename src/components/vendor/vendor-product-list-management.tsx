@@ -29,9 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import Link from 'next/link';
-
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123";
+import { useUser } from '@/hooks/use-user'; // Import useUser hook
 
 export function VendorProductListManagement({ isAdminView = false }: { isAdminView?: boolean }) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -40,14 +38,18 @@ export function VendorProductListManagement({ isAdminView = false }: { isAdminVi
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
+  const { user } = useUser(); // Get the current user
   const { toast } = useToast();
 
   const fetchProducts = useCallback(async () => {
+    // Wait for user object to be available before fetching, unless it's admin view
+    if (!isAdminView && !user) {
+        return;
+    }
     setIsLoading(true);
     try {
-      // Fetch only products belonging to the mock vendor unless it's an admin view
-      const apiUrl = isAdminView ? '/api/products' : `/api/products?vendorId=${MOCK_VENDOR_ID}`;
+      // Fetch only products belonging to the logged-in vendor unless it's an admin view
+      const apiUrl = isAdminView ? '/api/products' : `/api/products?vendorId=${user!.id}`;
       const response = await fetch(apiUrl);
       if (!response.ok) throw new Error('Failed to fetch your products');
       const data: Product[] = await response.json();
@@ -59,7 +61,7 @@ export function VendorProductListManagement({ isAdminView = false }: { isAdminVi
     } finally {
       setIsLoading(false);
     }
-  }, [toast, isAdminView]);
+  }, [toast, isAdminView, user]);
 
   useEffect(() => {
     fetchProducts();

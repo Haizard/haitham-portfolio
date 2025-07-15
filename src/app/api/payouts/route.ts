@@ -3,9 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getVendorFinanceSummary, getPayoutsForVendor, createPayoutRequest, getAllPayouts } from '@/lib/payouts-data';
 import { getFreelancerProfile } from '@/lib/user-profile-data';
 import { z } from 'zod';
-
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123";
+import { getSession } from '@/lib/session';
 
 const createPayoutSchema = z.object({
   amount: z.coerce.number().positive("Amount must be a positive number."),
@@ -32,8 +30,8 @@ export async function GET(request: NextRequest) {
     const allPayouts = await getAllPayouts();
     
     // Enrich payouts with vendor names for the admin view
-    const vendorIds = [...new Set(allPayouts.map(p => p.vendorId))];
-    const vendorProfiles = await Promise.all(vendorIds.map(id => getFreelancerProfile(id)));
+    const vendorUserIds = [...new Set(allPayouts.map(p => p.vendorId))];
+    const vendorProfiles = await Promise.all(vendorUserIds.map(id => getFreelancerProfile(id)));
     const vendorMap = new Map(vendorProfiles.map(p => p ? [p.userId, p.name] : [null, null]));
 
     const enrichedPayouts = allPayouts.map(p => ({
@@ -51,8 +49,12 @@ export async function GET(request: NextRequest) {
 
 // POST handler for a vendor to request a new payout
 export async function POST(request: NextRequest) {
+    const session = await getSession();
+    if (!session.user || !session.user.id) {
+        return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+    }
   try {
-    const vendorId = MOCK_VENDOR_ID; // In real app, get from session
+    const vendorId = session.user.id;
     const body = await request.json();
     const validation = createPayoutSchema.safeParse(body);
 

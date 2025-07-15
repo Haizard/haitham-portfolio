@@ -41,7 +41,7 @@ export function PayoutListManagement() {
       const data: EnrichedPayout[] = await response.json();
       setPayouts(data);
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Could not load payouts.", variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

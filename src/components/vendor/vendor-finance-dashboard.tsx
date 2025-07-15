@@ -16,9 +16,7 @@ import { Loader2, CircleDollarSign, Banknote, History, Wallet, Send } from "luci
 import { useToast } from "@/hooks/use-toast";
 import type { Payout, VendorFinanceSummary, PayoutStatus } from '@/lib/payouts-data';
 import { format } from 'date-fns';
-
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123";
+import { useUser } from '@/hooks/use-user';
 
 const payoutRequestSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than zero."),
@@ -36,6 +34,7 @@ export function VendorFinanceDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRequesting, setIsRequesting] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
 
   const form = useForm<PayoutRequestFormValues>({
     resolver: zodResolver(payoutRequestSchema),
@@ -43,9 +42,10 @@ export function VendorFinanceDashboard() {
   });
 
   const fetchFinancialData = useCallback(async () => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/payouts?vendorId=${MOCK_VENDOR_ID}`);
+      const response = await fetch(`/api/payouts?vendorId=${user.id}`);
       if (!response.ok) throw new Error('Failed to fetch financial data');
       const data = await response.json();
       setSummary(data.summary);
@@ -55,7 +55,7 @@ export function VendorFinanceDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   useEffect(() => {
     fetchFinancialData();

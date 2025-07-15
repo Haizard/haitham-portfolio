@@ -25,9 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123";
+import { useUser } from '@/hooks/use-user'; // Import useUser
 
 const statusOptions: LineItemStatus[] = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
@@ -103,11 +101,13 @@ export function VendorOrderList() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useUser(); // Get the current user
 
   const fetchOrders = useCallback(async () => {
+    if (!user) return; // Don't fetch if user isn't loaded
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/orders?vendorId=${MOCK_VENDOR_ID}`);
+      const response = await fetch(`/api/orders?vendorId=${user.id}`);
       if (!response.ok) throw new Error('Failed to fetch your orders');
       const data: Order[] = await response.json();
       setOrders(data);
@@ -118,7 +118,7 @@ export function VendorOrderList() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   useEffect(() => {
     fetchOrders();

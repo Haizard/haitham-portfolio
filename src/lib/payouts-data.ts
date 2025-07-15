@@ -2,6 +2,8 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { Order } from './orders-data'; // Import Order type
+import { useUser } from '@/hooks/use-user'; // Not recommended in data layer, but using for mock user ID
+import { getFreelancerProfile } from './user-profile-data';
 
 const PAYOUTS_COLLECTION = 'payouts';
 
