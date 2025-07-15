@@ -19,6 +19,7 @@ import { Button } from '../ui/button';
 import { Loader2, Moon, Sun } from 'lucide-react'; 
 import { ScrollArea } from '../ui/scroll-area';
 import { useUser } from '@/hooks/use-user';
+import { Toaster } from '../ui/toaster';
 
 // Mock theme toggle functions for now
 const useTheme = () => {
@@ -84,6 +85,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           {children}
         </main>
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );

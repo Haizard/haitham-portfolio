@@ -9,6 +9,7 @@ import { GlobalNav } from '@/components/layout/global-nav';
 import { UserProvider } from '@/providers/user-provider'; 
 import { usePathname } from 'next/navigation';
 import { AppLayout } from '@/components/layout/app-layout';
+import { ComparisonProvider } from '@/hooks/use-comparison';
 
 // Note: Metadata is usually static, but we're in a client component now.
 // For dynamic metadata, you would use the `generateMetadata` function in a server component layout.
@@ -16,7 +17,14 @@ import { AppLayout } from '@/components/layout/app-layout';
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAppRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/vendor') || pathname.startsWith('/content-studio') || pathname.startsWith('/my-') || pathname.startsWith('/post-job') || pathname.startsWith('/client-portal') || pathname.startsWith('/social') || pathname.startsWith('/chat');
+  
+  const protectedAppRoutes = [
+    '/dashboard', '/admin', '/vendor', '/content-studio', '/my-jobs', 
+    '/my-proposals', '/my-projects', '/my-services', '/post-job', 
+    '/client-portal', '/social-media', '/chat', '/delivery', '/profile'
+  ];
+
+  const isAppRoute = protectedAppRoutes.some(prefix => pathname.startsWith(prefix));
   
   if (isAppRoute) {
     return <AppLayout>{children}</AppLayout>;
@@ -51,7 +59,7 @@ export default function RootLayout({
         <UserProvider>
           <WishlistProvider>
             <CartProvider>
-              <RootLayoutContent>{children}</RootLayoutContent>
+                <RootLayoutContent>{children}</RootLayoutContent>
             </CartProvider>
           </WishlistProvider>
         </UserProvider>

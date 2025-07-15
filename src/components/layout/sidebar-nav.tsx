@@ -59,8 +59,8 @@ type NavGroup = {
 // All available navigation items, structured by role/feature set
 const navConfig: (NavItem | NavGroup)[] = [
   // Always visible items
-  { href: "/dashboard", label: "Hub", icon: LayoutDashboard },
-  { href: "/profile", label: "My Profile", icon: UserCircle },
+  { href: "/dashboard", label: "Hub", icon: LayoutDashboard, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
+  { href: "/profile", label: "My Profile", icon: UserCircle, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
   {
     group: "Freelancer Tools",
     roles: ['freelancer'],
@@ -104,7 +104,8 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/vendor/restaurant/dashboard", label: "Restaurant Dashboard", icon: Utensils },
       { href: "/vendor/restaurant/profile", label: "Restaurant Profile", icon: Settings },
       { href: "/vendor/restaurant/menu-items", label: "Manage Menu", icon: ClipboardList },
-      // Add more restaurant-specific links here as they are built
+      { href: "/vendor/restaurant/orders", label: "View Orders", icon: ShoppingCart },
+      { href: "/vendor/restaurant/analytics", label: "Analytics", icon: BarChartHorizontalBig },
     ],
   },
   {
@@ -172,16 +173,7 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
   };
   
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/profile') {
-        return pathname === href;
-    }
-    // Updated to match specific prefixes more accurately
-    const appPrefixes = ['/admin', '/vendor', '/delivery', '/content-studio', '/my-jobs', '/my-proposals', '/my-projects', '/my-services', '/post-job', '/client-portal', '/social-media', '/chat'];
-    const matchingPrefix = appPrefixes.find(prefix => href.startsWith(prefix));
-    if (matchingPrefix) {
-        return pathname.startsWith(href);
-    }
-    return pathname === href; // Fallback for other routes
+    return pathname === href;
   };
 
 

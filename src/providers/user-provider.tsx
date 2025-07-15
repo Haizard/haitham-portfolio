@@ -31,7 +31,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    setIsLoading(true);
+    // No need to set isLoading(true) here as it's handled by the initial state
     try {
       const sessionRes = await fetch('/api/auth/session');
       if (!sessionRes.ok) {
