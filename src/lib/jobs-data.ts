@@ -138,7 +138,7 @@ export async function getJobsByIds(ids: string[]): Promise<Job[]> {
   });
 }
 
-export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount' | 'escrowStatus'>): Promise<Job> {
+export async function addJob(jobData: Omit<Job, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'proposalCount'>): Promise<Job> {
   const collection = await getCollection<Omit<Job, 'id' | '_id'>>(JOBS_COLLECTION);
   const now = new Date().toISOString();
   const docToInsert = {

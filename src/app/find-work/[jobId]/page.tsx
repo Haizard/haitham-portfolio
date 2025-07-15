@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause, Star, Shield, Lock, Unlock, Banknote, User } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Calendar, Clock, Tag, Briefcase, Send, Users, CheckSquare, PlaySquare, FolderClock, Pause, Star, Shield, Lock } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
 import type { Proposal } from '@/lib/proposals-data';
 import type { ClientProfile } from '@/lib/client-profile-data';
@@ -41,9 +41,6 @@ export default function JobDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isProposalDialogOpen, setIsProposalDialogOpen] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
-  
-  const [isReleasing, setIsReleasing] = useState(false);
-  const [isReleaseConfirmationOpen, setIsReleaseConfirmationOpen] = useState(false);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -116,23 +113,6 @@ export default function JobDetailPage() {
   const hiredFreelancerId = acceptedProposal?.freelancerId;
   const amIHiredFreelancer = user && hiredFreelancerId === user.id;
 
-  const handleReleaseEscrow = async () => {
-    if (!job?.id) return;
-    setIsReleasing(true);
-    try {
-      const response = await fetch(`/api/jobs/${job.id}/release`, { method: 'PUT' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to release funds');
-      toast({ title: "Funds Released!", description: "The escrow payment has been released to the freelancer." });
-      fetchJobAndProposals();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsReleasing(false);
-      setIsReleaseConfirmationOpen(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -183,7 +163,7 @@ export default function JobDetailPage() {
     switch(status) {
       case 'unfunded': return { text: 'Unfunded', icon: Shield, color: 'text-orange-500' };
       case 'funded': return { text: 'Funded', icon: Lock, color: 'text-green-600' };
-      case 'released': return { text: 'Released', icon: Unlock, color: 'text-blue-500' };
+      case 'released': return { text: 'Released', icon: Shield, color: 'text-blue-500' };
       default: return { text: 'Unknown', icon: Shield, color: 'text-muted-foreground' };
     }
   };
@@ -269,17 +249,6 @@ export default function JobDetailPage() {
                   {getEscrowStatusInfo(job.escrowStatus).text}
                 </Badge>
               </div>
-               {isOwner && job.status === 'in-progress' && job.escrowStatus === 'funded' && (
-                <div className="text-center p-3 bg-green-100 dark:bg-green-900/30 rounded-md text-green-700 dark:text-green-300 text-sm">
-                  Project is funded. You can now collaborate with the freelancer.
-                </div>
-              )}
-               {isOwner && job.status === 'completed' && job.escrowStatus === 'funded' && (
-                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setIsReleaseConfirmationOpen(true)} disabled={isReleasing}>
-                  {isReleasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Unlock className="mr-2 h-4 w-4"/>}
-                  Release Escrow Payment
-                </Button>
-              )}
           </div>
        </CardContent>
     </Card>
@@ -364,6 +333,13 @@ export default function JobDetailPage() {
                         <p className="text-xs text-muted-foreground">{new Date(job.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
+                    <div className="flex items-start gap-3">
+                      <Lock className="h-5 w-5 mt-0.5 text-green-600" />
+                      <div>
+                        <p className="font-semibold text-foreground">Payment Funded</p>
+                        <p className="text-xs text-muted-foreground">Escrow protection is active.</p>
+                      </div>
+                    </div>
                   </CardContent>
                   {!isOwner && (
                     <CardFooter>
@@ -382,7 +358,7 @@ export default function JobDetailPage() {
                 
                 <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2"><User className="h-5 w-5 text-primary"/> About the Client</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">About the Client</CardTitle>
                     </CardHeader>
                     <CardContent>
                        {clientProfile ? (
@@ -458,23 +434,6 @@ export default function JobDetailPage() {
           }}
         />
       )}
-      <AlertDialog open={isReleaseConfirmationOpen} onOpenChange={setIsReleaseConfirmationOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Fund Release</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to release the payment of <strong>${job.budgetAmount?.toLocaleString()}</strong> to the freelancer for the project "<strong>{job.title}</strong>"? This action is final and cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsReleaseConfirmationOpen(false)} disabled={isReleasing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleReleaseEscrow} disabled={isReleasing} className="bg-blue-600 hover:bg-blue-700">
-              {isReleasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Confirm & Release Funds
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
