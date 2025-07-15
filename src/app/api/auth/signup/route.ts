@@ -6,11 +6,15 @@ import { z } from 'zod';
 import { createFreelancerProfileIfNotExists } from '@/lib/user-profile-data';
 import { createClientProfileIfNotExists } from '@/lib/client-profile-data';
 
+const roleEnum = z.enum(['client', 'freelancer', 'vendor', 'delivery_agent'], {
+    required_error: "You must select a role."
+});
+
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  roles: z.array(z.enum(['client', 'freelancer', 'vendor', 'delivery_agent'])).min(1, "At least one role must be selected."),
+  role: roleEnum,
 });
 
 export async function POST(request: NextRequest) {
@@ -22,12 +26,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid signup data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { name, email, password, roles } = validation.data;
+    const { name, email, password, role } = validation.data;
     
+    // The roles array will now contain just the single selected role.
+    const roles: UserRole[] = [role];
+
     // Step 1: Create the core user account.
     const createdUser = await createUser({ name, email, password, roles });
 
-    // Step 2: Create associated profiles using the ID from the newly created user.
+    // Step 2: Create associated profiles based on the single role.
     if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor') || createdUser.roles.includes('delivery_agent')) {
         await createFreelancerProfileIfNotExists(createdUser.id, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
     }

@@ -14,23 +14,25 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Loader2, UserPlus, Briefcase, Store, UserCheck, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useUser } from '@/hooks/use-user';
 
 const roleOptions = [
-  { id: 'client', label: 'I want to hire freelancers', icon: UserCheck },
+  { id: 'client', label: 'I want to hire talent', icon: UserCheck },
   { id: 'freelancer', label: 'I want to work as a freelancer', icon: Briefcase },
   { id: 'vendor', label: 'I want to sell products', icon: Store },
   { id: 'delivery_agent', label: 'I want to be a delivery agent', icon: Truck },
 ] as const;
 
+const roleEnum = z.enum(['client', 'freelancer', 'vendor', 'delivery_agent'], {
+    required_error: "You must select a role."
+});
+
 const signupFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  roles: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one role.",
-  }),
+  role: roleEnum,
 });
 
 type SignupFormValues = z.infer<typeof signupFormSchema>;
@@ -43,7 +45,7 @@ export default function SignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema),
-    defaultValues: { name: "", email: "", password: "", roles: ["client"] },
+    defaultValues: { name: "", email: "", password: "", role: "client" },
   });
 
   const handleSignup = async (values: SignupFormValues) => {
@@ -69,7 +71,7 @@ export default function SignupPage() {
       });
       
       router.push('/dashboard');
-      router.refresh(); // Force a hard refresh to ensure layout re-evaluates auth state
+      router.refresh(); 
 
     } catch (error: any) {
       toast({
@@ -130,43 +132,29 @@ export default function SignupPage() {
               
               <FormField
                 control={form.control}
-                name="roles"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-4"><FormLabel>How will you use CreatorOS?</FormLabel></div>
-                    <div className="space-y-2">
-                    {roleOptions.map((item) => (
-                      <FormField
-                        key={item.id}
-                        control={form.control}
-                        name="roles"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-muted/50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(item.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), item.id])
-                                      : field.onChange(
-                                          (field.value || []).filter(
-                                            (value) => value !== item.id
-                                          )
-                                        );
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal flex items-center gap-2 cursor-pointer">
+                name="role"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>How will you use CreatorOS?</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="grid grid-cols-1 md:grid-cols-2 gap-2"
+                      >
+                        {roleOptions.map((item) => (
+                           <FormItem key={item.id} className="flex items-center space-x-3 space-y-0 p-3 border rounded-md hover:shadow-sm has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary">
+                            <FormControl>
+                              <RadioGroupItem value={item.id} />
+                            </FormControl>
+                            <FormLabel className="font-normal flex items-center gap-2 cursor-pointer">
                                 <item.icon className="h-5 w-5 text-primary"/>
                                 {item.label}
-                              </FormLabel>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    ))}
-                    </div>
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

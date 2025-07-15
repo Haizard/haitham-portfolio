@@ -54,12 +54,8 @@ export async function createUser(userData: Omit<User, 'id' | 'createdAt'>): Prom
   
   const now = new Date();
   
-  // Ensure 'creator' is added if 'freelancer' or 'vendor' are present.
-  const baseRoles = new Set(userData.roles);
-  if (baseRoles.has('freelancer') || baseRoles.has('vendor')) {
-    baseRoles.add('creator');
-  }
-  const finalRoles = Array.from(baseRoles);
+  // The 'roles' field from userData will now be an array with a single role.
+  const finalRoles = userData.roles;
 
   const docToInsert: Omit<User, 'id'> = {
     name: userData.name,
