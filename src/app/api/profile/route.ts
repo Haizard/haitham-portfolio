@@ -1,4 +1,5 @@
 
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { getFreelancerProfile, updateFreelancerProfile, type FreelancerProfile } from '@/lib/user-profile-data';
 import { z } from 'zod';
@@ -23,6 +24,7 @@ const profileUpdateSchema = z.object({
     z.number().min(0, "Hourly rate must be non-negative.").nullable().optional()
   ),
   availabilityStatus: z.enum(['available', 'busy', 'not_available']),
+  payoutPhoneNumber: z.string().regex(/^[0-9]{9,12}$/, "Please enter a valid phone number.").optional().or(z.literal("")),
 });
 
 

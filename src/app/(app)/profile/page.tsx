@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
@@ -13,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, UserCircle, Mail, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon, DollarSign, Settings2, Palette, Info, Star, MessageSquare } from "lucide-react";
+import { Loader2, UserCircle, Mail, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon, DollarSign, Settings2, Palette, Info, Star, MessageSquare, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { FreelancerProfile, PortfolioLink } from '@/lib/user-profile-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { StarRating } from '@/components/reviews/StarRating';
 import { useUser } from '@/hooks/use-user';
 import { useRouter } from 'next/navigation';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const portfolioLinkSchema = z.object({
   id: z.string().optional(),
@@ -43,6 +45,7 @@ const profileFormSchema = z.object({
     z.number().min(0, "Hourly rate must be non-negative.").nullable().optional()
   ),
   availabilityStatus: z.enum(['available', 'busy', 'not_available']),
+  payoutPhoneNumber: z.string().regex(/^[0-9]{9,12}$/, "Please enter a valid phone number (e.g., 255712345678).").or(z.literal("")).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -51,7 +54,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   // The user hook now provides the full, reliable profile data.
-  const { user: profileData, isLoading: isUserLoading } = useUser();
+  const { user: profileData, isLoading: isUserLoading, mutate } = useUser();
   const router = useRouter();
 
   const form = useForm<ProfileFormValues>({
@@ -59,6 +62,7 @@ export default function ProfilePage() {
     defaultValues: {
       name: "", email: "", avatarUrl: "", occupation: "", bio: "",
       skills: [], portfolioLinks: [], hourlyRate: null, availabilityStatus: "available",
+      payoutPhoneNumber: "",
     },
   });
   
@@ -79,7 +83,8 @@ export default function ProfilePage() {
         skills: profileData.skills?.join(', ') || '',
         hourlyRate: profileData.hourlyRate ?? null,
         portfolioLinks: profileData.portfolioLinks || [],
-        availabilityStatus: profileData.availabilityStatus || 'available'
+        availabilityStatus: profileData.availabilityStatus || 'available',
+        payoutPhoneNumber: profileData.payoutPhoneNumber || '',
       });
     }
   }, [profileData, form]);
@@ -102,17 +107,8 @@ export default function ProfilePage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save profile');
       }
-      const updatedProfile: FreelancerProfile = await response.json();
       
-      // We don't need to manually update state here. The provider will handle it if we
-      // call mutate, or we can just let the form be re-synced on next load. For now,
-      // just resetting the form with the new data is sufficient.
-      form.reset({
-        ...updatedProfile,
-        skills: updatedProfile.skills?.join(', ') || '',
-        hourlyRate: updatedProfile.hourlyRate ?? null,
-        portfolioLinks: updatedProfile.portfolioLinks || [],
-      });
+      await mutate(); // Re-fetch user data from the provider
       
       toast({ title: "Success", description: "Profile updated successfully!" });
     } catch (error: any) {
@@ -134,16 +130,16 @@ export default function ProfilePage() {
   const currentAvatar = form.watch("avatarUrl") || profileData.avatarUrl;
   const currentName = form.watch("name") || profileData.name;
   const currentOccupation = form.watch("occupation") || profileData.occupation;
-
+  const canEarnMoney = profileData.roles.some(r => ['freelancer', 'vendor', 'delivery_agent'].includes(r));
 
   return (
     <div className="container mx-auto py-8">
       <header className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight font-headline flex items-center">
-          <UserCircle className="mr-3 h-10 w-10 text-primary" /> Your Freelancer Profile
+          <UserCircle className="mr-3 h-10 w-10 text-primary" /> Your Profile
         </h1>
         <p className="text-xl text-muted-foreground mt-2">
-          Manage your professional information that clients will see.
+          Manage your professional information that others will see.
         </p>
       </header>
 
@@ -165,7 +161,7 @@ export default function ProfilePage() {
                     <CardContent className="space-y-6 pt-6">
                     <ScrollArea className="h-[calc(100vh-28rem)] pr-3">
                     <div className="space-y-6">
-                    {/* --- General User Info (Part of profile for now) --- */}
+                    {/* --- General User Info --- */}
                     <FormField control={form.control} name="avatarUrl" render={({ field }) => (
                         <FormItem><FormLabel className="flex items-center"><Palette className="mr-2 h-4 w-4 text-muted-foreground" />Avatar URL</FormLabel><Input {...field} placeholder="https://example.com/avatar.png" className="text-base p-3" /></FormItem>
                     )}/>
@@ -185,7 +181,7 @@ export default function ProfilePage() {
                     )}/>
                     {/* --- Freelancer-Specific Info --- */}
                     <div className="border-t pt-6 space-y-6">
-                        <h3 className="text-lg font-semibold text-primary flex items-center"><Settings2 className="mr-2 h-5 w-5"/>Freelancer Details</h3>
+                        <h3 className="text-lg font-semibold text-primary flex items-center"><Settings2 className="mr-2 h-5 w-5"/>Professional Details</h3>
                         <FormField control={form.control} name="availabilityStatus" render={({ field }) => (
                             <FormItem>
                             <FormLabel>Availability Status</FormLabel>
@@ -224,6 +220,29 @@ export default function ProfilePage() {
                         </Button>
                         </div>
                     </div>
+                     {canEarnMoney && (
+                        <div className="border-t pt-6 space-y-4">
+                            <h3 className="text-lg font-semibold text-primary flex items-center"><DollarSign className="mr-2 h-5 w-5"/>Payout Information</h3>
+                            <Alert>
+                                <Phone className="h-4 w-4"/>
+                                <AlertTitle>AzamPay Payouts</AlertTitle>
+                                <AlertDescription>
+                                   We use AzamPay for all payouts. Please enter the phone number associated with your mobile money account.
+                                </AlertDescription>
+                            </Alert>
+                             <FormField
+                                control={form.control}
+                                name="payoutPhoneNumber"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Payout Phone Number</FormLabel>
+                                    <Input type="tel" placeholder="e.g., 255712345678" {...field} value={field.value ?? ""} className="text-base p-3"/>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                     )}
                     </div>
                     </ScrollArea>
                     </CardContent>

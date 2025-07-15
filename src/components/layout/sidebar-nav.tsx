@@ -1,4 +1,5 @@
 
+
 // src/components/layout/sidebar-nav.tsx
 "use client";
 
@@ -103,12 +104,10 @@ const navConfig: (NavItem | NavGroup)[] = [
     roles: ['vendor'], // Assuming restaurant owners have the 'vendor' role
     items: [
       { href: "/vendor/restaurant/dashboard", label: "Restaurant Dashboard", icon: Utensils },
-      { href: "/vendor/restaurant/profile", label: "Restaurant Profile", icon: Settings },
       { href: "/vendor/restaurant/menu-items", label: "Manage Menu", icon: ClipboardList },
       { href: "/vendor/restaurant/orders", label: "View Orders", icon: ShoppingCart },
-      { href: "/vendor/restaurant/reviews", label: "Reviews", icon: Star },
+      { href: "/vendor/restaurant/reviews", label: "Customer Reviews", icon: Star },
       { href: "/vendor/restaurant/analytics", label: "Analytics", icon: BarChartHorizontalBig },
-      { href: "/vendor/restaurant/settings", label: "Account Settings", icon: Settings },
     ],
   },
   {
