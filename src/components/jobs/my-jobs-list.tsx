@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { CheckSquare, PlaySquare, Pause, FolderClock, Users, Eye, ClipboardList, CheckCircle, Loader2 } from 'lucide-react';
+import { CheckSquare, PlaySquare, Pause, FolderClock, Users, Eye, ClipboardList, CheckCircle, Loader2, DollarSign } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent } from '../ui/card';
 import {
@@ -36,6 +36,7 @@ interface MyJobsListProps {
 
 export function MyJobsList({ jobs, onJobUpdate }: MyJobsListProps) {
   const [jobToUpdate, setJobToUpdate] = useState<{ job: Job; newStatus: 'completed' | 'cancelled' } | null>(null);
+  const [jobToRelease, setJobToRelease] = useState<Job | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
@@ -78,6 +79,27 @@ export function MyJobsList({ jobs, onJobUpdate }: MyJobsListProps) {
     } finally {
       setIsUpdating(false);
       setJobToUpdate(null);
+    }
+  };
+  
+  const handleReleasePayment = async () => {
+    if (!jobToRelease) return;
+    setIsUpdating(true);
+    try {
+        const response = await fetch(`/api/jobs/${jobToRelease.id}/release`, {
+            method: 'PUT',
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to release payment.');
+        }
+        toast({ title: "Payment Released!", description: data.message });
+        onJobUpdate();
+    } catch (error: any) {
+        toast({ title: "Error Releasing Payment", description: error.message, variant: "destructive" });
+    } finally {
+        setIsUpdating(false);
+        setJobToRelease(null);
     }
   };
 
@@ -150,6 +172,14 @@ export function MyJobsList({ jobs, onJobUpdate }: MyJobsListProps) {
                               <CheckCircle className="mr-2 h-4 w-4" /> Mark Complete
                             </Button>
                           )}
+                          {job.status === 'completed' && job.escrowStatus === 'funded' && (
+                            <Button variant="default" size="sm" className="bg-success text-success-foreground hover:bg-success/90" onClick={() => setJobToRelease(job)}>
+                                <DollarSign className="mr-2 h-4 w-4"/> Release Payment
+                            </Button>
+                          )}
+                           {job.status === 'completed' && job.escrowStatus === 'released' && (
+                            <Badge variant="outline" className="text-green-600 border-green-600">Paid</Badge>
+                          )}
                       </TableCell>
                       </TableRow>
                   ))}
@@ -171,6 +201,23 @@ export function MyJobsList({ jobs, onJobUpdate }: MyJobsListProps) {
             <AlertDialogAction onClick={handleUpdateStatus} disabled={isUpdating} className="bg-primary hover:bg-primary/90">
               {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+       <AlertDialog open={!!jobToRelease} onOpenChange={(open) => !open && setJobToRelease(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Payment Release</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to release the payment of <strong>${jobToRelease?.budgetAmount?.toLocaleString()}</strong> to the freelancer for the job "<strong>{jobToRelease?.title}</strong>". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setJobToRelease(null)} disabled={isUpdating}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReleasePayment} disabled={isUpdating} className="bg-success text-success-foreground hover:bg-success/90">
+              {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Release Payment
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
