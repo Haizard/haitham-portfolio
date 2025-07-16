@@ -1,7 +1,7 @@
-
 // src/lib/azampay.ts
 import axios from 'axios';
 import fetch from 'node-fetch';
+import { URLSearchParams } from 'url';
 
 const AZAMPAY_API_URL = process.env.AZAMPAY_API_URL;
 const AZAMPAY_APP_NAME = process.env.AZAMPAY_APP_NAME;
@@ -37,20 +37,17 @@ export async function getAuthToken(): Promise<string> {
   }
   
   try {
-      const payload = {
-        appName: AZAMPAY_APP_NAME,
-        clientId: AZAMPAY_CLIENT_ID,
-        clientSecret: AZAMPAY_CLIENT_SECRET
-      };
+      const payload = new URLSearchParams();
+      payload.append('appName', AZAMPAY_APP_NAME);
+      payload.append('clientId', AZAMPAY_CLIENT_ID);
+      payload.append('clientSecret', AZAMPAY_CLIENT_SECRET);
 
       const response = await fetch(
         `${AZAMPAY_API_URL}/AppRegistration/GenerateToken`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
+          body: payload,
+          // Do NOT set Content-Type, let node-fetch handle it for URLSearchParams
         }
       );
       
