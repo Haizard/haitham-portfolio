@@ -29,6 +29,7 @@ export async function getAuthToken(): Promise<string> {
     }
   
     try {
+        // This is the correct flat payload structure for the token request.
         const payload = {
           appName: AZAMPAY_APP_NAME,
           clientId: AZAMPAY_CLIENT_ID,
@@ -37,9 +38,10 @@ export async function getAuthToken(): Promise<string> {
 
         const response = await axios.post<AuthResponse>(
             `${AZAMPAY_API_URL}/AppRegistration/GenerateToken`, 
-            payload,
+            payload, // Send the flat payload directly as a JSON object
             {
                 headers: {
+                    // Explicitly set the Content-Type header to ensure JSON is sent
                     'Content-Type': 'application/json'
                 }
             }
@@ -86,7 +88,7 @@ export async function initiateMnoCheckout(
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'X-API-Key': AZAMPAY_CLIENT_ID, // This header was missing
+                    'X-API-Key': AZAMPAY_CLIENT_ID, // This header is required for this specific endpoint
                     'Content-Type': 'application/json'
                 }
             }
