@@ -1,4 +1,3 @@
-
 // src/lib/azampay.ts
 import axios from 'axios';
 
@@ -31,19 +30,21 @@ export async function getAuthToken(): Promise<string> {
     }
   
     try {
-        const response = await axios.post<AuthResponse>(`${AZAMPAY_API_URL}/AppRegistration/GenerateToken`, {
-          // Corrected payload structure to match AzamPay API
-          auth: {
-            applicationName: AZAMPAY_APP_NAME,
-            clientId: AZAMPAY_CLIENT_ID,
-            clientSecret: AZAMPAY_CLIENT_SECRET
-          }
-        });
+        // Corrected payload structure based on user-provided documentation.
+        const payload = {
+          appName: AZAMPAY_APP_NAME,
+          clientId: AZAMPAY_CLIENT_ID,
+          clientSecret: AZAMPAY_CLIENT_SECRET
+        };
+
+        const response = await axios.post<AuthResponse>(`${AZAMPAY_API_URL}/AppRegistration/GenerateToken`, payload);
 
         if (response.data && response.data.data.accessToken) {
             console.log("Successfully obtained AzamPay Auth Token.");
             return response.data.data.accessToken;
         } else {
+            // Log the actual response from AzamPay for better debugging
+            console.error("AzamPay token generation failed:", response.data);
             throw new Error(response.data.message || 'Failed to get AzamPay token');
         }
     } catch (error: any) {
