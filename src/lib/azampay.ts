@@ -31,18 +31,20 @@ export async function getAuthToken(): Promise<string> {
     }
   
     try {
-        const payload = new URLSearchParams({
+        // The payload should be a simple JSON object.
+        const payload = {
           appName: AZAMPAY_APP_NAME,
           clientId: AZAMPAY_CLIENT_ID,
           clientSecret: AZAMPAY_CLIENT_SECRET
-        });
+        };
 
         const response = await axios.post<AuthResponse>(
             `${AZAMPAY_API_URL}/AppRegistration/GenerateToken`, 
-            payload,
+            payload, // Axios will automatically stringify this and set the correct JSON header
             {
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    // Explicitly set the Content-Type to application/json as per docs.
+                    'Content-Type': 'application/json'
                 }
             }
         );
