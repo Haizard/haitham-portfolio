@@ -1,4 +1,3 @@
-
 // src/lib/azampay.ts
 import axios from 'axios';
 
@@ -25,11 +24,17 @@ interface MnoCheckoutResponse {
 // Function to get an authentication token from AzamPay
 export async function getAuthToken(): Promise<string> {
     if (!AZAMPAY_API_URL || !AZAMPAY_APP_NAME || !AZAMPAY_CLIENT_ID || !AZAMPAY_CLIENT_SECRET) {
+        console.error("Missing AzamPay variables:", {
+            url: !!AZAMPAY_API_URL,
+            app: !!AZAMPAY_APP_NAME,
+            id: !!AZAMPAY_CLIENT_ID,
+            secret: !!AZAMPAY_CLIENT_SECRET
+        });
         throw new Error("AzamPay environment variables are not fully configured.");
     }
   
     try {
-        // This is the correct flat payload structure for the token request.
+        // The payload for token generation is a flat JSON object.
         const payload = {
           appName: AZAMPAY_APP_NAME,
           clientId: AZAMPAY_CLIENT_ID,
@@ -38,10 +43,9 @@ export async function getAuthToken(): Promise<string> {
 
         const response = await axios.post<AuthResponse>(
             `${AZAMPAY_API_URL}/AppRegistration/GenerateToken`, 
-            payload, // Send the flat payload directly as a JSON object
+            payload,
             {
                 headers: {
-                    // Explicitly set the Content-Type header to ensure JSON is sent
                     'Content-Type': 'application/json'
                 }
             }
@@ -88,7 +92,7 @@ export async function initiateMnoCheckout(
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'X-API-Key': AZAMPAY_CLIENT_ID, // This header is required for this specific endpoint
+                    'X-API-Key': AZAMPAY_CLIENT_ID,
                     'Content-Type': 'application/json'
                 }
             }
