@@ -1,7 +1,5 @@
 // src/lib/azampay.ts
 import axios from 'axios';
-import fetch from 'node-fetch';
-import { URLSearchParams } from 'url';
 
 const AZAMPAY_API_URL = process.env.AZAMPAY_API_URL;
 const AZAMPAY_APP_NAME = process.env.AZAMPAY_APP_NAME;
@@ -37,23 +35,27 @@ export async function getAuthToken(): Promise<string> {
   }
   
   try {
-      const payload = new URLSearchParams();
-      payload.append('appName', AZAMPAY_APP_NAME);
-      payload.append('clientId', AZAMPAY_CLIENT_ID);
-      payload.append('clientSecret', AZAMPAY_CLIENT_SECRET);
+      // This matches the nested structure seen in other AzamPay API examples.
+      // The payload is a flat object, sent as the value of a single key.
+      const payload = {
+        appName: AZAMPAY_APP_NAME,
+        clientId: AZAMPAY_CLIENT_ID,
+        clientSecret: AZAMPAY_CLIENT_SECRET,
+      };
 
-      const response = await fetch(
+      const response = await axios.post<AuthResponse>(
         `${AZAMPAY_API_URL}/AppRegistration/GenerateToken`,
+        payload, // The payload is sent directly as the JSON body
         {
-          method: 'POST',
-          body: payload,
-          // Do NOT set Content-Type, let node-fetch handle it for URLSearchParams
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
       );
       
-      const responseData: AuthResponse = await response.json();
+      const responseData = response.data;
 
-      if (response.ok && responseData.data && responseData.data.accessToken) {
+      if (response.status === 200 && responseData.data && responseData.data.accessToken) {
           console.log("Successfully obtained AzamPay Auth Token.");
           return responseData.data.accessToken;
       } else {
@@ -61,7 +63,7 @@ export async function getAuthToken(): Promise<string> {
           throw new Error(responseData.message || 'Failed to get AzamPay token');
       }
   } catch (error: any) {
-      console.error("Error fetching AzamPay token:", error.message);
+      console.error("Error fetching AzamPay token:", error.response?.data || error.message);
       throw new Error("Could not authenticate with AzamPay.");
   }
 }
