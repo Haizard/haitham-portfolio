@@ -17,12 +17,10 @@ interface AuthResponse {
 }
 
 interface MnoCheckoutResponse {
-  // Define the structure based on AzamPay's response
   success: boolean;
   transactionId?: string;
   message?: string;
 }
-
 
 // Function to get an authentication token from AzamPay
 export async function getAuthToken(): Promise<string> {
@@ -31,7 +29,6 @@ export async function getAuthToken(): Promise<string> {
     }
   
     try {
-        // The payload should be a simple JSON object.
         const payload = {
           appName: AZAMPAY_APP_NAME,
           clientId: AZAMPAY_CLIENT_ID,
@@ -40,10 +37,9 @@ export async function getAuthToken(): Promise<string> {
 
         const response = await axios.post<AuthResponse>(
             `${AZAMPAY_API_URL}/AppRegistration/GenerateToken`, 
-            payload, // Axios will automatically stringify this and set the correct JSON header
+            payload,
             {
                 headers: {
-                    // Explicitly set the Content-Type to application/json as per docs.
                     'Content-Type': 'application/json'
                 }
             }
@@ -62,7 +58,6 @@ export async function getAuthToken(): Promise<string> {
     }
 }
 
-
 // Function to initiate a Mobile Network Operator (MNO) checkout
 export async function initiateMnoCheckout(
     amount: number, 
@@ -72,11 +67,15 @@ export async function initiateMnoCheckout(
 ): Promise<MnoCheckoutResponse> {
     const token = await getAuthToken();
 
+    if (!AZAMPAY_CLIENT_ID) {
+        throw new Error("AzamPay Client ID is missing for X-API-Key header.");
+    }
+
     try {
         const payload = {
             accountNumber: phoneNumber,
             amount: amount.toString(),
-            currency: "TZS", // Assuming Tanzanian Shillings
+            currency: "TZS",
             externalId: referenceId,
             provider: provider,
         };
@@ -87,6 +86,7 @@ export async function initiateMnoCheckout(
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
+                    'X-API-Key': AZAMPAY_CLIENT_ID, // This header was missing
                     'Content-Type': 'application/json'
                 }
             }
