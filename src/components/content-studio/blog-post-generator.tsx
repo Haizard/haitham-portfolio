@@ -28,9 +28,8 @@ import Image from "next/image";
 import { useSearchParams } from 'next/navigation';
 import type { BlogPost, GalleryImage, DownloadLink } from '@/lib/blog-data';
 import type { FreelancerProfile } from "@/lib/user-profile-data"; // For author details
+import { useUser } from "@/hooks/use-user";
 
-// This would come from an authenticated session
-const MOCK_FREELANCER_ID = "mockFreelancer456";
 
 const galleryImageSchema = z.object({
   url: z.string().url("Image URL must be a valid URL.").min(1, "URL is required."),
@@ -153,6 +152,7 @@ export function BlogPostGenerator() {
   const [isClient, setIsClient] = useState(false);
   const [isLoadingPostForEdit, setIsLoadingPostForEdit] = useState(false);
   const [authorProfile, setAuthorProfile] = useState<FreelancerProfile | null>(null);
+  const { user } = useUser(); // Get authenticated user session
 
   const searchParams = useSearchParams();
   const editSlug = searchParams.get('editSlug');
@@ -232,6 +232,7 @@ export function BlogPostGenerator() {
 
   useEffect(() => {
     async function fetchInitialData() {
+      if (!user) return; // Wait for user to be available
       setIsLoadingCategories(true);
       try {
         const [catResponse, profileResponse] = await Promise.all([
@@ -243,11 +244,13 @@ export function BlogPostGenerator() {
         const catData: CategoryNode[] = await catResponse.json();
         setCategories(catData);
 
+        // Profile is optional, so we don't throw an error if it fails
         if (profileResponse.ok) {
           const profileData: FreelancerProfile = await profileResponse.json();
           setAuthorProfile(profileData);
         } else {
-          throw new Error('Failed to load author profile');
+          console.warn('Could not load freelancer profile, will use basic user info for author details.');
+          setAuthorProfile(null);
         }
 
       } catch (error) {
@@ -258,7 +261,7 @@ export function BlogPostGenerator() {
       }
     }
     fetchInitialData();
-  }, [toast]);
+  }, [toast, user]);
 
   useEffect(() => {
     if (editSlug && editor) {
@@ -446,6 +449,11 @@ export function BlogPostGenerator() {
 
 
   async function handlePublishPost(values: FormValues) {
+    if (!user) {
+      toast({ title: "Authentication Error", description: "You must be logged in to publish a post.", variant: "destructive" });
+      return;
+    }
+
     const postTitleToUse = generatedPost?.title || values.topic;
     
     if (!postTitleToUse) {
@@ -478,8 +486,8 @@ export function BlogPostGenerator() {
         title: postTitleToUse,
         content: values.editableContent, 
         slug: slugToUse,
-        author: authorProfile?.name || "CreatorOS Freelancer", 
-        authorAvatar: authorProfile?.avatarUrl || "https://placehold.co/100x100.png?text=F", 
+        author: authorProfile?.name || user.name, 
+        authorAvatar: authorProfile?.avatarUrl || `https://placehold.co/100x100.png?text=${user.name.substring(0,2)}`, 
         tags: tagsArray,
         featuredImageUrl: values.featuredImageUrl,
         featuredImageHint: values.featuredImageHint,
@@ -487,7 +495,7 @@ export function BlogPostGenerator() {
         downloads: values.downloads,
         originalLanguage: "en", 
         categoryId: values.categoryId,
-        authorId: MOCK_FREELANCER_ID, // Add the authorId to the payload
+        authorId: user.id,
     };
 
     const isUpdateOperation = !!publishedSlug; 
