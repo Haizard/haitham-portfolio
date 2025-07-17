@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -20,7 +20,10 @@ import { Loader2, Moon, Sun } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { useUser } from '@/hooks/use-user';
 import { Toaster } from '../ui/toaster';
-import { motion, AnimatePresence } from 'framer-motion';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(useGSAP);
 
 // Mock theme toggle functions for now
 const useTheme = () => {
@@ -41,6 +44,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const { user, isLoading } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
+  const mainRef = useRef(null);
 
   useEffect(() => {
     // This effect's only job is to redirect if, after loading, the user is still not present.
@@ -48,6 +53,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       router.push('/login');
     }
   }, [user, isLoading, router]);
+
+  useGSAP(() => {
+    if (mainRef.current) {
+        gsap.fromTo(mainRef.current, 
+            { opacity: 0, y: 10 },
+            { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }
+        );
+    }
+  }, { dependencies: [pathname], scope: mainRef });
   
   if (isLoading || !user) {
     return (
@@ -83,15 +97,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <Logo />
           <SidebarTrigger />
         </header>
-        <motion.main 
-          key={router.asPath}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
+        <main 
+          key={pathname}
+          ref={mainRef}
           className="flex-1 p-4 md:p-6 lg:p-8"
         >
           {children}
-        </motion.main>
+        </main>
         <Toaster />
       </SidebarInset>
     </SidebarProvider>

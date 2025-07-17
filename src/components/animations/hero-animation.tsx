@@ -3,33 +3,43 @@
 
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(useGSAP);
 
 export function HeroAnimation() {
   const component = useRef(null);
-  const headingRef = useRef(null);
-  const sublineRef = useRef(null);
+  const headingText = "Hire Talent, Buy Products, Grow your Vision.";
+  const sublineText = "The all-in-one marketplace for creators. Millions of people use CreatorOS to turn their ideas into reality.";
 
-  useEffect(() => {
-    let ctx = gsap.context(() => {
-      gsap.from([headingRef.current, sublineRef.current], {
+  useGSAP(() => {
+    gsap.from("#hero-heading .word", {
+        y: 50,
         opacity: 0,
-        y: 20,
+        stagger: 0.1,
+        duration: 0.8,
+        ease: 'power3.out'
+    });
+     gsap.from("#hero-subline", {
+        y: 30,
+        opacity: 0,
         duration: 1,
         ease: 'power3.out',
-        stagger: 0.2,
-      });
-    }, component);
-
-    return () => ctx.revert();
-  }, []);
+        delay: 0.5
+    });
+  }, { scope: component });
 
   return (
     <div ref={component}>
-      <h1 ref={headingRef} className="text-4xl md:text-6xl font-bold tracking-tight font-headline mb-6">
-        Hire Talent, Buy Products, Grow your Vision.
+      <h1 id="hero-heading" className="text-4xl md:text-6xl font-bold tracking-tight font-headline mb-6" aria-label={headingText}>
+        {headingText.split(" ").map((word, index) => (
+          <span key={index} className="word inline-block mr-3">
+            {word}
+          </span>
+        ))}
       </h1>
-      <p ref={sublineRef} className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-        The all-in-one marketplace for creators. Millions of people use CreatorOS to turn their ideas into reality.
+      <p id="hero-subline" className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+        {sublineText}
       </p>
     </div>
   );

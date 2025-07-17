@@ -2,16 +2,20 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, CheckCircle, Search, Star, Zap, Briefcase, Users, ShieldCheck, DollarSign, Award, Check, ShoppingCart, Gem, Code, Palette, PenSquare, Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { Product } from "@/lib/products-data";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HeroAnimation } from "@/components/animations/hero-animation";
-import { motion } from 'framer-motion';
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const categories = [
     "Website Design", "Mobile Apps", "SEO", "Illustration",
@@ -90,14 +94,10 @@ const eCommerceCategories = [
     { title: "Merchandise", icon: Package },
 ];
 
-const sectionVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
-
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const mainRef = useRef(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -119,12 +119,36 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
+   useGSAP(() => {
+    const sections = gsap.utils.toArray('.animated-section');
+    sections.forEach((section: any) => {
+      gsap.from(section, {
+        opacity: 0,
+        y: 50,
+        duration: 1,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top 85%',
+          toggleActions: 'play none none none',
+        },
+      });
+    });
+
+    gsap.from('#hero-background', {
+        scale: 1.1,
+        duration: 1.5,
+        ease: 'power2.out',
+    })
+
+  }, { scope: mainRef, dependencies: [isLoadingProducts] });
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-900 text-white font-body">
+    <div ref={mainRef} className="flex flex-col min-h-screen bg-gray-900 text-white font-body">
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative py-20 md:py-32 text-center overflow-hidden">
-          <div className="absolute inset-0 bg-gray-900">
+          <div id="hero-background" className="absolute inset-0 bg-gray-900">
              <Image src="https://placehold.co/1920x1080.png" alt="Abstract background" fill className="object-cover opacity-20" data-ai-hint="abstract geometric" />
           </div>
           <div className="container mx-auto px-4 relative z-10">
@@ -144,13 +168,7 @@ export default function HomePage() {
         </section>
 
         {/* Featured Products Section */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-900"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
                     <h2 className="text-4xl font-bold font-headline">Featured Products from our Store</h2>
@@ -173,16 +191,10 @@ export default function HomePage() {
                     </Button>
                 </div>
             </div>
-        </motion.section>
+        </section>
 
         {/* Shop by Category Section */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-800/50"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-800/50">
             <div className="container mx-auto px-4">
                 <h2 className="text-4xl font-bold font-headline text-center mb-12">Shop by Category</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -196,16 +208,10 @@ export default function HomePage() {
                     ))}
                 </div>
             </div>
-        </motion.section>
+        </section>
 
         {/* New "Need something done?" section */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-900"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4">
                 <h2 className="text-4xl font-bold font-headline text-center mb-12">Need a Service?</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -217,16 +223,10 @@ export default function HomePage() {
                     ))}
                 </div>
             </div>
-        </motion.section>
+        </section>
 
         {/* How It Works Section */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-800/50"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-800/50">
             <div className="container mx-auto px-4">
                 <h2 className="text-4xl font-bold font-headline text-center mb-16">How CreatorOS Freelancing Works</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -241,16 +241,10 @@ export default function HomePage() {
                     ))}
                 </div>
             </div>
-        </motion.section>
+        </section>
 
         {/* Make it real with CreatorOS */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-900"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
                 <div className="space-y-8">
                     <h2 className="text-4xl font-bold font-headline text-primary">Make it real with CreatorOS</h2>
@@ -268,16 +262,10 @@ export default function HomePage() {
                     <Image src="https://placehold.co/800x600.png" alt="Colorful abstract design with phones" width={800} height={600} className="rounded-lg shadow-2xl" data-ai-hint="abstract colorful" />
                 </div>
             </div>
-        </motion.section>
+        </section>
 
         {/* Image Grid */}
-        <motion.section 
-          className="py-16 bg-gray-800/50"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 bg-gray-800/50">
             <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                 <Image src="https://placehold.co/600x600.png" alt="Smartwatches" width={600} height={600} className="rounded-lg shadow-lg" data-ai-hint="smartwatch product"/>
                 <div className="grid grid-cols-2 gap-6">
@@ -287,16 +275,10 @@ export default function HomePage() {
                     <Image src="https://placehold.co/400x400.png" alt="Architectural model" width={400} height={400} className="rounded-lg shadow-lg" data-ai-hint="architectural model"/>
                 </div>
             </div>
-        </motion.section>
+        </section>
 
         {/* Global Talent Network */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-900"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
                  <div>
                     <Image src="https://placehold.co/800x600.png" alt="Global network" width={800} height={600} className="rounded-lg shadow-2xl" data-ai-hint="network community" />
@@ -314,16 +296,10 @@ export default function HomePage() {
                     </Button>
                 </div>
             </div>
-        </motion.section>
+        </section>
 
         {/* AI Agents */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-900"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4">
                 <Card className="bg-gray-800 border-primary/50 shadow-2xl grid md:grid-cols-2 overflow-hidden">
                     <div className="p-8 md:p-12 flex flex-col justify-center">
@@ -338,16 +314,10 @@ export default function HomePage() {
                     </div>
                 </Card>
             </div>
-        </motion.section>
+        </section>
 
          {/* Power your Organization */}
-        <motion.section 
-          className="py-16 md:py-24 bg-gray-900"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={sectionVariants}
-        >
+        <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
                 <div className="space-y-8">
                     <h2 className="text-4xl font-bold font-headline text-primary">Power your organization's competitive advantage</h2>
@@ -366,7 +336,7 @@ export default function HomePage() {
                     <Image src="https://placehold.co/800x600.png" alt="Abstract hummingbird and globe" width={800} height={600} className="rounded-lg" data-ai-hint="hummingbird globe" />
                 </div>
             </div>
-        </motion.section>
+        </section>
       </main>
 
       <footer className="bg-gray-900 border-t border-gray-700 py-12">

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Star, Eye, Heart } from "lucide-react";
@@ -13,7 +13,10 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/lib/products-data';
 import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(useGSAP);
 
 interface ProductCardProps {
   product: Product;
@@ -25,6 +28,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { toast } = useToast();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!cardRef.current) return;
+    const tl = gsap.timeline({ paused: true });
+
+    tl.to(cardRef.current, { y: -8, scale: 1.02, duration: 0.3, ease: 'power2.out' });
+    
+    cardRef.current.addEventListener('mouseenter', () => tl.play());
+    cardRef.current.addEventListener('mouseleave', () => tl.reverse());
+
+    return () => {
+      // Cleanup if necessary, though GSAP handles most of it.
+    }
+  }, { scope: cardRef });
+
 
   const handleAddToCartClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -51,10 +70,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   const isWishlisted = isInWishlist(product.id!);
 
   return (
-    <motion.div
-      whileHover={{ y: -8, scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-    >
+    <div ref={cardRef}>
       <Card 
           className={cn(
               "group relative flex w-full flex-col overflow-hidden rounded-lg border-gray-700 bg-gray-800 text-white shadow-lg",
@@ -123,6 +139,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
               </CardFooter>
           </Link>
       </Card>
-    </motion.div>
+    </div>
   );
 };
