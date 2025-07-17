@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { useEffect, useState } from "react";
 import type { Product } from "@/lib/products-data";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HeroAnimation } from "@/components/animations/hero-animation";
 
 const categories = [
     "Website Design", "Mobile Apps", "SEO", "Illustration",
@@ -120,12 +122,7 @@ export default function HomePage() {
              <Image src="https://placehold.co/1920x1080.png" alt="Abstract background" fill className="object-cover opacity-20" data-ai-hint="abstract geometric" />
           </div>
           <div className="container mx-auto px-4 relative z-10">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight font-headline mb-6">
-              Hire Talent, Buy Products, Grow your Vision.
-            </h1>
-            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-                The all-in-one marketplace for creators. Millions of people use CreatorOS to turn their ideas into reality.
-            </p>
+            <HeroAnimation />
             <div className="flex flex-wrap justify-center gap-4">
               <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-8 text-base">
                 <Link href="/find-work">Hire a Freelancer</Link>
