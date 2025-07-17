@@ -148,7 +148,7 @@ export function BlogPostGenerator() {
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const { toast } = useToast();
+  const { toast, toasts } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isLoadingPostForEdit, setIsLoadingPostForEdit] = useState(false);
   const [authorProfile, setAuthorProfile] = useState<FreelancerProfile | null>(null);
@@ -237,14 +237,13 @@ export function BlogPostGenerator() {
       try {
         const [catResponse, profileResponse] = await Promise.all([
           fetch('/api/categories'),
-          fetch('/api/profile') // Use API route now
+          fetch('/api/profile')
         ]);
         
         if (!catResponse.ok) throw new Error('Failed to fetch categories');
         const catData: CategoryNode[] = await catResponse.json();
         setCategories(catData);
 
-        // Profile is optional, so we don't throw an error if it fails
         if (profileResponse.ok) {
           const profileData: FreelancerProfile = await profileResponse.json();
           setAuthorProfile(profileData);
@@ -354,7 +353,7 @@ export function BlogPostGenerator() {
       setGeneratedPost(null);
       if (editor) editor.commands.setContent(`<p>Error: ${errorMessage}</p>`);
       else form.setValue('editableContent', `<p>Error: ${errorMessage}</p>`);
-      if (!toast.toasts.find(t => t.title === "AI Error" && t.description === errorMessage)) {
+      if (!toasts.find(t => t.title === "AI Error" && t.description === errorMessage)) {
          if (generatedPost === null) { 
              toast({ title: "Error generating content", description: errorMessage, variant: "destructive" });
          }
