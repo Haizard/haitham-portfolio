@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { Restaurant } from '@/lib/restaurants-data';
 import type { ServiceCategoryNode } from '@/lib/service-categories-data';
 import type { FoodType } from '@/lib/food-types-data';
@@ -20,6 +20,12 @@ import { GlobalNav } from '@/components/layout/global-nav';
 import { cn } from '@/lib/utils';
 import { useComparison } from '@/hooks/use-comparison';
 import { ComparisonBar } from '@/components/restaurants/comparison-bar';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
+
 
 const minOrderFilters = [
     { id: "5", label: "$5", count: 3 },
@@ -98,6 +104,25 @@ export default function RestaurantsPage() {
     const [foodTypeFilters, setFoodTypeFilters] = useState<FoodType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+
+    const restaurantListRef = useRef(null);
+
+    useGSAP(() => {
+        if (!isLoading) {
+             gsap.from(".restaurant-card", {
+                duration: 0.5,
+                opacity: 0,
+                y: 30,
+                stagger: 0.1,
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: restaurantListRef.current,
+                    start: "top 85%",
+                    toggleActions: "play none none none"
+                }
+            });
+        }
+    }, { scope: restaurantListRef, dependencies: [isLoading, restaurants] });
 
     const fetchPageData = useCallback(async () => {
         setIsLoading(true);
@@ -228,7 +253,7 @@ export default function RestaurantsPage() {
                         </Card>
                     </aside>
 
-                    <div className="lg:col-span-6 space-y-6">
+                    <div className="lg:col-span-6 space-y-6" ref={restaurantListRef}>
                         <div className="flex justify-between items-center">
                              <h2 className="text-xl font-bold">{restaurants.length} Restaurant's Found</h2>
                              <Button variant="outline" className="flex items-center gap-2"><Filter className="h-4 w-4"/>Filter</Button>
@@ -238,7 +263,7 @@ export default function RestaurantsPage() {
                                 <Loader2 className="h-12 w-12 animate-spin text-primary"/>
                             </div>
                         ) : (
-                            restaurants.map(r => <RestaurantCard key={r.id} restaurant={r} />)
+                            restaurants.map(r => <div key={r.id} className="restaurant-card"><RestaurantCard restaurant={r} /></div>)
                         )}
                     </div>
                     

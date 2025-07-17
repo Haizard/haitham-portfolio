@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link'; // Import Link
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +9,17 @@ import { Loader2, DollarSign, Clock, Eye, CheckCircle, Briefcase, ExternalLink }
 import type { Service } from '@/lib/services-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 export default function OurServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const containerRef = useRef(null);
 
   const fetchServices = useCallback(async () => {
     setIsLoading(true);
@@ -41,6 +47,23 @@ export default function OurServicesPage() {
   useEffect(() => {
     fetchServices();
   }, [fetchServices]);
+  
+  useGSAP(() => {
+    if (!isLoading) {
+         gsap.from(".service-card", {
+            duration: 0.5,
+            opacity: 0,
+            y: 40,
+            stagger: 0.1,
+            ease: "power3.out",
+            scrollTrigger: {
+                trigger: containerRef.current,
+                start: "top 80%",
+                toggleActions: "play none none none"
+            }
+        });
+    }
+  }, { scope: containerRef, dependencies: [isLoading, services] });
 
   return (
     <div className="bg-gradient-to-b from-background to-secondary/30 min-h-screen">
@@ -54,7 +77,7 @@ export default function OurServicesPage() {
         </div>
       </header>
 
-      <main className="container mx-auto py-12 px-4">
+      <main ref={containerRef} className="container mx-auto py-12 px-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -73,7 +96,8 @@ export default function OurServicesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <Card key={service.id || `service-${index}`} className="shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col bg-card group">
+              <div key={service.id || `service-${index}`} className="service-card">
+              <Card className="shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col bg-card group h-full">
                 <Link href={`/our-services/${service.slug}`} className="flex flex-col h-full">
                   <CardHeader className="pb-4">
                     <div className="mb-3 aspect-[16/9] overflow-hidden rounded-t-lg">
@@ -110,6 +134,7 @@ export default function OurServicesPage() {
                   </CardFooter>
                 </Link>
               </Card>
+              </div>
             ))}
           </div>
         )}

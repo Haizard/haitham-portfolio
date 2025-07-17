@@ -32,16 +32,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
 
   useGSAP(() => {
     if (!cardRef.current) return;
+    const card = cardRef.current;
+    const image = card.querySelector('img');
+
     const tl = gsap.timeline({ paused: true });
 
-    tl.to(cardRef.current, { y: -8, scale: 1.02, duration: 0.3, ease: 'power2.out' });
-    
-    cardRef.current.addEventListener('mouseenter', () => tl.play());
-    cardRef.current.addEventListener('mouseleave', () => tl.reverse());
-
-    return () => {
-      // Cleanup if necessary, though GSAP handles most of it.
+    tl.to(card, { 
+        y: -5, 
+        boxShadow: "0 10px 15px -3px rgba(var(--primary-rgb), 0.1), 0 4px 6px -2px rgba(var(--primary-rgb), 0.05)",
+        duration: 0.3, 
+        ease: 'power2.out' 
+    });
+    if(image) {
+      tl.to(image, { scale: 1.05, duration: 0.3, ease: 'power2.out' }, "-=0.3");
     }
+    
+    card.addEventListener('mouseenter', () => tl.play());
+    card.addEventListener('mouseleave', () => tl.reverse());
+
   }, { scope: cardRef });
 
 
@@ -96,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                           alt={product.name}
                           fill
                           sizes="(max-width: 768px) 50vw, 25vw"
-                          className="object-contain transition-transform duration-500 group-hover:scale-105"
+                          className="object-contain transition-transform duration-500"
                           data-ai-hint={product.imageHint || "product image"}
                       />
                   </div>
