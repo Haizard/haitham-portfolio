@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,52 +73,58 @@ export default function LoginPage() {
 
   return (
     <div className="container mx-auto flex min-h-screen items-center justify-center py-12">
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-headline">Welcome Back</CardTitle>
-          <CardDescription>
-            Sign in to access your CreatorOS dashboard.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
-                {isSubmitting ? "Signing In..." : "Sign In"}
-               </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex justify-center text-sm">
-          <p className="text-muted-foreground">Don't have an account?&nbsp;</p>
-          <Link href="/signup" className="font-semibold text-primary hover:underline">
-            Sign Up
-          </Link>
-        </CardFooter>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-headline">Welcome Back</CardTitle>
+            <CardDescription>
+              Sign in to access your CreatorOS dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
+                  {isSubmitting ? "Signing In..." : "Sign In"}
+                 </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="flex justify-center text-sm">
+            <p className="text-muted-foreground">Don't have an account?&nbsp;</p>
+            <Link href="/signup" className="font-semibold text-primary hover:underline">
+              Sign Up
+            </Link>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </div>
   );
 }

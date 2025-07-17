@@ -20,6 +20,7 @@ import { Loader2, Moon, Sun } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { useUser } from '@/hooks/use-user';
 import { Toaster } from '../ui/toaster';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Mock theme toggle functions for now
 const useTheme = () => {
@@ -82,9 +83,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <Logo />
           <SidebarTrigger />
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <motion.main 
+          key={router.asPath}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="flex-1 p-4 md:p-6 lg:p-8"
+        >
           {children}
-        </main>
+        </motion.main>
         <Toaster />
       </SidebarInset>
     </SidebarProvider>
