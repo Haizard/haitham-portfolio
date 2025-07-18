@@ -104,7 +104,7 @@ export default function DashboardHubPage() {
         <p className="text-muted-foreground">Select a panel to manage your creator activities.</p>
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {features.map((feature) => (
           <Card key={feature.title} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
             <CardHeader className="flex-row items-center gap-4 space-y-0">
