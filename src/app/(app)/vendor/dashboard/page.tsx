@@ -16,9 +16,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123";
+import { useUser } from '@/hooks/use-user'; // Import the useUser hook
 
 interface VendorDashboardData {
   profile: FreelancerProfile;
@@ -31,11 +29,13 @@ export default function VendorDashboardPage() {
     const [data, setData] = useState<VendorDashboardData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const { user } = useUser(); // Get the current user from the context
 
     const fetchVendorData = useCallback(async () => {
+        if (!user) return; // Don't fetch if there's no user
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/vendors/${MOCK_VENDOR_ID}`);
+            const response = await fetch(`/api/vendors/${user.id}`); // Use the logged-in user's ID
             if (!response.ok) {
                 throw new Error('Failed to fetch vendor dashboard data.');
             }
@@ -46,11 +46,13 @@ export default function VendorDashboardPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast]);
+    }, [toast, user]);
 
     useEffect(() => {
-        fetchVendorData();
-    }, [fetchVendorData]);
+        if (user) { // Only fetch data when the user object is available
+            fetchVendorData();
+        }
+    }, [fetchVendorData, user]);
 
     const recentOrders = data?.orders.slice(0, 5) || [];
 
@@ -61,7 +63,7 @@ export default function VendorDashboardPage() {
                 <p className="text-muted-foreground">Welcome to your store's command center, {data?.profile.name || 'Vendor'}.</p>
             </header>
 
-            <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                  {isLoading ? (
                     <>
                         <Skeleton className="h-28" />
@@ -136,7 +138,7 @@ export default function VendorDashboardPage() {
                            <Link href="/vendor/finances"><Landmark className="mr-3 h-5 w-5"/>My Finances</Link>
                         </Button>
                          <Button asChild variant="outline" size="lg" className="justify-start">
-                           <Link href={`/store/${MOCK_VENDOR_ID}`} target="_blank"><Store className="mr-3 h-5 w-5"/>View My Storefront</Link>
+                           <Link href={`/store/${user?.id}`} target="_blank"><Store className="mr-3 h-5 w-5"/>View My Storefront</Link>
                         </Button>
                     </CardContent>
                 </Card>
