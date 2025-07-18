@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Compass, Newspaper, Store } from 'lucide-react';
+import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Compass, Newspaper, Store, LayoutDashboard } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
@@ -49,6 +49,7 @@ export function GlobalNav() {
   const handleLogout = async () => {
     await logout();
     router.push('/');
+    router.refresh();
   };
 
   return (
@@ -110,8 +111,8 @@ export function GlobalNav() {
                      <DropdownMenuItem asChild>
                         <Link href="/profile"><UserCircle className="mr-2 h-4 w-4" />My Profile</Link>
                     </DropdownMenuItem>
-                     <DropdownMenuItem asChild className="sm:hidden">
-                        <Link href="/dashboard"><UserCircle className="mr-2 h-4 w-4" />Dashboard</Link>
+                     <DropdownMenuItem asChild>
+                        <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
