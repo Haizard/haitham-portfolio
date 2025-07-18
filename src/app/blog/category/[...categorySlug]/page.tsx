@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { notFound, useParams, useRouter } from 'next/navigation'; 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -21,18 +21,40 @@ import { RecentPostsWidget } from '@/components/blog/sidebar/RecentPostsWidget';
 import { CategoriesWidget } from '@/components/blog/sidebar/CategoriesWidget';
 import { InstagramWidget } from '@/components/blog/sidebar/InstagramWidget';
 import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
 
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 export default function CategoryArchivePage() {
   const params = useParams<{ categorySlug: string[] }>(); 
   const categorySlugArray = params.categorySlug; 
   const router = useRouter(); 
+  const mainContentRef = useRef(null);
 
   const [category, setCategory] = useState<(CategoryNode & { path?: CategoryNode[] }) | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentSearchQuery, setCurrentSearchQuery] = useState(""); 
+
+    useGSAP(() => {
+    if (!isLoading && mainContentRef.current) {
+      gsap.from(".post-card-item", {
+        opacity: 0,
+        y: 40,
+        duration: 0.5,
+        stagger: 0.1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: mainContentRef.current,
+          start: "top 85%",
+        },
+      });
+    }
+  }, { scope: mainContentRef, dependencies: [isLoading, posts] });
+
 
   useEffect(() => {
     async function fetchData() {
@@ -108,7 +130,7 @@ export default function CategoryArchivePage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="lg:grid lg:grid-cols-12 lg:gap-12">
-        <main className="lg:col-span-8 xl:col-span-9">
+        <main ref={mainContentRef} className="lg:col-span-8 xl:col-span-9">
           <header className="mb-8">
             {category.path && <BreadcrumbDisplay path={category.path} className="mb-4" />}
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-2 flex items-center">
@@ -121,9 +143,10 @@ export default function CategoryArchivePage() {
           {posts.length === 0 ? (
             <p className="text-center text-muted-foreground text-lg py-10">No posts found in this category yet.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8"> 
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-6"> 
               {posts.map(post => (
-                <Card key={post.slug} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
+                <div key={post.slug} className="post-card-item">
+                <Card className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group h-full">
                     {post.featuredImageUrl && ( 
                         <div className="aspect-[16/9] overflow-hidden">
                             <Image
@@ -136,8 +159,8 @@ export default function CategoryArchivePage() {
                             />
                         </div>
                     )}
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-base md:text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                       <Link href={`/blog/${post.slug}`}>{post.title}</Link>
                     </CardTitle>
                      <div className="text-xs text-muted-foreground flex items-center mt-1">
@@ -145,19 +168,20 @@ export default function CategoryArchivePage() {
                         {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                       </div>
                   </CardHeader>
-                  <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
+                  <CardContent className="p-4 pt-0 flex-grow">
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-3">
                       {post.content.replace(/<[^>]+>/g, '').substring(0, 120)}...
                     </p>
                   </CardContent>
-                  <CardFooter>
-                    <Button asChild variant="outline" size="sm" className="w-full">
+                  <CardFooter className="p-4 pt-0">
+                    <Button asChild variant="outline" size="sm" className="w-full text-xs">
                       <Link href={`/blog/${post.slug}`} className="flex items-center">
                         Read Post <ExternalLink className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
                   </CardFooter>
                 </Card>
+                </div>
               ))}
             </div>
           )}

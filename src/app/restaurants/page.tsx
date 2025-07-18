@@ -20,11 +20,8 @@ import { GlobalNav } from '@/components/layout/global-nav';
 import { cn } from '@/lib/utils';
 import { useComparison } from '@/hooks/use-comparison';
 import { ComparisonBar } from '@/components/restaurants/comparison-bar';
-import { useGSAP } from '@gsap/react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+import { RestaurantList } from '@/components/restaurants/restaurant-list';
+import { RestaurantListItem } from '@/components/restaurants/restaurant-list-item';
 
 
 const minOrderFilters = [
@@ -43,86 +40,12 @@ const sortOptions = [
     { id: "fastest_delivery", label: "Fastest delivery", icon: Clock },
 ];
 
-function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
-    const { addToCompare, removeFromCompare, isComparing } = useComparison();
-    const isSelectedForCompare = isComparing(restaurant.id!);
-
-    const handleCompareChange = (checked: boolean | 'indeterminate') => {
-        if (checked) {
-            addToCompare(restaurant);
-        } else {
-            removeFromCompare(restaurant.id!);
-        }
-    };
-
-    return (
-        <Card className="flex flex-col sm:flex-row gap-4 p-4 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
-             {restaurant.status === 'Closed' && (
-                <Badge variant="destructive" className="absolute -top-2 -left-2 rotate-[-15deg] shadow-lg z-10">CLOSED</Badge>
-            )}
-             {restaurant.isSponsored && (
-                <div className="absolute top-0 right-0 h-16 w-16">
-                    <div className="absolute transform rotate-45 bg-orange-500 text-center text-white font-semibold py-1 right-[-34px] top-[15px] w-[120px] shadow-lg">
-                        <span className="text-xs">Sponsored</span>
-                    </div>
-                </div>
-            )}
-            <div className="flex-shrink-0">
-                <Image src={restaurant.logoUrl} alt={`${restaurant.name} logo`} width={110} height={110} className="rounded-md object-contain border" data-ai-hint="restaurant logo" />
-            </div>
-            <div className="flex-1">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                           {restaurant.name}
-                        </h3>
-                        <div className="flex items-center gap-1">
-                            <StarRating rating={restaurant.rating} size={16} disabled />
-                            <span className="text-xs text-muted-foreground">({restaurant.reviewCount})</span>
-                        </div>
-                    </div>
-                     <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" asChild>
-                        <Link href={`/restaurants/${restaurant.id}`}>VIEW MENU</Link>
-                    </Button>
-                </div>
-                 <Separator className="my-2"/>
-                 <p className="text-sm text-muted-foreground">Type of food: {restaurant.cuisineTypes.join(', ')}</p>
-                 <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
-                    <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4"/> {restaurant.location}</span>
-                    <label htmlFor={`compare-${restaurant.id}`} className="flex items-center gap-1 cursor-pointer text-xs hover:text-primary">
-                        <Checkbox id={`compare-${restaurant.id}`} onCheckedChange={handleCompareChange} checked={isSelectedForCompare} /> Add to compare
-                    </label>
-                </div>
-            </div>
-        </Card>
-    );
-}
-
 export default function RestaurantsPage() {
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [cuisineFilters, setCuisineFilters] = useState<ServiceCategoryNode[]>([]);
     const [foodTypeFilters, setFoodTypeFilters] = useState<FoodType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
-
-    const restaurantListRef = useRef(null);
-
-    useGSAP(() => {
-        if (!isLoading) {
-             gsap.from(".restaurant-card", {
-                duration: 0.5,
-                opacity: 0,
-                y: 30,
-                stagger: 0.1,
-                ease: "power3.out",
-                scrollTrigger: {
-                    trigger: restaurantListRef.current,
-                    start: "top 85%",
-                    toggleActions: "play none none none"
-                }
-            });
-        }
-    }, { scope: restaurantListRef, dependencies: [isLoading, restaurants] });
 
     const fetchPageData = useCallback(async () => {
         setIsLoading(true);
@@ -253,7 +176,7 @@ export default function RestaurantsPage() {
                         </Card>
                     </aside>
 
-                    <div className="lg:col-span-6 space-y-6" ref={restaurantListRef}>
+                    <div className="lg:col-span-9 space-y-6">
                         <div className="flex justify-between items-center">
                              <h2 className="text-xl font-bold">{restaurants.length} Restaurant's Found</h2>
                              <Button variant="outline" className="flex items-center gap-2"><Filter className="h-4 w-4"/>Filter</Button>
@@ -263,38 +186,10 @@ export default function RestaurantsPage() {
                                 <Loader2 className="h-12 w-12 animate-spin text-primary"/>
                             </div>
                         ) : (
-                            restaurants.map(r => <div key={r.id} className="restaurant-card"><RestaurantCard restaurant={r} /></div>)
+                            <RestaurantList restaurants={restaurants} />
                         )}
                     </div>
                     
-                    <aside className="lg:col-span-3 space-y-6">
-                        <Card>
-                            <CardHeader className="py-3">
-                                <CardTitle className="text-base">Sort By</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-3">
-                                {sortOptions.map(opt => (
-                                     <div key={opt.id} className="flex items-center text-sm text-muted-foreground hover:text-red-600 cursor-pointer">
-                                        <opt.icon className="h-4 w-4 mr-2" /> {opt.label}
-                                     </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                         <Card className="bg-orange-400 text-white p-6 text-center">
-                            <h3 className="text-xl font-bold">Can't find a Restaurant?</h3>
-                            <p className="text-sm mt-2 mb-4">If you can't find the Restaurant that you want to Order, request to add in our list</p>
-                            <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-orange-500">
-                                RESTAURANT REQUEST
-                            </Button>
-                        </Card>
-                        <Card className="bg-teal-500 text-white p-6 text-center">
-                            <h3 className="text-xl font-bold">I'm not listed!</h3>
-                            <p className="text-sm mt-2 mb-4">Is your restaurant not listed here? You can add it now and start receiving orders!</p>
-                            <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-teal-600">
-                                ADD YOUR BUSINESS
-                            </Button>
-                        </Card>
-                    </aside>
                 </div>
             </main>
              <footer className="bg-gray-800 text-white mt-12">

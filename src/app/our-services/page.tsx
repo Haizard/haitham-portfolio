@@ -49,19 +49,21 @@ export default function OurServicesPage() {
   }, [fetchServices]);
   
   useGSAP(() => {
-    if (!isLoading) {
-         gsap.from(".service-card", {
-            duration: 0.5,
-            opacity: 0,
-            y: 40,
-            stagger: 0.1,
-            ease: "power3.out",
-            scrollTrigger: {
-                trigger: containerRef.current,
-                start: "top 80%",
-                toggleActions: "play none none none"
-            }
-        });
+    if (!isLoading && containerRef.current) {
+         const cards = gsap.utils.toArray('.service-card');
+         cards.forEach((card: any, index) => {
+            gsap.from(card, {
+                duration: 0.6,
+                opacity: 0,
+                x: index % 2 === 0 ? -50 : 50, // Animate from left for even, right for odd
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 90%",
+                    toggleActions: "play none none none"
+                }
+            });
+         });
     }
   }, { scope: containerRef, dependencies: [isLoading, services] });
 
@@ -94,41 +96,41 @@ export default function OurServicesPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service, index) => (
               <div key={service.id || `service-${index}`} className="service-card">
               <Card className="shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col bg-card group h-full">
                 <Link href={`/our-services/${service.slug}`} className="flex flex-col h-full">
-                  <CardHeader className="pb-4">
-                    <div className="mb-3 aspect-[16/9] overflow-hidden rounded-t-lg">
+                  <CardHeader className="pb-4 p-4">
+                    <div className="mb-3 aspect-[16/10] overflow-hidden rounded-lg">
                        <Image 
                           src={service.imageUrl || `https://placehold.co/600x400.png?text=${encodeURIComponent(service.name.substring(0,15))}`} 
                           alt={service.name} 
                           width={600} 
                           height={400} 
-                          className="rounded-t-lg object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
+                          className="rounded-lg object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
                           data-ai-hint={service.imageHint || "service offering"}
                         />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-primary font-headline group-hover:text-primary/80 transition-colors">{service.name}</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground line-clamp-3 h-[3.75rem]">{service.description}</CardDescription>
+                    <CardTitle className="text-lg font-bold text-primary font-headline group-hover:text-primary/80 transition-colors line-clamp-2">{service.name}</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground line-clamp-2 h-[2.5rem]">{service.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-grow space-y-3">
-                    <div className="flex items-center text-lg">
+                  <CardContent className="p-4 pt-0 flex-grow space-y-2">
+                    <div className="flex items-center text-base">
                       <DollarSign className="h-5 w-5 mr-2 text-green-600" />
                       <span className="font-semibold text-foreground">{service.price ? `$${service.price}` : 'Inquire'}</span>
                     </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
+                    <div className="flex items-center text-xs text-muted-foreground">
                       <Clock className="h-4 w-4 mr-2" />
                       <span>Duration: {service.duration}</span>
                     </div>
                   </CardContent>
-                  <CardFooter className="mt-auto border-t pt-4">
+                  <CardFooter className="mt-auto border-t p-3">
                     <Button 
                       variant="outline"
-                      className="w-full text-base py-3" 
+                      className="w-full text-sm py-2" 
                     >
-                      <Eye className="mr-2 h-5 w-5" /> View Details
+                      <Eye className="mr-2 h-4 w-4" /> View Details
                        <ExternalLink className="ml-auto h-4 w-4 text-muted-foreground group-hover:text-primary/80 transition-colors" />
                     </Button>
                   </CardFooter>

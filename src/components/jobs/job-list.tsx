@@ -14,24 +14,27 @@ export function JobList({ jobs }: { jobs: Job[] }) {
   const container = useRef(null);
 
   useGSAP(() => {
-    const jobCards = gsap.utils.toArray('.job-card');
-    gsap.from(jobCards, {
-        opacity: 0,
-        y: 50,
-        stagger: 0.1,
-        duration: 0.5,
-        ease: 'power3.out',
-        scrollTrigger: {
-            trigger: container.current,
-            start: 'top 80%',
-            toggleActions: 'play none none none',
-        }
-    });
+    if (container.current) {
+        const jobCards = gsap.utils.toArray('.job-card');
+        jobCards.forEach((card: any, index) => {
+            gsap.from(card, {
+                opacity: 0,
+                x: index % 2 === 0 ? -50 : 50,
+                duration: 0.6,
+                ease: 'power3.out',
+                scrollTrigger: {
+                    trigger: card,
+                    start: 'top 90%',
+                    toggleActions: 'play none none none',
+                }
+            });
+        });
+    }
   }, { scope: container, dependencies: [jobs] });
 
 
   return (
-    <div ref={container} className="space-y-6">
+    <div ref={container} className="grid grid-cols-2 md:grid-cols-1 gap-6">
       {jobs.map(job => (
         <div key={job.id} className="job-card">
           <JobListItem job={job} />
