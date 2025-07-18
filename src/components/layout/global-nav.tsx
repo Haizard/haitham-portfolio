@@ -18,6 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useRouter, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import type { SessionUser } from '@/providers/user-provider';
 
 const navItems = [
     { href: "/", label: "Home", icon: Home },
@@ -27,11 +28,16 @@ const navItems = [
     { href: "/blog", label: "Blog", icon: Newspaper },
 ];
 
-const MobileBottomNav = () => {
+const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
     const pathname = usePathname();
+    const items = user ? [...navItems, { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : navItems;
+    
+    // Adjust layout for 6 items
+    const gridColsClass = items.length === 6 ? 'grid-cols-6' : 'grid-cols-5';
+
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around z-40">
-            {navItems.map(item => (
+        <div className={cn("md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border grid z-40", gridColsClass)}>
+            {items.map(item => (
                 <Link key={item.href} href={item.href} className={cn("flex flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary w-full h-full", pathname === item.href && "text-primary")}>
                     <item.icon className="h-6 w-6" />
                     <span className="text-[10px] mt-0.5">{item.label}</span>
@@ -97,7 +103,6 @@ export function GlobalNav() {
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                <Button variant="ghost" asChild className="hidden sm:inline-flex"><Link href="/dashboard">Dashboard</Link></Button>
                  <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -122,7 +127,7 @@ export function GlobalNav() {
                 </DropdownMenu>
               </>
             ) : (
-              <div className="flex items-center gap-1">
+              <div className="hidden md:flex items-center gap-1">
                 <Button variant="ghost" asChild><Link href="/login">Login</Link></Button>
                 <Button asChild><Link href="/signup">Sign Up</Link></Button>
               </div>
@@ -139,7 +144,7 @@ export function GlobalNav() {
           </div>
         </div>
       </nav>
-      <MobileBottomNav />
+      <MobileBottomNav user={user} />
       <CartSheet />
     </>
   );
