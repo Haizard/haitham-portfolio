@@ -19,7 +19,7 @@ import { SidebarNav } from './sidebar-nav';
 import { UserNav } from './user-nav';
 import { Logo } from './logo';
 import { Button } from '../ui/button';
-import { Loader2, Moon, Sun, Plus, LayoutDashboard, MessageCircle, ShoppingCart } from 'lucide-react'; 
+import { Loader2, Moon, Sun, Plus, LayoutDashboard, MessageCircle, ShoppingCart, UserCircle, Sparkles, FilePlus2, Store, Briefcase } from 'lucide-react'; 
 import { ScrollArea } from '../ui/scroll-area';
 import { useUser } from '@/hooks/use-user';
 import { Toaster } from '../ui/toaster';
