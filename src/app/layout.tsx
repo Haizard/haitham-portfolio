@@ -9,7 +9,6 @@ import { GlobalNav } from '@/components/layout/global-nav';
 import { UserProvider } from '@/providers/user-provider'; 
 import { usePathname } from 'next/navigation';
 import { AppLayout } from '@/components/layout/app-layout';
-import { ComparisonProvider } from '@/hooks/use-comparison';
 
 // Note: Metadata is usually static, but we're in a client component now.
 // For dynamic metadata, you would use the `generateMetadata` function in a server component layout.
@@ -34,7 +33,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       <GlobalNav />
-      <main>{children}</main>
+      <main className="pb-16 md:pb-0">{children}</main>
       <Toaster />
     </>
   );

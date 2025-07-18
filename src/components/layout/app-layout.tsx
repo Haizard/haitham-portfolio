@@ -140,7 +140,7 @@ const MobileBottomNav = ({ userRoles }: { userRoles: string[] }) => {
         {/* Main Bottom Bar */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around z-40">
             {navItems.map(item => (
-                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary", pathname === item.href && "text-primary")}>
+                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary w-full h-full", pathname === item.href && "text-primary")}>
                     <item.icon className="h-6 w-6" />
                     <span className="text-[10px]">{item.label}</span>
                 </Link>
