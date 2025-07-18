@@ -127,17 +127,17 @@ export default function VendorDashboardPage() {
                         <CardTitle>Quick Actions</CardTitle>
                         <CardDescription>Manage your store efficiently.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-3">
-                         <Button asChild variant="default" size="lg" className="justify-start">
-                           <Link href="/vendor/products"><Package className="mr-3 h-5 w-5"/>Manage My Products</Link>
+                    <CardContent className="grid grid-cols-2 gap-3">
+                         <Button asChild variant="default" className="justify-start col-span-2">
+                           <Link href="/vendor/products"><Package className="mr-3 h-5 w-5"/>Manage Products</Link>
                         </Button>
-                        <Button asChild variant="outline" size="lg" className="justify-start">
-                           <Link href="/vendor/orders"><ShoppingCart className="mr-3 h-5 w-5"/>Manage All Orders</Link>
+                        <Button asChild variant="outline" className="justify-start">
+                           <Link href="/vendor/orders"><ShoppingCart className="mr-2 h-4 w-4"/>Orders</Link>
                         </Button>
-                         <Button asChild variant="outline" size="lg" className="justify-start">
-                           <Link href="/vendor/finances"><Landmark className="mr-3 h-5 w-5"/>My Finances</Link>
+                         <Button asChild variant="outline" className="justify-start">
+                           <Link href="/vendor/finances"><Landmark className="mr-2 h-4 w-4"/>Finances</Link>
                         </Button>
-                         <Button asChild variant="outline" size="lg" className="justify-start">
+                         <Button asChild variant="outline" className="justify-start col-span-2">
                            <Link href={`/store/${user?.id}`} target="_blank"><Store className="mr-3 h-5 w-5"/>View My Storefront</Link>
                         </Button>
                     </CardContent>
