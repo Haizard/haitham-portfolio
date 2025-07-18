@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {statCardsData.map((stat) => (
           <StatCard key={stat.id} {...stat} />
         ))}
