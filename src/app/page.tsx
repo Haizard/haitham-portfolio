@@ -179,7 +179,7 @@ export default function HomePage() {
                         {[...Array(8)].map((_, i) => <Skeleton key={i} className="aspect-[3/4] bg-gray-800" />)}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {featuredProducts.map(product => (
                             <ProductCard key={product.id} product={product} className="bg-gray-800 border-gray-700 hover:border-primary text-white" />
                         ))}
@@ -197,7 +197,7 @@ export default function HomePage() {
         <section className="animated-section py-16 md:py-24 bg-gray-800/50">
             <div className="container mx-auto px-4">
                 <h2 className="text-4xl font-bold font-headline text-center mb-12">Shop by Category</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {eCommerceCategories.map(category => (
                         <Link href="/ecommerce" key={category.title}>
                             <Card className="bg-gray-800 border-gray-700 hover:border-primary hover:-translate-y-2 transition-all text-center p-8 group h-full">
@@ -214,7 +214,7 @@ export default function HomePage() {
         <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4">
                 <h2 className="text-4xl font-bold font-headline text-center mb-12">Need a Service?</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {workCategories.map((category) => (
                         <Card key={category.title} className="bg-gray-800 border-gray-700 hover:border-primary transition-colors text-center p-6 group">
                             <CardTitle className="text-lg font-semibold text-primary mb-2 group-hover:text-primary/90">{category.title}</CardTitle>
@@ -338,12 +338,6 @@ export default function HomePage() {
             </div>
         </section>
       </main>
-
-      <footer className="bg-gray-900 border-t border-gray-700 py-12">
-        <div className="container mx-auto px-4 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} CreatorOS. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }
