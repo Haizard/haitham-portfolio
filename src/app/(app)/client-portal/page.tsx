@@ -59,8 +59,8 @@ export default function ClientPortalPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <Card className="shadow-lg hover:shadow-xl transition-shadow">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Card className="shadow-lg hover:shadow-xl transition-shadow md:col-span-2 lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><FileText className="h-6 w-6 text-primary" /> Project Status</CardTitle>
             <CardDescription>Overview of active and past client projects.</CardDescription>

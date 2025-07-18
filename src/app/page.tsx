@@ -175,11 +175,11 @@ export default function HomePage() {
                     <p className="text-lg text-gray-400 mt-2">Discover quality products from our top creators.</p>
                 </div>
                 {isLoadingProducts ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[...Array(8)].map((_, i) => <Skeleton key={i} className="aspect-[3/4] bg-gray-800" />)}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {featuredProducts.map(product => (
                             <ProductCard key={product.id} product={product} className="bg-gray-800 border-gray-700 hover:border-primary text-white" />
                         ))}
@@ -214,7 +214,7 @@ export default function HomePage() {
         <section className="animated-section py-16 md:py-24 bg-gray-900">
             <div className="container mx-auto px-4">
                 <h2 className="text-4xl font-bold font-headline text-center mb-12">Need a Service?</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {workCategories.map((category) => (
                         <Card key={category.title} className="bg-gray-800 border-gray-700 hover:border-primary transition-colors text-center p-6 group">
                             <CardTitle className="text-lg font-semibold text-primary mb-2 group-hover:text-primary/90">{category.title}</CardTitle>
@@ -229,7 +229,7 @@ export default function HomePage() {
         <section className="animated-section py-16 md:py-24 bg-gray-800/50">
             <div className="container mx-auto px-4">
                 <h2 className="text-4xl font-bold font-headline text-center mb-16">How CreatorOS Freelancing Works</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
                     {howItWorksSteps.map((step) => (
                         <div key={step.title} className="text-center">
                             <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">

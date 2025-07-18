@@ -17,7 +17,7 @@ export default function BecomeAVendorPage() {
         </p>
       </header>
 
-      <section className="grid md:grid-cols-3 gap-8 mb-16">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-16">
         <Card className="shadow-lg hover:shadow-xl transition-shadow text-center">
           <CardHeader>
             <Store className="h-10 w-10 text-accent mx-auto mb-3" />
@@ -40,7 +40,7 @@ export default function BecomeAVendorPage() {
             </p>
           </CardContent>
         </Card>
-        <Card className="shadow-lg hover:shadow-xl transition-shadow text-center">
+        <Card className="shadow-lg hover:shadow-xl transition-shadow text-center sm:col-span-2 md:col-span-1">
           <CardHeader>
             <TrendingUp className="h-10 w-10 text-accent mx-auto mb-3" />
             <CardTitle className="text-2xl">Powerful Vendor Tools</CardTitle>
@@ -103,5 +103,3 @@ export default function BecomeAVendorPage() {
     </div>
   );
 }
-
-    
