@@ -211,15 +211,15 @@ export default function RestaurantDetailPage() {
     return (
         <>
         <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-            <div className="bg-card border-b border-border shadow-sm">
-                <div className="container mx-auto px-4 flex items-center justify-between h-14">
-                    <div className="flex items-center gap-4">
+            <div className="bg-card border-b border-border shadow-sm sticky top-16 md:top-0 z-30">
+                <div className="container mx-auto px-4">
+                    <div className="flex items-center gap-1 sm:gap-4 overflow-x-auto -mx-4 px-4">
                         {TABS.map(tab => (
                             <Button
                                 key={tab}
                                 variant="ghost"
                                 onClick={() => setActiveTab(tab)}
-                                className={`text-sm font-medium h-14 border-b-2 ${activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/50'}`}
+                                className={`text-sm font-medium h-12 sm:h-14 border-b-2 shrink-0 rounded-none ${activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/50'}`}
                             >
                                 {tab}
                             </Button>
@@ -230,7 +230,7 @@ export default function RestaurantDetailPage() {
 
             <main className="container mx-auto px-4 py-8">
                 <div className="grid grid-cols-12 gap-8">
-                    <aside className="col-span-12 lg:col-span-2">
+                    <aside className="col-span-12 lg:col-span-2 hidden lg:block">
                         <Card>
                             <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
                                 <CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Categories</CardTitle>
