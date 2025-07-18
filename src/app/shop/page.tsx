@@ -18,7 +18,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductQuickView } from '@/components/products/ProductQuickView';
 import { useSearchParams } from 'next/navigation';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const priceRanges = [
   { label: "$0.00 - $50.00", min: 0, max: 50 },
@@ -177,6 +177,9 @@ export default function ShopPage() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-full max-w-sm overflow-y-auto">
+              <SheetHeader className="pb-4">
+                <SheetTitle>Filter Products</SheetTitle>
+              </SheetHeader>
               <SidebarContent />
             </SheetContent>
           </Sheet>
@@ -214,9 +217,9 @@ export default function ShopPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                  {[...Array(9)].map((_, i) => <Skeleton key={i} className="h-80 w-full" />)}
               </div>
-            ) : products.length > 0 ? (
+            ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
+                {filteredProducts.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
               </div>
             ) : (
                 <div className="text-center py-20">

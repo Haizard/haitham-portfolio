@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RestaurantList } from '@/components/restaurants/restaurant-list';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const minOrderFilters = [
     { id: "5", label: "$5", count: 3 },
@@ -137,6 +137,9 @@ export default function RestaurantsPage() {
                       </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="w-full max-w-sm overflow-y-auto">
+                        <SheetHeader className="pb-4">
+                            <SheetTitle>Filter & Sort</SheetTitle>
+                        </SheetHeader>
                        <SidebarContent />
                     </SheetContent>
                   </Sheet>

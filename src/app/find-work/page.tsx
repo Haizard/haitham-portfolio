@@ -8,7 +8,7 @@ import { Search, Loader2, Filter } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 export default function FindWorkPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -70,6 +70,9 @@ export default function FindWorkPage() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-full max-w-sm">
+             <SheetHeader className="pb-4">
+                <SheetTitle>Filter Jobs</SheetTitle>
+             </SheetHeader>
              <JobFilters onFilterChange={fetchJobs} />
           </SheetContent>
         </Sheet>
