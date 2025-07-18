@@ -194,6 +194,10 @@ const Sidebar = React.forwardRef<
     }
 
     if (isMobile) {
+      // NOTE: For the new mobile FAB menu, the sidebar itself is not directly rendered on mobile.
+      // The `AppLayout` component will handle opening a different menu structure.
+      // This Sheet can be a fallback or used if the design changes.
+      // We will keep it but it won't be triggered by the default UI.
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent

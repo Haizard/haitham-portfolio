@@ -1,13 +1,14 @@
 
 "use client";
 
-import { Briefcase, Store, BarChartHorizontalBig, ArrowRight, Truck } from "lucide-react";
+import { Briefcase, Store, BarChartHorizontalBig, ArrowRight, Truck, PenSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import CreatorDashboardPage from "@/components/dashboard/page"; // Import the creator dashboard
 
 const allFeatures = [
   {
@@ -42,6 +43,14 @@ const allFeatures = [
     cta: "Find Delivery Jobs",
     role: "delivery_agent",
   },
+   {
+    title: "Creator Suite",
+    description: "Access AI content tools, manage your blog, and grow your audience.",
+    href: "/content-studio",
+    icon: PenSquare,
+    cta: "Open Content Studio",
+    role: "creator",
+  },
   {
     title: "Admin Control Panel",
     description: "Oversee the entire platform, manage users, and view global analytics.",
@@ -56,24 +65,28 @@ export default function DashboardHubPage() {
   const { user } = useUser();
   const router = useRouter();
 
-  const userRole = user?.roles?.[0]; // Get the single role of the user
+  const userRoles = user?.roles || [];
 
-  // Automatically redirect if user has only one specific role (not a creator/client combo)
+  // If the user is ONLY a creator, show the dedicated creator dashboard directly.
+  if (userRoles.length === 1 && userRoles[0] === 'creator') {
+    return <CreatorDashboardPage />;
+  }
+
+  // Automatically redirect if user has only one specific role (that is NOT creator/client)
   useEffect(() => {
-    if (userRole && userRole !== 'creator' && userRole !== 'client') {
-      const roleFeature = allFeatures.find(f => f.role === userRole);
+    if (userRoles.length === 1 && userRoles[0] !== 'creator' && userRoles[0] !== 'client') {
+      const roleFeature = allFeatures.find(f => f.role === userRoles[0]);
       if (roleFeature) {
         router.replace(roleFeature.href);
       }
     }
-  }, [userRole, router]);
+  }, [userRoles, router]);
 
 
-  const features = allFeatures.filter(feature => user?.roles.includes(feature.role));
+  const features = allFeatures.filter(feature => userRoles.includes(feature.role));
   
-  if (features.length === 0 && userRole) {
-      // Handle cases like 'creator' role which might not have a dedicated hub card
-      // Or redirect to a default page
+  // This case will now primarily handle users with multiple roles.
+  if (features.length === 0 && user) {
       return (
            <div className="flex flex-col gap-8">
               <header>

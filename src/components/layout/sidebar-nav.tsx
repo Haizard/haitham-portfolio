@@ -168,10 +168,12 @@ const navConfig: (NavItem | NavGroup)[] = [
 
 export function SidebarNav({ userRoles }: { userRoles: string[] }) {
   const pathname = usePathname();
-  const { setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleLinkClick = () => {
-    setOpenMobile(false); 
+    if (isMobile) {
+        setOpenMobile(false); 
+    }
   };
   
   const isActive = (href: string) => {
