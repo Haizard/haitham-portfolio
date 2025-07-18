@@ -8,13 +8,8 @@ import type { Restaurant, MenuItem, MenuCategory, FullMenu, RestaurantReview } f
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Info, Utensils, Leaf, Flame, WheatOff, Star, Clock, MessageSquare, Calendar as CalendarIconLucide, BadgePercent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { GlobalNav } from '@/components/layout/global-nav';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import Image from 'next/image';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { OrderSummaryCard } from './order-summary-card';
 import { MenuItemCard } from './menu-item-card';
 import { MenuItemDialog } from './menu-item-dialog';
@@ -216,8 +211,7 @@ export default function RestaurantDetailPage() {
     return (
         <>
         <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-            <GlobalNav />
-            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="bg-card border-b border-border shadow-sm">
                 <div className="container mx-auto px-4 flex items-center justify-between h-14">
                     <div className="flex items-center gap-4">
                         {TABS.map(tab => (
@@ -225,7 +219,7 @@ export default function RestaurantDetailPage() {
                                 key={tab}
                                 variant="ghost"
                                 onClick={() => setActiveTab(tab)}
-                                className={`text-sm font-medium h-14 border-b-2 ${activeTab === tab ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-red-600 hover:border-red-600'}`}
+                                className={`text-sm font-medium h-14 border-b-2 ${activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/50'}`}
                             >
                                 {tab}
                             </Button>

@@ -16,10 +16,10 @@ export function RestaurantList({ restaurants }: { restaurants: Restaurant[] }) {
     useGSAP(() => {
         if(container.current) {
             const cards = gsap.utils.toArray('.restaurant-card-item');
-            cards.forEach((card: any) => { // Simplified animation for single column
+            cards.forEach((card: any) => { 
                 gsap.from(card, {
                     opacity: 0,
-                    y: 50, // Animate from bottom
+                    y: 50, 
                     duration: 0.6,
                     ease: 'power3.out',
                     scrollTrigger: {

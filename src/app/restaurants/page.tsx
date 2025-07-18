@@ -10,19 +10,10 @@ import { Loader2, Search, MapPin, ThumbsUp, ChevronsUpDown, Star, DollarSign, Cl
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
-import { StarRating } from '@/components/reviews/StarRating';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { GlobalNav } from '@/components/layout/global-nav';
-import { cn } from '@/lib/utils';
-import { useComparison } from '@/hooks/use-comparison';
-import { ComparisonBar } from '@/components/restaurants/comparison-bar';
 import { RestaurantList } from '@/components/restaurants/restaurant-list';
-import { RestaurantListItem } from '@/components/restaurants/restaurant-list-item';
-
 
 const minOrderFilters = [
     { id: "5", label: "$5", count: 3 },
@@ -80,20 +71,31 @@ export default function RestaurantsPage() {
     }, [fetchPageData]);
 
     return (
-        <div className="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+        <div className="bg-background text-foreground">
+             {/* Hero Section */}
+            <section className="relative py-20 md:py-24 text-center overflow-hidden bg-muted/30">
+                <div className="absolute inset-0">
+                    <Image src="https://placehold.co/1920x600.png" alt="Food background" fill className="object-cover opacity-20" data-ai-hint="food background" />
+                </div>
+                <div className="container mx-auto px-4 relative z-10">
+                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-4">25,00000 Restaurants Serving In World</h1>
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">Order Food Delivery from Your Favorite Restaurants</p>
+                    <div className="max-w-3xl mx-auto bg-card p-4 rounded-lg shadow-lg flex flex-col md:flex-row gap-2">
+                        <Input placeholder="Restaurant Name" className="flex-grow text-base"/>
+                        <Input placeholder="All Locations" className="flex-grow text-base"/>
+                        <Button size="lg" className="bg-primary hover:bg-primary/90"><Search className="mr-2 h-5 w-5"/> Search</Button>
+                    </div>
+                </div>
+            </section>
+            
             <main className="container mx-auto px-4 py-12">
-                 <header className="text-center mb-8">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline">Find Your Next Meal</h1>
-                    <p className="text-lg text-muted-foreground mt-2">Order food delivery from your favorite local restaurants.</p>
-                </header>
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Sidebar */}
                     <aside className="lg:col-span-3 space-y-6">
                         <Card>
-                            <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
-                                <CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Cuisines</CardTitle>
-                            </CardHeader>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Cuisines</CardTitle></CardHeader>
                             <CardContent className="p-4 space-y-3">
-                                {isLoading ? <Loader2 className="animate-spin" /> : cuisineFilters.map(filter => (
+                                {isLoading ? <Loader2 className="animate-spin" /> : cuisineFilters.slice(0, 8).map(filter => (
                                     <div key={filter.id} className="flex justify-between items-center text-sm">
                                         <label htmlFor={`cuisine-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
                                             <Checkbox id={`cuisine-${filter.id}`} />
@@ -102,64 +104,32 @@ export default function RestaurantsPage() {
                                         <span className="text-muted-foreground">({filter.serviceCount})</span>
                                     </div>
                                 ))}
-                                <Link href="#" className="text-sm text-red-600 hover:underline">See more cuisines</Link>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
-                                <CardTitle className="text-base flex items-center gap-2"><Clock className="h-5 w-5"/> Opening Status</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-3">
-                                 <div className="flex justify-between items-center text-sm">
-                                    <label htmlFor="status-open" className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                                        <Checkbox id="status-open" /> Open
-                                    </label>
-                                </div>
-                                 <div className="flex justify-between items-center text-sm">
-                                    <label htmlFor="status-closed" className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                                        <Checkbox id="status-closed" /> Closed
-                                    </label>
-                                </div>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
-                                <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-5 w-5"/> Min. Order</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-3">
-                                {minOrderFilters.map(filter => (
-                                    <div key={filter.id} className="flex justify-between items-center text-sm">
-                                        <label htmlFor={`min-order-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                                            <Checkbox id={`min-order-${filter.id}`} />
-                                            {filter.label}
-                                        </label>
-                                        <span className="text-muted-foreground">({filter.count})</span>
-                                    </div>
-                                ))}
+                                {cuisineFilters.length > 8 && <Link href="#" className="text-sm text-primary hover:underline">See more cuisines</Link>}
                             </CardContent>
                         </Card>
                         <Card>
-                            <CardHeader className="bg-gray-200 dark:bg-gray-800 py-3">
-                                <CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Food Type</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-3">
-                                {isLoading ? <Loader2 className="animate-spin" /> : foodTypeFilters.map(filter => (
-                                    <div key={filter.id} className="flex justify-between items-center text-sm">
-                                        <label htmlFor={`food-type-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                                            <Checkbox id={`food-type-${filter.id}`} />
-                                            {filter.name}
-                                        </label>
+                             <CardHeader><CardTitle className="text-base">Sort By</CardTitle></CardHeader>
+                             <CardContent className="space-y-3">
+                                {sortOptions.map(opt => (
+                                    <div key={opt.id} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-primary">
+                                        <opt.icon className="h-4 w-4"/>
+                                        <span>{opt.label}</span>
                                     </div>
                                 ))}
+                             </CardContent>
+                        </Card>
+                        <Card className="bg-accent/20 border-accent">
+                            <CardHeader><CardTitle className="text-base">Can't find a Restaurant?</CardTitle></CardHeader>
+                            <CardContent className="space-y-3 text-center">
+                                <p className="text-sm text-muted-foreground">If you can't find the Restaurant that you want to Order, request to add in our list</p>
+                                <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10 hover:text-primary">Restaurant Request</Button>
                             </CardContent>
                         </Card>
                     </aside>
 
+                    {/* Main Content */}
                     <div className="lg:col-span-9 space-y-6">
-                        <div className="flex justify-between items-center">
-                             <h2 className="text-xl font-bold">{restaurants.length} Restaurant's Found</h2>
-                             <Button variant="outline" className="flex items-center gap-2"><Filter className="h-4 w-4"/>Filter</Button>
-                        </div>
+                        <h2 className="text-xl font-bold">{restaurants.length} Restaurant's Found</h2>
                         {isLoading ? (
                             <div className="flex justify-center items-center h-64">
                                 <Loader2 className="h-12 w-12 animate-spin text-primary"/>
@@ -168,10 +138,8 @@ export default function RestaurantsPage() {
                             <RestaurantList restaurants={restaurants} />
                         )}
                     </div>
-                    
                 </div>
             </main>
-             <ComparisonBar />
         </div>
     );
 }

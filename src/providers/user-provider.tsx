@@ -5,7 +5,6 @@ import { createContext, useState, useEffect, useCallback, useContext } from 'rea
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/lib/auth-data';
-import { ComparisonProvider } from '@/hooks/use-comparison'; // Import the new provider
 
 export interface SessionUser {
   id: string;
@@ -81,9 +80,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <UserContext.Provider value={value}>
-      <ComparisonProvider>
-        {children}
-      </ComparisonProvider>
+      {children}
     </UserContext.Provider>
   );
 }
