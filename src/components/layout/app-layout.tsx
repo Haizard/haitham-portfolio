@@ -11,6 +11,9 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './sidebar-nav';
 import { UserNav } from './user-nav';
@@ -25,6 +28,7 @@ import { useGSAP } from '@gsap/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { Card, CardContent } from '../ui/card';
 
 gsap.registerPlugin(useGSAP);
 
@@ -155,7 +159,7 @@ const MobileBottomNav = ({ userRoles }: { userRoles: string[] }) => {
                     >
                         <Card className="shadow-2xl">
                             <CardContent className="p-2">
-                                <SidebarNav userRoles={userRoles}/>
+                                <MobileMenuNav userRoles={userRoles} onLinkClick={() => setIsMenuOpen(false)} />
                             </CardContent>
                         </Card>
                     </motion.div>
@@ -177,3 +181,49 @@ const MobileBottomNav = ({ userRoles }: { userRoles: string[] }) => {
         </>
     )
 }
+
+// This is the new, simplified navigation component for the mobile floating menu.
+// It does NOT use any Sidebar-specific context components.
+const MobileMenuNav = ({ userRoles, onLinkClick }: { userRoles: string[], onLinkClick: () => void }) => {
+    const pathname = usePathname();
+    const isActive = (href: string) => pathname === href;
+  
+    // Simplified version of the navConfig from SidebarNav
+    // In a real app, this might be shared from a central config file
+    const navConfig = [
+      { href: "/dashboard", label: "Hub", icon: LayoutDashboard, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
+      { href: "/profile", label: "My Profile", icon: UserCircle, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
+      { href: "/content-studio", label: "Content Studio", icon: Sparkles, roles: ['creator', 'admin', 'vendor'] },
+      { href: "/post-job", label: "Post a Job", icon: FilePlus2, roles: ['client'] },
+      { href: "/vendor/dashboard", label: "Vendor Dashboard", icon: Store, roles: ['vendor'] },
+      { href: "/my-projects", label: "My Projects", icon: Briefcase, roles: ['freelancer'] },
+    ];
+  
+    const hasAccess = (requiredRoles?: string[]) => {
+      if (!requiredRoles || requiredRoles.length === 0) return true;
+      return requiredRoles.some(role => userRoles.includes(role));
+    }
+  
+    return (
+        <ScrollArea className="h-full max-h-[50vh]">
+            <nav className="flex flex-col gap-1 p-2">
+                {navConfig.filter(item => hasAccess(item.roles)).map(item => (
+                    <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onLinkClick}
+                    className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        isActive(item.href)
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-muted"
+                    )}
+                    >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                    </Link>
+                ))}
+            </nav>
+        </ScrollArea>
+    );
+  };
