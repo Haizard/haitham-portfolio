@@ -123,7 +123,7 @@ export default function RestaurantDetailPage() {
         {menu.categories.map(category => (
           <div key={category.id} id={`category-${category.id}`} className="scroll-mt-20">
             <h2 className="text-2xl font-bold mb-4">{category.name}</h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(menuItemsByCategory[category.id!] || []).map(item => (
                 <MenuItemCard key={item.id} item={item} onOpenDialog={handleOpenItemDialog} />
               ))}

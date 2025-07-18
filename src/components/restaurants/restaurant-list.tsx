@@ -16,10 +16,10 @@ export function RestaurantList({ restaurants }: { restaurants: Restaurant[] }) {
     useGSAP(() => {
         if(container.current) {
             const cards = gsap.utils.toArray('.restaurant-card-item');
-            cards.forEach((card: any, index) => {
+            cards.forEach((card: any) => { // Simplified animation for single column
                 gsap.from(card, {
                     opacity: 0,
-                    x: index % 2 === 0 ? -50 : 50,
+                    y: 50, // Animate from bottom
                     duration: 0.6,
                     ease: 'power3.out',
                     scrollTrigger: {
@@ -33,7 +33,7 @@ export function RestaurantList({ restaurants }: { restaurants: Restaurant[] }) {
     }, { scope: container, dependencies: [restaurants] });
 
     return (
-        <div ref={container} className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+        <div ref={container} className="space-y-6">
             {restaurants.map(restaurant => (
                 <div key={restaurant.id} className="restaurant-card-item">
                     <RestaurantListItem restaurant={restaurant} />
