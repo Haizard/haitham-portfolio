@@ -110,6 +110,9 @@ export function GlobalNav() {
                      <DropdownMenuItem asChild>
                         <Link href="/profile"><UserCircle className="mr-2 h-4 w-4" />My Profile</Link>
                     </DropdownMenuItem>
+                     <DropdownMenuItem asChild className="sm:hidden">
+                        <Link href="/dashboard"><UserCircle className="mr-2 h-4 w-4" />Dashboard</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                       <LogOut className="mr-2 h-4 w-4" /> Log Out
@@ -118,7 +121,7 @@ export function GlobalNav() {
                 </DropdownMenu>
               </>
             ) : (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Button variant="ghost" asChild><Link href="/login">Login</Link></Button>
                 <Button asChild><Link href="/signup">Sign Up</Link></Button>
               </div>
