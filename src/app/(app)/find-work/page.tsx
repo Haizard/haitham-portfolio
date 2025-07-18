@@ -4,14 +4,17 @@
 import { useEffect, useState, useCallback } from 'react';
 import { JobList } from '@/components/jobs/job-list';
 import { JobFilters, type JobFilterValues } from '@/components/jobs/job-filters';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Filter } from 'lucide-react';
 import type { Job } from '@/lib/jobs-data';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export default function FindWorkPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
   const fetchJobs = useCallback(async (filters: JobFilterValues = {}) => {
     setIsLoading(true);
@@ -37,6 +40,7 @@ export default function FindWorkPage() {
       });
     } finally {
       setIsLoading(false);
+      setIsFilterSheetOpen(false); // Close sheet after applying filters
     }
   }, [toast]);
 
@@ -55,9 +59,24 @@ export default function FindWorkPage() {
           Browse, search, and filter through thousands of jobs to find your perfect match.
         </p>
       </header>
+      
+      {/* Mobile Filter Button */}
+      <div className="lg:hidden mb-4">
+        <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="w-full">
+              <Filter className="mr-2 h-4 w-4" />
+              Show Filters
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-full max-w-sm">
+             <JobFilters onFilterChange={fetchJobs} />
+          </SheetContent>
+        </Sheet>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <aside className="lg:col-span-1">
+        <aside className="hidden lg:block lg:col-span-1">
           <div className="sticky top-24">
             <JobFilters onFilterChange={fetchJobs} />
           </div>

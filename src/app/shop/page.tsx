@@ -8,7 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, List, LayoutGrid, ChevronRight, Home, Star } from "lucide-react";
+import { Loader2, List, LayoutGrid, ChevronRight, Home, Star, Filter } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from '@/lib/products-data';
@@ -18,6 +18,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductQuickView } from '@/components/products/ProductQuickView';
 import { useSearchParams } from 'next/navigation';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const priceRanges = [
   { label: "$0.00 - $50.00", min: 0, max: 50 },
@@ -108,8 +109,8 @@ export default function ShopPage() {
     );
   };
 
-  const Sidebar = () => (
-    <aside className="lg:col-span-1 space-y-6">
+  const SidebarContent = () => (
+    <aside className="space-y-6">
       <Card>
         <CardHeader><CardTitle className="text-base">Shop By Category</CardTitle></CardHeader>
         <CardContent>
@@ -144,7 +145,7 @@ export default function ShopPage() {
         <CardContent className="space-y-4">
           {isLoading ? <Skeleton className="h-48 w-full" /> : bestSellers.map(p => (
             <Link href={`/products/${p.slug}`} key={p.id} className="flex gap-3 group">
-              <Image src={p.imageUrl} alt={p.name} width={64} height={64} className="rounded-md object-cover border" data-ai-hint={p.imageHint}/>
+              <Image src={p.imageUrl} alt={p.name} width={64} height={64} className="rounded-md object-contain border" data-ai-hint={p.imageHint}/>
               <div>
                 <p className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary">{p.name}</p>
                 <p className="text-xs font-semibold text-primary mt-1">${p.price?.toFixed(2)}</p>
@@ -166,8 +167,26 @@ export default function ShopPage() {
             <ChevronRight className="h-4 w-4 mx-1" />
             <span>Shop</span>
         </div>
+        
+        <div className="lg:hidden mb-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="w-full">
+                <Filter className="mr-2 h-4 w-4" />
+                Show Filters
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-full max-w-sm overflow-y-auto">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <Sidebar />
+          <div className="hidden lg:block lg:col-span-1">
+            <SidebarContent />
+          </div>
+
           <main className="lg:col-span-3">
              <div className="flex flex-col sm:flex-row justify-between items-center border-b pb-4 mb-6">
                 <h1 className="text-3xl font-bold font-headline mb-2 sm:mb-0">Shop All</h1>

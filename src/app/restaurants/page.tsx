@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RestaurantList } from '@/components/restaurants/restaurant-list';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const minOrderFilters = [
     { id: "5", label: "$5", count: 3 },
@@ -70,6 +71,44 @@ export default function RestaurantsPage() {
         fetchPageData();
     }, [fetchPageData]);
 
+    const SidebarContent = () => (
+        <aside className="space-y-6">
+            <Card>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Cuisines</CardTitle></CardHeader>
+                <CardContent className="p-4 space-y-3">
+                    {isLoading ? <Loader2 className="animate-spin" /> : cuisineFilters.slice(0, 8).map(filter => (
+                        <div key={filter.id} className="flex justify-between items-center text-sm">
+                            <label htmlFor={`cuisine-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
+                                <Checkbox id={`cuisine-${filter.id}`} />
+                                {filter.name}
+                            </label>
+                            <span className="text-muted-foreground">({filter.serviceCount})</span>
+                        </div>
+                    ))}
+                    {cuisineFilters.length > 8 && <Link href="#" className="text-sm text-primary hover:underline">See more cuisines</Link>}
+                </CardContent>
+            </Card>
+            <Card>
+                 <CardHeader><CardTitle className="text-base">Sort By</CardTitle></CardHeader>
+                 <CardContent className="space-y-3">
+                    {sortOptions.map(opt => (
+                        <div key={opt.id} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-primary">
+                            <opt.icon className="h-4 w-4"/>
+                            <span>{opt.label}</span>
+                        </div>
+                    ))}
+                 </CardContent>
+            </Card>
+            <Card className="bg-accent/20 border-accent">
+                <CardHeader><CardTitle className="text-base">Can't find a Restaurant?</CardTitle></CardHeader>
+                <CardContent className="space-y-3 text-center">
+                    <p className="text-sm text-muted-foreground">If you can't find the Restaurant that you want to Order, request to add in our list</p>
+                    <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10 hover:text-primary">Restaurant Request</Button>
+                </CardContent>
+            </Card>
+        </aside>
+    );
+
     return (
         <div className="bg-background text-foreground">
              {/* Hero Section */}
@@ -89,43 +128,25 @@ export default function RestaurantsPage() {
             </section>
             
             <main className="container mx-auto px-4 py-12">
+                <div className="lg:hidden mb-4">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Show Filters & Sort Options
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-full max-w-sm overflow-y-auto">
+                       <SidebarContent />
+                    </SheetContent>
+                  </Sheet>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Sidebar */}
-                    <aside className="lg:col-span-3 space-y-6">
-                        <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Utensils className="h-5 w-5"/> Cuisines</CardTitle></CardHeader>
-                            <CardContent className="p-4 space-y-3">
-                                {isLoading ? <Loader2 className="animate-spin" /> : cuisineFilters.slice(0, 8).map(filter => (
-                                    <div key={filter.id} className="flex justify-between items-center text-sm">
-                                        <label htmlFor={`cuisine-${filter.id}`} className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                                            <Checkbox id={`cuisine-${filter.id}`} />
-                                            {filter.name}
-                                        </label>
-                                        <span className="text-muted-foreground">({filter.serviceCount})</span>
-                                    </div>
-                                ))}
-                                {cuisineFilters.length > 8 && <Link href="#" className="text-sm text-primary hover:underline">See more cuisines</Link>}
-                            </CardContent>
-                        </Card>
-                        <Card>
-                             <CardHeader><CardTitle className="text-base">Sort By</CardTitle></CardHeader>
-                             <CardContent className="space-y-3">
-                                {sortOptions.map(opt => (
-                                    <div key={opt.id} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-primary">
-                                        <opt.icon className="h-4 w-4"/>
-                                        <span>{opt.label}</span>
-                                    </div>
-                                ))}
-                             </CardContent>
-                        </Card>
-                        <Card className="bg-accent/20 border-accent">
-                            <CardHeader><CardTitle className="text-base">Can't find a Restaurant?</CardTitle></CardHeader>
-                            <CardContent className="space-y-3 text-center">
-                                <p className="text-sm text-muted-foreground">If you can't find the Restaurant that you want to Order, request to add in our list</p>
-                                <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10 hover:text-primary">Restaurant Request</Button>
-                            </CardContent>
-                        </Card>
-                    </aside>
+                    <div className="hidden lg:block lg:col-span-3">
+                      <SidebarContent />
+                    </div>
 
                     {/* Main Content */}
                     <div className="lg:col-span-9 space-y-6">
