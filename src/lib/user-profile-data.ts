@@ -1,5 +1,4 @@
 
-
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { UserRole } from './auth-data';
@@ -9,7 +8,8 @@ import { getProductCountForVendor } from './data-aggregators';
 const FREELANCER_PROFILES_COLLECTION = 'freelancerProfiles';
 
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available';
-export type VendorStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+export type PartnerStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+export type VehicleType = 'motorcycle' | 'car' | 'van' | 'safari_van' | 'coaster_bus';
 
 export interface PortfolioLink {
   _id?: ObjectId;
@@ -18,7 +18,7 @@ export interface PortfolioLink {
   url: string;
 }
 
-// This profile now serves Freelancers, Vendors, AND Delivery Agents
+// This profile now serves Freelancers, Vendors, AND Transport Partners
 export interface FreelancerProfile {
   _id?: ObjectId;
   id?: string;
@@ -42,15 +42,15 @@ export interface FreelancerProfile {
 
   // Fields for Vendors
   storeName: string;
-  vendorStatus: VendorStatus;
+  vendorStatus: PartnerStatus;
   isFeatured?: boolean; 
   productCount?: number;
-  payoutPhoneNumber?: string; // New field for AzamPay
+  payoutPhoneNumber?: string;
 
-  // Fields for Delivery Agents
-  vehicleType?: 'car' | 'motorcycle' | 'bicycle' | 'van';
+  // Fields for Transport Partners
+  vehicleType?: VehicleType;
   deliveryRange?: number; // in km
-  deliveryAgentStatus?: 'online' | 'offline' | 'on_delivery';
+  partnerStatus?: 'online' | 'offline' | 'on_delivery';
   
   createdAt: string; 
   updatedAt: string; 
@@ -93,7 +93,8 @@ const defaultFreelancerProfileData = (userId: string, initialData?: any): Omit<F
   storeName: initialData?.storeName || 'My Store',
   vendorStatus: 'pending',
   isFeatured: false,
-  deliveryAgentStatus: 'offline',
+  partnerStatus: 'offline',
+  vehicleType: 'motorcycle',
 });
 
 export async function createFreelancerProfileIfNotExists(userId: string, initialData?: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<FreelancerProfile> {
@@ -120,9 +121,7 @@ export async function getFreelancerProfile(userId: string): Promise<FreelancerPr
   const profileDoc = await collection.findOne({ userId });
   
   if (!profileDoc) {
-    console.log(`Freelancer profile for userId ${userId} not found, creating default.`);
-    // In a real app, you might want to fetch the base user data to populate the profile
-    return await createFreelancerProfileIfNotExists(userId);
+    return null;
   }
   return docToFreelancerProfile(profileDoc);
 }
@@ -136,7 +135,6 @@ export async function getFreelancerProfilesByUserIds(userIds: string[]): Promise
     return profileDocs.map(docToFreelancerProfile);
 }
 
-// NEW function to get profiles by a specific role
 export async function getProfilesByRole(role: UserRole): Promise<FreelancerProfile[]> {
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
     const profileDocs = await collection.find({ roles: role }).toArray();
@@ -172,16 +170,16 @@ export async function updateFreelancerProfile(userId: string, data: Partial<Omit
 
 export async function getAllVendorProfiles(filters: { isFeatured?: boolean } = {}): Promise<FreelancerProfile[]> {
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
-    const query: any = { roles: 'vendor' }; // Ensure we only get vendors
+    const query: any = { roles: 'vendor' };
     if (filters.isFeatured) {
         query.isFeatured = true;
     }
     const vendorDocs = await collection.find(query).sort({ createdAt: -1 }).toArray();
     
-    // Enrich with product counts after fetching
     const enrichedVendors = await Promise.all(
         vendorDocs.map(async (doc) => {
             const profile = docToFreelancerProfile(doc);
+            // The product count is now calculated here, where it's needed, not in the general get profile function.
             profile.productCount = await getProductCountForVendor(profile.userId);
             return profile;
         })
@@ -190,8 +188,7 @@ export async function getAllVendorProfiles(filters: { isFeatured?: boolean } = {
     return enrichedVendors;
 }
 
-export async function updateVendorStatus(vendorId: string, status: VendorStatus): Promise<FreelancerProfile | null> {
-    // This function assumes `vendorId` is the `_id` of the freelancer profile.
+export async function updateVendorStatus(vendorId: string, status: PartnerStatus): Promise<FreelancerProfile | null> {
     if (!ObjectId.isValid(vendorId)) return null;
     const collection = await getCollection<FreelancerProfile>(FREELANCER_PROFILES_COLLECTION);
     const result = await collection.findOneAndUpdate(

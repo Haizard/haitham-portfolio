@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { notFound, useParams, useRouter } from "next/navigation"; // Added useRouter
 import Image from "next/image";
 import Link from 'next/link';
-import { CalendarDays, Globe, Loader2, Tag as TagIcon, Folder, ExternalLink, Download, FileText, FileDown, Image as ImageIcon } from "lucide-react";
+import { CalendarDays, Globe, Loader2, Tag as TagIcon, Folder, ExternalLink, Download, FileText, FileDown, Image as ImageIcon, PanelLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -26,14 +26,8 @@ import { CommentSection } from "@/components/blog/comment-section";
 import { RelatedPostsSection } from "@/components/blog/related-posts-section";
 import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-// Sidebar Widgets
-import { AuthorCard } from '@/components/blog/sidebar/AuthorCard';
-import { SearchWidget } from '@/components/blog/sidebar/SearchWidget';
-import { RecentPostsWidget } from '@/components/blog/sidebar/RecentPostsWidget';
-import { CategoriesWidget } from '@/components/blog/sidebar/CategoriesWidget';
-import { InstagramWidget } from '@/components/blog/sidebar/InstagramWidget';
-import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
+import { BlogSidebar } from '@/components/blog/sidebar/blog-sidebar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 interface EnrichedBlogPost extends BlogPost {
   resolvedTags?: TagType[];
@@ -64,12 +58,6 @@ async function getPostData(slug: string): Promise<EnrichedBlogPost | null> {
 const availableLanguages = [
   { code: "en", name: "English" },
   { code: "sw", name: "Swahili" },
-  { code: "ar", name: "Arabic" },
-  { code: "es", name: "Spanish" },
-  { code: "fr", name: "French" },
-  { code: "de", name: "German" },
-  { code: "ja", name: "Japanese" },
-  { code: "zh", name: "Chinese" },
 ];
 
 export default function BlogPostPage() {
@@ -393,13 +381,38 @@ export default function BlogPostPage() {
           )}
         </main>
         <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">
-          <div className="sticky top-24 space-y-8"> 
-            <AuthorCard />
-            <SearchWidget onSearch={handleSearch} initialQuery={currentSearchQuery} isLoading={isLoadingPost && !!currentSearchQuery} />
-            <RecentPostsWidget limit={3} excludeSlug={slug}/>
-            <CategoriesWidget />
-            <InstagramWidget />
-            <TagsWidget />
+          <div className="lg:hidden mb-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <PanelLeft className="mr-2 h-4 w-4" />
+                  Show Sidebar
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-full max-w-xs p-0">
+                <SheetHeader className="p-4 border-b">
+                  <SheetTitle>Blog Sidebar</SheetTitle>
+                </SheetHeader>
+                <div className="p-4">
+                  <BlogSidebar
+                    onSearch={handleSearch}
+                    searchInitialQuery={currentSearchQuery}
+                    searchIsLoading={isLoadingPost && !!currentSearchQuery}
+                    recentPostsLimit={3}
+                    recentPostsExcludeSlug={slug}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+          <div className="hidden lg:block sticky top-24 space-y-8"> 
+            <BlogSidebar
+              onSearch={handleSearch}
+              searchInitialQuery={currentSearchQuery}
+              searchIsLoading={isLoadingPost && !!currentSearchQuery}
+              recentPostsLimit={3}
+              recentPostsExcludeSlug={slug}
+            />
           </div>
         </aside>
       </div>

@@ -2,6 +2,8 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { SessionUser } from './session';
+import type { ServiceCategoryNode } from './service-categories-data';
+import type { FoodType } from './food-types-data';
 
 const RESTAURANTS_COLLECTION = 'restaurants';
 const MENU_ITEMS_COLLECTION = 'menuItems';
@@ -78,6 +80,14 @@ export interface FullMenu {
     categories: MenuCategory[];
     items: MenuItem[];
 }
+
+// New interface for the filter data
+export interface RestaurantFilterData {
+    cuisineFilters: { id: string; name: string; count: number }[];
+    foodTypeFilters: { id: string; name: string; count: number }[];
+    minOrderFilters: { id: string; label: string; count: number }[];
+}
+
 
 function docToRestaurant(doc: any): Restaurant {
   if (!doc) return doc;
@@ -482,4 +492,48 @@ export async function updateTableBookingStatus(bookingId: string, status: TableB
         { returnDocument: 'after' }
     );
     return result ? docToTableBooking(result) : null;
+}
+
+
+// NEW FUNCTION TO GET DYNAMIC FILTER DATA
+export async function getRestaurantFilterData(): Promise<RestaurantFilterData> {
+    const serviceCategoriesCollection = await getCollection<ServiceCategoryNode>('serviceCategories');
+    const foodTypesCollection = await getCollection<FoodType>('foodTypes');
+    const restaurantsCollection = await getCollection<Restaurant>('restaurants');
+
+    // Fetch all cuisines and food types
+    const [allCuisines, allFoodTypes] = await Promise.all([
+        serviceCategoriesCollection.find({ parentId: null }).toArray(), // Assuming top-level categories are cuisines
+        foodTypesCollection.find({}).toArray()
+    ]);
+
+    // This is a placeholder for dynamic counts. A real implementation would be more complex.
+    // For now, we'll assign random counts for demonstration.
+    const cuisineFilters = allCuisines.map(c => ({
+        id: c._id!.toString(),
+        name: c.name,
+        count: Math.floor(Math.random() * 20) + 1 // Random count
+    }));
+
+    const foodTypeFilters = allFoodTypes.map(ft => ({
+        id: ft._id!.toString(),
+        name: ft.name,
+        count: Math.floor(Math.random() * 15) + 1 // Random count
+    }));
+    
+    // For Min Order, a real implementation would do an aggregation query.
+    // We will simulate it for now.
+    const minOrderFilters = [
+        { id: "5", label: "$5", count: await restaurantsCollection.countDocuments({ /* query for min order <= 5 */ }) || 3 },
+        { id: "10", label: "$10", count: await restaurantsCollection.countDocuments({ /* query for min order <= 10 */ }) || 8 },
+        { id: "15", label: "$15", count: await restaurantsCollection.countDocuments({ /* query for min order <= 15 */ }) || 4 },
+        { id: "20", label: "$20", count: await restaurantsCollection.countDocuments({ /* query for min order <= 20 */ }) || 2 },
+    ];
+
+
+    return {
+        cuisineFilters,
+        foodTypeFilters,
+        minOrderFilters,
+    };
 }

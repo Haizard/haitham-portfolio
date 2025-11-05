@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createFreelancerProfileIfNotExists } from '@/lib/user-profile-data';
 import { createClientProfileIfNotExists } from '@/lib/client-profile-data';
 
-const roleEnum = z.enum(['client', 'freelancer', 'vendor', 'delivery_agent'], {
+const roleEnum = z.enum(['client', 'freelancer', 'vendor', 'transport_partner', 'creator'], {
     required_error: "You must select a role."
 });
 
@@ -34,12 +34,13 @@ export async function POST(request: NextRequest) {
     // Step 1: Create the core user account.
     const createdUser = await createUser({ name, email, password, roles });
 
-    // Step 2: Create associated profiles based on the single role.
-    if (createdUser.roles.includes('freelancer') || createdUser.roles.includes('vendor') || createdUser.roles.includes('delivery_agent')) {
+    // Step 2: Create associated profiles. THIS IS THE CRITICAL FIX.
+    // Every user gets a client profile.
+    await createClientProfileIfNotExists(createdUser.id, { name, email });
+    
+    // Users with roles other than 'client' ALSO get a freelancer profile.
+    if (role !== 'client') {
         await createFreelancerProfileIfNotExists(createdUser.id, { name, email, roles: createdUser.roles, storeName: `${name}'s Store` });
-    }
-    if (createdUser.roles.includes('client')) {
-        await createClientProfileIfNotExists(createdUser.id, { name, email });
     }
     
     // Step 3: Construct a clean, serializable session user object.

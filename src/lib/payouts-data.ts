@@ -34,6 +34,13 @@ function docToPayout(doc: any): Payout {
   return { id: _id?.toString(), ...rest } as Payout;
 }
 
+export async function getPayoutById(id: string): Promise<Payout | null> {
+    if (!ObjectId.isValid(id)) return null;
+    const collection = await getCollection<Payout>(PAYOUTS_COLLECTION);
+    const doc = await collection.findOne({ _id: new ObjectId(id) });
+    return doc ? docToPayout(doc) : null;
+}
+
 export async function getVendorFinanceSummary(vendorId: string): Promise<VendorFinanceSummary> {
   const ordersCollection = await getCollection<Order>('orders');
   const payoutsCollection = await getCollection<Payout>(PAYOUTS_COLLECTION);

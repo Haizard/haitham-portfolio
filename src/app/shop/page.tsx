@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProductQuickView } from '@/components/products/ProductQuickView';
 import { useSearchParams } from 'next/navigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { EcommerceHeader } from '@/components/ecommerce/ecommerce-header';
 
 const priceRanges = [
   { label: "$0.00 - $50.00", min: 0, max: 50 },
@@ -118,7 +119,7 @@ export default function ShopPage() {
             {categories.map(cat => (
               <li key={cat.id} className="flex items-center justify-between">
                 <label htmlFor={`cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary">
-                   <Checkbox id={`cat-${cat.id}`} checked={selectedCategories.includes(cat.id!)} onCheckedChange={(c) => handleCategoryChange(cat.id!, c)} /> {cat.name}
+                   <Checkbox id={`cat-${cat.id}`} checked={selectedCategories.includes(cat.id!)} onCheckedChange={(c) => cat.id && handleCategoryChange(cat.id, c)} /> {cat.name}
                 </label>
                 <span className="text-xs">({cat.productCount})</span>
               </li>
@@ -160,10 +161,13 @@ export default function ShopPage() {
 
   return (
     <>
+    <EcommerceHeader />
     <div className="bg-background">
       <div className="container mx-auto py-8">
         <div className="mb-6 flex items-center text-sm text-muted-foreground">
             <Link href="/" className="hover:text-primary flex items-center gap-1"><Home className="h-4 w-4"/> Home</Link>
+            <ChevronRight className="h-4 w-4 mx-1" />
+            <Link href="/ecommerce" className="hover:text-primary">E-commerce</Link>
             <ChevronRight className="h-4 w-4 mx-1" />
             <span>Shop</span>
         </div>
@@ -217,9 +221,9 @@ export default function ShopPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                  {[...Array(9)].map((_, i) => <Skeleton key={i} className="h-80 w-full" />)}
               </div>
-            ) : filteredProducts.length > 0 ? (
+            ) : products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
+                {products.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
               </div>
             ) : (
                 <div className="text-center py-20">

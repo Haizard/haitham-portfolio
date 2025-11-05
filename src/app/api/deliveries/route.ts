@@ -1,4 +1,3 @@
-
 // src/app/api/deliveries/route.ts
 
 import { NextResponse, type NextRequest } from 'next/server';
@@ -9,9 +8,9 @@ import { getSession } from '@/lib/session';
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    // In a real app, you'd want to ensure only authenticated users with the 'delivery_agent' role can see these.
-    if (!session.user || !session.user.roles.includes('delivery_agent')) {
-      // return NextResponse.json({ message: "Unauthorized." }, { status: 403 });
+    // In a real app, you'd want to ensure only authenticated users with the 'transport_partner' role can see these.
+    if (!session.user || !session.user.roles.includes('transport_partner')) {
+       return NextResponse.json({ message: "Unauthorized." }, { status: 403 });
     }
     
     const deliveries = await getAvailableDeliveries();

@@ -76,8 +76,7 @@ export async function getClientProfile(userId: string): Promise<ClientProfile | 
   const profileDoc = await collection.findOne({ userId });
   
   if (!profileDoc) {
-     // This should ideally not be hit in the main flow now, but is a good fallback.
-    return await createClientProfileIfNotExists(userId, {});
+    return null;
   }
   return docToClientProfile(profileDoc);
 }

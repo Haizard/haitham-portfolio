@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
@@ -53,9 +52,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  // The user hook now provides the full, reliable profile data.
-  const { user: profileData, isLoading: isUserLoading, mutate } = useUser();
-  const router = useRouter();
+  const { user: sessionUser, isLoading: isUserLoading, mutate } = useUser();
+  const [profileData, setProfileData] = useState<FreelancerProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -70,8 +69,27 @@ export default function ProfilePage() {
     control: form.control,
     name: "portfolioLinks",
   });
+  
+  const fetchProfile = useCallback(async () => {
+    setIsLoadingProfile(true);
+    try {
+      const response = await fetch('/api/profile');
+      if (!response.ok) throw new Error("Failed to fetch profile details.");
+      const data = await response.json();
+      setProfileData(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Could not load your profile.", variant: "destructive" });
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [toast]);
 
-  // This effect now simply syncs the form state with the reliable user data from the context.
+  useEffect(() => {
+    if (sessionUser) {
+      fetchProfile();
+    }
+  }, [sessionUser, fetchProfile]);
+
   useEffect(() => {
     if (profileData) {
       form.reset({
@@ -88,7 +106,6 @@ export default function ProfilePage() {
       });
     }
   }, [profileData, form]);
-
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
     setIsSaving(true);
@@ -108,7 +125,8 @@ export default function ProfilePage() {
         throw new Error(errorData.message || 'Failed to save profile');
       }
       
-      await mutate(); // Re-fetch user data from the provider
+      await mutate(); // Re-fetch session data (which is now just the simple user object)
+      await fetchProfile(); // Re-fetch the detailed profile for this page
       
       toast({ title: "Success", description: "Profile updated successfully!" });
     } catch (error: any) {
@@ -119,7 +137,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (isUserLoading || !profileData) {
+  if (isUserLoading || isLoadingProfile || !profileData || !sessionUser) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -130,7 +148,7 @@ export default function ProfilePage() {
   const currentAvatar = form.watch("avatarUrl") || profileData.avatarUrl;
   const currentName = form.watch("name") || profileData.name;
   const currentOccupation = form.watch("occupation") || profileData.occupation;
-  const canEarnMoney = profileData.roles.some(r => ['freelancer', 'vendor', 'delivery_agent'].includes(r));
+  const canEarnMoney = sessionUser.roles.some(r => ['freelancer', 'vendor', 'transport_partner'].includes(r));
 
   return (
     <div className="container mx-auto py-8">

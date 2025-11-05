@@ -3,6 +3,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from "next-themes";
 import {
   SidebarProvider,
   Sidebar,
@@ -11,9 +12,6 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './sidebar-nav';
 import { UserNav } from './user-nav';
@@ -32,44 +30,31 @@ import { Card, CardContent } from '../ui/card';
 
 gsap.registerPlugin(useGSAP);
 
-// Mock theme toggle functions for now
-const useTheme = () => {
-  const [theme, setTheme] = React.useState('light');
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.documentElement.classList.remove('light', 'dark');
-      document.documentElement.classList.add(theme);
-    }
-  }, [theme]);
-
-  return { theme, toggleTheme };
-};
-
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { user, isLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const mainRef = useRef(null);
 
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
   useEffect(() => {
-    // This effect's only job is to redirect if, after loading, the user is still not present.
     if (!isLoading && !user) {
       router.push('/login');
     }
   }, [user, isLoading, router]);
 
   useGSAP(() => {
-    if (mainRef.current) {
+    if (mainRef.current && !isLoading) { // Ensure user is loaded before animating
         gsap.fromTo(mainRef.current, 
             { opacity: 0, y: 10 },
             { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }
         );
     }
-  }, { dependencies: [pathname], scope: mainRef });
+  }, { dependencies: [pathname, isLoading], scope: mainRef });
   
   if (isLoading || !user) {
     return (
@@ -101,12 +86,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 md:hidden">
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 md:hidden">
           <Logo />
-          {/* Hide default trigger on mobile */}
-          <div className="hidden">
-            <SidebarTrigger />
-          </div>
+          {/* Default trigger is used by the Sheet for mobile sidebar */}
+          <SidebarTrigger />
         </header>
         <main 
           key={pathname}
@@ -123,107 +106,53 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// New Mobile Bottom Navigation Component
+// Mobile Bottom Navigation Component for App Layout
 const MobileBottomNav = ({ userRoles }: { userRoles: string[] }) => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const pathname = usePathname();
     
-    // Define the core navigation items for the floating menu
+    // Core navigation items for the bottom bar
     const navItems = [
       { href: "/dashboard", label: "Hub", icon: LayoutDashboard },
       { href: "/chat", label: "Chat", icon: MessageCircle },
-      { href: "/ecommerce", label: "Shop", icon: ShoppingCart },
+      { href: "/profile", label: "Profile", icon: UserCircle },
     ];
 
-    return (
-        <>
-        {/* Main Bottom Bar */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around z-40">
-            {navItems.map(item => (
-                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary w-full h-full", pathname === item.href && "text-primary")}>
-                    <item.icon className="h-6 w-6" />
-                    <span className="text-[10px]">{item.label}</span>
-                </Link>
-            ))}
-        </div>
-
-        {/* Floating Action Button for Menu */}
-        <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-             <AnimatePresence>
-                {isMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72"
-                    >
-                        <Card className="shadow-2xl">
-                            <CardContent className="p-2">
-                                <MobileMenuNav userRoles={userRoles} onLinkClick={() => setIsMenuOpen(false)} />
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            <Button 
-                onClick={() => setIsMenuOpen(prev => !prev)}
-                className="rounded-full h-16 w-16 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transform-gpu transition-transform hover:scale-105"
-            >
-                <motion.div
-                    animate={{ rotate: isMenuOpen ? 45 : 0 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    <Plus className="h-8 w-8"/>
-                </motion.div>
-                <span className="sr-only">Toggle Menu</span>
-            </Button>
-        </div>
-        </>
-    )
-}
-
-// This is the new, simplified navigation component for the mobile floating menu.
-// It does NOT use any Sidebar-specific context components.
-const MobileMenuNav = ({ userRoles, onLinkClick }: { userRoles: string[], onLinkClick: () => void }) => {
-    const pathname = usePathname();
-    const isActive = (href: string) => pathname === href;
-  
-    // Simplified version of the navConfig from SidebarNav
-    // In a real app, this might be shared from a central config file
-    const navConfig = [
-      { href: "/dashboard", label: "Hub", icon: LayoutDashboard, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
-      { href: "/profile", label: "My Profile", icon: UserCircle, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
-      { href: "/content-studio", label: "Content Studio", icon: Sparkles, roles: ['creator', 'admin', 'vendor'] },
-      { href: "/post-job", label: "Post a Job", icon: FilePlus2, roles: ['client'] },
-      { href: "/vendor/dashboard", label: "Vendor Dashboard", icon: Store, roles: ['vendor'] },
-      { href: "/my-projects", label: "My Projects", icon: Briefcase, roles: ['freelancer'] },
-    ];
-  
-    const hasAccess = (requiredRoles?: string[]) => {
-      if (!requiredRoles || requiredRoles.length === 0) return true;
-      return requiredRoles.some(role => userRoles.includes(role));
+    // Example logic to add a role-specific primary action
+    let primaryAction = { href: "/find-work", label: "Work", icon: Briefcase };
+    if (userRoles.includes('vendor')) {
+      primaryAction = { href: "/vendor/dashboard", label: "Store", icon: Store };
+    } else if (userRoles.includes('client')) {
+      primaryAction = { href: "/my-jobs", label: "Jobs", icon: Briefcase };
+    } else if (userRoles.includes('creator')) {
+       primaryAction = { href: "/content-studio", label: "Create", icon: Sparkles };
     }
-  
+    
+    const allNavItems = [navItems[0], navItems[1], primaryAction, navItems[2]];
+
     return (
-        <ScrollArea className="h-full max-h-[50vh]">
-            <nav className="flex flex-col gap-1 p-2">
-                {navConfig.filter(item => hasAccess(item.roles)).map(item => (
-                    <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onLinkClick}
-                    className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                        isActive(item.href)
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-muted"
-                    )}
-                    >
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                    </Link>
-                ))}
-            </nav>
-        </ScrollArea>
+      <AnimatePresence>
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border grid grid-cols-4 z-40"
+        >
+          {allNavItems.map(item => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary w-full h-full",
+                pathname.includes(item.href) && item.href !== "/dashboard" ? "text-primary" : "",
+                pathname.endsWith("/dashboard") && item.href === "/dashboard" ? "text-primary" : ""
+              )}
+            >
+              <item.icon className="h-6 w-6" />
+              <span className="text-[10px] mt-0.5">{item.label}</span>
+            </Link>
+          ))}
+        </motion.div>
+      </AnimatePresence>
     );
-  };
+};

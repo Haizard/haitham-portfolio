@@ -1,4 +1,3 @@
-
 // src/app/api/deliveries/[deliveryId]/accept/route.ts
 
 import { NextResponse, type NextRequest } from 'next/server';
@@ -19,13 +18,13 @@ export async function PUT(
     const session = await getSession();
     const { deliveryId } = params;
 
-    // TODO: Add proper authorization checks
-    if (!session.user || !session.user.roles.includes('delivery_agent')) {
-        // For now, let's just check if there's a user.
-        // A better check would be if session.user.id matches agentId from body
-        if (!session.user) {
-           return NextResponse.json({ message: "Unauthorized. You must be logged in." }, { status: 401 });
-        }
+    if (!session.user) {
+        return NextResponse.json({ message: "Unauthorized. You must be logged in." }, { status: 401 });
+    }
+    
+    // Corrected the role check here
+    if (!session.user.roles.includes('transport_partner')) {
+        return NextResponse.json({ message: "Forbidden. You are not a transport partner." }, { status: 403 });
     }
     
     if (!ObjectId.isValid(deliveryId)) {
@@ -38,6 +37,11 @@ export async function PUT(
       return NextResponse.json({ message: "Invalid request body.", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
     const { agentId } = validation.data;
+
+    // Security check: ensure the logged-in user is the one accepting the job.
+    if (session.user.id !== agentId) {
+        return NextResponse.json({ message: "Forbidden. You cannot accept a job for another user." }, { status: 403 });
+    }
     
     const updatedDelivery = await acceptDelivery(deliveryId, agentId);
     if (!updatedDelivery) {

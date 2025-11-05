@@ -5,7 +5,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Check, X, Banknote, Phone } from "lucide-react";
+import { Loader2, Check, X, Banknote, Phone, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Payout, PayoutStatus } from '@/lib/payouts-data';
 import {
@@ -22,7 +22,7 @@ import { FreelancerProfile } from '@/lib/user-profile-data';
 
 interface EnrichedPayout extends Payout {
   vendorName?: string;
-  vendorPhone?: string; // Add vendor phone number
+  vendorPhone?: string; 
 }
 
 const formatCurrency = (amount: number) => {
@@ -39,7 +39,7 @@ export function PayoutListManagement() {
   const fetchPayouts = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/payouts'); // Admin fetch (no vendorId)
+      const response = await fetch('/api/payouts');
       if (!response.ok) throw new Error('Failed to fetch payout requests');
       const data: EnrichedPayout[] = await response.json();
       setPayouts(data);
@@ -54,22 +54,31 @@ export function PayoutListManagement() {
     fetchPayouts();
   }, [fetchPayouts]);
 
-  const handleUpdateStatus = async (payoutId: string, newStatus: 'completed' | 'failed') => {
-    setIsUpdating(prev => ({...prev, [payoutId]: true}));
+  const handleInitiatePayout = async (payout: EnrichedPayout) => {
+    if (!payout.vendorPhone) {
+      toast({ title: "Missing Information", description: "Cannot process payout without a vendor phone number.", variant: "destructive"});
+      return;
+    }
+    setIsUpdating(prev => ({...prev, [payout.id!]: true}));
     try {
-      const response = await fetch(`/api/payouts/${payoutId}`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to update payout status.');
-      toast({ title: "Status Updated", description: `Payout has been marked as ${newStatus}.` });
-      fetchPayouts();
+        const response = await fetch('/api/payouts/initiate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                payoutId: payout.id,
+                phoneNumber: payout.vendorPhone,
+                amount: payout.amount,
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to initiate payout.');
+        
+        toast({ title: "Payout Processed", description: data.message || `Payout for ${payout.vendorName} has been processed.` });
+        fetchPayouts(); // Refresh the list
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: "Payout Error", description: error.message, variant: "destructive" });
     } finally {
-        setIsUpdating(prev => ({...prev, [payoutId]: false}));
+        setIsUpdating(prev => ({...prev, [payout.id!]: false}));
     }
   };
   
@@ -90,7 +99,7 @@ export function PayoutListManagement() {
     <Card className="shadow-xl">
       <CardHeader>
         <CardTitle>All Payout Requests</CardTitle>
-        <CardDescription>Review and process vendor withdrawal requests.</CardDescription>
+        <CardDescription>Review and process vendor withdrawal requests via AzamPay.</CardDescription>
       </CardHeader>
       <CardContent>
         {payouts.length === 0 ? (
@@ -125,8 +134,7 @@ export function PayoutListManagement() {
                       {isUpdating[payout.id!] ? <Loader2 className="h-5 w-5 animate-spin"/> : (
                          payout.status === 'pending' ? (
                             <>
-                                <Button size="sm" onClick={() => handleUpdateStatus(payout.id!, 'completed')} className="bg-success text-success-foreground hover:bg-success/90"><Check className="mr-1 h-4 w-4" /> Approve</Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(payout.id!, 'failed')}><X className="mr-1 h-4 w-4" /> Reject</Button>
+                                <Button size="sm" onClick={() => handleInitiatePayout(payout)} className="bg-success text-success-foreground hover:bg-success/90"><Send className="mr-1 h-4 w-4" /> Process Payout</Button>
                             </>
                          ) : (
                             <span className="text-xs text-muted-foreground">Processed on {payout.completedAt ? format(new Date(payout.completedAt), "PPP") : 'N/A'}</span>

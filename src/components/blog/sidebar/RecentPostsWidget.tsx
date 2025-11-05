@@ -23,7 +23,7 @@ export function RecentPostsWidget({ limit = 4, excludeSlug }: RecentPostsWidgetP
       try {
         let apiUrl = `/api/blog?enriched=true&limit=${limit}`;
         if (excludeSlug) {
-          apiUrl += `&excludeSlug=${encodeURIComponent(excludeSlug)}`;
+          apiUrl += `&excludeSlugs=${encodeURIComponent(excludeSlug)}`; // Corrected parameter
         }
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -42,7 +42,7 @@ export function RecentPostsWidget({ limit = 4, excludeSlug }: RecentPostsWidgetP
   }, [limit, excludeSlug]);
 
   return (
-    <Card className="shadow-lg mb-8">
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center">
           <ListChecks className="mr-2 h-5 w-5 text-primary" /> Recent Posts

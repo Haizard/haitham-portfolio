@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 
 const USERS_COLLECTION = 'users';
 
-export type UserRole = 'admin' | 'creator' | 'vendor' | 'freelancer' | 'client' | 'delivery_agent';
+export type UserRole = 'admin' | 'creator' | 'vendor' | 'freelancer' | 'client' | 'transport_partner';
 
 // This interface represents the data in the database
 export interface UserDocument {

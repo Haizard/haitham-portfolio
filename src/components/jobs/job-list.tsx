@@ -34,7 +34,7 @@ export function JobList({ jobs }: { jobs: Job[] }) {
 
 
   return (
-    <div ref={container} className="grid grid-cols-2 md:grid-cols-1 gap-6">
+    <div ref={container} className="grid grid-cols-1 md:grid-cols-1 gap-6">
       {jobs.map(job => (
         <div key={job.id} className="job-card">
           <JobListItem job={job} />

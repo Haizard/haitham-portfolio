@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 23, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/Cresta-Creator-161-1721991823190/src/middleware.ts"],"sourcesContent":["import { NextResponse, type NextRequest } from 'next/server';\n \n// This function can be marked `async` if using `await` inside\nexport function middleware(request: NextRequest) {\n  // This is a basic middleware. It can be extended later for things like authentication.\n  return NextResponse.next();\n}\n \n// See \"Matching Paths\" below to learn more\nexport const config = {\n  matcher: [\n    // This middleware is now effectively disabled but can be used later.\n    '/((?!_next|static|favicon.ico|api).*)',\n  ],\n};\n"],"names":[],"mappings":";;;;AAAA;AAAA;;AAGO,SAAS,WAAW,OAAoB;IAC7C,uFAAuF;IACvF,OAAO,6LAAA,CAAA,eAAY,CAAC,IAAI;AAC1B;AAGO,MAAM,SAAS;IACpB,SAAS;QACP,qEAAqE;QACrE;KACD;AACH"}}]
+}

@@ -42,6 +42,10 @@ export default clientPromise
 
 export async function getCollection<T extends Document>(collectionName: string) {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db(process.env.DB_NAME || 'CreatorOS');
+    const dbName = process.env.DB_NAME;
+    if (!dbName) {
+        throw new Error("DB_NAME environment variable is not set. Please add it to your .env file.");
+    }
+    const db = mongoClient.db(dbName);
     return db.collection<T>(collectionName);
 }

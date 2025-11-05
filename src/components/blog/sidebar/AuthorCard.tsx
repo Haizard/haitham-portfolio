@@ -57,7 +57,7 @@ export function AuthorCard() {
 
   if (isLoading) {
     return (
-      <Card className="shadow-lg mb-8">
+      <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center"><UserCircle className="mr-2 h-5 w-5 text-primary" /> About Author</CardTitle>
         </CardHeader>
@@ -74,7 +74,7 @@ export function AuthorCard() {
   }
 
   return (
-    <Card className="shadow-lg mb-8">
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center"><UserCircle className="mr-2 h-5 w-5 text-primary" /> About Author</CardTitle>
       </CardHeader>

@@ -1,4 +1,3 @@
-
 // src/app/restaurants/[restaurantId]/page.tsx
 "use client";
 
@@ -211,7 +210,7 @@ export default function RestaurantDetailPage() {
     return (
         <>
         <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-            <div className="bg-card border-b border-border shadow-sm sticky top-16 md:top-0 z-30">
+            <div className="bg-card border-b border-border shadow-sm sticky top-16 z-30">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center gap-1 sm:gap-4 overflow-x-auto -mx-4 px-4">
                         {TABS.map(tab => (

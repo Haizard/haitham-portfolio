@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, UserPlus, Briefcase, Store, UserCheck, Truck } from "lucide-react";
+import { Loader2, UserPlus, Briefcase, Store, UserCheck, Truck, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useUser } from '@/hooks/use-user';
@@ -22,10 +22,11 @@ const roleOptions = [
   { id: 'client', label: 'I want to hire talent', icon: UserCheck },
   { id: 'freelancer', label: 'I want to work as a freelancer', icon: Briefcase },
   { id: 'vendor', label: 'I want to sell products', icon: Store },
-  { id: 'delivery_agent', label: 'I want to be a delivery agent', icon: Truck },
+  { id: 'creator', label: 'I am a content creator', icon: Sparkles },
+  { id: 'transport_partner', label: 'I want to be a Transport Partner', icon: Truck },
 ] as const;
 
-const roleEnum = z.enum(['client', 'freelancer', 'vendor', 'delivery_agent'], {
+const roleEnum = z.enum(['client', 'freelancer', 'vendor', 'transport_partner', 'creator'], {
     required_error: "You must select a role."
 });
 
@@ -64,15 +65,17 @@ export default function SignupPage() {
         throw new Error(result.message || "Failed to sign up.");
       }
       
+      // Call login to update the user state in the context
       login(result);
+      
+      // Redirect to the dashboard
+      router.push('/dashboard');
+      router.refresh(); 
 
       toast({
           title: "Account Created!",
           description: "Welcome! Redirecting you to your dashboard..."
       });
-      
-      router.push('/dashboard');
-      router.refresh(); 
 
     } catch (error: any) {
       toast({

@@ -22,6 +22,12 @@ interface MnoCheckoutResponse {
   message?: string;
 }
 
+interface PayoutResponse {
+    success: boolean;
+    message: string;
+    data?: any;
+}
+
 // Function to get an authentication token from AzamPay
 export async function getAuthToken(): Promise<string> {
   if (!AZAMPAY_API_URL || !AZAMPAY_APP_NAME || !AZAMPAY_CLIENT_ID || !AZAMPAY_CLIENT_SECRET) {
@@ -35,8 +41,6 @@ export async function getAuthToken(): Promise<string> {
   }
   
   try {
-      // This matches the nested structure seen in other AzamPay API examples.
-      // The payload is a flat object, sent as the value of a single key.
       const payload = {
         appName: AZAMPAY_APP_NAME,
         clientId: AZAMPAY_CLIENT_ID,
@@ -45,7 +49,7 @@ export async function getAuthToken(): Promise<string> {
 
       const response = await axios.post<AuthResponse>(
         `${AZAMPAY_API_URL}/AppRegistration/GenerateToken`,
-        payload, // The payload is sent directly as the JSON body
+        payload,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -119,5 +123,59 @@ export async function initiateMnoCheckout(
     } catch (error: any) {
         console.error("Error initiating AzamPay MNO checkout:", error.response?.data || error.message);
         throw new Error("Failed to communicate with AzamPay for checkout.");
+    }
+}
+
+
+// Function to initiate a payout (disbursement)
+export async function initiatePayout(
+    amount: number,
+    phoneNumber: string,
+    referenceId: string,
+    provider: 'Mpesa' | 'Tigo' | 'Airtel' | 'Halopesa'
+): Promise<PayoutResponse> {
+    const token = await getAuthToken();
+    if (!AZAMPAY_CLIENT_ID) {
+        throw new Error("AzamPay Client ID is missing for X-API-Key header.");
+    }
+
+    try {
+        const payload = {
+            source: {
+                countryCode: "TZ",
+                currency: "TZS",
+                amount: amount.toString()
+            },
+            destination: {
+                countryCode: "TZ",
+                currency: "TZS",
+                name: "Vendor Payout", // Generic name
+                msisdn: phoneNumber,
+                mno: provider
+            },
+            transferDetails: {
+                type: "MobileMoney",
+                reference: referenceId,
+                remarks: `Payout for transaction ${referenceId}`
+            }
+        };
+
+        const response = await axios.post<PayoutResponse>(
+            `${AZAMPAY_API_URL}/azampay/createtransfer`,
+            payload,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-API-Key': AZAMPAY_CLIENT_ID,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log("AzamPay Payout Response:", response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error("Error initiating AzamPay payout:", error.response?.data || error.message);
+        throw new Error("Failed to initiate payout via AzamPay.");
     }
 }

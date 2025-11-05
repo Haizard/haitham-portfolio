@@ -4,7 +4,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Star, MapPin, Utensils, CheckCircle, XCircle } from 'lucide-react';
 import type { Restaurant } from '@/lib/restaurants-data';
 import Image from 'next/image';
@@ -69,6 +69,17 @@ function ComparisonPageComponent() {
     );
   }
   
+  if (restaurants.length === 0) {
+    return (
+      <div className="text-center">
+        <p className="text-muted-foreground">No restaurant data to display.</p>
+        <Button onClick={() => router.push('/restaurants')} className="mt-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Restaurants
+        </Button>
+      </div>
+    );
+  }
+
   const featuresToCompare = [
     { key: 'rating', label: 'Rating', icon: Star },
     { key: 'location', label: 'Location', icon: MapPin },
@@ -76,10 +87,12 @@ function ComparisonPageComponent() {
     { key: 'status', label: 'Status', icon: CheckCircle },
     { key: 'isSponsored', label: 'Sponsored', icon: CheckCircle },
   ];
+  
+  const gridColsClass = `grid-cols-[1fr_repeat(${restaurants.length},_minmax(0,_2fr))]`;
 
   return (
     <div className="w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className={`grid ${gridColsClass}`}>
             {/* Header Row */}
             <div className="p-4 border-b border-r">
                 <h2 className="font-bold text-lg">Feature</h2>
@@ -96,7 +109,7 @@ function ComparisonPageComponent() {
         
         {/* Feature Rows */}
         {featuresToCompare.map(feature => (
-             <div key={feature.key} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 odd:bg-muted/50">
+             <div key={feature.key} className={`grid ${gridColsClass} odd:bg-muted/50`}>
                 <div className="p-4 border-b border-r font-medium flex items-center gap-2 text-sm">
                     <feature.icon className="h-4 w-4 text-muted-foreground"/>
                     {feature.label}

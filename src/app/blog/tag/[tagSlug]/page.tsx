@@ -7,22 +7,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, CalendarDays, Tag as TagIcon } from 'lucide-react';
+import { Loader2, ExternalLink, CalendarDays, Tag as TagIcon, PanelLeft } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
 import type { Tag } from '@/lib/tags-data';
 import { RelatedPostsSection } from '@/components/blog/related-posts-section';
-import { Separator } from '@/components/ui/separator';
-
-// Sidebar Widgets
-import { AuthorCard } from '@/components/blog/sidebar/AuthorCard';
-import { SearchWidget } from '@/components/blog/sidebar/SearchWidget';
-import { RecentPostsWidget } from '@/components/blog/sidebar/RecentPostsWidget';
-import { CategoriesWidget } from '@/components/blog/sidebar/CategoriesWidget';
-import { InstagramWidget } from '@/components/blog/sidebar/InstagramWidget';
-import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
+import { BlogSidebar } from '@/components/blog/sidebar/blog-sidebar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -197,13 +190,36 @@ export default function TagArchivePage() {
           )}
         </main>
         <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">
-          <div className="sticky top-24 space-y-8"> 
-            <AuthorCard />
-            <SearchWidget onSearch={handleSearch} initialQuery={currentSearchQuery} isLoading={isLoading && !!currentSearchQuery} />
-            <RecentPostsWidget limit={3}/>
-            <CategoriesWidget />
-            <InstagramWidget />
-            <TagsWidget />
+          <div className="lg:hidden mb-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <PanelLeft className="mr-2 h-4 w-4" />
+                  Show Sidebar
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-full max-w-xs p-0">
+                 <SheetHeader className="p-4 border-b">
+                  <SheetTitle>Blog Sidebar</SheetTitle>
+                </SheetHeader>
+                <div className="p-4">
+                  <BlogSidebar
+                    onSearch={handleSearch}
+                    searchInitialQuery={currentSearchQuery}
+                    searchIsLoading={isLoading && !!currentSearchQuery}
+                    recentPostsLimit={3}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+          <div className="hidden lg:block sticky top-24 space-y-8"> 
+            <BlogSidebar
+              onSearch={handleSearch}
+              searchInitialQuery={currentSearchQuery}
+              searchIsLoading={isLoading && !!currentSearchQuery}
+              recentPostsLimit={3}
+            />
           </div>
         </aside>
       </div>

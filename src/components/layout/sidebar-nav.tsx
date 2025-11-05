@@ -1,5 +1,4 @@
 
-
 // src/components/layout/sidebar-nav.tsx
 "use client";
 
@@ -37,6 +36,8 @@ import {
   Truck,
   Map,
   Star,
+  Plane,
+  MountainSnow,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -61,8 +62,8 @@ type NavGroup = {
 // All available navigation items, structured by role/feature set
 const navConfig: (NavItem | NavGroup)[] = [
   // Always visible items
-  { href: "/dashboard", label: "Hub", icon: LayoutDashboard, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
-  { href: "/profile", label: "My Profile", icon: UserCircle, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'] },
+  { href: "/dashboard", label: "Hub", icon: LayoutDashboard, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'transport_partner'] },
+  { href: "/profile", label: "My Profile", icon: UserCircle, roles: ['admin', 'creator', 'vendor', 'freelancer', 'client', 'transport_partner'] },
   {
     group: "Freelancer Tools",
     roles: ['freelancer'],
@@ -111,11 +112,11 @@ const navConfig: (NavItem | NavGroup)[] = [
     ],
   },
   {
-    group: "Delivery Agent",
-    roles: ['delivery_agent'],
+    group: "Transport Partner",
+    roles: ['transport_partner'],
     items: [
-      { href: "/delivery/find-work", label: "Find Deliveries", icon: Map },
-      { href: "/delivery/my-deliveries", label: "My Deliveries", icon: Truck },
+      { href: "/transport/find-work", label: "Find Transport Jobs", icon: Map },
+      { href: "/transport/my-deliveries", label: "My Transport Jobs", icon: Truck },
     ]
   },
   {
@@ -153,7 +154,9 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/admin/orders", label: "Manage Orders", icon: ShoppingCart },
       { href: "/admin/payouts", label: "Manage Payouts", icon: Banknote },
       { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
-      { href: "/admin/delivery-agents", label: "Manage Delivery Agents", icon: Truck },
+      { href: "/admin/transport-partners", label: "Manage Transport Partners", icon: Truck },
+      { href: "/admin/tours", label: "Manage Tours", icon: Plane },
+      { href: "/admin/tour-activities", label: "Tour Activities", icon: MountainSnow },
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
       { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },
       { href: "/admin/categories", label: "Blog Categories", icon: FolderKanban },
@@ -177,7 +180,7 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
   };
   
   const isActive = (href: string) => {
-    return pathname === href;
+    return pathname.startsWith(href);
   };
 
 

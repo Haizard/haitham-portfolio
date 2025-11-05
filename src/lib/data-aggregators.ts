@@ -1,3 +1,4 @@
+
 // src/lib/data-aggregators.ts
 import { getCollection } from './mongodb';
 import { Product } from './products-data';

@@ -1,25 +1,21 @@
 
 "use client";
 
-import { useEffect, useState, FormEvent, useCallback, useMemo } from 'react';
+import { useEffect, useState, FormEvent, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, CalendarDays, Folder, Tag as TagIcon, User, MessageSquare, LayoutList, LayoutGrid, ThumbsUp } from 'lucide-react';
+import { Loader2, ExternalLink, CalendarDays, Folder, Tag as TagIcon, User, MessageSquare, LayoutList, LayoutGrid, ThumbsUp, PanelLeft } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog-data';
 import { Badge } from '@/components/ui/badge';
 import type { Tag as TagType } from '@/lib/tags-data';
 import { TrendingPostsCarousel } from '@/components/blog/TrendingPostsCarousel';
-import { AuthorCard } from '@/components/blog/sidebar/AuthorCard';
-import { SearchWidget } from '@/components/blog/sidebar/SearchWidget';
-import { RecentPostsWidget } from '@/components/blog/sidebar/RecentPostsWidget';
-import { CategoriesWidget } from '@/components/blog/sidebar/CategoriesWidget';
-import { TagsWidget } from '@/components/blog/sidebar/TagsWidget';
-import { InstagramWidget } from '@/components/blog/sidebar/InstagramWidget';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RelatedPostsSection } from '@/components/blog/related-posts-section';
+import { BlogSidebar } from '@/components/blog/sidebar/blog-sidebar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 
 interface EnrichedPost extends BlogPost {
@@ -168,7 +164,8 @@ export default function BlogIndexPage() {
           ) : mainPosts.length > 0 && (
             <div className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
               {mainPosts.map(post => (
-                <Card key={post.slug} className={`shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group ${viewMode === 'list' ? 'md:flex-row' : ''}`}>
+                <div key={post.slug} className="post-card-item">
+                <Card className={`shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group h-full ${viewMode === 'list' ? 'md:flex-row' : ''}`}>
                   {post.featuredImageUrl && (
                     <Link 
                       href={`/blog/${post.slug}`} 
@@ -184,7 +181,7 @@ export default function BlogIndexPage() {
                       />
                     </Link>
                   )}
-                  <div className={`p-5 md:p-6 flex flex-col justify-between ${viewMode === 'list' ? 'md:w-2/3 lg:w-3/5 xl:w-2/3' : 'w-full'}`}>
+                  <div className={`p-5 md:p-6 flex flex-col justify-between flex-grow ${viewMode === 'list' ? 'md:w-2/3 lg:w-3/5 xl:w-2/3' : 'w-full'}`}>
                     <div>
                       <div className="mb-2 flex flex-wrap gap-2 items-center">
                         {post.categoryName && post.categorySlugPath && post.categorySlugPath.trim() !== '' && (
@@ -232,6 +229,7 @@ export default function BlogIndexPage() {
                     )}
                   </div>
                 </Card>
+                </div>
               ))}
             </div>
           )}
@@ -245,13 +243,38 @@ export default function BlogIndexPage() {
         </main>
 
         <aside className="lg:col-span-4 xl:col-span-3 mt-12 lg:mt-0">
-          <div className="sticky top-24 space-y-8"> 
-            <AuthorCard />
-            <SearchWidget onSearch={handleSearch} initialQuery={currentSearchQuery} isLoading={isLoading && !!currentSearchQuery} />
-            <RecentPostsWidget limit={3} excludeSlug={ currentSearchQuery ? undefined : mainPosts.length > 0 ? mainPosts[0].slug : undefined }/>
-            <CategoriesWidget />
-            <InstagramWidget />
-            <TagsWidget />
+          <div className="lg:hidden mb-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <PanelLeft className="mr-2 h-4 w-4" />
+                  Show Sidebar
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-full max-w-xs p-0">
+                 <SheetHeader className="p-4 border-b">
+                  <SheetTitle>Blog Sidebar</SheetTitle>
+                </SheetHeader>
+                <div className="p-4">
+                  <BlogSidebar
+                    onSearch={handleSearch}
+                    searchInitialQuery={currentSearchQuery}
+                    searchIsLoading={isLoading && !!currentSearchQuery}
+                    recentPostsLimit={3}
+                    recentPostsExcludeSlug={currentSearchQuery ? undefined : mainPosts.length > 0 ? mainPosts[0].slug : undefined}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+          <div className="hidden lg:block sticky top-24 space-y-8"> 
+             <BlogSidebar
+              onSearch={handleSearch}
+              searchInitialQuery={currentSearchQuery}
+              searchIsLoading={isLoading && !!currentSearchQuery}
+              recentPostsLimit={3}
+              recentPostsExcludeSlug={currentSearchQuery ? undefined : mainPosts.length > 0 ? mainPosts[0].slug : undefined}
+            />
           </div>
         </aside>
       </div>

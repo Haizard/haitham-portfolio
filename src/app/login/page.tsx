@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const { login } = useUser();
+  const { login, mutate } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -50,16 +50,20 @@ export default function LoginPage() {
         throw new Error(result.message || "Failed to log in.");
       }
       
+      // Call the login function from the context to update the user state.
+      // This is now a synchronous operation on the client.
       login(result);
+      
+      // After setting the user in the context, we can redirect.
+      // The router.refresh() is good practice to ensure server components re-render with new auth state if needed.
+      router.push('/dashboard');
+      router.refresh(); 
 
       toast({
           title: "Login Successful!",
-          description: "Welcome back! Redirecting you to your dashboard..."
+          description: "Welcome back! Redirecting you..."
       });
       
-      router.push('/dashboard');
-      router.refresh(); // Force a hard refresh to ensure layout re-evaluates auth state
-
     } catch (error: any) {
       toast({
         title: "Login Failed",

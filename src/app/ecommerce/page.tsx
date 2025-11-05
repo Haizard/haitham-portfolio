@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FeaturedVendorsCarousel } from '@/components/products/FeaturedVendorsCarousel';
 import { ProductQuickView } from '@/components/products/ProductQuickView';
 import { Separator } from '@/components/ui/separator';
+import { EcommerceHeader } from '@/components/ecommerce/ecommerce-header';
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -108,6 +109,7 @@ export default function EcommerceStorePage() {
 
   return (
     <>
+    <EcommerceHeader />
     <div className="bg-background">
       <div className="container mx-auto py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -260,4 +262,3 @@ export default function EcommerceStorePage() {
     </>
   );
 }
-

@@ -14,13 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings, User } from "lucide-react";
+import type { SessionUser } from "@/providers/user-provider"; // Import the session user type
 
 interface UserNavProps {
-  user: {
-    name: string;
-    email: string;
-    roles: string[];
-  }
+  user: SessionUser;
 }
 
 export function UserNav({ user }: UserNavProps) {

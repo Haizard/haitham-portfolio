@@ -81,23 +81,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
     <div ref={cardRef}>
       <Card 
           className={cn(
-              "group relative flex w-full flex-col overflow-hidden rounded-lg border-gray-700 bg-gray-800 text-white shadow-lg",
+              "group relative flex w-full flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm",
               className
           )}
       >
         <div className="absolute top-2 right-2 z-20 flex flex-col items-center gap-1.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-gray-900/70 backdrop-blur-sm hover:bg-gray-800" onClick={handleWishlistClick} aria-label="Add to wishlist">
-                  <Heart className={cn("h-4 w-4 text-gray-400", isWishlisted && "fill-destructive text-destructive")} />
+              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-card/70 backdrop-blur-sm hover:bg-card" onClick={handleWishlistClick} aria-label="Add to wishlist">
+                  <Heart className={cn("h-4 w-4 text-muted-foreground", isWishlisted && "fill-destructive text-destructive")} />
               </Button>
               {onQuickView && (
-                   <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-gray-900/70 backdrop-blur-sm hover:bg-gray-800" onClick={handleQuickViewClick} aria-label="Quick view">
+                   <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-card/70 backdrop-blur-sm hover:bg-card" onClick={handleQuickViewClick} aria-label="Quick view">
                       <Eye className="h-4 w-4 text-primary" />
                   </Button>
               )}
           </div>
 
           <Link href={`/products/${product.slug || product.id}`} className="block h-full flex flex-col">
-              <div className="relative overflow-hidden bg-gray-900/50 p-2">
+              <div className="relative overflow-hidden bg-secondary/30 p-2">
                   <div className="relative aspect-square w-full">
                       <Image
                           src={product.imageUrl}
@@ -116,19 +116,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
               </div>
               
               <div className="p-4 flex flex-col flex-grow">
-                  <p className="text-xs font-medium text-gray-400">{product.categoryName || 'Category'}</p>
-                  <h3 className="mt-1 text-sm font-semibold text-white line-clamp-2">{product.name}</h3>
+                  <p className="text-xs font-medium text-muted-foreground">{product.categoryName || 'Category'}</p>
+                  <h3 className="mt-1 text-sm font-semibold text-foreground line-clamp-2">{product.name}</h3>
                   <div className="mt-2 flex items-center">
                       <StarRating rating={product.averageRating || 0} size={14} disabled/>
-                      <span className="ml-1.5 text-xs text-gray-400">({product.reviewCount})</span>
+                      <span className="ml-1.5 text-xs text-muted-foreground">({product.reviewCount})</span>
                   </div>
               </div>
-               <CardFooter className="p-3 mt-auto border-t border-gray-700">
+               <CardFooter className="p-3 mt-auto border-t">
                   <div className="w-full flex items-center justify-between">
                       {product.productType === 'creator' && product.price !== undefined ? (
                           <div className="flex items-baseline gap-1.5">
                               <span className="font-bold text-primary text-base">${product.price.toFixed(2)}</span>
-                              {originalPrice && <span className="text-sm text-gray-500 line-through">${originalPrice.toFixed(2)}</span>}
+                              {originalPrice && <span className="text-sm text-muted-foreground line-through">${originalPrice.toFixed(2)}</span>}
                           </div>
                       ) : product.productType === 'affiliate' && product.links && product.links.length > 0 ? (
                           <span className="font-bold text-primary text-sm">{product.links[0].priceDisplay}</span>

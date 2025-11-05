@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getProfilesByRole, type FreelancerProfile } from '@/lib/user-profile-data';
 import type { UserRole } from '@/lib/auth-data';
 
-const validRoles: UserRole[] = ['admin', 'creator', 'vendor', 'freelancer', 'client', 'delivery_agent'];
+const validRoles: UserRole[] = ['admin', 'creator', 'vendor', 'freelancer', 'client', 'transport_partner'];
 
 export async function GET(
   request: NextRequest,

@@ -1,4 +1,3 @@
-
 // src/app/api/deliveries/my-deliveries/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { getDeliveriesByAgentId } from '@/lib/deliveries-data';
@@ -8,7 +7,7 @@ import { getSession } from '@/lib/session';
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session.user || !session.user.id || !session.user.roles.includes('delivery_agent')) {
+    if (!session.user || !session.user.id || !session.user.roles.includes('transport_partner')) {
       return NextResponse.json({ message: "Unauthorized." }, { status: 403 });
     }
     

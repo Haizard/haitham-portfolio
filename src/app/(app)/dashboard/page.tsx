@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Briefcase, Store, BarChartHorizontalBig, ArrowRight, Truck, PenSquare } from "lucide-react";
@@ -14,41 +13,41 @@ const allFeatures = [
   {
     title: "Freelancer Suite",
     description: "Find projects, manage proposals, and track your freelance work.",
+    cta: "Find Work",
     href: "/find-work",
     icon: Briefcase,
-    cta: "Find Work",
     role: "freelancer",
   },
    {
     title: "Client Suite",
     description: "Post jobs and manage your hired freelancers.",
+    cta: "Manage My Jobs",
     href: "/my-jobs",
     icon: Briefcase,
-    cta: "Manage My Jobs",
     role: "client",
   },
   {
     title: "Vendor Marketplace",
     description: "List products, manage orders, and track your e-commerce sales.",
+    cta: "Go to Vendor Dashboard",
     href: "/vendor/dashboard",
     icon: Store,
-    cta: "Go to Vendor Dashboard",
     role: "vendor",
   },
   {
-    title: "Delivery Agent Portal",
-    description: "Find and manage your delivery jobs.",
-    href: "/delivery/find-work",
+    title: "Transport Partner Portal",
+    description: "Find and manage your delivery & transport jobs.",
+    href: "/transport/find-work",
     icon: Truck,
-    cta: "Find Delivery Jobs",
-    role: "delivery_agent",
+    cta: "Find Transport Jobs",
+    role: "transport_partner",
   },
    {
     title: "Creator Suite",
     description: "Access AI content tools, manage your blog, and grow your audience.",
+    cta: "Open Content Studio",
     href: "/content-studio",
     icon: PenSquare,
-    cta: "Open Content Studio",
     role: "creator",
   },
   {
@@ -72,18 +71,7 @@ export default function DashboardHubPage() {
     return <CreatorDashboardPage />;
   }
 
-  // Automatically redirect if user has only one specific role (that is NOT creator/client)
-  useEffect(() => {
-    if (userRoles.length === 1 && userRoles[0] !== 'creator' && userRoles[0] !== 'client') {
-      const roleFeature = allFeatures.find(f => f.role === userRoles[0]);
-      if (roleFeature) {
-        router.replace(roleFeature.href);
-      }
-    }
-  }, [userRoles, router]);
-
-
-  const features = allFeatures.filter(feature => userRoles.includes(feature.role));
+  const features = allFeatures.filter(feature => userRoles.includes(feature.role as any));
   
   // This case will now primarily handle users with multiple roles.
   if (features.length === 0 && user) {
