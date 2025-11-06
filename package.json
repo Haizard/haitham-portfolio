@@ -3,15 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm-run-all --parallel dev:chat \"dev:next -- {@}\" --",
-    "dev:next": "dotenv -e .env -- next dev --turbopack --port 9003",
-    "dev:chat": "tsx src/server/socket-server.ts",
+    "dev": "dotenv -e .env -- next dev --turbopack --port 9003",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
-    "start": "node start.js",
-    "start:next": "next start -p ${PORT:-3000}",
-    "start:chat": "tsx src/server/socket-server.ts",
+    "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
