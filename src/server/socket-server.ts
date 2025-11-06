@@ -6,13 +6,17 @@ import { addMessageToConversation } from '../lib/chat-data';
 import type { Message as MessageType } from '../lib/chat-data'; 
 import type { ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData } from '../lib/socket-types'; 
 
-const PORT = parseInt(process.env.WEBSOCKET_PORT || '3002', 10);
+const PORT = parseInt(process.env.WEBSOCKET_PORT || process.env.PORT || '3002', 10);
 
 const httpServer = http.createServer(); 
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
   cors: {
-    origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9003", // Your Next.js app URL
+    origin: [
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9003",
+      process.env.NEXT_PUBLIC_WEBSOCKET_URL || "http://localhost:3001",
+      "https://*.onrender.com"
+    ],
     methods: ["GET", "POST"],
     credentials: true
   }

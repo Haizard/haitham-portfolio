@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: creatorOS
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: marketplace
+          property: connectionString
+      - key: DB_NAME
+        value: creatorOS
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_WEBSOCKET_URL
+        value: https://marketplace.onrender.com
+      - key: WEBSOCKET_PORT
+        value: 10000
+      - key: AZAMPAY_APP_NAME
+        value: CreatorOS
+      - key: AZAMPAY_CLIENT_ID
+        sync: false
+      - key: AZAMPAY_CLIENT_SECRET
+        sync: false
+      - key: AZAMPAY_API_URL
+        value: https://sandbox.azampay.co.tz
+
+databases:
+  - name: creatorOS-db
+    plan: starter

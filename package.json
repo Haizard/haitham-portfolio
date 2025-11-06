@@ -9,7 +9,9 @@
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "node start.js",
+    "start:next": "next start -p ${PORT:-3000}",
+    "start:chat": "tsx src/server/socket-server.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
