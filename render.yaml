@@ -13,7 +13,7 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: NEXT_PUBLIC_APP_URL
-        value: https://creatorOS.onrender.com
+        value: https://mgodini.onrender.com
       - key: AZAMPAY_APP_NAME
         value: CreatorOS
       - key: AZAMPAY_CLIENT_ID
