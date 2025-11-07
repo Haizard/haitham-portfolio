@@ -20,9 +20,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Switch } from "@/components/ui/switch";
 import { Loader2, PlusCircle, Trash2, Tag, Star, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { TourPackage } from '@/lib/tours-data';
+import type { TourPackage, TourGuide } from '@/lib/tours-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const highlightSchema = z.object({
   icon: z.string().optional().describe("e.g., Clock, Users. See lucide-react icons."),
@@ -51,6 +52,10 @@ const tourFormSchema = z.object({
   highlights: z.array(highlightSchema).optional(),
   faqs: z.array(faqSchema).optional(),
   mapEmbedUrl: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
+  // New fields
+  guideId: z.string().optional(),
+  rating: z.coerce.number().min(0).max(5).optional(),
+  reviewCount: z.coerce.number().int().min(0).optional(),
 });
 
 type TourFormValues = z.infer<typeof tourFormSchema>;
@@ -89,11 +94,28 @@ const ArrayField = ({ name, label, control, fields, append, remove, placeholder 
 export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [guides, setGuides] = useState<TourGuide[]>([]);
 
   const form = useForm<TourFormValues>({
     resolver: zodResolver(tourFormSchema),
     defaultValues: { isActive: false, galleryImages: [], tags: [], highlights: [], faqs: [] },
   });
+
+  // Fetch available guides
+  useEffect(() => {
+    async function fetchGuides() {
+      try {
+        const response = await fetch('/api/tour-guides');
+        if (response.ok) {
+          const data = await response.json();
+          setGuides(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch guides:', error);
+      }
+    }
+    fetchGuides();
+  }, []);
   
   const { fields: itineraryFields, append: appendItinerary, remove: removeItinerary } = useFieldArray({ control: form.control, name: "itinerary" });
   const { fields: inclusionsFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({ control: form.control, name: "inclusions" });
@@ -123,6 +145,9 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
           highlights: tour.highlights || [],
           faqs: tour.faqs || [],
           mapEmbedUrl: tour.mapEmbedUrl || "",
+          guideId: tour.guideId || "",
+          rating: tour.rating || undefined,
+          reviewCount: tour.reviewCount || undefined,
         });
       } else {
         form.reset({
@@ -199,6 +224,35 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
                <div className="grid grid-cols-2 gap-4">
                  <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><Input placeholder="e.g., Arusha, Tanzania" {...field} /></FormItem>)}/>
                  <FormField control={form.control} name="tourType" render={({ field }) => (<FormItem><FormLabel>Tour Type</FormLabel><Input placeholder="e.g., Safari" {...field} /></FormItem>)}/>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="guideId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tour Guide (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a guide" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {guides.map((guide) => (
+                            <SelectItem key={guide.id} value={guide.id}>
+                              {guide.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="rating" render={({ field }) => (<FormItem><FormLabel>Rating (0-5)</FormLabel><Input type="number" step="0.1" min="0" max="5" placeholder="4.5" {...field} /></FormItem>)}/>
+                <FormField control={form.control} name="reviewCount" render={({ field }) => (<FormItem><FormLabel>Review Count</FormLabel><Input type="number" min="0" placeholder="127" {...field} /></FormItem>)}/>
               </div>
               <FormField
                 control={form.control}

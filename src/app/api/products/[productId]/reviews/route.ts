@@ -17,10 +17,10 @@ const reviewSubmitSchema = z.object({
 // GET handler to fetch all reviews for a product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { productId } = params;
+    const { productId } = await params;
     // Note: productId from the URL could be a slug. The review system requires an ObjectId.
     // The calling component on the product detail page MUST fetch the product by slug first,
     // then use its actual ObjectId to call this review endpoint.
@@ -30,7 +30,7 @@ export async function GET(
     const reviews = await getReviewsForProduct(productId);
     return NextResponse.json(reviews);
   } catch (error: any) {
-    console.error(`[API /products/${params.productId}/reviews GET] Error:`, error);
+    console.error(`[API /products/reviews GET] Error:`, error);
     return NextResponse.json({ message: `Failed to fetch reviews: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }
@@ -38,10 +38,10 @@ export async function GET(
 // POST handler to submit a new review for a product
 export async function POST(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { productId } = params;
+    const { productId } = await params;
     if (!ObjectId.isValid(productId)) {
       return NextResponse.json({ message: "Invalid Product ID provided for review submission." }, { status: 400 });
     }
@@ -61,7 +61,7 @@ export async function POST(
     return NextResponse.json(newReview, { status: 201 });
 
   } catch (error: any) {
-    console.error(`[API /products/${params.productId}/reviews POST] Error:`, error);
+    console.error(`[API /products/reviews POST] Error:`, error);
     return NextResponse.json({ message: `Failed to submit review: ${error.message || 'Unknown error'}` }, { status: 500 });
   }
 }

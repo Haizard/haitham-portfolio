@@ -113,7 +113,14 @@ export default function TourDetailPage() {
                     <div>
                         <h1 className="text-3xl font-bold font-headline">{tour.name}</h1>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-2">
-                            <span className="flex items-center gap-1"><Star className="h-4 w-4 text-amber-400"/> 4.8 (12 reviews)</span>
+                            {tour.rating && tour.reviewCount ? (
+                                <span className="flex items-center gap-1">
+                                    <Star className="h-4 w-4 text-amber-400 fill-amber-400"/>
+                                    {tour.rating.toFixed(1)} ({tour.reviewCount} reviews)
+                                </span>
+                            ) : (
+                                <span className="text-sm text-muted-foreground">No reviews yet</span>
+                            )}
                             <span className="flex items-center gap-1"><MapPin className="h-4 w-4"/> {tour.location}</span>
                         </div>
                     </div>
@@ -207,18 +214,28 @@ export default function TourDetailPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Tour Guide</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex items-center gap-3">
-                                <Avatar className="h-12 w-12"><AvatarImage src="https://placehold.co/100x100.png?text=TG" data-ai-hint="guide avatar"/><AvatarFallback>TG</AvatarFallback></Avatar>
-                                <div>
-                                    <p className="font-semibold">John Doe</p>
-                                    <p className="text-xs text-muted-foreground">Joined in 2021</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {tour.guide && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-base">Tour Guide</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex items-center gap-3">
+                                    <Avatar className="h-12 w-12">
+                                        <AvatarImage src={tour.guide.avatarUrl || `https://placehold.co/100x100.png?text=${tour.guide.name.split(' ').map(n => n[0]).join('')}`} />
+                                        <AvatarFallback>{tour.guide.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <p className="font-semibold">{tour.guide.name}</p>
+                                        {tour.guide.joinedYear && (
+                                            <p className="text-xs text-muted-foreground">Joined in {tour.guide.joinedYear}</p>
+                                        )}
+                                        {tour.guide.bio && (
+                                            <p className="text-xs text-muted-foreground mt-1">{tour.guide.bio}</p>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </aside>
             </div>

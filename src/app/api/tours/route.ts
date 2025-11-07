@@ -3,7 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllTours, addTour, getTourFilterOptions, type TourPackage } from '@/lib/tours-data';
 import { z } from 'zod';
-// TODO: Add admin authentication middleware
+import { requireVendor } from '@/lib/auth-middleware';
 
 const tourCreateSchema = z.object({
   name: z.string().min(3),
@@ -23,6 +23,10 @@ const tourCreateSchema = z.object({
   faqs: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
   mapEmbedUrl: z.string().url().optional(),
   isActive: z.boolean(),
+  // New fields
+  guideId: z.string().optional(),
+  rating: z.number().min(0).max(5).optional(),
+  reviewCount: z.number().int().min(0).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -53,6 +57,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Check authentication - only admin or vendor can create tours
+  const authError = await requireVendor();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const validation = tourCreateSchema.safeParse(body);
@@ -60,8 +68,8 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json({ message: "Invalid tour data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
-    
-    const newTour = await addTour(validation.data as Omit<TourPackage, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'slug'>);
+
+    const newTour = await addTour(validation.data as Omit<TourPackage, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'slug' | 'guide'>);
     return NextResponse.json(newTour, { status: 201 });
 
   } catch (error: any) {

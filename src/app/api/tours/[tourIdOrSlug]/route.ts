@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getTourById, getTourBySlug, updateTour, deleteTour, type TourPackage } from '@/lib/tours-data';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
-// TODO: Add admin authentication middleware
+import { requireVendor } from '@/lib/auth-middleware';
 
 const tourUpdateSchema = z.object({
   name: z.string().min(3).optional(),
@@ -16,6 +16,10 @@ const tourUpdateSchema = z.object({
   featuredImageUrl: z.string().url().optional(),
   galleryImages: z.array(z.object({ url: z.string().url(), caption: z.string().optional() })).optional(),
   isActive: z.boolean().optional(),
+  // New fields
+  guideId: z.string().optional(),
+  rating: z.number().min(0).max(5).optional(),
+  reviewCount: z.number().int().min(0).optional(),
 });
 
 
@@ -49,6 +53,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ tourIdOrSlug: string }> }
 ) {
+  // Check authentication - only admin or vendor can update tours
+  const authError = await requireVendor();
+  if (authError) return authError;
+
   try {
     const { tourIdOrSlug } = await params;
     if (!ObjectId.isValid(tourIdOrSlug)) {
@@ -78,6 +86,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ tourIdOrSlug: string }> }
 ) {
+  // Check authentication - only admin or vendor can delete tours
+  const authError = await requireVendor();
+  if (authError) return authError;
+
   try {
      const { tourIdOrSlug } = await params;
      if (!ObjectId.isValid(tourIdOrSlug)) {

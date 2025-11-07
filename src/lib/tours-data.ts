@@ -2,6 +2,7 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { TourActivity } from './tour-activities-data';
+import { getGuideById } from './tour-guides-data';
 
 export interface GalleryImage {
   url: string;
@@ -18,6 +19,14 @@ export interface Highlight {
     text: string;
 }
 
+
+export interface TourGuide {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  bio?: string;
+  joinedYear?: number;
+}
 
 export interface TourPackage {
   _id?: ObjectId;
@@ -40,6 +49,11 @@ export interface TourPackage {
   faqs?: FAQ[];
   mapEmbedUrl?: string;
   isActive: boolean;
+  // New fields for guide and ratings
+  guideId?: string; // Reference to tour guide/operator
+  guide?: TourGuide; // Populated guide data (not stored in DB, populated on fetch)
+  rating?: number; // Average rating (0-5)
+  reviewCount?: number; // Total number of reviews
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +66,16 @@ function docToTour(doc: any): TourPackage {
 
 function createSlugFromName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+}
+
+async function isSlugUnique(slug: string, excludeId?: string): Promise<boolean> {
+  const collection = await getCollection<TourPackage>(TOURS_COLLECTION);
+  const query: Filter<TourPackage> = { slug };
+  if (excludeId && ObjectId.isValid(excludeId)) {
+    query._id = { $ne: new ObjectId(excludeId) };
+  }
+  const count = await collection.countDocuments(query);
+  return count === 0;
 }
 
 // Define the collection name constant BEFORE using it
@@ -72,7 +96,7 @@ async function seedInitialTours() {
         if (culturalActivity) activityIds.push(culturalActivity._id.toString());
 
         const now = new Date().toISOString();
-        const sampleTour: Omit<TourPackage, 'id' | '_id' | 'slug'> = {
+        const sampleTour: Omit<TourPackage, 'id' | '_id' | 'slug' | 'guide'> = {
             name: "The Ultimate Serengeti Safari Adventure",
             duration: "5 Days, 4 Nights",
             description: "Embark on an unforgettable journey through the vast plains of the Serengeti. Witness the Great Migration, spot the 'Big Five', and experience the raw beauty of the African wilderness. This all-inclusive package offers luxury lodging and expert guides for a once-in-a-lifetime adventure.",
@@ -109,6 +133,10 @@ async function seedInitialTours() {
             ],
             mapEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d8164923.120111536!2d29.57073984928509!3d-2.457897214732001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x183359a17521c3b3%3A0x1b133c51806a41f8!2sSerengeti%20National%20Park!5e0!3m2!1sen!2sus!4v1626359238319!5m2!1sen!2sus",
             isActive: true,
+            // New fields
+            guideId: "000000000000000000000001", // Reference to John Safari guide
+            rating: 4.8,
+            reviewCount: 127,
             createdAt: now,
             updatedAt: now,
         };
@@ -174,20 +202,52 @@ export async function getTourById(id: string): Promise<TourPackage | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<TourPackage>(TOURS_COLLECTION);
   const doc = await collection.findOne({ _id: new ObjectId(id) });
-  return doc ? docToTour(doc) : null;
+  if (!doc) return null;
+
+  const tour = docToTour(doc);
+
+  // Populate guide data if guideId exists
+  if (tour.guideId) {
+    const guide = await getGuideById(tour.guideId);
+    if (guide) {
+      tour.guide = guide;
+    }
+  }
+
+  return tour;
 }
 
 export async function getTourBySlug(slug: string): Promise<TourPackage | null> {
   const collection = await getCollection<TourPackage>(TOURS_COLLECTION);
   const doc = await collection.findOne({ slug });
-  return doc ? docToTour(doc) : null;
+  if (!doc) return null;
+
+  const tour = docToTour(doc);
+
+  // Populate guide data if guideId exists
+  if (tour.guideId) {
+    const guide = await getGuideById(tour.guideId);
+    if (guide) {
+      tour.guide = guide;
+    }
+  }
+
+  return tour;
 }
 
-export async function addTour(tourData: Omit<TourPackage, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'slug'>): Promise<TourPackage> {
+export async function addTour(tourData: Omit<TourPackage, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'slug' | 'guide'>): Promise<TourPackage> {
   const collection = await getCollection<Omit<TourPackage, 'id' | '_id'>>(TOURS_COLLECTION);
   const now = new Date().toISOString();
-  const slug = createSlugFromName(tourData.name);
-  // TODO: Check for slug uniqueness before inserting
+  let slug = createSlugFromName(tourData.name);
+
+  // Check for slug uniqueness and append number if needed
+  let slugIsUnique = await isSlugUnique(slug);
+  let counter = 1;
+  while (!slugIsUnique) {
+    slug = `${createSlugFromName(tourData.name)}-${counter}`;
+    slugIsUnique = await isSlugUnique(slug);
+    counter++;
+  }
 
   const docToInsert = {
     ...tourData,
@@ -200,13 +260,23 @@ export async function addTour(tourData: Omit<TourPackage, 'id' | '_id' | 'create
   return { id: result.insertedId.toString(), ...docToInsert };
 }
 
-export async function updateTour(id: string, updates: Partial<Omit<TourPackage, 'id' | '_id' | 'createdAt' | 'updatedAt'>>): Promise<TourPackage | null> {
+export async function updateTour(id: string, updates: Partial<Omit<TourPackage, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'guide'>>): Promise<TourPackage | null> {
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<TourPackage>(TOURS_COLLECTION);
 
   const updatePayload: any = { ...updates, updatedAt: new Date().toISOString() };
+
+  // If name is being updated, check slug uniqueness
   if (updates.name) {
-      updatePayload.slug = createSlugFromName(updates.name);
+    let slug = createSlugFromName(updates.name);
+    let slugIsUnique = await isSlugUnique(slug, id);
+    let counter = 1;
+    while (!slugIsUnique) {
+      slug = `${createSlugFromName(updates.name)}-${counter}`;
+      slugIsUnique = await isSlugUnique(slug, id);
+      counter++;
+    }
+    updatePayload.slug = slug;
   }
 
   const result = await collection.findOneAndUpdate(
