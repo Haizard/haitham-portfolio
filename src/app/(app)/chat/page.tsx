@@ -3,7 +3,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { io, type Socket } from 'socket.io-client';
+import { useSocket } from '@/hooks/use-socket';
+import type { Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '@/lib/socket-types';
 import { ConversationList } from '@/components/chat/conversation-list';
 import { MessageView } from '@/components/chat/message-view';
@@ -13,19 +14,16 @@ import { Loader2, MessageCircleOff, MessageSquare, WifiOff } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast';
 
 const CURRENT_USER_ID = "user1"; // Replace with actual authenticated user ID
-const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001';
-
 export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [socket, setSocket] = useState<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
 
-  const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
+  const socket = useSocket();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -36,9 +34,9 @@ export default function ChatPage() {
     setIsLoadingMessages(true);
     setMessages([]);
     
-    if (socketRef.current?.connected && conversation.id) {
+    if (socket?.connected && conversation.id) {
       console.log(`Emitting joinConversation for ${conversation.id}`);
-      socketRef.current.emit('joinConversation', conversation.id);
+      socket.emit('joinConversation', conversation.id);
     } else if (conversation.id) {
       console.warn(`Socket not connected, cannot join room for ${conversation.id} yet.`);
     }
@@ -90,96 +88,97 @@ export default function ChatPage() {
     }
 
     initialize();
+  }, [searchParams, router, toast, handleSelectConversation, selectedConversation]);
 
-    // Setup socket connection
-    console.log(`Attempting to connect to WebSocket server at ${WEBSOCKET_URL}`);
-    const newSocket = io(WEBSOCKET_URL, {
-      reconnectionAttempts: 5,
-      transports: ['websocket'], 
-    });
-    socketRef.current = newSocket;
-    setSocket(newSocket);
+  // Socket event listeners
+  useEffect(() => {
+    if (!socket) return;
 
-    newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id);
+    const handleConnect = () => {
+      console.log('Socket connected:', socket.id);
       setIsConnected(true);
       toast({ title: "Chat Connected", description: "Real-time communication established." });
       // If a conversation is already selected when connection establishes, re-join the room
       if (selectedConversation?.id) {
-        newSocket.emit('joinConversation', selectedConversation.id);
+        socket.emit('joinConversation', selectedConversation.id);
       }
-    });
+    };
 
-    newSocket.on('disconnect', (reason) => {
+    const handleDisconnect = (reason: string) => {
       console.log('Socket disconnected:', reason);
       setIsConnected(false);
       toast({ title: "Chat Disconnected", description: `Reason: ${reason}`, variant: "destructive" });
-    });
+    };
 
-    newSocket.on('connect_error', (err) => {
+    const handleConnectError = (err: any) => {
       console.error('Socket connection error:', err.message, err.data || '');
       setIsConnected(false);
       toast({
         title: "Chat Connection Error",
-        description: `Could not connect to chat server. Ensure the WebSocket server (src/server/socket-server.ts) is running and accessible. Error: ${err.message}.`,
+        description: `Could not connect to chat server. Error: ${err.message}.`,
         variant: "destructive",
         duration: 10000,
       });
-    });
-    
-    newSocket.on('newMessage', (newMessage: MessageType) => {
-        console.log('New message received via WebSocket:', newMessage);
-      
-        // Update messages for the current conversation in real-time
-        if (newMessage.conversationId === selectedConversation?.id) {
-          setMessages(prevMessages => [...prevMessages, newMessage]);
-        }
-      
-        // Update the conversation list (last message preview, timestamp, order)
-        setConversations(prevConvs => {
-          const targetConv = prevConvs.find(c => c.id === newMessage.conversationId);
-      
-          if (!targetConv) {
-            // This could happen if it's a new conversation started by someone else.
-            // A more robust implementation might fetch the new conversation details here.
-            // For now, we'll log it and ignore it to prevent errors.
-            console.warn(`Received message for an unknown conversation: ${newMessage.conversationId}`);
-            return prevConvs;
-          }
-      
-          const updatedConv: Conversation = {
-            ...targetConv,
-            lastMessage: {
-              text: newMessage.text,
-              timestamp: newMessage.timestamp.toString(),
-              senderId: newMessage.senderId,
-            },
-            lastMessageAt: new Date(newMessage.timestamp),
-            unreadCount: newMessage.conversationId !== selectedConversation?.id
-              ? (targetConv.unreadCount || 0) + 1
-              : 0,
-          };
-      
-          // Move updated conversation to the top and re-sort
-          return [updatedConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)]
-            .sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
-        });
-      });
+    };
 
-    newSocket.on('error', (errorData) => {
-        toast({ title: "Chat Error", description: errorData.message, variant: "destructive" });
-    });
+    const handleNewMessage = (newMessage: MessageType) => {
+      console.log('New message received via WebSocket:', newMessage);
     
-    newSocket.on('conversationJoined', (conversationId) => {
-        console.log(`Successfully joined room for conversation: ${conversationId}`);
-    });
+      // Update messages for the current conversation in real-time
+      if (newMessage.conversationId === selectedConversation?.id) {
+        setMessages(prevMessages => [...prevMessages, newMessage]);
+      }
+    
+      // Update the conversation list (last message preview, timestamp, order)
+      setConversations(prevConvs => {
+        const targetConv = prevConvs.find(c => c.id === newMessage.conversationId);
+    
+        if (!targetConv) {
+          console.warn(`Received message for an unknown conversation: ${newMessage.conversationId}`);
+          return prevConvs;
+        }
+    
+        const updatedConv: Conversation = {
+          ...targetConv,
+          lastMessage: {
+            text: newMessage.text,
+            timestamp: newMessage.timestamp.toString(),
+            senderId: newMessage.senderId,
+          },
+          lastMessageAt: new Date(newMessage.timestamp),
+          unreadCount: newMessage.conversationId !== selectedConversation?.id
+            ? (targetConv.unreadCount || 0) + 1
+            : 0,
+        };
+    
+        // Move updated conversation to the top and re-sort
+        return [updatedConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)]
+          .sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
+      });
+    };
+
+    const handleError = (errorData: { message: string }) => {
+      toast({ title: "Chat Error", description: errorData.message, variant: "destructive" });
+    };
+    
+    const handleConversationJoined = (conversationId: string) => {
+      console.log(`Successfully joined room for conversation: ${conversationId}`);
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
+    socket.on('newMessage', handleNewMessage);
+    socket.on('error', handleError);
+    socket.on('conversationJoined', handleConversationJoined);
 
     return () => {
-      console.log('Cleaning up socket connection...');
-      if (newSocket) {
-        newSocket.disconnect();
-      }
-      socketRef.current = null;
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
+      socket.off('newMessage', handleNewMessage);
+      socket.off('error', handleError);
+      socket.off('conversationJoined', handleConversationJoined);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -190,7 +189,7 @@ export default function ChatPage() {
       toast({ title: "Cannot Send", description: "No conversation selected or message is empty.", variant: "destructive" });
       return;
     }
-    if (!socketRef.current || !socketRef.current.connected) {
+    if (!socket || !socket.connected) {
       toast({ title: "Cannot Send", description: "Chat not connected. Please ensure WebSocket server is running and client is connected.", variant: "destructive" });
       return;
     }
@@ -201,7 +200,7 @@ export default function ChatPage() {
       text: text.trim(),
     };
     
-    socketRef.current.emit('sendMessage', messageData);
+    socket.emit('sendMessage', messageData);
     console.log('Message sent via WebSocket:', messageData);
   };
 
