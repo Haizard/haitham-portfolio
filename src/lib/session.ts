@@ -28,7 +28,11 @@ export type SessionUser = {
   id: string;
   name: string;
   email: string;
+  avatar?: string;
   roles: UserRole[];
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  membershipTier: 'bronze' | 'silver' | 'gold' | 'platinum';
   createdAt: string;
 };
 

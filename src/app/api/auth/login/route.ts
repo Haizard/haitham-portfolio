@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getFullUserByEmail, verifyPassword } from '@/lib/auth-data';
+import { getFullUserByEmail, verifyPassword, updateLastLogin } from '@/lib/auth-data';
 import { getSession, type SessionUser } from '@/lib/session';
 import { z } from 'zod';
 
@@ -30,24 +30,48 @@ export async function POST(request: NextRequest) {
     if (!isPasswordValid) {
       return NextResponse.json({ message: "Invalid email or password." }, { status: 401 });
     }
-    
+
+    // Check if user account is suspended
+    if (user.isSuspended) {
+      return NextResponse.json({
+        message: `Account suspended. ${user.suspensionReason || 'Please contact support.'}`
+      }, { status: 403 });
+    }
+
+    // Check if user account is active
+    if (!user.isActive) {
+      return NextResponse.json({
+        message: "Account is inactive. Please contact support."
+      }, { status: 403 });
+    }
+
+    // Update last login time
+    await updateLastLogin(user.id);
+
     // Explicitly create a serializable user object for the session.
     // This prevents any database-specific objects (like ObjectId) from being saved.
     const sessionUser: SessionUser = {
       id: user.id,
       name: user.name,
       email: user.email,
+      avatar: user.avatar,
       roles: user.roles,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+      membershipTier: user.membershipTier,
       createdAt: user.createdAt,
     };
-    
+
     // Get the session, update it, and save it.
     const session = await getSession();
     session.user = sessionUser;
     await session.save();
-    
-    // Return only the safe-to-view session user object
-    return NextResponse.json(sessionUser);
+
+    // Return session user and email verification status
+    return NextResponse.json({
+      user: sessionUser,
+      requiresEmailVerification: !user.emailVerified,
+    });
 
   } catch (error: any) {
     console.error("[API /login POST] Error:", error);
