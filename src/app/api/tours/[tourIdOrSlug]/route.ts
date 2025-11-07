@@ -21,10 +21,10 @@ const tourUpdateSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tourIdOrSlug: string } }
+  { params }: { params: Promise<{ tourIdOrSlug: string }> }
 ) {
   try {
-    const idOrSlug = params.tourIdOrSlug;
+    const { tourIdOrSlug: idOrSlug } = await params;
     let tour: TourPackage | null = null;
 
     if (ObjectId.isValid(idOrSlug)) {
@@ -47,10 +47,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { tourIdOrSlug: string } }
+  { params }: { params: Promise<{ tourIdOrSlug: string }> }
 ) {
   try {
-    if (!ObjectId.isValid(params.tourIdOrSlug)) {
+    const { tourIdOrSlug } = await params;
+    if (!ObjectId.isValid(tourIdOrSlug)) {
         return NextResponse.json({ message: "Invalid Tour ID format." }, { status: 400 });
     }
     const body = await request.json();
@@ -60,7 +61,7 @@ export async function PUT(
       return NextResponse.json({ message: "Invalid tour update data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const updatedTour = await updateTour(params.tourIdOrSlug, validation.data);
+    const updatedTour = await updateTour(tourIdOrSlug, validation.data);
 
     if (!updatedTour) {
       return NextResponse.json({ message: "Tour not found or update failed" }, { status: 404 });
@@ -75,13 +76,14 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { tourIdOrSlug: string } }
+  { params }: { params: Promise<{ tourIdOrSlug: string }> }
 ) {
   try {
-     if (!ObjectId.isValid(params.tourIdOrSlug)) {
+     const { tourIdOrSlug } = await params;
+     if (!ObjectId.isValid(tourIdOrSlug)) {
         return NextResponse.json({ message: "Invalid Tour ID format." }, { status: 400 });
     }
-    const success = await deleteTour(params.tourIdOrSlug);
+    const success = await deleteTour(tourIdOrSlug);
     if (success) {
       return NextResponse.json({ message: "Tour deleted successfully" });
     } else {

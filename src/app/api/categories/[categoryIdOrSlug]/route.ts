@@ -19,13 +19,14 @@ async function getCategory(idOrSlug: string): Promise<CategoryNode | null> {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { categoryIdOrSlug: string } }
+  { params }: { params: Promise<{ categoryIdOrSlug: string }> }
 ) {
   try {
+    const { categoryIdOrSlug } = await params;
     const { searchParams } = new URL(request.url);
     const includePath = searchParams.get('include_path') === 'true';
 
-    const category = await getCategory(params.categoryIdOrSlug);
+    const category = await getCategory(categoryIdOrSlug);
 
     if (category && category.id) {
       let responseData: any = { ...category };
@@ -44,10 +45,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { categoryIdOrSlug: string } }
+  { params }: { params: Promise<{ categoryIdOrSlug: string }> }
 ) {
   try {
-    const categoryId = params.categoryIdOrSlug;
+    const { categoryIdOrSlug: categoryId } = await params;
     if (!ObjectId.isValid(categoryId)) {
         return NextResponse.json({ message: "Invalid category ID format for update." }, { status: 400 });
     }
@@ -83,10 +84,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { categoryIdOrSlug: string } }
+  { params }: { params: Promise<{ categoryIdOrSlug: string }> }
 ) {
   try {
-    const categoryId = params.categoryIdOrSlug;
+    const { categoryIdOrSlug: categoryId } = await params;
      if (!ObjectId.isValid(categoryId)) {
         return NextResponse.json({ message: "Invalid category ID format for delete." }, { status: 400 });
     }

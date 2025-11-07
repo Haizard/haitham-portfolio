@@ -49,10 +49,10 @@ const productUpdateSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const productId = params.productId;
+    const { productId } = await params;
     // It's possible the identifier is a slug, not an ID. Let's try to fetch by both.
     let product: Product | null = null;
     if (ObjectId.isValid(productId)) {
@@ -76,10 +76,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const productId = params.productId;
+    const { productId } = await params;
     const productToUpdate = await getProductById(productId);
     if (!productToUpdate) {
         return NextResponse.json({ message: "Product not found" }, { status: 404 });
@@ -128,10 +128,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const productId = params.productId;
+    const { productId } = await params;
     
     const productToDelete = await getProductById(productId);
     if (!productToDelete) {

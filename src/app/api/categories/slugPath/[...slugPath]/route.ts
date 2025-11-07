@@ -4,13 +4,12 @@ import { findCategoryBySlugPathRecursive, getCategoryPath, type CategoryNode } f
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slugPath: string[] } }
+  { params }: { params: Promise<{ slugPath: string[] }> }
 ) {
   try {
+    const { slugPath: slugPathArray } = await params;
     const { searchParams } = new URL(request.url);
     const includePath = searchParams.get('include_path') === 'true';
-
-    const slugPathArray = params.slugPath;
     if (!slugPathArray || slugPathArray.length === 0) {
       return NextResponse.json({ message: "Category slug path is required" }, { status: 400 });
     }

@@ -4,10 +4,11 @@ import { getJobById } from '@/lib/jobs-data';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const job = await getJobById(params.jobId);
+    const { jobId } = await params;
+    const job = await getJobById(jobId);
     if (!job) {
       return NextResponse.json({ message: "Job not found" }, { status: 404 });
     }

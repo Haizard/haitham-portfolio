@@ -54,6 +54,9 @@ function createSlugFromName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 }
 
+// Define the collection name constant BEFORE using it
+const TOURS_COLLECTION = 'tours';
+
 // Seed initial data
 async function seedInitialTours() {
     const toursCollection = await getCollection<TourPackage>(TOURS_COLLECTION);
@@ -220,8 +223,6 @@ export async function deleteTour(id: string): Promise<boolean> {
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }
-
-const TOURS_COLLECTION = 'tours';
 
 export async function getTourFilterOptions() {
     const collection = await getCollection<TourPackage>(TOURS_COLLECTION);

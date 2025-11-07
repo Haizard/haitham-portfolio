@@ -9,10 +9,10 @@ import { getSession } from '@/lib/session';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const slug = params.slug;
+    const { slug } = await params;
     const post = await getPostBySlug(slug, true, getCategoryPath, getTagsByIds); // Enrich data
 
     if (post) {
@@ -28,7 +28,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   const session = await getSession();
   if (!session.user || !session.user.id) {
@@ -36,7 +36,7 @@ export async function PUT(
   }
 
   try {
-    const slug = params.slug;
+    const { slug } = await params;
     const body = await request.json();
     const { 
       title, content, tags, 
@@ -92,7 +92,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   const session = await getSession();
   if (!session.user || !session.user.id) {
@@ -100,7 +100,7 @@ export async function DELETE(
   }
 
   try {
-    const slug = params.slug;
+    const { slug } = await params;
     
     const existingPost = await getPostBySlug(slug);
     if (!existingPost) {

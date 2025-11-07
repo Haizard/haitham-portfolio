@@ -5,10 +5,10 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
     if (!restaurantId || !ObjectId.isValid(restaurantId)) {
       return NextResponse.json({ message: "Valid restaurant ID is required." }, { status: 400 });
     }

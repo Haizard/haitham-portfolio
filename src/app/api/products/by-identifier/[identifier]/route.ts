@@ -5,10 +5,10 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { identifier: string } }
+  { params }: { params: Promise<{ identifier: string }> }
 ) {
   try {
-    const { identifier } = params;
+    const { identifier } = await params;
     let product: Product | null = null;
     
     // Check if the identifier is a valid MongoDB ObjectId

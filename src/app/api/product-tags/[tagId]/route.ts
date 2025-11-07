@@ -5,10 +5,11 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
-    const tag = await getProductTagById(params.tagId);
+    const { tagId } = await params;
+    const tag = await getProductTagById(tagId);
     if (tag) {
       return NextResponse.json(tag);
     } else {
@@ -22,10 +23,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
-    const tagId = params.tagId; 
+    const { tagId } = await params;
     if (!ObjectId.isValid(tagId)) {
         return NextResponse.json({ message: "Invalid tag ID format for update." }, { status: 400 });
     }
@@ -60,10 +61,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
-    const tagId = params.tagId; 
+    const { tagId } = await params;
     if (!ObjectId.isValid(tagId)) {
         return NextResponse.json({ message: "Invalid tag ID format for delete." }, { status: 400 });
     }

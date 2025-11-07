@@ -40,6 +40,8 @@ export interface SessionData extends IronSessionData {
 // THIS IS THE PRIMARY FUNCTION to get the session.
 // It can be used to read, write, and save the session in one go.
 export async function getSession() {
-  const session = await getIronSession<SessionData>(cookies(), sessionOptions);
+  // In Next.js 15, cookies() must be awaited before accessing its methods
+  const cookieStore = await cookies();
+  const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
   return session;
 }

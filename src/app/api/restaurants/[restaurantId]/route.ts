@@ -7,10 +7,10 @@ import { getSession } from '@/lib/session';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
     if (!restaurantId || !ObjectId.isValid(restaurantId)) {
       return NextResponse.json({ message: "A valid restaurant ID is required." }, { status: 400 });
     }
@@ -41,11 +41,11 @@ const restaurantUpdateSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
     const session = await getSession();
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
 
     // Authorization check
     // In a real app, you'd have a mapping of user ID to restaurant ID.

@@ -10,11 +10,11 @@ const featureUpdateSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
     // TODO: Add robust admin authentication
-    const { vendorId } = params;
+    const { vendorId } = await params;
     if (!ObjectId.isValid(vendorId)) {
         return NextResponse.json({ message: "Invalid Vendor ID format." }, { status: 400 });
     }

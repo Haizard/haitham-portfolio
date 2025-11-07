@@ -8,10 +8,11 @@ import { getOrdersByVendorId } from '@/lib/orders-data';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
-    const { vendorId } = params;
+    // In Next.js 15, params must be awaited before accessing its properties
+    const { vendorId } = await params;
     if (!vendorId) {
       return NextResponse.json({ message: "Vendor ID is required." }, { status: 400 });
     }
@@ -32,7 +33,7 @@ export async function GET(
     return NextResponse.json({ profile, products, financeSummary, orders });
 
   } catch (error: any) {
-    console.error(`[API /api/vendors/${params.vendorId} GET] Error:`, error);
+    console.error(`[API /api/vendors/[vendorId] GET] Error:`, error);
     return NextResponse.json({ message: `Failed to fetch vendor data: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }

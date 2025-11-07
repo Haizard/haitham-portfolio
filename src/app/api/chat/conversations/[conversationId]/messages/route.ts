@@ -7,10 +7,10 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
-    const conversationId = params.conversationId;
+    const { conversationId } = await params;
     if (!conversationId || !ObjectId.isValid(conversationId)) {
       return NextResponse.json({ message: "Valid Conversation ID is required" }, { status: 400 });
     }
@@ -30,10 +30,10 @@ const postMessageSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
-    const conversationId = params.conversationId;
+    const { conversationId } = await params;
     if (!conversationId || !ObjectId.isValid(conversationId)) {
       return NextResponse.json({ message: "Valid Conversation ID is required" }, { status: 400 });
     }

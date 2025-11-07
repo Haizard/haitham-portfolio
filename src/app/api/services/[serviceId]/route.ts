@@ -35,16 +35,16 @@ const serviceUpdateSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { serviceId: string } } 
+  { params }: { params: Promise<{ serviceId: string }> }
 ) {
+  const { serviceId: idOrSlug } = await params;
   try {
-    const idOrSlug = params.serviceId;
     let service: Service | null = null;
 
     if (ObjectId.isValid(idOrSlug)) {
       service = await getServiceById(idOrSlug);
     }
-    
+
     if (!service) {
       service = await getServiceBySlug(idOrSlug);
     }
@@ -55,17 +55,17 @@ export async function GET(
       return NextResponse.json({ message: "Service not found" }, { status: 404 });
     }
   } catch (error) {
-    console.error(`Failed to fetch service ${params.serviceId}:`, error);
-    return NextResponse.json({ message: `Failed to fetch service ${params.serviceId}` }, { status: 500 });
+    console.error(`Failed to fetch service ${idOrSlug}:`, error);
+    return NextResponse.json({ message: `Failed to fetch service ${idOrSlug}` }, { status: 500 });
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { serviceId: string } } 
+  { params }: { params: Promise<{ serviceId: string }> }
 ) {
   try {
-    const serviceId = params.serviceId;
+    const { serviceId } = await params;
     if (!ObjectId.isValid(serviceId)) {
       return NextResponse.json({ message: "Invalid service ID format for update." }, { status: 400 });
     }
@@ -100,10 +100,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { serviceId: string } }
+  { params }: { params: Promise<{ serviceId: string }> }
 ) {
+  const { serviceId } = await params;
   try {
-    const serviceId = params.serviceId;
      if (!ObjectId.isValid(serviceId)) {
         return NextResponse.json({ message: "Invalid service ID format for delete." }, { status: 400 });
     }
@@ -115,7 +115,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Service not found or delete failed" }, { status: 404 });
     }
   } catch (error) {
-    console.error(`Failed to delete service ${params.serviceId}:`, error);
-    return NextResponse.json({ message: `Failed to delete service ${params.serviceId}` }, { status: 500 });
+    console.error(`Failed to delete service ${serviceId}:`, error);
+    return NextResponse.json({ message: `Failed to delete service ${serviceId}` }, { status: 500 });
   }
 }
