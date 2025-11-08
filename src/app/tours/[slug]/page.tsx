@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RelatedTours } from '@/components/tours/related-tours';
+import { TourBookingCard } from '@/components/tours/tour-booking-card';
+import { BookingReviewsList } from '@/components/bookings/booking-reviews-list';
 import * as LucideIcons from 'lucide-react';
 
 const DynamicIcon = ({ name }: { name: string }) => {
@@ -198,22 +200,16 @@ export default function TourDetailPage() {
                 
                 {/* Sticky Sidebar */}
                 <aside className="lg:col-span-4">
-                    <div className="sticky top-24 space-y-6">
-                        <Card className="shadow-lg">
-                            <CardHeader className="bg-muted/30">
-                                <p className="text-2xl font-bold">
-                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tour.price)}
-                                    <span className="text-sm font-normal text-muted-foreground">/person</span>
-                                </p>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                                <Button size="lg" className="w-full h-12 text-base">Check Availability</Button>
-                                <div className="flex items-center justify-center gap-4">
-                                    <Button variant="outline" size="sm"><MessageSquare className="mr-2 h-4 w-4"/> Ask a Question</Button>
-                                    <Button variant="outline" size="sm"><Heart className="mr-2 h-4 w-4"/> Save</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <div className="space-y-6">
+                        {/* Booking Card */}
+                        <TourBookingCard
+                            tourId={tour.id!}
+                            tourName={tour.name}
+                            basePrice={tour.price}
+                            duration={tour.duration}
+                        />
+
+                        {/* Tour Guide Card */}
                         {tour.guide && (
                             <Card>
                                 <CardHeader>
@@ -239,9 +235,21 @@ export default function TourDetailPage() {
                     </div>
                 </aside>
             </div>
-            
+
             <Separator className="my-12"/>
-            
+
+            {/* Reviews Section */}
+            <div className="mb-12">
+                <h2 className="text-3xl font-bold mb-6">Customer Reviews</h2>
+                <BookingReviewsList
+                    reviewType="tour"
+                    targetId={tour.id!}
+                    limit={10}
+                />
+            </div>
+
+            <Separator className="my-12"/>
+
             <RelatedTours currentTourSlug={tour.slug} />
 
         </div>

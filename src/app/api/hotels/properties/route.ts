@@ -115,6 +115,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
+    // Check if filtering by owner
+    const ownerIdParam = searchParams.get('ownerId');
+    if (ownerIdParam === 'me') {
+      // Require authentication to get own properties
+      const authResult = await requireAuth(request);
+      if (!authResult.authenticated || !authResult.user) {
+        return NextResponse.json({
+          success: false,
+          message: 'Authentication required',
+        }, { status: 401 });
+      }
+
+      // Get properties owned by the authenticated user
+      const { getCollection } = await import('@/lib/db');
+      const propertiesCollection = await getCollection('properties');
+      const { docToProperty } = await import('@/lib/hotels-data');
+
+      const propertiesDocs = await propertiesCollection
+        .find({ ownerId: authResult.user.id })
+        .toArray();
+
+      const properties = propertiesDocs.map(docToProperty);
+
+      return NextResponse.json({
+        success: true,
+        properties,
+        count: properties.length,
+      });
+    }
+
     // Parse query parameters
     const filters: PropertySearchFilters = {
       city: searchParams.get('city') || undefined,

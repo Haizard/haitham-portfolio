@@ -104,6 +104,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
+    // Check if filtering by owner
+    const ownerIdParam = searchParams.get('ownerId');
+    if (ownerIdParam === 'me') {
+      // Require authentication to get own vehicles
+      const authResult = await requireAuth(request);
+      if (!authResult.authenticated || !authResult.user) {
+        return NextResponse.json({
+          success: false,
+          message: 'Authentication required',
+        }, { status: 401 });
+      }
+
+      // Get vehicles owned by the authenticated user
+      const { getCollection } = await import('@/lib/db');
+      const vehiclesCollection = await getCollection('vehicles');
+      const { docToVehicle } = await import('@/lib/cars-data');
+
+      const vehiclesDocs = await vehiclesCollection
+        .find({ ownerId: authResult.user.id })
+        .toArray();
+
+      const vehicles = vehiclesDocs.map(docToVehicle);
+
+      return NextResponse.json({
+        success: true,
+        vehicles,
+        count: vehicles.length,
+      });
+    }
+
     // Build filters from query params
     const filters: VehicleSearchFilters = {};
 

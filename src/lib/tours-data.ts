@@ -58,6 +58,66 @@ export interface TourPackage {
   updatedAt: string;
 }
 
+// Tour Booking Schema
+export interface TourBooking {
+  _id?: ObjectId;
+  id?: string;
+  tourId: string;
+  tourName: string;
+  tourSlug: string;
+  userId: string;
+
+  // Booking Details
+  tourDate: string; // ISO date string (YYYY-MM-DD)
+  tourTime?: string; // Optional time (HH:MM)
+
+  // Participants
+  participants: {
+    adults: number;
+    children: number;
+    seniors: number;
+  };
+  totalParticipants: number;
+
+  // Pricing
+  pricing: {
+    adultPrice: number;
+    childPrice: number;
+    seniorPrice: number;
+    subtotal: number;
+    tax: number;
+    total: number;
+  };
+
+  // Customer Information
+  contactInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+
+  // Special Requests
+  specialRequests?: string;
+  dietaryRestrictions?: string;
+  accessibilityNeeds?: string;
+
+  // Payment
+  paymentInfo: {
+    stripePaymentIntentId?: string;
+    paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+    paidAt?: string;
+  };
+
+  // Status
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  cancellationReason?: string;
+
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
+
 function docToTour(doc: any): TourPackage {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
@@ -329,4 +389,102 @@ export async function getTourFilterOptions() {
         maxPrice: data.maxPrice || 1000,
         activities: activitiesResult.map(a => ({ id: a._id!.toString(), name: a.name, slug: a.slug })),
     };
+}
+
+// ==================== TOUR BOOKING OPERATIONS ====================
+
+const TOUR_BOOKINGS_COLLECTION = 'tourBookings';
+
+function docToTourBooking(doc: any): TourBooking {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: _id?.toString(), ...rest } as TourBooking;
+}
+
+// Create a new tour booking
+export async function createTourBooking(bookingData: Omit<TourBooking, 'id' | '_id' | 'createdAt' | 'updatedAt'>): Promise<TourBooking> {
+  const collection = await getCollection<TourBooking>(TOUR_BOOKINGS_COLLECTION);
+  const now = new Date().toISOString();
+
+  const newBooking: Omit<TourBooking, 'id'> = {
+    ...bookingData,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const result = await collection.insertOne(newBooking as any);
+  const insertedBooking = await collection.findOne({ _id: result.insertedId });
+  return docToTourBooking(insertedBooking);
+}
+
+// Get all tour bookings with filters
+export async function getAllTourBookings(filters: {
+  userId?: string;
+  tourId?: string;
+  status?: string;
+  tourDate?: string;
+} = {}): Promise<TourBooking[]> {
+  const collection = await getCollection<TourBooking>(TOUR_BOOKINGS_COLLECTION);
+  const query: Filter<TourBooking> = {};
+
+  if (filters.userId) {
+    query.userId = filters.userId;
+  }
+  if (filters.tourId) {
+    query.tourId = filters.tourId;
+  }
+  if (filters.status) {
+    query.status = filters.status as any;
+  }
+  if (filters.tourDate) {
+    query.tourDate = filters.tourDate;
+  }
+
+  const bookings = await collection.find(query).sort({ createdAt: -1 }).toArray();
+  return bookings.map(docToTourBooking);
+}
+
+// Get a single tour booking by ID
+export async function getTourBookingById(id: string): Promise<TourBooking | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<TourBooking>(TOUR_BOOKINGS_COLLECTION);
+  const booking = await collection.findOne({ _id: new ObjectId(id) });
+  return docToTourBooking(booking);
+}
+
+// Update a tour booking
+export async function updateTourBooking(
+  id: string,
+  updates: Partial<Omit<TourBooking, 'id' | '_id' | 'createdAt'>>
+): Promise<TourBooking | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const collection = await getCollection<TourBooking>(TOUR_BOOKINGS_COLLECTION);
+
+  const updateData = {
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const result = await collection.findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updateData },
+    { returnDocument: 'after' }
+  );
+
+  return docToTourBooking(result);
+}
+
+// Delete a tour booking
+export async function deleteTourBooking(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const collection = await getCollection<TourBooking>(TOUR_BOOKINGS_COLLECTION);
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
+}
+
+// Get bookings for a specific tour (for tour operators)
+export async function getTourBookingsByTourId(tourId: string): Promise<TourBooking[]> {
+  const collection = await getCollection<TourBooking>(TOUR_BOOKINGS_COLLECTION);
+  const bookings = await collection.find({ tourId }).sort({ tourDate: 1, createdAt: -1 }).toArray();
+  return bookings.map(docToTourBooking);
 }

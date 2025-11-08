@@ -94,16 +94,64 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">
-                    Reviews Written
+                    Flight Referrals
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">0</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Share your experiences
+                    Track your flight bookings
                   </p>
-                  <Button variant="outline" size="sm" className="mt-3 w-full" disabled>
-                    Write Review
+                  <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+                    <Link href="/flights">Search Flights</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    My Bookings
+                  </CardTitle>
+                  <CardDescription>View and manage all your bookings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="default" className="w-full" asChild>
+                    <Link href="/account/bookings">View Bookings</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Plane className="h-5 w-5 text-primary" />
+                    Flight Referrals
+                  </CardTitle>
+                  <CardDescription>Track your flight referrals and earnings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="default" className="w-full" asChild>
+                    <Link href="/account/my-flights">View Referrals</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Star className="h-5 w-5 text-primary" />
+                    My Reviews
+                  </CardTitle>
+                  <CardDescription>Read and write reviews</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="default" className="w-full" asChild>
+                    <Link href="/account/bookings">Leave Reviews</Link>
                   </Button>
                 </CardContent>
               </Card>
