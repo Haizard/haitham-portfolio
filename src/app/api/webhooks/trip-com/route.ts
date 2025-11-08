@@ -19,6 +19,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { updateFlightReferral, getFlightReferralById } from '@/lib/flights-data';
 import crypto from 'crypto';
+import {
+  getLoyaltyAccount,
+  createLoyaltyAccount,
+  addPointsTransaction,
+  POINTS_EARNING_RULES,
+  TIER_BENEFITS,
+} from '@/lib/loyalty-data';
 
 // Webhook payload schema
 const webhookPayloadSchema = z.object({
@@ -97,6 +104,9 @@ async function processBookingConfirmation(data: WebhookPayload['data']) {
 
     console.log(`Booking confirmed: ${data.bookingReference}, Commission: ${commissionAmount} ${data.currency}`);
 
+    // Award loyalty points for flight booking
+    await awardFlightPoints(referral.userId, data.totalAmount, data.referralId);
+
     return {
       success: true,
       referralId: data.referralId,
@@ -106,6 +116,43 @@ async function processBookingConfirmation(data: WebhookPayload['data']) {
   } catch (error: any) {
     console.error('Error processing booking confirmation:', error);
     throw error;
+  }
+}
+
+/**
+ * Award loyalty points for flight booking
+ */
+async function awardFlightPoints(
+  userId: string,
+  totalAmount: number,
+  referralId: string
+) {
+  try {
+    // Get or create loyalty account
+    let account = await getLoyaltyAccount(userId);
+    if (!account) {
+      account = await createLoyaltyAccount(userId);
+    }
+
+    // Calculate points for flight booking
+    const pointsPerDollar = POINTS_EARNING_RULES.flight;
+    const tierMultiplier = TIER_BENEFITS[account.tier].pointsMultiplier;
+    const basePoints = Math.floor(totalAmount * pointsPerDollar);
+    const bonusPoints = Math.floor(basePoints * (tierMultiplier - 1));
+    const totalPoints = basePoints + bonusPoints;
+
+    // Add points transaction
+    await addPointsTransaction({
+      userId,
+      type: 'earn',
+      amount: totalPoints,
+      reason: `Flight booking - $${totalAmount.toFixed(2)}`,
+      relatedBookingId: referralId,
+    });
+
+    console.log(`[TRIP.COM WEBHOOK] Awarded ${totalPoints} points to user ${userId} (${basePoints} base + ${bonusPoints} tier bonus)`);
+  } catch (error) {
+    console.error('[TRIP.COM WEBHOOK] Error awarding points:', error);
   }
 }
 

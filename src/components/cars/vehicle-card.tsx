@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { WishlistButton } from '@/components/wishlists/wishlist-button';
+import { CompareButton } from '@/components/comparisons/compare-button';
 import type { Vehicle } from '@/lib/cars-data';
 
 interface VehicleCardProps {
@@ -57,6 +59,17 @@ export function VehicleCard({ vehicle, searchParams }: VehicleCardProps) {
               <span className="text-xs text-muted-foreground">({vehicle.reviewCount})</span>
             </div>
           ) : null}
+
+          {/* Wishlist Button */}
+          <div className="absolute bottom-2 right-2">
+            <WishlistButton
+              itemType="vehicle"
+              itemId={vehicle.id || ''}
+              variant="ghost"
+              size="icon"
+              className="bg-white/90 backdrop-blur-sm hover:bg-white"
+            />
+          </div>
         </div>
       </Link>
 
@@ -117,22 +130,31 @@ export function VehicleCard({ vehicle, searchParams }: VehicleCardProps) {
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 flex items-center justify-between border-t">
-        <div>
-          <p className="text-xs text-muted-foreground">From</p>
-          <p className="text-2xl font-bold">
-            ${vehicle.pricing.dailyRate}
-            <span className="text-sm font-normal text-muted-foreground">/day</span>
-          </p>
-          {vehicle.pricing.deposit > 0 && (
-            <p className="text-xs text-muted-foreground">
-              + ${vehicle.pricing.deposit} deposit
+      <CardFooter className="p-4 pt-0 flex flex-col gap-3 border-t">
+        <div className="w-full flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">From</p>
+            <p className="text-2xl font-bold">
+              ${vehicle.pricing.dailyRate}
+              <span className="text-sm font-normal text-muted-foreground">/day</span>
             </p>
-          )}
+            {vehicle.pricing.deposit > 0 && (
+              <p className="text-xs text-muted-foreground">
+                + ${vehicle.pricing.deposit} deposit
+              </p>
+            )}
+          </div>
+          <Button asChild>
+            <Link href={detailUrl}>View Details</Link>
+          </Button>
         </div>
-        <Button asChild>
-          <Link href={detailUrl}>View Details</Link>
-        </Button>
+        <div className="w-full">
+          <CompareButton
+            itemType="vehicle"
+            itemId={vehicle.id || ''}
+            className="w-full"
+          />
+        </div>
       </CardFooter>
     </Card>
   );

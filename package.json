@@ -67,6 +67,7 @@
     "mongodb": "^6.8.0",
     "next": "15.2.3",
     "next-cloudinary": "^6.17.3",
+    "next-intl": "^4.5.0",
     "next-pwa": "^5.6.0",
     "next-themes": "^0.3.0",
     "node-fetch": "^2.7.0",
@@ -81,6 +82,7 @@
     "stripe": "^19.3.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "tailwindcss-rtl": "^0.9.0",
     "use-debounce": "^10.0.1",
     "zod": "^3.24.2"
   },

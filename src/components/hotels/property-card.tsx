@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { WishlistButton } from '@/components/wishlists/wishlist-button';
+import { CompareButton } from '@/components/comparisons/compare-button';
 import type { Property } from '@/lib/hotels-data';
 
 interface PropertyCardProps {
@@ -57,6 +59,17 @@ export function PropertyCard({ property, searchParams }: PropertyCardProps) {
           <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm font-semibold">{property.starRating}</span>
+          </div>
+
+          {/* Wishlist Button */}
+          <div className="absolute bottom-2 right-2">
+            <WishlistButton
+              itemType="property"
+              itemId={property.id || ''}
+              variant="ghost"
+              size="icon"
+              className="bg-white/90 backdrop-blur-sm hover:bg-white"
+            />
           </div>
         </div>
       </Link>
@@ -117,17 +130,26 @@ export function PropertyCard({ property, searchParams }: PropertyCardProps) {
         ) : null}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 flex items-center justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground">Starting from</p>
-          <p className="text-2xl font-bold">
-            ${/* We'll show the minimum room price here - for now just placeholder */}
-            <span className="text-sm font-normal text-muted-foreground">/night</span>
-          </p>
+      <CardFooter className="p-4 pt-0 flex flex-col gap-3">
+        <div className="w-full flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Starting from</p>
+            <p className="text-2xl font-bold">
+              ${/* We'll show the minimum room price here - for now just placeholder */}
+              <span className="text-sm font-normal text-muted-foreground">/night</span>
+            </p>
+          </div>
+          <Button asChild>
+            <Link href={detailUrl}>View Details</Link>
+          </Button>
         </div>
-        <Button asChild>
-          <Link href={detailUrl}>View Details</Link>
-        </Button>
+        <div className="w-full">
+          <CompareButton
+            itemType="property"
+            itemId={property.id || ''}
+            className="w-full"
+          />
+        </div>
       </CardFooter>
     </Card>
   );

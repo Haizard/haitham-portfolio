@@ -1,6 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifyWebhookSignature } from '@/lib/stripe';
 import Stripe from 'stripe';
+import {
+  getLoyaltyAccount,
+  createLoyaltyAccount,
+  addPointsTransaction,
+  POINTS_EARNING_RULES,
+  TIER_BENEFITS,
+} from '@/lib/loyalty-data';
+import { getHotelBookingById, updateHotelBooking } from '@/lib/hotels-data';
+import { getCarRentalById, updateCarRental } from '@/lib/cars-data';
+import { getTourBookingById, updateTourBooking } from '@/lib/tours-data';
+import { getTransferBookingById, updateTransferBooking } from '@/lib/transfers-data';
 
 // Disable body parsing for webhook routes
 export const runtime = 'nodejs';
@@ -71,17 +82,209 @@ export async function POST(request: NextRequest) {
  */
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   console.log('[WEBHOOK] Payment succeeded:', paymentIntent.id);
-  
+
   const metadata = paymentIntent.metadata;
-  const bookingId = metadata.bookingId;
-  const bookingType = metadata.bookingType;
+  const userId = metadata.userId;
 
-  // TODO: Update booking status in database
-  // Example:
-  // await updateBookingStatus(bookingId, 'confirmed');
-  // await sendBookingConfirmationEmail(metadata.userEmail, ...);
+  if (!userId) {
+    console.error('[WEBHOOK] No userId in payment metadata');
+    return;
+  }
 
-  console.log(`[WEBHOOK] Booking ${bookingId} (${bookingType}) confirmed`);
+  try {
+    // Determine booking type from metadata
+    let bookingType: 'property' | 'vehicle' | 'tour' | 'transfer' | null = null;
+    let bookingId: string | null = null;
+    let totalAmount = paymentIntent.amount / 100; // Convert from cents
+    let booking: any = null;
+
+    // Try to identify booking type from metadata
+    if (metadata.propertyId || metadata.roomId) {
+      bookingType = 'property';
+      // Find hotel booking by payment intent ID
+      const hotelBooking = await findHotelBookingByPaymentIntent(paymentIntent.id);
+      if (hotelBooking) {
+        bookingId = hotelBooking.id!;
+        booking = hotelBooking;
+        totalAmount = hotelBooking.pricing.totalPrice;
+
+        // Update booking status
+        await updateHotelBooking(bookingId, {
+          status: 'confirmed',
+          'paymentInfo.paymentStatus': 'completed',
+        });
+      }
+    } else if (metadata.vehicleId && metadata.pickupDate) {
+      bookingType = 'vehicle';
+      // Find car rental by payment intent ID
+      const carRental = await findCarRentalByPaymentIntent(paymentIntent.id);
+      if (carRental) {
+        bookingId = carRental.id!;
+        booking = carRental;
+        totalAmount = carRental.pricing.totalPrice;
+
+        // Update booking status
+        await updateCarRental(bookingId, {
+          status: 'confirmed',
+          'paymentInfo.paymentStatus': 'completed',
+        });
+      }
+    } else if (metadata.tourId) {
+      bookingType = 'tour';
+      // Find tour booking by payment intent ID
+      const tourBooking = await findTourBookingByPaymentIntent(paymentIntent.id);
+      if (tourBooking) {
+        bookingId = tourBooking.id!;
+        booking = tourBooking;
+        totalAmount = tourBooking.pricing.total;
+
+        // Update booking status
+        await updateTourBooking(bookingId, {
+          status: 'confirmed',
+          'paymentInfo.paymentStatus': 'completed',
+        });
+      }
+    } else if (metadata.transferType) {
+      bookingType = 'transfer';
+      // Find transfer booking by payment intent ID
+      const transferBooking = await findTransferBookingByPaymentIntent(paymentIntent.id);
+      if (transferBooking) {
+        bookingId = transferBooking.id!;
+        booking = transferBooking;
+        totalAmount = transferBooking.pricing.totalPrice;
+
+        // Update booking status
+        await updateTransferBooking(bookingId, {
+          status: 'confirmed',
+          'paymentInfo.paymentStatus': 'completed',
+        });
+      }
+    }
+
+    if (!bookingType || !bookingId) {
+      console.error('[WEBHOOK] Could not determine booking type or ID');
+      return;
+    }
+
+    console.log(`[WEBHOOK] Booking ${bookingId} (${bookingType}) confirmed`);
+
+    // Award loyalty points
+    await awardBookingPoints(userId, bookingType, totalAmount, bookingId);
+
+  } catch (error) {
+    console.error('[WEBHOOK] Error processing payment success:', error);
+  }
+}
+
+/**
+ * Award loyalty points for a booking
+ */
+async function awardBookingPoints(
+  userId: string,
+  bookingType: 'property' | 'vehicle' | 'tour' | 'transfer',
+  totalAmount: number,
+  bookingId: string
+) {
+  try {
+    // Get or create loyalty account
+    let account = await getLoyaltyAccount(userId);
+    if (!account) {
+      account = await createLoyaltyAccount(userId);
+    }
+
+    // Calculate points based on booking type
+    const pointsPerDollar = POINTS_EARNING_RULES[bookingType];
+    const tierMultiplier = TIER_BENEFITS[account.tier].pointsMultiplier;
+    const basePoints = Math.floor(totalAmount * pointsPerDollar);
+    const bonusPoints = Math.floor(basePoints * (tierMultiplier - 1));
+    const totalPoints = basePoints + bonusPoints;
+
+    // Add points transaction
+    await addPointsTransaction({
+      userId,
+      type: 'earn',
+      amount: totalPoints,
+      reason: `Booking ${bookingType} - $${totalAmount.toFixed(2)}`,
+      relatedBookingId: bookingId,
+    });
+
+    console.log(`[WEBHOOK] Awarded ${totalPoints} points to user ${userId} (${basePoints} base + ${bonusPoints} tier bonus)`);
+  } catch (error) {
+    console.error('[WEBHOOK] Error awarding points:', error);
+  }
+}
+
+/**
+ * Helper functions to find bookings by payment intent ID
+ */
+async function findHotelBookingByPaymentIntent(paymentIntentId: string) {
+  // Implementation would query database for booking with this payment intent
+  // For now, we'll use a simplified approach
+  const clientPromise = (await import('@/lib/mongodb')).default;
+  const client = await clientPromise;
+  const db = client.db();
+
+  const booking = await db.collection('hotelBookings').findOne({
+    'paymentInfo.paymentIntentId': paymentIntentId,
+  });
+
+  if (!booking) return null;
+
+  return {
+    ...booking,
+    id: booking._id.toString(),
+  };
+}
+
+async function findCarRentalByPaymentIntent(paymentIntentId: string) {
+  const clientPromise = (await import('@/lib/mongodb')).default;
+  const client = await clientPromise;
+  const db = client.db();
+
+  const rental = await db.collection('carRentals').findOne({
+    'paymentInfo.paymentIntentId': paymentIntentId,
+  });
+
+  if (!rental) return null;
+
+  return {
+    ...rental,
+    id: rental._id.toString(),
+  };
+}
+
+async function findTourBookingByPaymentIntent(paymentIntentId: string) {
+  const clientPromise = (await import('@/lib/mongodb')).default;
+  const client = await clientPromise;
+  const db = client.db();
+
+  const booking = await db.collection('tourBookings').findOne({
+    'paymentInfo.stripePaymentIntentId': paymentIntentId,
+  });
+
+  if (!booking) return null;
+
+  return {
+    ...booking,
+    id: booking._id.toString(),
+  };
+}
+
+async function findTransferBookingByPaymentIntent(paymentIntentId: string) {
+  const clientPromise = (await import('@/lib/mongodb')).default;
+  const client = await clientPromise;
+  const db = client.db();
+
+  const booking = await db.collection('transferBookings').findOne({
+    'paymentInfo.paymentIntentId': paymentIntentId,
+  });
+
+  if (!booking) return null;
+
+  return {
+    ...booking,
+    id: booking._id.toString(),
+  };
 }
 
 /**

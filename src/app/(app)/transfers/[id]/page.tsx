@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TransferBookingCard } from '@/components/transfers/transfer-booking-card';
+import { PriceAlertButton } from '@/components/price-alerts/price-alert-button';
 
 interface TransferVehicle {
   id: string;
@@ -244,6 +245,22 @@ function TransferVehicleDetail() {
                     {vehicle.location.airport && ` • ${vehicle.location.airport}`}
                   </span>
                 </div>
+
+                {/* Price Alert Button */}
+                {pickupDate && (
+                  <div>
+                    <PriceAlertButton
+                      alertType="transfer"
+                      targetId={vehicle.id}
+                      targetName={`${vehicle.make} ${vehicle.model}`}
+                      currentPrice={vehicle.pricing.basePrice || 0}
+                      searchCriteria={{
+                        pickupDate: pickupDate || '',
+                      }}
+                      variant="outline"
+                    />
+                  </div>
+                )}
 
                 {/* Specifications */}
                 <div>

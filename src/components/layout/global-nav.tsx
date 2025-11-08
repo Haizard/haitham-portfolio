@@ -21,6 +21,9 @@ import { cn } from '@/lib/utils';
 import type { SessionUser } from '@/providers/user-provider';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { CurrencySwitcher } from '@/components/currency-switcher';
 
 const navItems = [
     { href: "/", label: "Home", icon: Home },

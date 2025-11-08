@@ -5,11 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { CartProvider } from '@/hooks/use-cart';
 import { WishlistProvider } from '@/hooks/use-wishlist';
 import { GlobalNav } from '@/components/layout/global-nav';
-import { UserProvider } from '@/providers/user-provider'; 
+import { UserProvider } from '@/providers/user-provider';
 import { usePathname } from 'next/navigation';
 import { ComparisonProvider } from '@/hooks/use-comparison';
 import { AppLayout } from '@/components/layout/app-layout';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { CurrencyProvider } from '@/contexts/currency-context';
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -44,6 +45,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
     >
+      <CurrencyProvider>
         <UserProvider>
           <WishlistProvider>
             <CartProvider>
@@ -53,6 +55,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
             </CartProvider>
           </WishlistProvider>
         </UserProvider>
+      </CurrencyProvider>
     </ThemeProvider>
   );
 }

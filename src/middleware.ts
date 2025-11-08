@@ -1,21 +1,33 @@
-import { NextResponse, type NextRequest } from 'next/server';
+/**
+ * Next.js Middleware for Internationalization
+ *
+ * Handles locale detection and routing for all pages.
+ * Automatically redirects to the appropriate locale based on user preferences.
+ */
 
-// This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
-  // This is a basic middleware. It can be extended later for things like authentication.
-  return NextResponse.next();
-}
+import createMiddleware from 'next-intl/middleware';
+import { locales, defaultLocale } from './i18n/request';
 
-// See "Matching Paths" below to learn more
+export default createMiddleware({
+  // A list of all locales that are supported
+  locales,
+
+  // Used when no locale matches
+  defaultLocale,
+
+  // Locale prefix strategy
+  // 'as-needed' - Only add locale prefix for non-default locales
+  // 'always' - Always add locale prefix
+  localePrefix: 'as-needed',
+
+  // Locale detection
+  localeDetection: true,
+});
+
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  // Match all pathnames except for:
+  // - API routes (/api/*)
+  // - Next.js internals (/_next/*)
+  // - Static files (/*.*)
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };

@@ -5,6 +5,8 @@ import { Car, Users, Luggage, Star, MapPin, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { WishlistButton } from '@/components/wishlists/wishlist-button';
+import { CompareButton } from '@/components/comparisons/compare-button';
 
 interface TransferVehicle {
   id: string;
@@ -107,6 +109,17 @@ export function TransferVehicleCard({
         <Badge className="absolute top-2 left-2 capitalize">
           {getCategoryLabel(vehicle.category)}
         </Badge>
+
+        {/* Wishlist Button */}
+        <div className="absolute bottom-2 right-2">
+          <WishlistButton
+            itemType="transfer"
+            itemId={vehicle.id}
+            variant="ghost"
+            size="icon"
+            className="bg-white/90 backdrop-blur-sm hover:bg-white"
+          />
+        </div>
       </div>
 
       <CardHeader>
@@ -188,10 +201,15 @@ export function TransferVehicleCard({
         </div>
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-2">
         <Button onClick={handleBookNow} className="w-full">
           Book Now
         </Button>
+        <CompareButton
+          itemType="transfer"
+          itemId={vehicle.id}
+          className="w-full"
+        />
       </CardFooter>
     </Card>
   );

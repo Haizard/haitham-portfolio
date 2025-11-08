@@ -13,6 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useDebouncedCallback } from 'use-debounce';
+import { WishlistButton } from '@/components/wishlists/wishlist-button';
+import { CompareButton } from '@/components/comparisons/compare-button';
 
 interface TourFilters {
     locations: string[];
@@ -40,28 +42,42 @@ const TourCard = ({ tour }: { tour: TourPackage }) => (
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
             </Link>
-            <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-card/70 hover:bg-card rounded-full h-8 w-8">
-                <Heart className="h-4 w-4 text-primary"/>
-            </Button>
+            <div className="absolute top-2 right-2">
+                <WishlistButton
+                    itemType="tour"
+                    itemId={tour.id || ''}
+                    variant="ghost"
+                    size="icon"
+                    className="bg-card/70 hover:bg-card rounded-full h-8 w-8"
+                />
+            </div>
         </div>
         <CardContent className="p-4 flex flex-col flex-grow">
             <h3 className="text-base font-bold font-headline group-hover:text-primary transition-colors line-clamp-2 h-12">
                 <Link href={`/tours/${tour.slug}`}>{tour.name}</Link>
             </h3>
             <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><MapPin className="h-3 w-3"/>{tour.location}</p>
-            
+
             <div className="border-t my-3"/>
 
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary"/> Duration: <span className="font-semibold text-foreground">{tour.duration}</span></div>
                 <div className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-primary"/> Type: <span className="font-semibold text-foreground">{tour.tourType}</span></div>
             </div>
-            
-            <div className="mt-auto pt-4 flex justify-between items-center">
-                <p className="text-lg font-bold text-primary">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tour.price)}</p>
-                <Button asChild size="sm" variant="outline">
-                    <Link href={`/tours/${tour.slug}`}>View Details</Link>
-                </Button>
+
+            <div className="mt-auto pt-4 space-y-2">
+                <div className="flex justify-between items-center">
+                    <p className="text-lg font-bold text-primary">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tour.price)}</p>
+                    <Button asChild size="sm" variant="outline">
+                        <Link href={`/tours/${tour.slug}`}>View Details</Link>
+                    </Button>
+                </div>
+                <CompareButton
+                    itemType="tour"
+                    itemId={tour.id || ''}
+                    className="w-full"
+                    size="sm"
+                />
             </div>
         </CardContent>
     </Card>

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { VehicleBookingCard } from '@/components/cars/vehicle-booking-card';
+import { PriceAlertButton } from '@/components/price-alerts/price-alert-button';
 import type { Vehicle } from '@/lib/cars-data';
 
 export default function VehicleDetailPage() {
@@ -151,6 +152,23 @@ export default function VehicleDetailPage() {
                   </span>
                 </div>
               ) : null}
+
+              {/* Price Alert Button */}
+              {searchParams.get('pickupDate') && searchParams.get('returnDate') && (
+                <div className="mt-4">
+                  <PriceAlertButton
+                    alertType="vehicle"
+                    targetId={vehicle.id || ''}
+                    targetName={`${vehicle.make} ${vehicle.model}`}
+                    currentPrice={vehicle.pricing.dailyRate || 0}
+                    searchCriteria={{
+                      pickupDate: searchParams.get('pickupDate') || '',
+                      returnDate: searchParams.get('returnDate') || '',
+                    }}
+                    variant="outline"
+                  />
+                </div>
+              )}
             </div>
 
             <Separator />

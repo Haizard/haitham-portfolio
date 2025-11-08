@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { RoomCard } from '@/components/hotels/room-card';
+import { PriceAlertButton } from '@/components/price-alerts/price-alert-button';
 import type { Property, Room } from '@/lib/hotels-data';
 
 const amenityIcons: Record<string, any> = {
@@ -174,6 +175,24 @@ export default function PropertyDetailPage() {
                   </span>
                 </div>
               ) : null}
+
+              {/* Price Alert Button */}
+              {searchParams.get('checkIn') && searchParams.get('checkOut') && (
+                <div className="mt-4">
+                  <PriceAlertButton
+                    alertType="property"
+                    targetId={property.id || ''}
+                    targetName={property.name}
+                    currentPrice={property.basePrice || 0}
+                    searchCriteria={{
+                      checkIn: searchParams.get('checkIn') || '',
+                      checkOut: searchParams.get('checkOut') || '',
+                      guests: parseInt(searchParams.get('guests') || '1'),
+                    }}
+                    variant="outline"
+                  />
+                </div>
+              )}
             </div>
 
             <Separator />

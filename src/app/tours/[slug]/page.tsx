@@ -15,6 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { RelatedTours } from '@/components/tours/related-tours';
 import { TourBookingCard } from '@/components/tours/tour-booking-card';
 import { BookingReviewsList } from '@/components/bookings/booking-reviews-list';
+import { PriceAlertButton } from '@/components/price-alerts/price-alert-button';
 import * as LucideIcons from 'lucide-react';
 
 const DynamicIcon = ({ name }: { name: string }) => {
@@ -124,6 +125,20 @@ export default function TourDetailPage() {
                                 <span className="text-sm text-muted-foreground">No reviews yet</span>
                             )}
                             <span className="flex items-center gap-1"><MapPin className="h-4 w-4"/> {tour.location}</span>
+                        </div>
+
+                        {/* Price Alert Button */}
+                        <div className="mt-4">
+                            <PriceAlertButton
+                                alertType="tour"
+                                targetId={tour.id || ''}
+                                targetName={tour.name}
+                                currentPrice={tour.price || 0}
+                                searchCriteria={{
+                                    participants: 1,
+                                }}
+                                variant="outline"
+                            />
                         </div>
                     </div>
 

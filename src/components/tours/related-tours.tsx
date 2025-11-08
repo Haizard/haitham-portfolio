@@ -9,6 +9,8 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { MapPin, Clock, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { WishlistButton } from '@/components/wishlists/wishlist-button';
+import { CompareButton } from '@/components/comparisons/compare-button';
 
 const TourCard = ({ tour }: { tour: TourPackage }) => (
     <Card className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
@@ -23,24 +25,41 @@ const TourCard = ({ tour }: { tour: TourPackage }) => (
                     data-ai-hint="tour landscape"
                 />
             </Link>
+            <div className="absolute top-2 right-2">
+                <WishlistButton
+                    itemType="tour"
+                    itemId={tour.id || ''}
+                    variant="ghost"
+                    size="icon"
+                    className="bg-card/70 hover:bg-card rounded-full h-8 w-8"
+                />
+            </div>
         </div>
         <CardContent className="p-4 flex flex-col flex-grow">
             <h3 className="text-base font-bold font-headline group-hover:text-primary transition-colors line-clamp-2 h-12">
                 <Link href={`/tours/${tour.slug}`}>{tour.name}</Link>
             </h3>
             <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><MapPin className="h-3 w-3"/>{tour.location}</p>
-            
+
             <div className="border-t my-3"/>
 
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary"/> Duration: <span className="font-semibold text-foreground">{tour.duration}</span></div>
             </div>
-            
-            <div className="mt-auto pt-4 flex justify-between items-center">
-                <p className="text-lg font-bold text-primary">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tour.price)}</p>
-                <Button asChild size="sm" variant="outline">
-                    <Link href={`/tours/${tour.slug}`}>View Details</Link>
-                </Button>
+
+            <div className="mt-auto pt-4 space-y-2">
+                <div className="flex justify-between items-center">
+                    <p className="text-lg font-bold text-primary">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tour.price)}</p>
+                    <Button asChild size="sm" variant="outline">
+                        <Link href={`/tours/${tour.slug}`}>View Details</Link>
+                    </Button>
+                </div>
+                <CompareButton
+                    itemType="tour"
+                    itemId={tour.id || ''}
+                    className="w-full"
+                    size="sm"
+                />
             </div>
         </CardContent>
     </Card>

@@ -11,6 +11,12 @@ import { getHotelBookingById } from '@/lib/hotels-data';
 import { getCarRentalById } from '@/lib/cars-data';
 import { getTransferBookingById } from '@/lib/transfers-data';
 import { getTourBookingById } from '@/lib/tours-data';
+import {
+  getLoyaltyAccount,
+  createLoyaltyAccount,
+  addPointsTransaction,
+  POINTS_EARNING_RULES,
+} from '@/lib/loyalty-data';
 
 // Validation schema for review submission
 const reviewSubmitSchema = z.object({
@@ -121,6 +127,9 @@ export async function POST(request: NextRequest) {
       userAvatar: session.user.avatar,
     });
 
+    // Award loyalty points for submitting review
+    await awardReviewPoints(session.user.id, bookingId);
+
     return NextResponse.json(newReview, { status: 201 });
   } catch (error: any) {
     console.error('[API /bookings/reviews POST] Error:', error);
@@ -180,6 +189,33 @@ export async function GET(request: NextRequest) {
       { message: `Failed to fetch reviews: ${error.message || 'Unknown error'}` },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Award loyalty points for submitting a review
+ */
+async function awardReviewPoints(userId: string, bookingId: string) {
+  try {
+    // Get or create loyalty account
+    let account = await getLoyaltyAccount(userId);
+    if (!account) {
+      account = await createLoyaltyAccount(userId);
+    }
+
+    // Award review points (50 points)
+    await addPointsTransaction({
+      userId,
+      type: 'earn',
+      amount: POINTS_EARNING_RULES.review,
+      reason: 'Review submitted',
+      relatedBookingId: bookingId,
+    });
+
+    console.log(`[REVIEW] Awarded ${POINTS_EARNING_RULES.review} points to user ${userId} for review`);
+  } catch (error) {
+    console.error('[REVIEW] Error awarding points:', error);
+    // Don't throw - review was created successfully, points are a bonus
   }
 }
 
