@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 export default function ComparePropertiesPage() {
   const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ export default function ComparePropertiesPage() {
   const [properties, setProperties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const format = useFormatPrice();
 
   useEffect(() => {
     loadProperties();
@@ -135,7 +137,7 @@ export default function ComparePropertiesPage() {
               {properties.map((property) => (
                 <td key={property.id} className="border p-4 text-center">
                   <p className="text-lg font-bold text-primary">
-                    ${property.basePrice}
+                    {format(property.basePrice, 'USD')}
                   </p>
                 </td>
               ))}
@@ -209,7 +211,7 @@ export default function ComparePropertiesPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Price</p>
                 <p className="text-2xl font-bold text-primary">
-                  ${property.basePrice}/night
+                  {format(property.basePrice, 'USD')}/night
                 </p>
               </div>
               <div>

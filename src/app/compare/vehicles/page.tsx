@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 export default function CompareVehiclesPage() {
   const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ export default function CompareVehiclesPage() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const format = useFormatPrice();
 
   useEffect(() => {
     loadVehicles();
@@ -135,7 +137,7 @@ export default function CompareVehiclesPage() {
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="border p-4 text-center">
                   <p className="text-lg font-bold text-primary">
-                    ${vehicle.pricePerDay}
+                    {format(vehicle.pricePerDay, 'USD')}
                   </p>
                 </td>
               ))}
@@ -225,7 +227,7 @@ export default function CompareVehiclesPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Price</p>
                 <p className="text-2xl font-bold text-primary">
-                  ${vehicle.pricePerDay}/day
+                  {format(vehicle.pricePerDay, 'USD')}/day
                 </p>
               </div>
               <div>

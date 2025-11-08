@@ -33,6 +33,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslations } from 'next-intl';
 
 const flightSearchSchema = z.object({
   tripType: z.enum(['one-way', 'round-trip']),
@@ -67,6 +68,8 @@ type FlightSearchFormValues = z.infer<typeof flightSearchSchema>;
 export function FlightSearchForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations('search');
+  const tCommon = useTranslations('common');
 
   const form = useForm<FlightSearchFormValues>({
     resolver: zodResolver(flightSearchSchema),
@@ -125,8 +128,8 @@ export function FlightSearchForm() {
                   <FormControl>
                     <Tabs value={field.value} onValueChange={field.onChange}>
                       <TabsList className="grid w-full max-w-md grid-cols-2">
-                        <TabsTrigger value="round-trip">Round Trip</TabsTrigger>
-                        <TabsTrigger value="one-way">One Way</TabsTrigger>
+                        <TabsTrigger value="round-trip">{t('roundTrip')}</TabsTrigger>
+                        <TabsTrigger value="one-way">{t('oneWay')}</TabsTrigger>
                       </TabsList>
                     </Tabs>
                   </FormControl>
@@ -141,7 +144,7 @@ export function FlightSearchForm() {
                 name="origin"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>From</FormLabel>
+                    <FormLabel>{tCommon('from')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Plane className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -174,7 +177,7 @@ export function FlightSearchForm() {
                 name="destination"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>To</FormLabel>
+                    <FormLabel>{tCommon('to')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Plane className="absolute left-3 top-3 h-4 w-4 text-muted-foreground rotate-90" />
@@ -200,7 +203,7 @@ export function FlightSearchForm() {
                 name="departureDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Departure Date</FormLabel>
+                    <FormLabel>{t('departureDate')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -214,7 +217,7 @@ export function FlightSearchForm() {
                             {field.value ? (
                               format(field.value, 'PPP')
                             ) : (
-                              <span>Pick a date</span>
+                              <span>{t('pickADate')}</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -241,7 +244,7 @@ export function FlightSearchForm() {
                   name="returnDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Return Date</FormLabel>
+                      <FormLabel>{t('returnDateFlight')}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -255,7 +258,7 @@ export function FlightSearchForm() {
                               {field.value ? (
                                 format(field.value, 'PPP')
                               ) : (
-                                <span>Pick a date</span>
+                                <span>{t('pickADate')}</span>
                               )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -281,14 +284,14 @@ export function FlightSearchForm() {
             {/* Passengers and Class */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-4">
-                <FormLabel>Passengers</FormLabel>
+                <FormLabel>{t('passengers')}</FormLabel>
                 <div className="grid grid-cols-3 gap-2">
                   <FormField
                     control={form.control}
                     name="adults"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">Adults</FormLabel>
+                        <FormLabel className="text-xs">{t('adults')}</FormLabel>
                         <Select
                           value={field.value.toString()}
                           onValueChange={(value) => field.onChange(parseInt(value))}
@@ -315,7 +318,7 @@ export function FlightSearchForm() {
                     name="children"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">Children</FormLabel>
+                        <FormLabel className="text-xs">{t('children')}</FormLabel>
                         <Select
                           value={field.value.toString()}
                           onValueChange={(value) => field.onChange(parseInt(value))}
@@ -342,7 +345,7 @@ export function FlightSearchForm() {
                     name="infants"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">Infants</FormLabel>
+                        <FormLabel className="text-xs">{t('infants')}</FormLabel>
                         <Select
                           value={field.value.toString()}
                           onValueChange={(value) => field.onChange(parseInt(value))}
@@ -371,7 +374,7 @@ export function FlightSearchForm() {
                 name="class"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Class</FormLabel>
+                    <FormLabel>{t('class')}</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
@@ -379,10 +382,10 @@ export function FlightSearchForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="economy">Economy</SelectItem>
-                        <SelectItem value="premium_economy">Premium Economy</SelectItem>
-                        <SelectItem value="business">Business</SelectItem>
-                        <SelectItem value="first">First Class</SelectItem>
+                        <SelectItem value="economy">{t('economy')}</SelectItem>
+                        <SelectItem value="premium_economy">{t('premiumEconomy')}</SelectItem>
+                        <SelectItem value="business">{t('business')}</SelectItem>
+                        <SelectItem value="first">{t('firstClass')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -392,7 +395,7 @@ export function FlightSearchForm() {
             </div>
 
             <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-              {isLoading ? 'Searching...' : 'Search Flights'}
+              {isLoading ? tCommon('searching') : t('searchFlights')}
             </Button>
           </form>
         </Form>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 export default function CompareTransfersPage() {
   const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ export default function CompareTransfersPage() {
   const [transfers, setTransfers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const format = useFormatPrice();
 
   useEffect(() => {
     loadTransfers();
@@ -135,7 +137,7 @@ export default function CompareTransfersPage() {
               {transfers.map((transfer) => (
                 <td key={transfer.id} className="border p-4 text-center">
                   <p className="text-lg font-bold text-primary">
-                    ${transfer.basePrice}
+                    {format(transfer.basePrice, 'USD')}
                   </p>
                 </td>
               ))}
@@ -144,7 +146,7 @@ export default function CompareTransfersPage() {
               <td className="border p-4 font-semibold">Price per KM</td>
               {transfers.map((transfer) => (
                 <td key={transfer.id} className="border p-4 text-center">
-                  ${transfer.pricePerKm}
+                  {format(transfer.pricePerKm, 'USD')}
                 </td>
               ))}
             </tr>
@@ -217,7 +219,7 @@ export default function CompareTransfersPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Base Price</p>
                 <p className="text-2xl font-bold text-primary">
-                  ${transfer.basePrice}
+                  {format(transfer.basePrice, 'USD')}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2">

@@ -36,14 +36,15 @@ This document tracks the progress of implementing internationalization (i18n) ac
 #### ✅ Client Providers (`src/components/layout/client-providers.tsx`)
 - [x] Added CurrencyProvider wrapper
 
-#### 🚧 Global Navigation (`src/components/layout/global-nav.tsx`)
-**Status:** Needs Update
-**Required Changes:**
-- [ ] Import `useTranslations` from 'next-intl'
-- [ ] Replace hardcoded navigation labels with translation keys
-- [ ] Add Language Switcher component
-- [ ] Add Currency Switcher component
-- [ ] Update user menu items with translations
+#### ✅ Global Navigation (`src/components/layout/global-nav.tsx`)
+**Status:** COMPLETE
+**Completed Changes:**
+- [x] Import `useTranslations` from 'next-intl'
+- [x] Replace hardcoded navigation labels with translation keys
+- [x] Add Language Switcher component
+- [x] Add Currency Switcher component
+- [x] Update user menu items with translations
+- [x] Update mobile bottom nav with translations
 
 **Hardcoded Strings to Replace:**
 ```typescript
@@ -74,23 +75,14 @@ This document tracks the progress of implementing internationalization (i18n) ac
 
 ### Search Components
 
-#### 🚧 Hotel Search Form (`src/components/hotels/hotel-search-form.tsx`)
-**Status:** Needs Update
-**Required Changes:**
-- [ ] Import `useTranslations` and `useCurrency`
-- [ ] Replace form labels with translations
-- [ ] Add currency conversion to price displays
-- [ ] Update placeholder text with translations
-
-**Hardcoded Strings:**
-```typescript
-"Destination" → t('search.destination')
-"City or hotel name" → t('search.cityOrHotelName')
-"Check-in" → t('search.checkIn')
-"Check-out" → t('search.checkOut')
-"Guests" → t('search.guests')
-"Search Hotels" → t('search.searchHotels')
-```
+#### ✅ Hotel Search Form (`src/components/hotels/hotel-search-form.tsx`)
+**Status:** COMPLETE
+**Completed Changes:**
+- [x] Import `useTranslations`
+- [x] Replace form labels with translations
+- [x] Update placeholder text with translations
+- [x] Update button text with translations
+- [x] Update property type options with translations
 
 #### 🚧 Car Search Form
 **Status:** Needs Update
@@ -157,13 +149,13 @@ This document tracks the progress of implementing internationalization (i18n) ac
 | Category | Total | Complete | In Progress | Not Started | Progress |
 |----------|-------|----------|-------------|-------------|----------|
 | **Infrastructure** | 8 | 8 | 0 | 0 | 100% |
-| **Layout Components** | 5 | 2 | 3 | 0 | 40% |
-| **Search Components** | 5 | 0 | 5 | 0 | 0% |
+| **Layout Components** | 5 | 3 | 2 | 0 | 60% |
+| **Search Components** | 5 | 1 | 4 | 0 | 20% |
 | **Card Components** | 10 | 0 | 10 | 0 | 0% |
 | **Account Pages** | 8 | 0 | 8 | 0 | 0% |
 | **Booking Forms** | 5 | 0 | 5 | 0 | 0% |
 | **Other Components** | 20 | 0 | 20 | 0 | 0% |
-| **TOTAL** | **61** | **10** | **51** | **0** | **16%** |
+| **TOTAL** | **61** | **12** | **49** | **0** | **20%** |
 
 ---
 
@@ -284,9 +276,11 @@ export default async function Page() {
 7. ✅ Root layout
 8. ✅ Currency provider
 
-### Components (2/53)
+### Components (4/53)
 1. ✅ Language Switcher
 2. ✅ Currency Switcher
+3. ✅ Global Navigation
+4. ✅ Hotel Search Form
 
 ---
 
@@ -320,5 +314,5 @@ None yet - implementation just started.
 ---
 
 **Last Updated:** 2025-11-07
-**Status:** 16% Complete
+**Status:** 20% Complete (12/61 components)
 

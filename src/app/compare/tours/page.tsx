@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 export default function CompareToursPage() {
   const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ export default function CompareToursPage() {
   const [tours, setTours] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const format = useFormatPrice();
 
   useEffect(() => {
     loadTours();
@@ -131,7 +133,7 @@ export default function CompareToursPage() {
               {tours.map((tour) => (
                 <td key={tour.id} className="border p-4 text-center">
                   <p className="text-lg font-bold text-primary">
-                    ${tour.basePrice}
+                    {format(tour.basePrice, 'USD')}
                   </p>
                 </td>
               ))}
@@ -215,7 +217,7 @@ export default function CompareToursPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Price</p>
                 <p className="text-2xl font-bold text-primary">
-                  ${tour.basePrice}/person
+                  {format(tour.basePrice, 'USD')}/person
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2">

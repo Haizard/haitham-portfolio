@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 const searchSchema = z.object({
   location: z.string().min(2, 'Enter a location'),
@@ -43,6 +44,8 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
   const router = useRouter();
   const [pickupDate, setPickupDate] = useState<Date>();
   const [returnDate, setReturnDate] = useState<Date>();
+  const t = useTranslations('search');
+  const tCommon = useTranslations('common');
 
   const form = useForm<SearchFormData>({
     resolver: zodResolver(searchSchema),
@@ -88,11 +91,11 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
             <div className="space-y-2 lg:col-span-2">
               <Label htmlFor="location" className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                Pickup Location
+                {t('pickupLocation')}
               </Label>
               <Input
                 id="location"
-                placeholder="City or airport"
+                placeholder={t('cityOrAirport')}
                 {...form.register('location')}
                 className="h-11"
               />
@@ -107,7 +110,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                Pickup Date
+                {t('pickupDate')}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -118,7 +121,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
                       !pickupDate && 'text-muted-foreground'
                     )}
                   >
-                    {pickupDate ? format(pickupDate, 'PPP') : 'Select date'}
+                    {pickupDate ? format(pickupDate, 'PPP') : t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -145,7 +148,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
             <div className="space-y-2">
               <Label htmlFor="pickupTime" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Time
+                {tCommon('time')}
               </Label>
               <Select
                 value={form.watch('pickupTime')}
@@ -168,7 +171,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                Return Date
+                {t('returnDate')}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -179,7 +182,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
                       !returnDate && 'text-muted-foreground'
                     )}
                   >
-                    {returnDate ? format(returnDate, 'PPP') : 'Select date'}
+                    {returnDate ? format(returnDate, 'PPP') : t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -209,7 +212,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
             <div className="space-y-2">
               <Label htmlFor="returnTime" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Time
+                {tCommon('time')}
               </Label>
               <Select
                 value={form.watch('returnTime')}
@@ -232,23 +235,23 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
           {/* Category and Search Button */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="category">Vehicle Category (Optional)</Label>
+              <Label htmlFor="category">{t('vehicleCategory')} ({tCommon('optional')})</Label>
               <Select
                 value={form.watch('category')}
                 onValueChange={(value) => form.setValue('category', value)}
               >
                 <SelectTrigger id="category">
-                  <SelectValue placeholder="All categories" />
+                  <SelectValue placeholder={t('allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
-                  <SelectItem value="economy">Economy</SelectItem>
-                  <SelectItem value="compact">Compact</SelectItem>
-                  <SelectItem value="midsize">Midsize</SelectItem>
-                  <SelectItem value="fullsize">Fullsize</SelectItem>
-                  <SelectItem value="suv">SUV</SelectItem>
-                  <SelectItem value="luxury">Luxury</SelectItem>
-                  <SelectItem value="van">Van</SelectItem>
+                  <SelectItem value="">{t('allCategories')}</SelectItem>
+                  <SelectItem value="economy">{t('economy')}</SelectItem>
+                  <SelectItem value="compact">{t('compact')}</SelectItem>
+                  <SelectItem value="midsize">{t('midsize')}</SelectItem>
+                  <SelectItem value="fullsize">{t('fullsize')}</SelectItem>
+                  <SelectItem value="suv">{t('suv')}</SelectItem>
+                  <SelectItem value="luxury">{t('luxury')}</SelectItem>
+                  <SelectItem value="van">{t('van')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -256,7 +259,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
             <div className="flex items-end">
               <Button type="submit" size="lg" className="w-full h-11">
                 <Search className="h-4 w-4 mr-2" />
-                Search Cars
+                {t('searchCars')}
               </Button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 interface PriceAlertCardProps {
   alert: {
@@ -25,6 +26,7 @@ interface PriceAlertCardProps {
 
 export function PriceAlertCard({ alert, onUpdate }: PriceAlertCardProps) {
   const { toast } = useToast();
+  const format = useFormatPrice();
 
   const handleToggleActive = async () => {
     try {
@@ -133,14 +135,14 @@ export function PriceAlertCard({ alert, onUpdate }: PriceAlertCardProps) {
           <div>
             <p className="text-sm text-muted-foreground">Target Price</p>
             <p className="text-lg font-semibold">
-              {alert.currency} {alert.targetPrice.toFixed(2)}
+              {format(alert.targetPrice, alert.currency as any)}
             </p>
           </div>
           {alert.currentPrice && (
             <div>
               <p className="text-sm text-muted-foreground">Current Price</p>
               <p className="text-lg font-semibold">
-                {alert.currency} {alert.currentPrice.toFixed(2)}
+                {format(alert.currentPrice, alert.currency as any)}
               </p>
             </div>
           )}
@@ -151,7 +153,7 @@ export function PriceAlertCard({ alert, onUpdate }: PriceAlertCardProps) {
                 Lowest
               </p>
               <p className="text-lg font-semibold text-green-600">
-                {alert.currency} {alert.lowestPrice.toFixed(2)}
+                {format(alert.lowestPrice, alert.currency as any)}
               </p>
             </div>
           )}

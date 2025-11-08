@@ -11,8 +11,11 @@ import { MapPin, Clock, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { WishlistButton } from '@/components/wishlists/wishlist-button';
 import { CompareButton } from '@/components/comparisons/compare-button';
+import { useFormatPrice } from '@/contexts/currency-context';
 
-const TourCard = ({ tour }: { tour: TourPackage }) => (
+const TourCard = ({ tour }: { tour: TourPackage }) => {
+    const format = useFormatPrice();
+    return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
         <div className="relative aspect-[4/3] overflow-hidden">
             <Link href={`/tours/${tour.slug}`}>
@@ -49,7 +52,7 @@ const TourCard = ({ tour }: { tour: TourPackage }) => (
 
             <div className="mt-auto pt-4 space-y-2">
                 <div className="flex justify-between items-center">
-                    <p className="text-lg font-bold text-primary">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tour.price)}</p>
+                    <p className="text-lg font-bold text-primary">{format(tour.price, 'USD')}</p>
                     <Button asChild size="sm" variant="outline">
                         <Link href={`/tours/${tour.slug}`}>View Details</Link>
                     </Button>
@@ -63,7 +66,8 @@ const TourCard = ({ tour }: { tour: TourPackage }) => (
             </div>
         </CardContent>
     </Card>
-);
+    );
+};
 
 interface RelatedToursProps {
   currentTourSlug: string;

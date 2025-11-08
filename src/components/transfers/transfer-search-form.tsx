@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 const searchFormSchema = z.object({
   pickupLocation: z.string().min(2, 'Pickup location is required'),
@@ -49,6 +50,8 @@ type SearchFormValues = z.infer<typeof searchFormSchema>;
 export function TransferSearchForm() {
   const router = useRouter();
   const [isSearching, setIsSearching] = useState(false);
+  const t = useTranslations('search');
+  const tCommon = useTranslations('common');
 
   const form = useForm<SearchFormValues>({
     resolver: zodResolver(searchFormSchema),
@@ -88,18 +91,18 @@ export function TransferSearchForm() {
             name="transferType"
             render={({ field }) => (
               <FormItem className="md:col-span-2">
-                <FormLabel>Transfer Type</FormLabel>
+                <FormLabel>{t('transferType')}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select transfer type" />
+                      <SelectValue placeholder={t('selectTransferType')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="airport_to_city">Airport to City</SelectItem>
-                    <SelectItem value="city_to_airport">City to Airport</SelectItem>
-                    <SelectItem value="point_to_point">Point to Point</SelectItem>
-                    <SelectItem value="hourly">Hourly Rental</SelectItem>
+                    <SelectItem value="airport_to_city">{t('airportToCity')}</SelectItem>
+                    <SelectItem value="city_to_airport">{t('cityToAirport')}</SelectItem>
+                    <SelectItem value="point_to_point">{t('pointToPoint')}</SelectItem>
+                    <SelectItem value="hourly">{t('hourlyRental')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -113,12 +116,12 @@ export function TransferSearchForm() {
             name="pickupLocation"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Pickup Location</FormLabel>
+                <FormLabel>{t('pickupLocation')}</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Enter pickup address or airport"
+                      placeholder={t('enterPickupAddress')}
                       className="pl-10"
                       {...field}
                     />
@@ -135,12 +138,12 @@ export function TransferSearchForm() {
             name="dropoffLocation"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Dropoff Location</FormLabel>
+                <FormLabel>{t('dropoffLocation')}</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Enter dropoff address"
+                      placeholder={t('enterDropoffAddress')}
                       className="pl-10"
                       {...field}
                     />
@@ -157,7 +160,7 @@ export function TransferSearchForm() {
             name="pickupDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Pickup Date</FormLabel>
+                <FormLabel>{t('pickupDate')}</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -171,7 +174,7 @@ export function TransferSearchForm() {
                         {field.value ? (
                           format(field.value, 'PPP')
                         ) : (
-                          <span>Pick a date</span>
+                          <span>{t('pickADate')}</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -200,7 +203,7 @@ export function TransferSearchForm() {
             name="pickupTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Pickup Time</FormLabel>
+                <FormLabel>{t('pickupTime')}</FormLabel>
                 <FormControl>
                   <Input type="time" {...field} />
                 </FormControl>
@@ -215,7 +218,7 @@ export function TransferSearchForm() {
             name="passengers"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Passengers</FormLabel>
+                <FormLabel>{t('passengers')}</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -240,7 +243,7 @@ export function TransferSearchForm() {
             name="luggage"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Luggage Pieces</FormLabel>
+                <FormLabel>{t('luggagePieces')}</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Luggage className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -262,7 +265,7 @@ export function TransferSearchForm() {
 
         <Button type="submit" className="w-full" size="lg" disabled={isSearching}>
           <Search className="mr-2 h-5 w-5" />
-          {isSearching ? 'Searching...' : 'Search Transfers'}
+          {isSearching ? tCommon('searching') : t('searchTransfers')}
         </Button>
       </form>
     </Form>

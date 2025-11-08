@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WishlistButton } from '@/components/wishlists/wishlist-button';
 import { CompareButton } from '@/components/comparisons/compare-button';
+import { useFormatPrice } from '@/contexts/currency-context';
 import type { Property } from '@/lib/hotels-data';
 
 interface PropertyCardProps {
@@ -23,8 +24,9 @@ const amenityIcons: Record<string, any> = {
 };
 
 export function PropertyCard({ property, searchParams }: PropertyCardProps) {
+  const format = useFormatPrice();
   const primaryImage = property.images.find((img) => img.order === 0) || property.images[0];
-  
+
   // Build the detail page URL with search params
   const detailUrl = searchParams
     ? `/hotels/${property.slug}?${searchParams.toString()}`
@@ -32,6 +34,9 @@ export function PropertyCard({ property, searchParams }: PropertyCardProps) {
 
   // Get top 4 amenities to display
   const displayAmenities = property.amenities.slice(0, 4);
+
+  // Get minimum room price (placeholder - would come from property.rooms in real app)
+  const minPrice = 100; // This should be calculated from property.rooms
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -135,7 +140,7 @@ export function PropertyCard({ property, searchParams }: PropertyCardProps) {
           <div>
             <p className="text-xs text-muted-foreground">Starting from</p>
             <p className="text-2xl font-bold">
-              ${/* We'll show the minimum room price here - for now just placeholder */}
+              {format(minPrice, 'USD')}
               <span className="text-sm font-normal text-muted-foreground">/night</span>
             </p>
           </div>

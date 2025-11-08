@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WishlistButton } from '@/components/wishlists/wishlist-button';
 import { CompareButton } from '@/components/comparisons/compare-button';
+import { useFormatPrice } from '@/contexts/currency-context';
 import type { Vehicle } from '@/lib/cars-data';
 
 interface VehicleCardProps {
@@ -23,8 +24,9 @@ const fuelTypeIcons: Record<string, string> = {
 };
 
 export function VehicleCard({ vehicle, searchParams }: VehicleCardProps) {
+  const format = useFormatPrice();
   const primaryImage = vehicle.images.find((img) => img.isPrimary) || vehicle.images[0];
-  
+
   // Build the detail page URL with search params
   const detailUrl = searchParams
     ? `/cars/${vehicle.id}?${searchParams.toString()}`
@@ -135,12 +137,12 @@ export function VehicleCard({ vehicle, searchParams }: VehicleCardProps) {
           <div>
             <p className="text-xs text-muted-foreground">From</p>
             <p className="text-2xl font-bold">
-              ${vehicle.pricing.dailyRate}
+              {format(vehicle.pricing.dailyRate, 'USD')}
               <span className="text-sm font-normal text-muted-foreground">/day</span>
             </p>
             {vehicle.pricing.deposit > 0 && (
               <p className="text-xs text-muted-foreground">
-                + ${vehicle.pricing.deposit} deposit
+                + {format(vehicle.pricing.deposit, 'USD')} deposit
               </p>
             )}
           </div>

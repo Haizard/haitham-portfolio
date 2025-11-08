@@ -19,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { loadStripe } from '@stripe/stripe-js';
 import { cn } from '@/lib/utils';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -49,6 +50,7 @@ interface TourBookingCardProps {
 export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourBookingCardProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const format = useFormatPrice();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<BookingFormValues>({
@@ -257,7 +259,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
                 name="adults"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Adults (${adultPrice.toFixed(2)} each)</FormLabel>
+                    <FormLabel>Adults ({format(adultPrice, 'USD')} each)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" {...field} />
                     </FormControl>
@@ -271,7 +273,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
                 name="children"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Children (${childPrice.toFixed(2)} each - 30% off)</FormLabel>
+                    <FormLabel>Children ({format(childPrice, 'USD')} each - 30% off)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" {...field} />
                     </FormControl>
@@ -286,7 +288,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
                 name="seniors"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Seniors (${seniorPrice.toFixed(2)} each - 15% off)</FormLabel>
+                    <FormLabel>Seniors ({format(seniorPrice, 'USD')} each - 15% off)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" {...field} />
                     </FormControl>
@@ -429,16 +431,16 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
             <div className="space-y-2 bg-muted p-4 rounded-lg">
               <div className="flex justify-between text-sm">
                 <span>Subtotal ({totalParticipants} {totalParticipants === 1 ? 'person' : 'people'})</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{format(subtotal, 'USD')}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Tax (10%)</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>{format(tax, 'USD')}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{format(total, 'USD')}</span>
               </div>
             </div>
           </CardContent>
@@ -458,7 +460,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
               ) : (
                 <>
                   <DollarSign className="mr-2 h-4 w-4" />
-                  Book Now - ${total.toFixed(2)}
+                  Book Now - {format(total, 'USD')}
                 </>
               )}
             </Button>

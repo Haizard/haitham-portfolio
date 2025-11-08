@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useFormatPrice } from '@/contexts/currency-context';
 import type { Room } from '@/lib/hotels-data';
 
 interface RoomCardProps {
@@ -36,6 +37,7 @@ interface AvailabilityData {
 export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: RoomCardProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const format = useFormatPrice();
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
@@ -231,10 +233,10 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
                         {availability.numberOfNights} night{availability.numberOfNights !== 1 ? 's' : ''}
                       </p>
                       <p className="text-2xl font-bold">
-                        ${availability.pricing.totalPrice.toFixed(2)}
+                        {format(availability.pricing.totalPrice, 'USD')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        ${availability.pricing.basePrice}/night + taxes & fees
+                        {format(availability.pricing.basePrice, 'USD')}/night + taxes & fees
                       </p>
                     </div>
                   ) : (
@@ -244,7 +246,7 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
                   <div>
                     <p className="text-xs text-muted-foreground">From</p>
                     <p className="text-2xl font-bold">
-                      ${room.pricing.basePrice}
+                      {format(room.pricing.basePrice, 'USD')}
                       <span className="text-sm font-normal text-muted-foreground">/night</span>
                     </p>
                   </div>

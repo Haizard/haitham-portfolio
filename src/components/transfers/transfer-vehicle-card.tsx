@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WishlistButton } from '@/components/wishlists/wishlist-button';
 import { CompareButton } from '@/components/comparisons/compare-button';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 interface TransferVehicle {
   id: string;
@@ -62,6 +63,7 @@ export function TransferVehicleCard({
   transferType,
 }: TransferVehicleCardProps) {
   const router = useRouter();
+  const format = useFormatPrice();
 
   const primaryImage = vehicle.images.find((img) => img.isPrimary) || vehicle.images[0];
 
@@ -194,7 +196,7 @@ export function TransferVehicleCard({
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold">
-              {vehicle.pricing.currency} {vehicle.pricing.basePrice}
+              {format(vehicle.pricing.basePrice, vehicle.pricing.currency as any)}
             </p>
             <p className="text-xs text-muted-foreground">Base price</p>
           </div>

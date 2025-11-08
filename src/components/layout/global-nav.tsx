@@ -25,35 +25,28 @@ import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { CurrencySwitcher } from '@/components/currency-switcher';
 
-const navItems = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/restaurants", label: "Restaurants", icon: Utensils },
-    { href: "/tours", label: "Tours", icon: Plane },
-    { href: "/blog", label: "Blog", icon: Newspaper },
-    { href: "/ecommerce", label: "E-commerce", icon: Store },
-    { href: "/find-work", label: "Freelancers", icon: Briefcase },
-];
-
 const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
     const pathname = usePathname();
+    const t = useTranslations('navigation');
+
     // A curated list for the bottom nav to prevent overflow
-    const mobileNavItems = user 
+    const mobileNavItems = user
       ? [
-          { href: "/", label: "Home", icon: Home },
-          { href: "/tours", label: "Tours", icon: Plane },
-          { href: "/shop", label: "Shop", icon: Store },
-          { href: "/find-work", label: "Freelancers", icon: Briefcase },
-          { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }
+          { href: "/", label: t('home'), icon: Home },
+          { href: "/tours", label: t('tours'), icon: Plane },
+          { href: "/shop", label: t('shop'), icon: Store },
+          { href: "/find-work", label: t('freelancers'), icon: Briefcase },
+          { href: "/dashboard", label: t('dashboard'), icon: LayoutDashboard }
         ]
       : [
-          { href: "/", label: "Home", icon: Home },
-          { href: "/restaurants", label: "Eat", icon: Utensils },
-          { href: "/tours", label: "Tours", icon: Plane },
-          { href: "/blog", label: "Blog", icon: Newspaper },
-          { href: "/shop", label: "Shop", icon: Store },
-          { href: "/find-work", label: "Hire", icon: Briefcase },
+          { href: "/", label: t('home'), icon: Home },
+          { href: "/restaurants", label: t('restaurants'), icon: Utensils },
+          { href: "/tours", label: t('tours'), icon: Plane },
+          { href: "/blog", label: t('blog'), icon: Newspaper },
+          { href: "/shop", label: t('shop'), icon: Store },
+          { href: "/find-work", label: t('freelancers'), icon: Briefcase },
       ];
-    
+
     const gridColsClass = user ? 'grid-cols-5' : 'grid-cols-6';
 
     return (
@@ -84,6 +77,8 @@ export function GlobalNav() {
   const { user, logout } = useUser();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const t = useTranslations('navigation');
+  const tCommon = useTranslations('common');
 
   useEffect(() => {
       setIsClient(true);
@@ -103,42 +98,46 @@ export function GlobalNav() {
           <Logo />
           <div className="hidden md:flex items-center gap-1">
             <Button variant="ghost" asChild>
-              <Link href="/">Home</Link>
+              <Link href="/">{t('home')}</Link>
             </Button>
              <Button variant="ghost" asChild>
-              <Link href="/restaurants">Restaurants</Link>
+              <Link href="/restaurants">{t('restaurants')}</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href="/tours">Tours</Link>
+              <Link href="/tours">{t('tours')}</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href="/blog">Blog</Link>
+              <Link href="/blog">{t('blog')}</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href="/ecommerce">E-commerce</Link>
+              <Link href="/ecommerce">{t('ecommerce')}</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href="/find-work">Freelancers</Link>
+              <Link href="/find-work">{t('freelancers')}</Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost">Showcase <Layers className="ml-1 h-4 w-4"/></Button>
+                <Button variant="ghost">{t('showcase')} <Layers className="ml-1 h-4 w-4"/></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem asChild>
                   <Link href="/affiliate-showcase">
-                    <Sparkles className="mr-2 h-4 w-4 text-primary"/> Affiliate Products
+                    <Sparkles className="mr-2 h-4 w-4 text-primary"/> {t('affiliateProducts')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/showcase">
-                    <Handshake className="mr-2 h-4 w-4 text-primary"/> Creator Projects
+                    <Handshake className="mr-2 h-4 w-4 text-primary"/> {t('creatorProjects')}
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-1">
+              <LanguageSwitcher />
+              <CurrencySwitcher />
+            </div>
             {user ? (
               <>
                  <DropdownMenu>
@@ -152,22 +151,22 @@ export function GlobalNav() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                      <DropdownMenuItem asChild>
-                        <Link href="/profile"><UserCircle className="mr-2 h-4 w-4" />My Profile</Link>
+                        <Link href="/profile"><UserCircle className="mr-2 h-4 w-4" />{t('myProfile')}</Link>
                     </DropdownMenuItem>
                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link>
+                        <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />{t('dashboard')}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                      <LogOut className="mr-2 h-4 w-4" /> Log Out
+                      <LogOut className="mr-2 h-4 w-4" /> {tCommon('signOut')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             ) : (
               <div className="hidden md:flex items-center gap-1">
-                <Button variant="ghost" asChild><Link href="/login">Login</Link></Button>
-                <Button asChild><Link href="/signup">Sign Up</Link></Button>
+                <Button variant="ghost" asChild><Link href="/login">{tCommon('signIn')}</Link></Button>
+                <Button asChild><Link href="/signup">{tCommon('signUp')}</Link></Button>
               </div>
             )}
             <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(true)} className="relative">

@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 const searchSchema = z.object({
   destination: z.string().min(2, 'Enter a destination'),
@@ -42,6 +43,8 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
   const router = useRouter();
   const [checkInDate, setCheckInDate] = useState<Date>();
   const [checkOutDate, setCheckOutDate] = useState<Date>();
+  const t = useTranslations('search');
+  const tCommon = useTranslations('common');
 
   const form = useForm<SearchFormData>({
     resolver: zodResolver(searchSchema),
@@ -81,11 +84,11 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
             <div className="space-y-2 lg:col-span-2">
               <Label htmlFor="destination" className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                Destination
+                {t('destination')}
               </Label>
               <Input
                 id="destination"
-                placeholder="City or hotel name"
+                placeholder={t('cityOrHotelName')}
                 {...form.register('destination')}
                 className="h-11"
               />
@@ -100,7 +103,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                Check-in
+                {t('checkIn')}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -111,7 +114,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
                       !checkInDate && 'text-muted-foreground'
                     )}
                   >
-                    {checkInDate ? format(checkInDate, 'PPP') : 'Select date'}
+                    {checkInDate ? format(checkInDate, 'PPP') : t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -138,7 +141,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                Check-out
+                {t('checkOut')}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -149,7 +152,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
                       !checkOutDate && 'text-muted-foreground'
                     )}
                   >
-                    {checkOutDate ? format(checkOutDate, 'PPP') : 'Select date'}
+                    {checkOutDate ? format(checkOutDate, 'PPP') : t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -179,7 +182,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
             <div className="space-y-2">
               <Label htmlFor="guests" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Guests
+                {t('guests')}
               </Label>
               <Select
                 value={form.watch('guests')?.toString()}
@@ -191,7 +194,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
                 <SelectContent>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                     <SelectItem key={num} value={num.toString()}>
-                      {num} {num === 1 ? 'Guest' : 'Guests'}
+                      {num} {num === 1 ? t('guest') : t('guests')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -202,22 +205,22 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
           {/* Property Type (Optional) */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="propertyType">Property Type (Optional)</Label>
+              <Label htmlFor="propertyType">{t('propertyType')} ({tCommon('optional')})</Label>
               <Select
                 value={form.watch('propertyType')}
                 onValueChange={(value) => form.setValue('propertyType', value)}
               >
                 <SelectTrigger id="propertyType">
-                  <SelectValue placeholder="All types" />
+                  <SelectValue placeholder={t('allTypes')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
-                  <SelectItem value="hotel">Hotel</SelectItem>
-                  <SelectItem value="apartment">Apartment</SelectItem>
-                  <SelectItem value="resort">Resort</SelectItem>
-                  <SelectItem value="villa">Villa</SelectItem>
-                  <SelectItem value="hostel">Hostel</SelectItem>
-                  <SelectItem value="guesthouse">Guesthouse</SelectItem>
+                  <SelectItem value="">{t('allTypes')}</SelectItem>
+                  <SelectItem value="hotel">{t('hotel')}</SelectItem>
+                  <SelectItem value="apartment">{t('apartment')}</SelectItem>
+                  <SelectItem value="resort">{t('resort')}</SelectItem>
+                  <SelectItem value="villa">{t('villa')}</SelectItem>
+                  <SelectItem value="hostel">{t('hostel')}</SelectItem>
+                  <SelectItem value="guesthouse">{t('guesthouse')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -226,7 +229,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
             <div className="flex items-end">
               <Button type="submit" size="lg" className="w-full h-11">
                 <Search className="h-4 w-4 mr-2" />
-                Search Hotels
+                {t('searchHotels')}
               </Button>
             </div>
           </div>

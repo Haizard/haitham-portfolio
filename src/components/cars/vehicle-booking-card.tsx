@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useFormatPrice } from '@/contexts/currency-context';
 import type { Vehicle } from '@/lib/cars-data';
 
 const bookingSchema = z.object({
@@ -69,6 +70,7 @@ export function VehicleBookingCard({
 }: VehicleBookingCardProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const format = useFormatPrice();
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
@@ -306,12 +308,12 @@ export function VehicleBookingCard({
             <div className="space-y-2 p-4 bg-muted rounded-lg">
               <div className="flex justify-between text-sm">
                 <span>Daily Rate × {availability.numberOfDays} days</span>
-                <span>${availability.pricing.subtotal.toFixed(2)}</span>
+                <span>{format(availability.pricing.subtotal, 'USD')}</span>
               </div>
               {availability.pricing.insuranceFee > 0 && (
                 <div className="flex justify-between text-sm">
                   <span>Insurance</span>
-                  <span>${availability.pricing.insuranceFee.toFixed(2)}</span>
+                  <span>{format(availability.pricing.insuranceFee, 'USD')}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
@@ -321,7 +323,7 @@ export function VehicleBookingCard({
               <Separator />
               <div className="flex justify-between font-bold">
                 <span>Total</span>
-                <span>${availability.pricing.totalPrice.toFixed(2)}</span>
+                <span>{format(availability.pricing.totalPrice, 'USD')}</span>
               </div>
               <p className="text-xs text-muted-foreground">
                 Deposit will be refunded after return

@@ -15,6 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useDebouncedCallback } from 'use-debounce';
 import { WishlistButton } from '@/components/wishlists/wishlist-button';
 import { CompareButton } from '@/components/comparisons/compare-button';
+import { useFormatPrice } from '@/contexts/currency-context';
 
 interface TourFilters {
     locations: string[];
@@ -30,7 +31,9 @@ interface FilterOptions {
     maxPrice: number;
 }
 
-const TourCard = ({ tour }: { tour: TourPackage }) => (
+const TourCard = ({ tour }: { tour: TourPackage }) => {
+    const format = useFormatPrice();
+    return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
         <div className="relative aspect-[4/3] overflow-hidden">
             <Link href={`/tours/${tour.slug}`}>
@@ -67,7 +70,7 @@ const TourCard = ({ tour }: { tour: TourPackage }) => (
 
             <div className="mt-auto pt-4 space-y-2">
                 <div className="flex justify-between items-center">
-                    <p className="text-lg font-bold text-primary">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tour.price)}</p>
+                    <p className="text-lg font-bold text-primary">{format(tour.price, 'USD')}</p>
                     <Button asChild size="sm" variant="outline">
                         <Link href={`/tours/${tour.slug}`}>View Details</Link>
                     </Button>
@@ -81,13 +84,15 @@ const TourCard = ({ tour }: { tour: TourPackage }) => (
             </div>
         </CardContent>
     </Card>
-);
+    );
+};
 
 export default function ToursPage() {
     const [tours, setTours] = useState<TourPackage[]>([]);
     const [filterOptions, setFilterOptions] = useState<FilterOptions>({ locations: [], tourTypes: [], durations: [], maxPrice: 1000 });
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const format = useFormatPrice();
 
     const [filters, setFilters] = useState<TourFilters>({
         locations: [],
@@ -163,7 +168,7 @@ export default function ToursPage() {
                             <AccordionTrigger className="font-semibold">Price</AccordionTrigger>
                             <AccordionContent className="px-1">
                                 <Slider defaultValue={[0, filterOptions.maxPrice]} max={filterOptions.maxPrice} step={10} value={filters.priceRange} onValueChange={handlePriceChange}/>
-                                <div className="flex justify-between text-sm mt-2"><span>${filters.priceRange[0]}</span><span>${filters.priceRange[1]}</span></div>
+                                <div className="flex justify-between text-sm mt-2"><span>{format(filters.priceRange[0], 'USD')}</span><span>{format(filters.priceRange[1], 'USD')}</span></div>
                             </AccordionContent>
                         </AccordionItem>
                          <AccordionItem value="duration">

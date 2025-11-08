@@ -35,6 +35,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useFormatPrice } from '@/contexts/currency-context';
 import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -106,6 +107,7 @@ export function TransferBookingCard({
 }: TransferBookingCardProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const format = useFormatPrice();
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [availability, setAvailability] = useState<{ available: boolean } | null>(null);
@@ -288,27 +290,27 @@ export function TransferBookingCard({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Base Price</span>
-                <span>{vehicle.pricing.currency} {pricing.basePrice}</span>
+                <span>{format(pricing.basePrice, vehicle.pricing.currency as any)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Distance ({watchedDistance} km)</span>
-                <span>{vehicle.pricing.currency} {pricing.distanceCharge.toFixed(2)}</span>
+                <span>{format(pricing.distanceCharge, vehicle.pricing.currency as any)}</span>
               </div>
               {pricing.airportSurcharge > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Airport Surcharge</span>
-                  <span>{vehicle.pricing.currency} {pricing.airportSurcharge}</span>
+                  <span>{format(pricing.airportSurcharge, vehicle.pricing.currency as any)}</span>
                 </div>
               )}
               {pricing.nightSurcharge > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Night Surcharge</span>
-                  <span>{vehicle.pricing.currency} {pricing.nightSurcharge}</span>
+                  <span>{format(pricing.nightSurcharge, vehicle.pricing.currency as any)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                 <span>Total</span>
-                <span>{vehicle.pricing.currency} {pricing.total.toFixed(2)}</span>
+                <span>{format(pricing.total, vehicle.pricing.currency as any)}</span>
               </div>
             </div>
 
