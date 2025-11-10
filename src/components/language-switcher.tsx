@@ -7,9 +7,9 @@
  * Shows language name, flag, and current selection.
  */
 
-import React, { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import React, { useState, useTransition } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { useRouter, usePathname } from '@/i18n/routing';
 import { Check, ChevronDown, Globe } from 'lucide-react';
 import { locales, localeLabels, type Locale } from '@/i18n/request';
 import {
@@ -25,16 +25,13 @@ export function LanguageSwitcher() {
   const pathname = usePathname();
   const currentLocale = useLocale() as Locale;
   const [isOpen, setIsOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const handleLanguageChange = (newLocale: Locale) => {
-    // Remove current locale from pathname
-    const pathnameWithoutLocale = pathname.replace(`/${currentLocale}`, '');
-    
-    // Add new locale to pathname
-    const newPathname = `/${newLocale}${pathnameWithoutLocale}`;
-    
-    // Navigate to new locale
-    router.push(newPathname);
+    startTransition(() => {
+      // Use the router from next-intl/navigation which handles locale switching
+      router.replace(pathname, { locale: newLocale });
+    });
     setIsOpen(false);
   };
 

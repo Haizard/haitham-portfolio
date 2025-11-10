@@ -1,35 +1,13 @@
 import './globals.css';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-import { notFound } from 'next/navigation';
 import { ClientProviders } from '@/components/layout/client-providers';
-import { locales, localeLabels } from '@/i18n/request';
-
-export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
 
 export default async function RootLayout({
   children,
-  params: { locale }
 }: Readonly<{
   children: React.ReactNode;
-  params: { locale: string };
 }>) {
-  // Ensure that the incoming `locale` is valid
-  if (!locales.includes(locale as any)) {
-    notFound();
-  }
-
-  // Providing all messages to the client
-  // side is the easiest way to get started
-  const messages = await getMessages();
-
-  // Get text direction for the locale
-  const dir = localeLabels[locale as keyof typeof localeLabels]?.dir || 'ltr';
-
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <title>CreatorOS</title>
         <meta name="description" content="The all-in-one platform for content creators." />
@@ -48,11 +26,9 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <NextIntlClientProvider messages={messages}>
-          <ClientProviders>
-            {children}
-          </ClientProviders>
-        </NextIntlClientProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

@@ -1,5 +1,5 @@
 import { getRequestConfig } from 'next-intl/server';
-import { notFound } from 'next/navigation';
+import { routing } from './routing';
 
 // Supported locales
 export const locales = ['en', 'es', 'fr', 'de', 'ar', 'sw'] as const;
@@ -18,14 +18,17 @@ export const localeLabels: Record<Locale, { label: string; flag: string; dir: 'l
   sw: { label: 'Kiswahili', flag: '🇹🇿', dir: 'ltr' },
 };
 
-export default getRequestConfig(async ({ locale }) => {
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as Locale)) {
-    notFound();
+export default getRequestConfig(async ({ requestLocale }) => {
+  // Get the locale from the request (from cookies/headers when using localePrefix: 'never')
+  let locale = await requestLocale;
+
+  // Ensure that the incoming `locale` is valid
+  if (!locale || !routing.locales.includes(locale as any)) {
+    locale = routing.defaultLocale;
   }
 
   return {
+    locale,
     messages: (await import(`../messages/${locale}.json`)).default,
   };
 });
-

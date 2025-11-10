@@ -295,6 +295,18 @@ export async function getTourBySlug(slug: string): Promise<TourPackage | null> {
   return tour;
 }
 
+// Get tour by ID or slug (helper function for API routes)
+export async function getTourByIdOrSlug(idOrSlug: string): Promise<TourPackage | null> {
+  // Try to get by ID first if it's a valid ObjectId
+  if (ObjectId.isValid(idOrSlug)) {
+    const tour = await getTourById(idOrSlug);
+    if (tour) return tour;
+  }
+
+  // Otherwise try to get by slug
+  return await getTourBySlug(idOrSlug);
+}
+
 export async function addTour(tourData: Omit<TourPackage, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'slug' | 'guide'>): Promise<TourPackage> {
   const collection = await getCollection<Omit<TourPackage, 'id' | '_id'>>(TOURS_COLLECTION);
   const now = new Date().toISOString();
