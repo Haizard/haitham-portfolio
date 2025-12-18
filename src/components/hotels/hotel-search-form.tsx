@@ -51,20 +51,20 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
     defaultValues: {
       destination: '',
       guests: 2,
-      propertyType: '',
+      propertyType: 'all',
     },
   });
 
   const handleSubmit = (data: SearchFormData) => {
     const params = new URLSearchParams();
-    
+
     // Extract city from destination (simple implementation)
     params.set('city', data.destination);
     params.set('checkInDate', format(data.checkInDate, 'yyyy-MM-dd'));
     params.set('checkOutDate', format(data.checkOutDate, 'yyyy-MM-dd'));
     params.set('guests', data.guests.toString());
-    
-    if (data.propertyType) {
+
+    if (data.propertyType && data.propertyType !== 'all') {
       params.set('propertyType', data.propertyType);
     }
 
@@ -214,7 +214,7 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
                   <SelectValue placeholder={t('allTypes')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('allTypes')}</SelectItem>
+                  <SelectItem value="all">{t('allTypes')}</SelectItem>
                   <SelectItem value="hotel">{t('hotel')}</SelectItem>
                   <SelectItem value="apartment">{t('apartment')}</SelectItem>
                   <SelectItem value="resort">{t('resort')}</SelectItem>

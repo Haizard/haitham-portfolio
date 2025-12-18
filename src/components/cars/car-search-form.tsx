@@ -53,20 +53,20 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
       location: '',
       pickupTime: '10:00',
       returnTime: '10:00',
-      category: '',
+      category: 'all',
     },
   });
 
   const handleSubmit = (data: SearchFormData) => {
     const params = new URLSearchParams();
-    
+
     params.set('city', data.location);
     params.set('pickupDate', format(data.pickupDate, 'yyyy-MM-dd'));
     params.set('pickupTime', data.pickupTime);
     params.set('returnDate', format(data.returnDate, 'yyyy-MM-dd'));
     params.set('returnTime', data.returnTime);
-    
-    if (data.category) {
+
+    if (data.category && data.category !== 'all') {
       params.set('category', data.category);
     }
 
@@ -244,7 +244,7 @@ export function CarSearchForm({ className, onSearch }: CarSearchFormProps) {
                   <SelectValue placeholder={t('allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('allCategories')}</SelectItem>
+                  <SelectItem value="all">{t('allCategories')}</SelectItem>
                   <SelectItem value="economy">{t('economy')}</SelectItem>
                   <SelectItem value="compact">{t('compact')}</SelectItem>
                   <SelectItem value="midsize">{t('midsize')}</SelectItem>

@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Compass, Newspaper, Store, LayoutDashboard, Plane } from 'lucide-react';
+import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Compass, Newspaper, Store, LayoutDashboard, Plane, Hotel, Car, Bus } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
@@ -33,6 +33,7 @@ const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
   const mobileNavItems = user
     ? [
       { href: "/", label: t('home'), icon: Home },
+      { href: "/hotels", label: t('hotels'), icon: Hotel },
       { href: "/tours", label: t('tours'), icon: Plane },
       { href: "/shop", label: t('shop'), icon: Store },
       { href: "/find-work", label: t('freelancers'), icon: Briefcase },
@@ -41,6 +42,7 @@ const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
     : [
       { href: "/", label: t('home'), icon: Home },
       { href: "/restaurants", label: t('restaurants'), icon: Utensils },
+      { href: "/hotels", label: t('hotels'), icon: Hotel },
       { href: "/tours", label: t('tours'), icon: Plane },
       { href: "/blog", label: t('blog'), icon: Newspaper },
       { href: "/shop", label: t('shop'), icon: Store },
@@ -102,6 +104,15 @@ export function GlobalNav() {
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/restaurants">{isMounted ? t('restaurants') : ''}</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/hotels">{isMounted ? t('hotels') : ''}</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/flights">{isMounted ? t('flights') : ''}</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/cars">{isMounted ? t('cars') : ''}</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/tours">{isMounted ? t('tours') : ''}</Link>
