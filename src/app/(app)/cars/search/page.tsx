@@ -20,8 +20,8 @@ export default function CarSearchPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [transmission, setTransmission] = useState('');
-  const [fuelType, setFuelType] = useState('');
+  const [transmission, setTransmission] = useState('all');
+  const [fuelType, setFuelType] = useState('all');
 
   useEffect(() => {
     searchVehicles();
@@ -31,13 +31,13 @@ export default function CarSearchPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams(searchParams.toString());
-      
+
       // Add filter params
       if (priceRange[0] > 0) params.set('minPrice', priceRange[0].toString());
       if (priceRange[1] < 500) params.set('maxPrice', priceRange[1].toString());
       if (selectedFeatures.length > 0) params.set('features', selectedFeatures.join(','));
-      if (transmission) params.set('transmission', transmission);
-      if (fuelType) params.set('fuelType', fuelType);
+      if (transmission && transmission !== 'all') params.set('transmission', transmission);
+      if (fuelType && fuelType !== 'all') params.set('fuelType', fuelType);
 
       const response = await fetch(`/api/cars/vehicles?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to search vehicles');
@@ -91,7 +91,7 @@ export default function CarSearchPage() {
             <SelectValue placeholder="Any" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Any</SelectItem>
+            <SelectItem value="all">Any</SelectItem>
             <SelectItem value="automatic">Automatic</SelectItem>
             <SelectItem value="manual">Manual</SelectItem>
           </SelectContent>
@@ -106,7 +106,7 @@ export default function CarSearchPage() {
             <SelectValue placeholder="Any" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Any</SelectItem>
+            <SelectItem value="all">Any</SelectItem>
             <SelectItem value="petrol">Petrol</SelectItem>
             <SelectItem value="diesel">Diesel</SelectItem>
             <SelectItem value="electric">Electric</SelectItem>
