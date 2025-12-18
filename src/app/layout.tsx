@@ -1,13 +1,17 @@
 import './globals.css';
 import { ClientProviders } from '@/components/layout/client-providers';
+import { getMessages, getLocale } from 'next-intl/server';
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
+    <html lang={locale} dir="ltr" suppressHydrationWarning>
       <head>
         <title>CreatorOS</title>
         <meta name="description" content="The all-in-one platform for content creators." />
@@ -26,7 +30,7 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ClientProviders>
+        <ClientProviders locale={locale} messages={messages}>
           {children}
         </ClientProviders>
       </body>
