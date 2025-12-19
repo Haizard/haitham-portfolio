@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get vehicles owned by the authenticated user
-      const { getCollection } = await import('@/lib/db');
+      const { getCollection } = await import('@/lib/mongodb');
       const vehiclesCollection = await getCollection('vehicles');
       const { docToVehicle } = await import('@/lib/cars-data');
 
