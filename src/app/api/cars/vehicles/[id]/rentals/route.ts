@@ -9,13 +9,12 @@ export async function GET(
 ) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
-    if (!authResult.authenticated || !authResult.user) {
-      return NextResponse.json({
-        success: false,
-        message: 'Authentication required',
-      }, { status: 401 });
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { user } = authResult;
 
     // Get the vehicle to check ownership
     const vehicle = await getVehicleById(params.id);

@@ -75,7 +75,7 @@ export async function PATCH(
 ) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }
@@ -152,7 +152,7 @@ export async function DELETE(
 ) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }

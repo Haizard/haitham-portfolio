@@ -43,7 +43,7 @@ const createBookingSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }

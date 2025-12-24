@@ -17,7 +17,7 @@ export async function GET(
 ) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }
@@ -34,7 +34,7 @@ export async function GET(
     // Check if user is the booking owner or property owner or admin
     const isBookingOwner = booking.userId === authResult.user.id;
     const isAdmin = authResult.user.roles.includes('admin');
-    
+
     let isPropertyOwner = false;
     if (!isBookingOwner && !isAdmin) {
       const property = await getPropertyById(booking.propertyId);
@@ -69,7 +69,7 @@ export async function PATCH(
 ) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }
@@ -89,7 +89,7 @@ export async function PATCH(
     // Check permissions based on what's being updated
     const isBookingOwner = booking.userId === authResult.user.id;
     const isAdmin = authResult.user.roles.includes('admin');
-    
+
     const property = await getPropertyById(booking.propertyId);
     const isPropertyOwner = property?.ownerId === authResult.user.id;
 

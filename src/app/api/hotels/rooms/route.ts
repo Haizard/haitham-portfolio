@@ -52,7 +52,7 @@ const createRoomSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Require authentication and property_owner role
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }
