@@ -155,8 +155,8 @@ export function GlobalNav() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={`https://placehold.co/100x100.png?text=${user.name.substring(0, 2)}`} alt={user.name} data-ai-hint="profile avatar" />
-                        <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={`https://placehold.co/100x100.png?text=${(user.name || 'User').substring(0, 2)}`} alt={user.name || 'User'} data-ai-hint="profile avatar" />
+                        <AvatarFallback>{(user.name || 'User').substring(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
