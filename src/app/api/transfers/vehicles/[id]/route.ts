@@ -88,7 +88,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
         success: false,
@@ -149,7 +149,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
         success: false,

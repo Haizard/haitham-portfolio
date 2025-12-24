@@ -9,33 +9,33 @@ export async function GET(
   { params }: { params: Promise<{ tourIdOrSlug: string }> }
 ) {
   try {
-    const session = await requireAuth(request);
+    const session = await requireAuth();
     const { tourIdOrSlug } = await params;
-    
+
     // Get tour by ID or slug
     let tour = await getTourById(tourIdOrSlug);
     if (!tour) {
       tour = await getTourBySlug(tourIdOrSlug);
     }
-    
+
     if (!tour) {
       return NextResponse.json({ message: 'Tour not found' }, { status: 404 });
     }
-    
+
     // Authorization: Only tour owner (guide) or admin can view tour bookings
     const isTourOwner = tour.guideId === session.userId;
     const isAdmin = session.roles.includes('admin');
-    
+
     if (!isTourOwner && !isAdmin) {
       return NextResponse.json(
         { message: 'Unauthorized. Only the tour operator or admin can view tour bookings.' },
         { status: 403 }
       );
     }
-    
+
     // Get all bookings for this tour
     const bookings = await getTourBookingsByTourId(tour.id!);
-    
+
     return NextResponse.json(bookings);
 
   } catch (error: any) {

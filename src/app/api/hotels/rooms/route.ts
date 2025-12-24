@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       return authResult;
     }
 
-    const roleCheck = await requireRoles(request, ['property_owner', 'admin']);
+    const roleCheck = await requireRoles(['property_owner', 'admin']);
     if (roleCheck instanceof NextResponse) {
       return roleCheck;
     }

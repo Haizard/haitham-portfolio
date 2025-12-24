@@ -53,7 +53,7 @@ const createBookingSchema = z.object({
 // POST /api/transfers/bookings - Create transfer booking
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
         success: false,
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
 // GET /api/transfers/bookings - Get user's transfer bookings
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
         success: false,

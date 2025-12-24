@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     const ownerIdParam = searchParams.get('ownerId');
     if (ownerIdParam === 'me') {
       // Require authentication to get own vehicles
-      const authResult = await requireAuth(request);
+      const authResult = await requireAuth();
       if (!authResult.authenticated || !authResult.user) {
         return NextResponse.json({
           success: false,

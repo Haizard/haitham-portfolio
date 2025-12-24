@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
         success: false,

@@ -22,7 +22,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
         success: false,
@@ -71,7 +71,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
         success: false,
@@ -129,9 +129,9 @@ export async function PATCH(
     // Driver notes and actual times (only vehicle owner or admin)
     if (
       (validatedData.driverNotes !== undefined ||
-       validatedData.actualPickupTime !== undefined ||
-       validatedData.actualDropoffTime !== undefined ||
-       validatedData.actualDistance !== undefined) &&
+        validatedData.actualPickupTime !== undefined ||
+        validatedData.actualDropoffTime !== undefined ||
+        validatedData.actualDistance !== undefined) &&
       !isVehicleOwner &&
       !isAdmin
     ) {
