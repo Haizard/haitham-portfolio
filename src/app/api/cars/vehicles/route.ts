@@ -57,13 +57,14 @@ const createVehicleSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Require car_owner or admin role
+    // Require car_owner or admin role
     const authResult = await requireRoles(['car_owner', 'admin']);
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 403 }
-      );
+
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { user } = authResult;
 
     const body = await request.json();
     const validatedData = createVehicleSchema.parse(body);

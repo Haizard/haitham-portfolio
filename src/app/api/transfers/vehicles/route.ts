@@ -66,7 +66,7 @@ const createVehicleSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Require transfer_provider or admin role
-    const authResult = await requireRoles(request, ['transfer_provider', 'admin']);
+    const authResult = await requireRoles(['transfer_provider', 'admin']);
     if (authResult instanceof NextResponse) {
       return authResult;
     }
