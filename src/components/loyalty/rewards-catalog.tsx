@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Gift, Percent, TrendingUp, Ticket, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Reward, LoyaltyAccount } from '@/lib/loyalty-data';
+import type { Reward, LoyaltyAccount } from '@/lib/loyalty-common';
 
 interface RewardsCatalogProps {
   account: LoyaltyAccount;

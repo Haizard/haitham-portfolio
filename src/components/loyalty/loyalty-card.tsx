@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Trophy, Star, Crown, Gem, Award } from 'lucide-react';
-import type { LoyaltyAccount } from '@/lib/loyalty-data';
+import type { LoyaltyAccount } from '@/lib/loyalty-common';
 
 interface LoyaltyCardProps {
   account: LoyaltyAccount;

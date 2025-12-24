@@ -8,7 +8,7 @@ import { TierBenefitsCard } from '@/components/loyalty/tier-benefits-card';
 import { PointsHistory } from '@/components/loyalty/points-history';
 import { RewardsCatalog } from '@/components/loyalty/rewards-catalog';
 import { MyRedemptions } from '@/components/loyalty/my-redemptions';
-import type { LoyaltyAccount } from '@/lib/loyalty-data';
+import type { LoyaltyAccount } from '@/lib/loyalty-common';
 
 export default function LoyaltyPage() {
   const [account, setAccount] = useState<LoyaltyAccount | null>(null);

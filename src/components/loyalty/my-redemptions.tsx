@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Gift, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import type { RewardRedemption } from '@/lib/loyalty-data';
+import type { RewardRedemption } from '@/lib/loyalty-common';
 
 export function MyRedemptions() {
   const [redemptions, setRedemptions] = useState<RewardRedemption[]>([]);

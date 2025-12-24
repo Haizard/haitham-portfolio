@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp, TrendingDown, Gift, RefreshCw, Award } from 'lucide-react';
-import type { PointsTransaction } from '@/lib/loyalty-data';
+import type { PointsTransaction } from '@/lib/loyalty-common';
 
 export function PointsHistory() {
   const [transactions, setTransactions] = useState<PointsTransaction[]>([]);

@@ -10,7 +10,6 @@ import { useUser } from '@/hooks/use-user';
 import { formatDistanceToNow } from 'date-fns';
 import { StarRating } from '@/components/reviews/StarRating';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { getRestaurantByOwnerId } from '@/lib/restaurants-data';
 import type { Restaurant } from '@/lib/restaurants-data';
 
 export function RestaurantReviewManagement() {
@@ -36,28 +35,28 @@ export function RestaurantReviewManagement() {
 
   useEffect(() => {
     if (user?.id) {
-        // First, get the restaurant ID for the current owner
-        const fetchRestaurant = async () => {
-             try {
-                const res = await fetch(`/api/restaurants/by-owner/${user.id}`);
-                if (res.ok) {
-                    const restaurantData: Restaurant = await res.json();
-                    setRestaurant(restaurantData);
-                    fetchReviews(restaurantData.id!); // Then fetch reviews for that restaurant
-                } else {
-                     throw new Error("Could not find your restaurant profile.");
-                }
-             } catch (error: any) {
-                 toast({ title: "Error", description: error.message, variant: "destructive"});
-                 setIsLoading(false);
-             }
-        };
-        fetchRestaurant();
+      // First, get the restaurant ID for the current owner
+      const fetchRestaurant = async () => {
+        try {
+          const res = await fetch(`/api/restaurants/by-owner/${user.id}`);
+          if (res.ok) {
+            const restaurantData: Restaurant = await res.json();
+            setRestaurant(restaurantData);
+            fetchReviews(restaurantData.id!); // Then fetch reviews for that restaurant
+          } else {
+            throw new Error("Could not find your restaurant profile.");
+          }
+        } catch (error: any) {
+          toast({ title: "Error", description: error.message, variant: "destructive" });
+          setIsLoading(false);
+        }
+      };
+      fetchRestaurant();
     }
   }, [user, fetchReviews, toast]);
 
   if (isLoading) {
-    return <Card><CardContent className="p-6 flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary"/></CardContent></Card>;
+    return <Card><CardContent className="p-6 flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></CardContent></Card>;
   }
 
   return (
@@ -72,7 +71,7 @@ export function RestaurantReviewManagement() {
         ) : (
           <div className="space-y-6">
             {reviews.map(review => (
-               <Card key={review.id} className="bg-muted/30">
+              <Card key={review.id} className="bg-muted/30">
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-4">
                     <Avatar className="h-10 w-10">

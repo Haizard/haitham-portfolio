@@ -3,8 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, X } from 'lucide-react';
-import { TIER_BENEFITS, TIER_THRESHOLDS } from '@/lib/loyalty-data';
-import type { LoyaltyAccount } from '@/lib/loyalty-data';
+import { TIER_BENEFITS, TIER_THRESHOLDS } from '@/lib/loyalty-common';
+import type { LoyaltyAccount } from '@/lib/loyalty-common';
 
 interface TierBenefitsCardProps {
   currentTier: LoyaltyAccount['tier'];
