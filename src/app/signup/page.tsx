@@ -13,21 +13,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, UserPlus, Briefcase, Store, UserCheck, Truck, Sparkles } from "lucide-react";
+import { Loader2, UserPlus, Briefcase, Store, UserCheck, Truck, Sparkles, Hotel, Car, Map, Plane, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useUser } from '@/hooks/use-user';
 
 const roleOptions = [
-  { id: 'client', label: 'I want to hire talent', icon: UserCheck },
-  { id: 'freelancer', label: 'I want to work as a freelancer', icon: Briefcase },
-  { id: 'vendor', label: 'I want to sell products', icon: Store },
-  { id: 'creator', label: 'I am a content creator', icon: Sparkles },
-  { id: 'transport_partner', label: 'I want to be a Transport Partner', icon: Truck },
+  // Booking & Travel Roles
+  { id: 'customer', label: 'Book travel services (hotels, flights, cars, tours)', icon: Users },
+  { id: 'property_owner', label: 'List my hotel or property', icon: Hotel },
+  { id: 'car_owner', label: 'Rent out vehicles', icon: Car },
+  { id: 'tour_operator', label: 'Offer tour packages', icon: Map },
+  { id: 'transfer_provider', label: 'Provide transfer services', icon: Plane },
+  // Other Services
+  { id: 'freelancer', label: 'Work as a freelancer', icon: Briefcase },
+  { id: 'vendor', label: 'Sell products', icon: Store },
+  { id: 'creator', label: 'Create content', icon: Sparkles },
 ] as const;
 
-const roleEnum = z.enum(['client', 'freelancer', 'vendor', 'transport_partner', 'creator'], {
-    required_error: "You must select a role."
+const roleEnum = z.enum([
+  'customer',
+  'property_owner',
+  'car_owner',
+  'tour_operator',
+  'transfer_provider',
+  'client',
+  'freelancer',
+  'vendor',
+  'creator'
+], {
+  required_error: "You must select a role."
 });
 
 const signupFormSchema = z.object({
@@ -47,7 +62,7 @@ export default function SignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema),
-    defaultValues: { name: "", email: "", password: "", role: "client" },
+    defaultValues: { name: "", email: "", password: "", role: "customer" },
   });
 
   const handleSignup = async (values: SignupFormValues) => {
@@ -64,17 +79,17 @@ export default function SignupPage() {
       if (!response.ok) {
         throw new Error(result.message || "Failed to sign up.");
       }
-      
+
       // Call login to update the user state in the context
       login(result);
-      
+
       // Redirect to the dashboard
-      router.push('/dashboard');
-      router.refresh(); 
+      router.push('/account/dashboard');
+      router.refresh();
 
       toast({
-          title: "Account Created!",
-          description: "Welcome! Redirecting you to your dashboard..."
+        title: "Account Created!",
+        description: "Welcome! Redirecting you to your dashboard..."
       });
 
     } catch (error: any) {
@@ -138,7 +153,7 @@ export default function SignupPage() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="role"
@@ -149,16 +164,16 @@ export default function SignupPage() {
                         <RadioGroup
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          className="grid grid-cols-1 md:grid-cols-2 gap-2"
+                          className="grid grid-cols-1 gap-2"
                         >
                           {roleOptions.map((item) => (
-                             <FormItem key={item.id} className="flex items-center space-x-3 space-y-0 p-3 border rounded-md hover:shadow-sm has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary">
+                            <FormItem key={item.id} className="flex items-center space-x-3 space-y-0 p-3 border rounded-md hover:shadow-sm has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary">
                               <FormControl>
                                 <RadioGroupItem value={item.id} />
                               </FormControl>
                               <FormLabel className="font-normal flex items-center gap-2 cursor-pointer">
-                                  <item.icon className="h-5 w-5 text-primary"/>
-                                  {item.label}
+                                <item.icon className="h-5 w-5 text-primary" />
+                                {item.label}
                               </FormLabel>
                             </FormItem>
                           ))}

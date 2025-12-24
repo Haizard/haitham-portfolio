@@ -472,41 +472,41 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
               </Button>
             </div>
           </CardContent>
-      </div>
-
-      {/* Fallback Dashboard for users without specific roles */}
-      {!isCustomer && !isPropertyOwner && !isCarOwner && !isTourOperator && !isTransferProvider && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome to Your Dashboard</CardTitle>
-            <CardDescription>
-              Your account is currently set up. To access role-specific features, please contact support to configure your account type.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Current roles: {roles.join(', ')}
-              </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <Button variant="outline" asChild>
-                  <Link href="/account/profile">
-                    <Users className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/account/settings">
-                    <Package className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
         </Card>
-      )}
-    </div>
+
+        {/* Fallback Dashboard for users without specific roles */}
+        {!isCustomer && !isPropertyOwner && !isCarOwner && !isTourOperator && !isTransferProvider && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Welcome to Your Dashboard</CardTitle>
+              <CardDescription>
+                Your account is currently set up. To access role-specific features, please contact support to configure your account type.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Current roles: {roles.join(', ')}
+                </p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Button variant="outline" asChild>
+                    <Link href="/account/profile">
+                      <Users className="mr-2 h-4 w-4" />
+                      Edit Profile
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/account/settings">
+                      <Package className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div >
   );
 }
