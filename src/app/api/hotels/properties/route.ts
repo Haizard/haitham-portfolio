@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get properties owned by the authenticated user
-      const { getCollection } = await import('@/lib/db');
+      const { getCollection } = await import('@/lib/mongodb');
       const propertiesCollection = await getCollection('properties');
       const { docToProperty } = await import('@/lib/hotels-data');
 

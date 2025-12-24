@@ -5,9 +5,11 @@ import { createCarRental, getCarRentalsByUserId, checkVehicleAvailability, getVe
 import { differenceInDays, parseISO } from 'date-fns';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
-});
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-11-20.acacia',
+  })
+  : null;
 
 // Validation schemas
 const driverInfoSchema = z.object({
@@ -132,6 +134,13 @@ export async function POST(request: NextRequest) {
     const totalPrice = subtotal + insuranceFee + deposit;
 
     // Create Stripe payment intent
+    if (!stripe) {
+      return NextResponse.json(
+        { success: false, error: 'Payment system is not configured' },
+        { status: 500 }
+      );
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalPrice * 100), // Convert to cents
       currency: vehicle.pricing.currency.toLowerCase(),

@@ -121,14 +121,14 @@ export async function GET(request: NextRequest) {
       }
 
       // Get vehicles owned by the authenticated user
-      const { getCollection } = await import('@/lib/db');
+      const { getCollection } = await import('@/lib/mongodb');
       const vehiclesCollection = await getCollection('transfer_vehicles');
       const { docToTransferVehicle } = await import('@/lib/transfers-data');
-      
+
       const vehiclesDocs = await vehiclesCollection
         .find({ ownerId: authResult.user.id })
         .toArray();
-      
+
       const vehicles = vehiclesDocs.map(docToTransferVehicle).filter((v): v is any => v !== null);
 
       return NextResponse.json({
