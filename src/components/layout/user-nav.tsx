@@ -13,8 +13,9 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
-import type { SessionUser } from "@/providers/user-provider"; // Import the session user type
+import { LogOut, Settings, User, LayoutDashboard, ShieldCheck } from "lucide-react";
+import type { SessionUser } from "@/providers/user-provider";
+import Link from "next/link";
 
 interface UserNavProps {
   user: SessionUser;
@@ -42,11 +43,26 @@ export function UserNav({ user }: UserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-            <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+          <DropdownMenuItem asChild>
+            <Link href="/account/profile">
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </Link>
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/account/dashboard">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+          </DropdownMenuItem>
+          {user.roles.includes('admin') && (
+            <DropdownMenuItem asChild>
+              <Link href="/account/admin">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <span>Admin Panel</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>

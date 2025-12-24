@@ -1,6 +1,6 @@
 "use client";
 
-import { Hotel, Car, Map, Plane, Calendar, DollarSign, Users, TrendingUp, Package, Star } from 'lucide-react';
+import { Hotel, Car, Map, Plane, Calendar, DollarSign, Users, TrendingUp, Package, Star, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
   const isCarOwner = roles.includes('car_owner');
   const isTourOperator = roles.includes('tour_operator') || roles.includes('creator');
   const isTransferProvider = roles.includes('transfer_provider') || roles.includes('transport_partner');
+  const isAdmin = roles.includes('admin');
 
   return (
     <div className="container max-w-6xl mx-auto py-8 px-4">
@@ -31,6 +32,36 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
             Here's what's happening with your account
           </p>
         </div>
+
+        {/* Admin Dashboard */}
+        {isAdmin && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold flex items-center gap-2 text-red-600">
+              <ShieldCheck className="h-6 w-6" />
+              Admin Dashboard
+            </h2>
+            <Card className="border-red-200 bg-red-50/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">
+                  Platform Administration
+                </CardTitle>
+                <CardDescription>
+                  Manage users, bookings, and system settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Button variant="destructive" className="w-full" asChild>
+                    <Link href="/account/admin">Open Admin Panel</Link>
+                  </Button>
+                  <Button variant="outline" className="w-full border-red-200 hover:bg-red-100" asChild>
+                    <Link href="/account/settings">System Settings</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Customer Dashboard */}
         {isCustomer && (
