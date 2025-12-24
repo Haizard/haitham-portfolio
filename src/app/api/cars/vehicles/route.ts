@@ -109,13 +109,12 @@ export async function GET(request: NextRequest) {
     const ownerIdParam = searchParams.get('ownerId');
     if (ownerIdParam === 'me') {
       // Require authentication to get own vehicles
-      const authResult = await requireAuth(request);
-      if (!authResult.authenticated || !authResult.user) {
-        return NextResponse.json({
-          success: false,
-          message: 'Authentication required',
-        }, { status: 401 });
+      const authResult = await requireAuth();
+      if (authResult instanceof NextResponse) {
+        return authResult;
       }
+
+      const { user } = authResult;
 
       // Get vehicles owned by the authenticated user
       const { getCollection } = await import('@/lib/mongodb');
