@@ -41,6 +41,7 @@ import {
   Hotel,
   Car,
   Calculator,
+  Calendar,
 } from "lucide-react";
 import {
   SidebarMenu,
