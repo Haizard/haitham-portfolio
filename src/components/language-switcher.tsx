@@ -27,10 +27,13 @@ export function LanguageSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const handleLanguageChange = (newLocale: Locale) => {
-    startTransition(() => {
-      // Use the router from next-intl/navigation which handles locale switching
-      router.replace(pathname, { locale: newLocale });
+  const handleLanguageChange = async (newLocale: Locale) => {
+    startTransition(async () => {
+      // Set the locale cookie directly
+      document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
+
+      // Refresh the page to apply the new locale
+      window.location.reload();
     });
     setIsOpen(false);
   };

@@ -15,7 +15,7 @@ export function Logo() {
         />
       </div>
       <h1 className="text-xl font-semibold text-primary group-hover:text-primary/90 transition-colors font-headline hidden sm:block">
-        CreatorOS
+        ajira online
       </h1>
     </Link>
   );

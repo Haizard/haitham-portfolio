@@ -13,12 +13,12 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir="ltr" suppressHydrationWarning>
       <head>
-        <title>CreatorOS</title>
-        <meta name="description" content="The all-in-one platform for content creators." />
-        <meta name="application-name" content="CreatorOS" />
+        <title>ajira online</title>
+        <meta name="description" content="The all-in-one platform for travel and booking services." />
+        <meta name="application-name" content="ajira online" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="CreatorOS" />
+        <meta name="apple-mobile-web-app-title" content="ajira online" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#A052DE" />
