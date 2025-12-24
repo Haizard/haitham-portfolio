@@ -178,8 +178,8 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
                   <p className="text-xs text-muted-foreground mt-1">
                     No properties listed
                   </p>
-                  <Button variant="default" size="sm" className="mt-3 w-full" disabled>
-                    Add Property
+                  <Button variant="default" size="sm" className="mt-3 w-full" asChild>
+                    <Link href="/account/my-properties">Manage Properties</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -250,8 +250,8 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
                   <p className="text-xs text-muted-foreground mt-1">
                     No vehicles listed
                   </p>
-                  <Button variant="default" size="sm" className="mt-3 w-full" disabled>
-                    Add Vehicle
+                  <Button variant="default" size="sm" className="mt-3 w-full" asChild>
+                    <Link href="/account/my-vehicles">Manage Vehicles</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -321,7 +321,7 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
                     No tours listed
                   </p>
                   <Button variant="default" size="sm" className="mt-3 w-full" asChild>
-                    <Link href="/tours/create">Create Tour</Link>
+                    <Link href="/account/my-tours">Manage Tours</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -390,6 +390,9 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
                   <p className="text-xs text-muted-foreground mt-1">
                     No active transfers
                   </p>
+                  <Button variant="default" size="sm" className="mt-3 w-full" asChild>
+                    <Link href="/account/my-transfers">Manage Transfers</Link>
+                  </Button>
                 </CardContent>
               </Card>
 
