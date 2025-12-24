@@ -9,9 +9,11 @@ import {
 } from '@/lib/transfers-data';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
-});
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-11-20.acacia',
+  })
+  : null;
 
 const passengerInfoSchema = z.object({
   firstName: z.string().min(2),
@@ -103,12 +105,12 @@ export async function POST(request: NextRequest) {
     // Calculate pricing
     const basePrice = vehicle.pricing.basePrice;
     const distanceCharge = validatedData.estimatedDistance * vehicle.pricing.pricePerKm;
-    
+
     // Check for airport surcharge
     let airportSurcharge = 0;
     if (
-      (validatedData.transferType === 'airport_to_city' || 
-       validatedData.transferType === 'city_to_airport') &&
+      (validatedData.transferType === 'airport_to_city' ||
+        validatedData.transferType === 'city_to_airport') &&
       vehicle.pricing.airportSurcharge
     ) {
       airportSurcharge = vehicle.pricing.airportSurcharge;
@@ -124,6 +126,13 @@ export async function POST(request: NextRequest) {
     const totalPrice = basePrice + distanceCharge + airportSurcharge + nightSurcharge;
 
     // Create Stripe payment intent
+    if (!stripe) {
+      return NextResponse.json({
+        success: false,
+        message: 'Payment system is not configured',
+      }, { status: 500 });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalPrice * 100), // Convert to cents
       currency: vehicle.pricing.currency.toLowerCase(),

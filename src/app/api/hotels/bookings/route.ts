@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/rbac';
-import { 
-  createHotelBooking, 
+import {
+  createHotelBooking,
   getHotelBookingsByUserId,
   checkRoomAvailability,
   getRoomById,
@@ -10,9 +10,11 @@ import {
 } from '@/lib/hotels-data';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
-});
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-11-20.acacia',
+  })
+  : null;
 
 // Validation schemas
 const guestInfoSchema = z.object({
@@ -148,7 +150,7 @@ export async function POST(request: NextRequest) {
     const roomPrice = room.pricing.basePrice * numberOfNights;
     const taxAmount = roomPrice * (room.pricing.taxRate / 100);
     const cleaningFee = room.pricing.cleaningFee || 0;
-    
+
     // Calculate extra guest fee if applicable
     let extraGuestFee = 0;
     if (room.pricing.extraGuestFee && totalGuests > room.capacity.adults) {
@@ -159,6 +161,13 @@ export async function POST(request: NextRequest) {
     const totalPrice = roomPrice + taxAmount + cleaningFee + extraGuestFee;
 
     // Create Stripe payment intent
+    if (!stripe) {
+      return NextResponse.json({
+        success: false,
+        message: 'Payment system is not configured',
+      }, { status: 500 });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalPrice * 100), // Convert to cents
       currency: room.pricing.currency.toLowerCase(),

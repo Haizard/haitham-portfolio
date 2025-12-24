@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { requireAuth } from '@/lib/auth-middleware';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-});
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-12-18.acacia',
+  })
+  : null;
 
 // Validation schema for tour booking updates
 const tourBookingUpdateSchema = z.object({
@@ -30,18 +32,18 @@ export async function GET(
   try {
     const session = await requireAuth(request);
     const { id } = await params;
-    
+
     const booking = await getTourBookingById(id);
-    
+
     if (!booking) {
       return NextResponse.json({ message: 'Tour booking not found' }, { status: 404 });
     }
-    
+
     // Check authorization: user can only view their own bookings unless they're admin
     if (booking.userId !== session.userId && !session.roles.includes('admin')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
-    
+
     return NextResponse.json(booking);
 
   } catch (error: any) {
@@ -63,30 +65,36 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const validatedData = tourBookingUpdateSchema.parse(body);
-    
+
     const booking = await getTourBookingById(id);
-    
+
     if (!booking) {
       return NextResponse.json({ message: 'Tour booking not found' }, { status: 404 });
     }
-    
+
     // Authorization check
     const isOwner = booking.userId === session.userId;
     const isAdmin = session.roles.includes('admin');
-    
+
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
-    
+
     // Handle cancellation
     if (validatedData.status === 'cancelled' && booking.status !== 'cancelled') {
       // Process refund if payment was made
       if (booking.paymentInfo.paymentStatus === 'paid' && booking.paymentInfo.stripePaymentIntentId) {
+        if (!stripe) {
+          return NextResponse.json(
+            { message: 'Payment system is not configured for refunds' },
+            { status: 500 }
+          );
+        }
         try {
           await stripe.refunds.create({
             payment_intent: booking.paymentInfo.stripePaymentIntentId,
           });
-          
+
           validatedData.paymentInfo = {
             ...validatedData.paymentInfo,
             paymentStatus: 'refunded',
@@ -100,26 +108,26 @@ export async function PATCH(
         }
       }
     }
-    
+
     // Update booking
     const updatedBooking = await updateTourBooking(id, validatedData);
-    
+
     if (!updatedBooking) {
       return NextResponse.json({ message: 'Failed to update tour booking' }, { status: 500 });
     }
-    
+
     return NextResponse.json(updatedBooking);
 
   } catch (error: any) {
     console.error('[API /api/tours/bookings/[id] PATCH] Error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { message: 'Validation error', errors: error.errors },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
       { message: `Failed to update tour booking: ${error.message}` },
       { status: 500 }
@@ -135,24 +143,24 @@ export async function DELETE(
   try {
     const session = await requireAuth(request);
     const { id } = await params;
-    
+
     // Only admins can delete bookings
     if (!session.roles.includes('admin')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
-    
+
     const booking = await getTourBookingById(id);
-    
+
     if (!booking) {
       return NextResponse.json({ message: 'Tour booking not found' }, { status: 404 });
     }
-    
+
     const deleted = await deleteTourBooking(id);
-    
+
     if (!deleted) {
       return NextResponse.json({ message: 'Failed to delete tour booking' }, { status: 500 });
     }
-    
+
     return NextResponse.json({ message: 'Tour booking deleted successfully' });
 
   } catch (error: any) {
