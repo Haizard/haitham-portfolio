@@ -13,19 +13,19 @@ import {
   Share2,
   Briefcase,
   ShieldCheck,
-  UserCircle, 
-  Lightbulb, 
+  UserCircle,
+  Lightbulb,
   Settings,
   FolderKanban,
   Tags,
   FileText,
-  Package, 
-  BarChartHorizontalBig, 
+  Package,
+  BarChartHorizontalBig,
   PackageSearch,
   CalendarCheck2,
   MessageCircle,
   FilePlus2,
-  ClipboardList, 
+  ClipboardList,
   Store,
   ShoppingCart,
   Landmark,
@@ -38,6 +38,9 @@ import {
   Star,
   Plane,
   MountainSnow,
+  Hotel,
+  Car,
+  Calculator,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -100,7 +103,7 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/vendor/finances", label: "Finances", icon: Landmark },
     ],
   },
-   {
+  {
     group: "Restaurant Platform",
     roles: ['vendor'], // Assuming restaurant owners have the 'vendor' role
     items: [
@@ -135,6 +138,38 @@ const navConfig: (NavItem | NavGroup)[] = [
         icon: CalendarDays,
       },
       { href: "/social-post-generator", label: "Post Generator", icon: Share2 },
+    ],
+  },
+  {
+    group: "Stays & Properties",
+    roles: ['property_owner', 'admin'],
+    items: [
+      { href: "/account/my-properties", label: "My Properties", icon: Hotel },
+      { href: "/account/bookings", label: "Bookings", icon: CalendarCheck2 },
+    ],
+  },
+  {
+    group: "Car Rentals",
+    roles: ['car_owner', 'admin'],
+    items: [
+      { href: "/account/my-vehicles", label: "My Fleet", icon: Car },
+      { href: "/account/bookings", label: "Rentals", icon: Calculator },
+    ],
+  },
+  {
+    group: "Tours & Activities",
+    roles: ['tour_operator', 'admin'],
+    items: [
+      { href: "/account/my-tours", label: "My Tours", icon: Map },
+      { href: "/account/bookings", label: "Bookings", icon: Calendar },
+    ],
+  },
+  {
+    group: "Transfer Services",
+    roles: ['transfer_provider', 'admin'],
+    items: [
+      { href: "/account/my-transfers", label: "My Transfers", icon: Plane },
+      { href: "/account/bookings", label: "Jobs", icon: ClipboardList },
     ],
   },
   {
@@ -175,10 +210,10 @@ export function SidebarNav({ userRoles }: { userRoles: string[] }) {
 
   const handleLinkClick = () => {
     if (isMobile) {
-        setOpenMobile(false); 
+      setOpenMobile(false);
     }
   };
-  
+
   const isActive = (href: string) => {
     return pathname.startsWith(href);
   };
