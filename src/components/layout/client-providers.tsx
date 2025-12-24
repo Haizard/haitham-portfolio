@@ -48,7 +48,7 @@ export function ClientProviders({
   }
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
       <ThemeProvider
         attribute="class"
         defaultTheme="system"

@@ -1,5 +1,5 @@
 import { ObjectId, WithId, Document } from 'mongodb';
-import { getCollection } from './db';
+import { getCollection } from './mongodb';
 
 // Collection names
 const TRANSFER_VEHICLES_COLLECTION = 'transfer_vehicles';
@@ -156,7 +156,7 @@ export async function createTransferVehicle(
   vehicleData: Omit<TransferVehicle, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'totalTransfers' | 'averageRating' | 'reviewCount'>
 ): Promise<TransferVehicle> {
   const collection = await getCollection<Omit<TransferVehicle, 'id'>>(TRANSFER_VEHICLES_COLLECTION);
-  
+
   const now = new Date().toISOString();
   const docToInsert = {
     ...vehicleData,
@@ -186,10 +186,10 @@ export async function updateTransferVehicle(
   updates: Partial<Omit<TransferVehicle, 'id' | '_id' | 'createdAt' | 'ownerId'>>
 ): Promise<TransferVehicle | null> {
   const collection = await getCollection<TransferVehicle>(TRANSFER_VEHICLES_COLLECTION);
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
-    { 
+    {
       $set: {
         ...updates,
         updatedAt: new Date().toISOString(),
@@ -225,7 +225,7 @@ export async function searchTransferVehicles(
   filters: TransferVehicleSearchFilters
 ): Promise<TransferVehicle[]> {
   const collection = await getCollection<TransferVehicle>(TRANSFER_VEHICLES_COLLECTION);
-  
+
   const query: any = { status: 'available' };
 
   if (filters.city) {
@@ -283,7 +283,7 @@ export async function createTransferBooking(
   bookingData: Omit<TransferBooking, 'id' | '_id' | 'createdAt' | 'updatedAt'>
 ): Promise<TransferBooking> {
   const collection = await getCollection<Omit<TransferBooking, 'id'>>(TRANSFER_BOOKINGS_COLLECTION);
-  
+
   const now = new Date().toISOString();
   const docToInsert = {
     ...bookingData,
@@ -292,7 +292,7 @@ export async function createTransferBooking(
   };
 
   const result = await collection.insertOne(docToInsert as any);
-  
+
   // Increment vehicle's total transfers
   const vehiclesCollection = await getCollection<TransferVehicle>(TRANSFER_VEHICLES_COLLECTION);
   await vehiclesCollection.updateOne(
@@ -326,10 +326,10 @@ export async function updateTransferBooking(
   updates: Partial<Omit<TransferBooking, 'id' | '_id' | 'createdAt' | 'userId' | 'vehicleId'>>
 ): Promise<TransferBooking | null> {
   const collection = await getCollection<TransferBooking>(TRANSFER_BOOKINGS_COLLECTION);
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
-    { 
+    {
       $set: {
         ...updates,
         updatedAt: new Date().toISOString(),
@@ -353,7 +353,7 @@ export async function checkTransferVehicleAvailability(
   }
 
   const bookingsCollection = await getCollection<TransferBooking>(TRANSFER_BOOKINGS_COLLECTION);
-  
+
   // Create datetime for comparison (assuming 3-hour buffer for each transfer)
   const requestedDateTime = new Date(`${pickupDate}T${pickupTime}`);
   const bufferHours = 3;
