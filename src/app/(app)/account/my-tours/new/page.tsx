@@ -12,40 +12,58 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
     FormMessage
 } from '@/components/ui/form';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Plus, X, Map, Calendar, DollarSign } from 'lucide-react';
+import { Loader2, Upload, Plus, X, Star, HelpCircle, Map, Lightbulb } from 'lucide-react';
 
 const tourFormSchema = z.object({
-    name: z.string().min(3, "Name must be at least 3 characters"),
-    duration: z.string().min(2, "Duration is required (e.g. 3 Days)"),
-    description: z.string().min(10, "Description must be at least 10 characters"),
-    location: z.string().min(3, "Location is required"),
-    tourType: z.string().min(3, "Tour type is required"),
-    price: z.coerce.number().positive("Price must be positive"),
+    name: z.string().min(3),
+    duration: z.string().min(2),
+    description: z.string().min(10),
+    location: z.string().min(3),
+    tourType: z.string().min(3),
+    price: z.coerce.number().positive(),
+    mapEmbedUrl: z.string().url().optional().or(z.literal("")),
     isActive: z.boolean().default(true),
 });
+
+interface HighlightItem {
+    text: string;
+    icon?: string;
+}
+
+interface FaqItem {
+    question: string;
+    answer: string;
+}
+
+interface GalleryItem {
+    url: string;
+    caption: string;
+}
 
 export default function NewTourPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const [featuredImage, setFeaturedImage] = useState("");
 
-    // Lists
+    // Rich Data States
+    const [featuredImage, setFeaturedImage] = useState("");
+    const [gallery, setGallery] = useState<GalleryItem[]>([]);
+    const [galleryInput, setGalleryInput] = useState("");
+
+    const [highlights, setHighlights] = useState<HighlightItem[]>([]);
+    const [highlightInput, setHighlightInput] = useState("");
+
+    const [faqs, setFaqs] = useState<FaqItem[]>([]);
+    const [faqQ, setFaqQ] = useState("");
+    const [faqA, setFaqA] = useState("");
+
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState("");
 
@@ -64,8 +82,32 @@ export default function NewTourPage() {
             tourType: "Adventure",
             price: 0,
             isActive: true,
+            mapEmbedUrl: ""
         },
     });
+
+    // Helpers
+    const addGalleryItem = () => {
+        if (galleryInput) {
+            setGallery([...gallery, { url: galleryInput, caption: "" }]);
+            setGalleryInput("");
+        }
+    };
+
+    const addHighlight = () => {
+        if (highlightInput) {
+            setHighlights([...highlights, { text: highlightInput }]);
+            setHighlightInput("");
+        }
+    };
+
+    const addFaq = () => {
+        if (faqQ && faqA) {
+            setFaqs([...faqs, { question: faqQ, answer: faqA }]);
+            setFaqQ("");
+            setFaqA("");
+        }
+    };
 
     const addItem = (item: string, setItem: (s: string) => void, list: string[], setList: (l: string[]) => void) => {
         if (item && !list.includes(item)) {
@@ -74,17 +116,9 @@ export default function NewTourPage() {
         }
     };
 
-    const removeItem = (index: number, list: string[], setList: (l: string[]) => void) => {
-        setList(list.filter((_, i) => i !== index));
-    };
-
     async function onSubmit(values: z.infer<typeof tourFormSchema>) {
         if (!featuredImage) {
-            toast({ title: "Image Required", description: "Please add a featured image URL.", variant: "destructive" });
-            return;
-        }
-        if (itinerary.length === 0) {
-            toast({ title: "Itinerary Required", description: "Please add at least one itinerary item.", variant: "destructive" });
+            toast({ title: "Featured Image Required", variant: "destructive" });
             return;
         }
 
@@ -97,9 +131,10 @@ export default function NewTourPage() {
                 inclusions,
                 exclusions,
                 featuredImageUrl: featuredImage,
-                galleryImages: [], // Simplified for now
-                highlights: [],
-                faqs: []
+                galleryImages: gallery,
+                highlights,
+                faqs,
+                mapEmbedUrl: values.mapEmbedUrl || undefined
             };
 
             const response = await fetch('/api/tours', {
@@ -108,13 +143,11 @@ export default function NewTourPage() {
                 body: JSON.stringify(payload),
             });
 
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Failed to create tour');
+            if (!response.ok) throw new Error('Failed to create tour');
 
             toast({ title: "Success", description: "Tour created successfully!" });
             router.push('/account/my-tours');
         } catch (error: any) {
-            console.error(error);
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -122,155 +155,196 @@ export default function NewTourPage() {
     }
 
     return (
-        <div className="container max-w-4xl mx-auto py-8 px-4">
+        <div className="container max-w-5xl mx-auto py-8 px-4">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">Create a New Tour</h1>
-                <p className="text-muted-foreground">Design an unforgettable experience for travelers.</p>
+                <h1 className="text-3xl font-bold mb-2">Create New Tour Package</h1>
+                <p className="text-muted-foreground">Design a comprehensive travel experience.</p>
             </div>
 
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
-                    <Card>
-                        <CardHeader><CardTitle>Tour Details</CardTitle></CardHeader>
-                        <CardContent className="grid gap-6 md:grid-cols-2">
-                            <FormField control={form.control} name="name" render={({ field }) => (
-                                <FormItem className="col-span-2">
-                                    <FormLabel>Tour Name</FormLabel>
-                                    <FormControl><Input placeholder="Safari Adventure" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="location" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Location</FormLabel>
-                                    <FormControl><Input placeholder="Nairobi, Kenya" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="tourType" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Type</FormLabel>
-                                    <FormControl><Input placeholder="Adventure, Cultural, etc." {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="duration" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Duration</FormLabel>
-                                    <FormControl><Input placeholder="3 Days" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="price" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Price (USD)</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="description" render={({ field }) => (
-                                <FormItem className="col-span-2">
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl><Textarea className="h-24" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                        </CardContent>
-                    </Card>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <Card className="col-span-2">
+                            <CardHeader><CardTitle>Basic Detail</CardTitle></CardHeader>
+                            <CardContent className="grid gap-6 md:grid-cols-2">
+                                <FormField control={form.control} name="name" render={({ field }) => (
+                                    <FormItem className="col-span-2"><FormLabel>Tour Name</FormLabel><FormControl><Input placeholder="Awesome Safari" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="location" render={({ field }) => (
+                                    <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="City, Country" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="tourType" render={({ field }) => (
+                                    <FormItem><FormLabel>Type</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="duration" render={({ field }) => (
+                                    <FormItem><FormLabel>Duration</FormLabel><FormControl><Input placeholder="5 Days" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="price" render={({ field }) => (
+                                    <FormItem><FormLabel>Price USD</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="mapEmbedUrl" render={({ field }) => (
+                                    <FormItem><FormLabel>Map Embed URL (Optional)</FormLabel><FormControl><Input placeholder="https://maps.google.com/..." {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="description" render={({ field }) => (
+                                    <FormItem className="col-span-2"><FormLabel>Description</FormLabel><FormControl><Textarea className="h-32" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </CardContent>
+                        </Card>
 
-                    {/* Itinerary */}
-                    <Card>
-                        <CardHeader><CardTitle>Itinerary & Details</CardTitle></CardHeader>
-                        <CardContent className="space-y-6">
-
-                            {/* Itinerary List */}
-                            <div className="space-y-2">
-                                <FormLabel>Itinerary Items (Day-by-Day)</FormLabel>
+                        {/* Highlights */}
+                        <Card>
+                            <CardHeader><CardTitle className="flex gap-2"><Lightbulb className="w-5 h-5" /> Highlights</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
                                 <div className="flex gap-2">
-                                    <Input value={itineraryInput} onChange={(e) => setItineraryInput(e.target.value)} placeholder="Day 1: Arrival..." />
-                                    <Button type="button" onClick={() => addItem(itineraryInput, setItineraryInput, itinerary, setItinerary)} variant="outline">Add</Button>
+                                    <Input value={highlightInput} onChange={e => setHighlightInput(e.target.value)} placeholder="Add a highlight point..." />
+                                    <Button type="button" onClick={addHighlight} size="sm"><Plus className="w-4 h-4" /></Button>
                                 </div>
-                                <div className="space-y-1">
-                                    {itinerary.map((item, i) => (
-                                        <div key={i} className="flex justify-between items-center bg-muted p-2 rounded text-sm">
-                                            <span>{item}</span>
-                                            <button type="button" onClick={() => removeItem(i, itinerary, setItinerary)}><X className="h-4 w-4" /></button>
+                                <ul className="list-disc pl-5 space-y-1">
+                                    {highlights.map((h, i) => (
+                                        <li key={i} className="text-sm flex justify-between">
+                                            {h.text}
+                                            <X className="w-4 h-4 cursor-pointer text-red-500" onClick={() => setHighlights(highlights.filter((_, idx) => idx !== i))} />
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                        </Card>
+
+                        {/* FAQs */}
+                        <Card>
+                            <CardHeader><CardTitle className="flex gap-2"><HelpCircle className="w-5 h-5" /> FAQs</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2 border p-3 rounded">
+                                    <Input value={faqQ} onChange={e => setFaqQ(e.target.value)} placeholder="Question" className="text-sm" />
+                                    <Textarea value={faqA} onChange={e => setFaqA(e.target.value)} placeholder="Answer" className="text-sm h-16" />
+                                    <Button type="button" onClick={addFaq} size="sm" variant="secondary" className="w-full">Add FAQ</Button>
+                                </div>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {faqs.map((f, i) => (
+                                        <div key={i} className="bg-muted p-2 rounded relative group">
+                                            <p className="font-semibold text-xs">{f.question}</p>
+                                            <p className="text-xs text-muted-foreground">{f.answer}</p>
+                                            <X className="w-4 h-4 absolute top-1 right-1 cursor-pointer opacity-0 group-hover:opacity-100" onClick={() => setFaqs(faqs.filter((_, idx) => idx !== i))} />
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </CardContent>
+                        </Card>
 
-                            {/* Inclusions */}
-                            <div className="space-y-2">
-                                <FormLabel>Inclusions (What's included)</FormLabel>
-                                <div className="flex gap-2">
-                                    <Input value={inclusionInput} onChange={(e) => setInclusionInput(e.target.value)} placeholder="Airport Transfer" />
-                                    <Button type="button" onClick={() => addItem(inclusionInput, setInclusionInput, inclusions, setInclusions)} variant="outline">Add</Button>
+                        {/* Itinerary */}
+                        <Card className="col-span-2">
+                            <CardHeader><CardTitle>Itinerary & Logistics</CardTitle></CardHeader>
+                            <CardContent className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <FormLabel>Daily Itinerary</FormLabel>
+                                    <div className="flex gap-2">
+                                        <Textarea value={itineraryInput} onChange={e => setItineraryInput(e.target.value)} placeholder="Day 1 details..." className="h-20" />
+                                        <Button type="button" onClick={() => addItem(itineraryInput, setItineraryInput, itinerary, setItinerary)} className="h-20">Add</Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {itinerary.map((item, i) => (
+                                            <div key={i} className="bg-muted p-2 rounded text-sm relative group">
+                                                <span className="font-bold mr-2">Step {i + 1}:</span> {item}
+                                                <X className="w-4 h-4 absolute top-1 right-1 cursor-pointer opacity-0 group-hover:opacity-100" onClick={() => setItinerary(itinerary.filter((_, idx) => idx !== i))} />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {inclusions.map((item, i) => (
-                                        <div key={i} className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                                            {item}
-                                            <button type="button" onClick={() => removeItem(i, inclusions, setInclusions)}><X className="h-3 w-3" /></button>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <FormLabel>Inclusions</FormLabel>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input value={inclusionInput} onChange={e => setInclusionInput(e.target.value)} placeholder="Item..." />
+                                            <Button type="button" onClick={() => addItem(inclusionInput, setInclusionInput, inclusions, setInclusions)}>Add</Button>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Exclusions */}
-                            <div className="space-y-2">
-                                <FormLabel>Exclusions (What's NOT included)</FormLabel>
-                                <div className="flex gap-2">
-                                    <Input value={exclusionInput} onChange={(e) => setExclusionInput(e.target.value)} placeholder="Flights" />
-                                    <Button type="button" onClick={() => addItem(exclusionInput, setExclusionInput, exclusions, setExclusions)} variant="outline">Add</Button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {exclusions.map((item, i) => (
-                                        <div key={i} className="flex items-center gap-1 bg-red-100 text-red-800 px-2 py-1 rounded text-xs">
-                                            {item}
-                                            <button type="button" onClick={() => removeItem(i, exclusions, setExclusions)}><X className="h-3 w-3" /></button>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {inclusions.map((item, i) => (
+                                                <span key={i} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded flex items-center gap-1">
+                                                    {item} <X className="w-3 h-3 cursor-pointer" onClick={() => setInclusions(inclusions.filter((_, idx) => idx !== i))} />
+                                                </span>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                    </div>
 
-                            {/* Tags */}
-                            <div className="space-y-2">
-                                <FormLabel>Tags</FormLabel>
-                                <div className="flex gap-2">
-                                    <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Beach, Safari..." />
-                                    <Button type="button" onClick={() => addItem(tagInput, setTagInput, tags, setTags)} variant="outline">Add</Button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {tags.map((item, i) => (
-                                        <div key={i} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                                            {item}
-                                            <button type="button" onClick={() => removeItem(i, tags, setTags)}><X className="h-3 w-3" /></button>
+                                    <div>
+                                        <FormLabel>Exclusions</FormLabel>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input value={exclusionInput} onChange={e => setExclusionInput(e.target.value)} placeholder="Item..." />
+                                            <Button type="button" onClick={() => addItem(exclusionInput, setExclusionInput, exclusions, setExclusions)}>Add</Button>
                                         </div>
-                                    ))}
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {exclusions.map((item, i) => (
+                                                <span key={i} className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded flex items-center gap-1">
+                                                    {item} <X className="w-3 h-3 cursor-pointer" onClick={() => setExclusions(exclusions.filter((_, idx) => idx !== i))} />
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <FormLabel>Tags</FormLabel>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Tag..." />
+                                            <Button type="button" onClick={() => addItem(tagInput, setTagInput, tags, setTags)}>Add</Button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {tags.map((item, i) => (
+                                                <span key={i} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded flex items-center gap-1">
+                                                    {item} <X className="w-3 h-3 cursor-pointer" onClick={() => setTags(tags.filter((_, idx) => idx !== i))} />
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </CardContent>
+                        </Card>
 
-                        </CardContent>
-                    </Card>
-
-                    {/* Media */}
-                    <Card>
-                        <CardHeader><CardTitle>Featured Image</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="flex gap-2 mb-4">
-                                <Input value={featuredImage} onChange={(e) => setFeaturedImage(e.target.value)} placeholder="Featured Image URL" />
-                            </div>
-                            {featuredImage && (
-                                <div className="aspect-video bg-muted rounded overflow-hidden">
-                                    <img src={featuredImage} className="w-full h-full object-cover" />
+                        {/* Gallery */}
+                        <Card className="col-span-2">
+                            <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-2">
+                                    <FormLabel>Featured Image (Cover)</FormLabel>
+                                    <Input value={featuredImage} onChange={e => setFeaturedImage(e.target.value)} placeholder="Main Cover Image URL" />
+                                    {featuredImage && <img src={featuredImage} className="h-48 object-cover rounded mt-2" />}
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
 
-                    <Button type="submit" disabled={isLoading} className="w-full">{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create Tour</Button>
+                                <div className="space-y-2">
+                                    <FormLabel>Gallery Images</FormLabel>
+                                    <div className="flex gap-2">
+                                        <Input value={galleryInput} onChange={e => setGalleryInput(e.target.value)} placeholder="Additional Image URL" />
+                                        <Button type="button" onClick={addGalleryItem}><Upload className="w-4 h-4 mr-2" /> Add</Button>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-4 mt-2">
+                                        {gallery.map((img, i) => (
+                                            <div key={i} className="relative group border rounded p-2">
+                                                <img src={img.url} className="w-full h-24 object-cover rounded" />
+                                                <Input
+                                                    value={img.caption}
+                                                    onChange={(e) => {
+                                                        const newG = [...gallery];
+                                                        newG[i].caption = e.target.value;
+                                                        setGallery(newG);
+                                                    }}
+                                                    placeholder="Caption..."
+                                                    className="mt-1 h-6 text-xs"
+                                                />
+                                                <X className="w-5 h-5 absolute top-0 right-0 bg-white rounded-full cursor-pointer text-red-500 border" onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                    </div>
+
+                    <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg">
+                        {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                        Publish Tour Package
+                    </Button>
                 </form>
             </Form>
         </div>
