@@ -30,7 +30,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth(request);
+    const session = await requireAuth();
     const { id } = await params;
 
     const booking = await getTourBookingById(id);
@@ -61,7 +61,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth(request);
+    const session = await requireAuth();
     const { id } = await params;
     const body = await request.json();
     const validatedData = tourBookingUpdateSchema.parse(body);
@@ -141,7 +141,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth(request);
+    const session = await requireAuth();
     const { id } = await params;
 
     // Only admins can delete bookings

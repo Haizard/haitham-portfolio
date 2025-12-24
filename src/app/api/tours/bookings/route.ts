@@ -37,7 +37,7 @@ type TourBookingCreateInput = z.infer<typeof tourBookingCreateSchema>;
 // POST /api/tours/bookings - Create a new tour booking
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth(request);
+    const session = await requireAuth();
     const body = await request.json();
     const validatedData = tourBookingCreateSchema.parse(body);
 
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 // GET /api/tours/bookings - Get user's tour bookings or filter by query params
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireAuth(request);
+    const session = await requireAuth();
     const { searchParams } = new URL(request.url);
 
     const filters: any = {};
