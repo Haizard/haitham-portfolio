@@ -55,7 +55,7 @@ export function UserNav({ user }: UserNavProps) {
               <span>Dashboard</span>
             </Link>
           </DropdownMenuItem>
-          {user.roles.includes('admin') && (
+          {user.roles && user.roles.includes('admin') && (
             <DropdownMenuItem asChild>
               <Link href="/account/admin">
                 <ShieldCheck className="mr-2 h-4 w-4" />

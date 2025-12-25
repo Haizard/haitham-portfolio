@@ -49,21 +49,21 @@ export default function LoginPage() {
       if (!response.ok) {
         throw new Error(result.message || "Failed to log in.");
       }
-      
+
       // Call the login function from the context to update the user state.
       // This is now a synchronous operation on the client.
-      login(result);
-      
+      login(result.user);
+
       // After setting the user in the context, we can redirect.
       // The router.refresh() is good practice to ensure server components re-render with new auth state if needed.
       router.push('/dashboard');
-      router.refresh(); 
+      router.refresh();
 
       toast({
-          title: "Login Successful!",
-          description: "Welcome back! Redirecting you..."
+        title: "Login Successful!",
+        description: "Welcome back! Redirecting you..."
       });
-      
+
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -114,10 +114,10 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
-                 <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
                   {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
                   {isSubmitting ? "Signing In..." : "Sign In"}
-                 </Button>
+                </Button>
               </form>
             </Form>
           </CardContent>

@@ -81,7 +81,7 @@ export default function SignupPage() {
       }
 
       // Call login to update the user state in the context
-      login(result);
+      login(result.user);
 
       // Redirect to the dashboard
       router.push('/account/dashboard');
