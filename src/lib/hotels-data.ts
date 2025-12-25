@@ -164,19 +164,19 @@ export interface HotelBooking {
 
 // --- Helper Functions ---
 
-function docToProperty(doc: any): Property {
+export function docToProperty(doc: any): Property {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
   return { id: _id?.toString(), ...rest } as Property;
 }
 
-function docToRoom(doc: any): Room {
+export function docToRoom(doc: any): Room {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
   return { id: _id?.toString(), ...rest } as Room;
 }
 
-function docToHotelBooking(doc: any): HotelBooking {
+export function docToHotelBooking(doc: any): HotelBooking {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
   return { id: _id?.toString(), ...rest } as HotelBooking;
@@ -186,7 +186,7 @@ function docToHotelBooking(doc: any): HotelBooking {
 
 export async function createProperty(propertyData: Omit<Property, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'averageRating' | 'reviewCount'>): Promise<Property> {
   const collection = await getCollection<Omit<Property, 'id'>>(PROPERTIES_COLLECTION);
-  
+
   const now = new Date().toISOString();
   const docToInsert = {
     ...propertyData,
@@ -220,7 +220,7 @@ export async function getPropertiesByOwnerId(ownerId: string): Promise<Property[
 
 export async function updateProperty(id: string, updates: Partial<Property>): Promise<Property | null> {
   const collection = await getCollection<Property>(PROPERTIES_COLLECTION);
-  
+
   const updateDoc = {
     ...updates,
     updatedAt: new Date().toISOString(),
@@ -245,7 +245,7 @@ export async function deleteProperty(id: string): Promise<boolean> {
 
 export async function createRoom(roomData: Omit<Room, 'id' | '_id' | 'createdAt' | 'updatedAt'>): Promise<Room> {
   const collection = await getCollection<Omit<Room, 'id'>>(ROOMS_COLLECTION);
-  
+
   const now = new Date().toISOString();
   const docToInsert = {
     ...roomData,
@@ -271,7 +271,7 @@ export async function getRoomsByPropertyId(propertyId: string): Promise<Room[]> 
 
 export async function updateRoom(id: string, updates: Partial<Room>): Promise<Room | null> {
   const collection = await getCollection<Room>(ROOMS_COLLECTION);
-  
+
   const updateDoc = {
     ...updates,
     updatedAt: new Date().toISOString(),
