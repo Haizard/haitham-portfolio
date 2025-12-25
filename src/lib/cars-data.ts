@@ -122,13 +122,13 @@ export interface CarRental {
 
 // --- Helper Functions ---
 
-function docToVehicle(doc: any): Vehicle {
+export function docToVehicle(doc: any): Vehicle {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
   return { id: _id?.toString(), ...rest } as Vehicle;
 }
 
-function docToCarRental(doc: any): CarRental {
+export function docToCarRental(doc: any): CarRental {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
   return { id: _id?.toString(), ...rest } as CarRental;
@@ -138,7 +138,7 @@ function docToCarRental(doc: any): CarRental {
 
 export async function createVehicle(vehicleData: Omit<Vehicle, 'id' | '_id' | 'createdAt' | 'updatedAt' | 'averageRating' | 'reviewCount' | 'totalRentals'>): Promise<Vehicle> {
   const collection = await getCollection<Omit<Vehicle, 'id'>>(VEHICLES_COLLECTION);
-  
+
   const now = new Date().toISOString();
   const docToInsert = {
     ...vehicleData,
@@ -167,7 +167,7 @@ export async function getVehiclesByOwnerId(ownerId: string): Promise<Vehicle[]> 
 
 export async function updateVehicle(id: string, updates: Partial<Vehicle>): Promise<Vehicle | null> {
   const collection = await getCollection<Vehicle>(VEHICLES_COLLECTION);
-  
+
   const updateDoc = {
     ...updates,
     updatedAt: new Date().toISOString(),
@@ -192,7 +192,7 @@ export async function deleteVehicle(id: string): Promise<boolean> {
 
 export async function createCarRental(rentalData: Omit<CarRental, 'id' | '_id' | 'createdAt' | 'updatedAt'>): Promise<CarRental> {
   const collection = await getCollection<Omit<CarRental, 'id'>>(CAR_RENTALS_COLLECTION);
-  
+
   const now = new Date().toISOString();
   const docToInsert = {
     ...rentalData,
@@ -224,7 +224,7 @@ export async function getCarRentalsByVehicleId(vehicleId: string): Promise<CarRe
 
 export async function updateCarRental(id: string, updates: Partial<CarRental>): Promise<CarRental | null> {
   const collection = await getCollection<CarRental>(CAR_RENTALS_COLLECTION);
-  
+
   const updateDoc = {
     ...updates,
     updatedAt: new Date().toISOString(),
@@ -251,7 +251,7 @@ export async function checkVehicleAvailability(
   }
 
   const rentalsCollection = await getCollection<CarRental>(CAR_RENTALS_COLLECTION);
-  
+
   // Find overlapping rentals
   const overlappingRentals = await rentalsCollection.find({
     vehicleId,
@@ -285,7 +285,7 @@ export interface VehicleSearchFilters {
 
 export async function searchVehicles(filters: VehicleSearchFilters): Promise<Vehicle[]> {
   const collection = await getCollection<Vehicle>(VEHICLES_COLLECTION);
-  
+
   const query: Filter<Vehicle> = {};
 
   // Location filters
@@ -327,11 +327,11 @@ export async function searchVehicles(filters: VehicleSearchFilters): Promise<Veh
   query.status = filters.status || 'available';
 
   const vehicles = await collection.find(query).toArray();
-  
+
   // If date filters are provided, filter by availability
   if (filters.pickupDate && filters.returnDate) {
     const availableVehicles: Vehicle[] = [];
-    
+
     for (const vehicle of vehicles) {
       const { available } = await checkVehicleAvailability(
         vehicle._id!.toString(),
@@ -343,7 +343,7 @@ export async function searchVehicles(filters: VehicleSearchFilters): Promise<Veh
         availableVehicles.push(docToVehicle(vehicle));
       }
     }
-    
+
     return availableVehicles;
   }
 
