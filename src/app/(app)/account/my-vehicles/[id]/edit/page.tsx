@@ -55,6 +55,7 @@ const vehicleFormSchema = z.object({
     dailyRate: z.coerce.number().positive("Rate must be positive"),
     currency: z.string().default("USD"),
     deposit: z.coerce.number().min(0),
+    status: z.enum(['available', 'rented', 'maintenance', 'inactive']).default('available'),
 });
 
 const CAR_FEATURES = [
@@ -131,6 +132,7 @@ export default function EditVehiclePage({ params }: { params: { id: string } }) 
                     dailyRate: vehicle.pricing.dailyRate,
                     currency: vehicle.pricing.currency,
                     deposit: vehicle.pricing.deposit,
+                    status: vehicle.status || 'available',
                 });
 
                 setImages(vehicle.images || []);
@@ -286,6 +288,21 @@ export default function EditVehiclePage({ params }: { params: { id: string } }) 
                             )} />
                             <FormField control={form.control} name="model" render={({ field }) => (
                                 <FormItem><FormLabel>Model</FormLabel><FormControl><Input placeholder="Camry" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="status" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Status</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="available">Available</SelectItem>
+                                            <SelectItem value="rented">Rented</SelectItem>
+                                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                             <FormField control={form.control} name="year" render={({ field }) => (
                                 <FormItem><FormLabel>Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>

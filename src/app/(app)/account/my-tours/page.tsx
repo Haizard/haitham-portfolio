@@ -83,14 +83,14 @@ export default function MyToursPage() {
       // Calculate stats
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+
       const upcomingBookings = allBookings.filter(
         (b) => b.status !== 'cancelled' && new Date(b.tourDate) >= now
       );
-      
+
       const paidBookings = allBookings.filter((b) => b.paymentInfo.paymentStatus === 'paid');
       const totalRevenue = paidBookings.reduce((sum, b) => sum + b.pricing.total, 0);
-      
+
       const monthlyBookings = paidBookings.filter(
         (b) => new Date(b.createdAt) >= firstDayOfMonth
       );
@@ -166,7 +166,7 @@ export default function MyToursPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/tours">
+          <Link href="/account/my-tours/new">
             <Plus className="mr-2 h-4 w-4" />
             Create New Tour
           </Link>
@@ -236,7 +236,7 @@ export default function MyToursPage() {
                   Create your first tour package to start accepting bookings
                 </p>
                 <Button asChild>
-                  <Link href="/admin/tours">
+                  <Link href="/account/my-tours/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Tour
                   </Link>
@@ -309,7 +309,7 @@ export default function MyToursPage() {
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" className="flex-1" asChild>
-                          <Link href={`/admin/tours?edit=${tour.id}`}>
+                          <Link href={`/account/my-tours/${tour.id}/edit`}>
                             <Edit className="mr-1 h-3 w-3" />
                             Edit
                           </Link>
@@ -359,10 +359,10 @@ export default function MyToursPage() {
                           booking.status === 'confirmed'
                             ? 'default'
                             : booking.status === 'cancelled'
-                            ? 'destructive'
-                            : booking.status === 'completed'
-                            ? 'secondary'
-                            : 'outline'
+                              ? 'destructive'
+                              : booking.status === 'completed'
+                                ? 'secondary'
+                                : 'outline'
                         }
                       >
                         {booking.status}
