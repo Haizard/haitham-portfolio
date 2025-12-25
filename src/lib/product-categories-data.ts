@@ -6,20 +6,26 @@ import type { Product } from './products-data';
 const PRODUCT_CATEGORIES_COLLECTION = 'productCategories';
 
 export interface ProductCategoryNode {
-  _id?: ObjectId; 
-  id?: string; 
+  _id?: ObjectId;
+  id?: string;
   name: string;
   slug: string;
   description?: string;
-  parentId?: string | null; 
-  children?: ProductCategoryNode[]; 
+  parentId?: string | null;
+  children?: ProductCategoryNode[];
   productCount?: number;
 }
 
 function docToCategoryNode(doc: any): ProductCategoryNode {
   if (!doc) return doc;
-  const { _id, ...rest } = doc;
-  return { id: _id?.toString(), ...rest, children: rest.children || [], productCount: rest.productCount || 0 } as ProductCategoryNode;
+  const { _id, parentId, ...rest } = doc;
+  return {
+    id: _id?.toString(),
+    parentId: parentId?.toString() || null,
+    ...rest,
+    children: rest.children || [],
+    productCount: rest.productCount || 0
+  } as ProductCategoryNode;
 }
 
 function createSlugFromName(name: string): string {
@@ -29,10 +35,10 @@ function createSlugFromName(name: string): string {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
-  
+
   if (slug.startsWith('-')) slug = slug.substring(1);
   if (slug.endsWith('-')) slug = slug.slice(0, -1);
-  
+
   return slug || `category-${Date.now()}`;
 }
 
@@ -89,7 +95,7 @@ export async function getProductCategoryById(id: string): Promise<ProductCategor
   const collection = await getCollection<ProductCategoryNode>(PRODUCT_CATEGORIES_COLLECTION);
   const doc = await collection.findOne({ _id: new ObjectId(id) });
   if (!doc) return null;
-  
+
   const category = docToCategoryNode(doc);
   const productsCollection = await getCollection<Product>('products');
   category.productCount = await productsCollection.countDocuments({ categoryId: category.id });
@@ -106,7 +112,7 @@ export async function addProductCategory(
   if (!(await isSlugUnique(slug, categoryData.parentId || null))) {
     throw new Error(`Category with slug '${slug}' already exists at this level.`);
   }
-  
+
   if (categoryData.parentId && !ObjectId.isValid(categoryData.parentId)) {
     throw new Error(`Invalid parentId format: ${categoryData.parentId}`);
   }
@@ -115,7 +121,7 @@ export async function addProductCategory(
     name: categoryData.name,
     slug,
     description: categoryData.description,
-    parentId: categoryData.parentId || null, 
+    parentId: categoryData.parentId || null,
   };
 
   const result = await collection.insertOne(docToInsert as any);
@@ -129,7 +135,7 @@ export async function updateProductCategory(
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<ProductCategoryNode>(PRODUCT_CATEGORIES_COLLECTION);
 
-  const existingCategory = await collection.findOne({_id: new ObjectId(id)});
+  const existingCategory = await collection.findOne({ _id: new ObjectId(id) });
   if (!existingCategory) return null;
 
   const updatePayload: any = {};
@@ -138,13 +144,13 @@ export async function updateProductCategory(
 
   if (updates.name && updates.name !== existingCategory.name) {
     const newSlug = createSlugFromName(updates.name);
-     if (!newSlug) throw new Error("Updated category name resulted in an empty slug.");
+    if (!newSlug) throw new Error("Updated category name resulted in an empty slug.");
     if (!(await isSlugUnique(newSlug, existingCategory.parentId || null, id))) {
       throw new Error(`Update failed: Category slug '${newSlug}' would conflict with an existing category at the same level.`);
     }
     updatePayload.slug = newSlug;
   }
-  
+
   if (Object.keys(updatePayload).length === 0) {
     const currentCategory = docToCategoryNode(existingCategory);
     const productsCollection = await getCollection<Product>('products');
@@ -157,7 +163,7 @@ export async function updateProductCategory(
     { $set: updatePayload },
     { returnDocument: 'after' }
   );
-  if(!result) return null;
+  if (!result) return null;
 
   const updatedCategory = docToCategoryNode(result);
   const productsCollection = await getCollection<Product>('products');
@@ -168,12 +174,12 @@ export async function updateProductCategory(
 export async function deleteProductCategory(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const collection = await getCollection<ProductCategoryNode>(PRODUCT_CATEGORIES_COLLECTION);
-  
+
   const children = await collection.find({ parentId: id }).toArray();
   for (const child of children) {
-    await deleteProductCategory(child._id.toString()); 
+    await deleteProductCategory(child._id.toString());
   }
-  
+
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }
