@@ -36,9 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useFormatPrice } from '@/contexts/currency-context';
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { getStripe } from '@/lib/stripe-client';
 
 interface TransferVehicle {
   id: string;
@@ -154,7 +152,7 @@ export function TransferBookingCard({
     try {
       setCheckingAvailability(true);
       const formattedDate = format(watchedPickupDate, 'yyyy-MM-dd');
-      
+
       const response = await fetch(
         `/api/transfers/vehicles/${vehicle.id}/availability?pickupDate=${formattedDate}&pickupTime=${watchedPickupTime}`
       );
@@ -171,7 +169,7 @@ export function TransferBookingCard({
   const calculatePrice = () => {
     const basePrice = vehicle.pricing.basePrice;
     const distanceCharge = watchedDistance * vehicle.pricing.pricePerKm;
-    
+
     let airportSurcharge = 0;
     if (
       (watchedTransferType === 'airport_to_city' || watchedTransferType === 'city_to_airport') &&
@@ -255,8 +253,10 @@ export function TransferBookingCard({
       }
 
       // Redirect to Stripe checkout
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe failed to load');
+      const stripe = await getStripe();
+      if (!stripe) {
+        console.warn('Stripe failed to load or key is missing. Simulation mode.');
+      }
 
       toast({
         title: 'Booking created!',
@@ -342,7 +342,7 @@ export function TransferBookingCard({
               {/* Transfer Details */}
               <div className="space-y-4">
                 <h3 className="font-semibold">Transfer Details</h3>
-                
+
                 <FormField
                   control={form.control}
                   name="transferType"
@@ -439,7 +439,7 @@ export function TransferBookingCard({
               {/* Passenger Information */}
               <div className="space-y-4">
                 <h3 className="font-semibold">Passenger Information</h3>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}

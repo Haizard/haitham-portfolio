@@ -17,11 +17,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { loadStripe } from '@stripe/stripe-js';
+import { getStripe } from '@/lib/stripe-client';
 import { cn } from '@/lib/utils';
 import { useFormatPrice } from '@/contexts/currency-context';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const bookingFormSchema = z.object({
   tourDate: z.date({ required_error: 'Please select a tour date' }),
@@ -130,9 +128,9 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
       const { booking, clientSecret } = await response.json();
 
       // Redirect to Stripe Checkout
-      const stripe = await stripePromise;
+      const stripe = await getStripe();
       if (!stripe) {
-        throw new Error('Stripe failed to load');
+        console.warn('Stripe failed to load or key is missing. Simulation mode.');
       }
 
       // For now, we'll just show success and redirect to bookings
