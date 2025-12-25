@@ -20,6 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { MenuItem, MenuCategory } from '@/lib/restaurants-data';
@@ -70,7 +71,7 @@ export function MenuItemFormDialog({ isOpen, onClose, item, restaurantId, catego
     resolver: zodResolver(formSchema),
     defaultValues: {},
   });
-  
+
   const { fields: groupFields, append: appendGroup, remove: removeGroup } = useFieldArray({ control: form.control, name: "optionGroups" });
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export function MenuItemFormDialog({ isOpen, onClose, item, restaurantId, catego
           categoryId: item.categoryId,
           imageUrl: item.imageUrl,
           dietaryFlags: item.dietaryFlags,
-          optionGroups: item.optionGroups?.map(g => ({ ...g, options: g.options.map(o => ({...o}))})), // Deep copy
+          optionGroups: item.optionGroups?.map(g => ({ ...g, options: g.options.map(o => ({ ...o })) })), // Deep copy
         });
       } else {
         form.reset({
@@ -102,8 +103,8 @@ export function MenuItemFormDialog({ isOpen, onClose, item, restaurantId, catego
   const handleSubmit = async (values: FormValues) => {
     setIsSaving(true);
     const isEditing = !!item;
-    const apiUrl = isEditing 
-      ? `/api/restaurants/${restaurantId}/menu-items/${item.id}` 
+    const apiUrl = isEditing
+      ? `/api/restaurants/${restaurantId}/menu-items/${item.id}`
       : `/api/restaurants/${restaurantId}/menu-items`;
     const method = isEditing ? 'PUT' : 'POST';
 
@@ -140,72 +141,72 @@ export function MenuItemFormDialog({ isOpen, onClose, item, restaurantId, catego
               <div className="space-y-6 py-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem><FormLabel>Name</FormLabel><Input {...field} /></FormItem>
-                )}/>
-                 <FormField control={form.control} name="description" render={({ field }) => (
+                )} />
+                <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem><FormLabel>Description</FormLabel><Textarea {...field} /></FormItem>
-                )}/>
+                )} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="price" render={({ field }) => (
-                      <FormItem><FormLabel>Base Price ($)</FormLabel><Input type="number" {...field} /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="categoryId" render={({ field }) => (
-                      <FormItem><FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select a category..." /></SelectTrigger></FormControl>
-                            <SelectContent>{menuCategories.map(cat => <SelectItem key={cat.id} value={cat.id!}>{cat.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}/>
-                </div>
-                 <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                  <FormItem><FormLabel>Image URL</FormLabel><Input {...field} /></FormItem>
-                )}/>
-                <FormField control={form.control} name="dietaryFlags" render={() => (
-                    <FormItem>
-                        <FormLabel>Dietary Flags</FormLabel>
-                        <div className="flex gap-4">
-                            {['vegetarian', 'spicy', 'gluten-free'].map(flag => (
-                                <FormField key={flag} control={form.control} name="dietaryFlags" render={({field}) => (
-                                    <FormItem className="flex items-center gap-2"><Checkbox checked={field.value?.includes(flag as any)} onCheckedChange={(checked) => checked ? field.onChange([...(field.value || []), flag]) : field.onChange((field.value || []).filter(v => v !== flag))}/>
-                                    <FormLabel className="font-normal capitalize">{flag}</FormLabel></FormItem>
-                                )}/>
-                            ))}
-                        </div>
+                  <FormField control={form.control} name="price" render={({ field }) => (
+                    <FormItem><FormLabel>Base Price ($)</FormLabel><Input type="number" {...field} /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="categoryId" render={({ field }) => (
+                    <FormItem><FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category..." /></SelectTrigger></FormControl>
+                        <SelectContent>{menuCategories.map(cat => <SelectItem key={cat.id} value={cat.id!}>{cat.name}</SelectItem>)}</SelectContent>
+                      </Select>
                     </FormItem>
-                )}/>
-
-                <Separator/>
-                
-                <div>
-                    <h3 className="text-lg font-semibold mb-2">Customization Options</h3>
-                    <div className="space-y-4">
-                        {groupFields.map((group, groupIndex) => (
-                           <Card key={group.id} className="p-4 bg-muted/50">
-                               <div className="flex justify-between items-center mb-2">
-                                 <h4 className="font-semibold">Option Group #{groupIndex+1}</h4>
-                                 <Button variant="ghost" size="sm" onClick={() => removeGroup(groupIndex)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                               </div>
-                               <div className="space-y-2">
-                                <FormField control={form.control} name={`optionGroups.${groupIndex}.title`} render={({field})=><FormItem><Input placeholder="Group Title (e.g., Size, Toppings)" {...field}/></FormItem>}/>
-                                <div className="flex gap-4">
-                                <FormField control={form.control} name={`optionGroups.${groupIndex}.selectionType`} render={({field})=><FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="single">Single Choice</SelectItem><SelectItem value="multi">Multiple Choice</SelectItem></SelectContent></Select></FormItem>}/>
-                                <FormField control={form.control} name={`optionGroups.${groupIndex}.isRequired`} render={({field})=><FormItem className="flex items-center gap-2 pt-2"><Checkbox checked={field.value} onCheckedChange={field.onChange}/><Label>Required</Label></FormItem>}/>
-                               </div>
-                                <OptionsArray control={form.control} groupIndex={groupIndex} />
-                               </div>
-                           </Card>
-                        ))}
-                         <Button type="button" variant="outline" size="sm" onClick={() => appendGroup({title: "", selectionType: 'single', isRequired: false, options: [{name: "", price: 0}]})}>
-                            <PlusCircle className="mr-2 h-4 w-4"/>Add Option Group
-                        </Button>
+                  )} />
+                </div>
+                <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                  <FormItem><FormLabel>Image URL</FormLabel><Input {...field} /></FormItem>
+                )} />
+                <FormField control={form.control} name="dietaryFlags" render={() => (
+                  <FormItem>
+                    <FormLabel>Dietary Flags</FormLabel>
+                    <div className="flex gap-4">
+                      {['vegetarian', 'spicy', 'gluten-free'].map(flag => (
+                        <FormField key={flag} control={form.control} name="dietaryFlags" render={({ field }) => (
+                          <FormItem className="flex items-center gap-2"><Checkbox checked={field.value?.includes(flag as any)} onCheckedChange={(checked) => checked ? field.onChange([...(field.value || []), flag]) : field.onChange((field.value || []).filter(v => v !== flag))} />
+                            <FormLabel className="font-normal capitalize">{flag}</FormLabel></FormItem>
+                        )} />
+                      ))}
                     </div>
+                  </FormItem>
+                )} />
+
+                <Separator />
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Customization Options</h3>
+                  <div className="space-y-4">
+                    {groupFields.map((group, groupIndex) => (
+                      <Card key={group.id} className="p-4 bg-muted/50">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-semibold">Option Group #{groupIndex + 1}</h4>
+                          <Button variant="ghost" size="sm" onClick={() => removeGroup(groupIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
+                        <div className="space-y-2">
+                          <FormField control={form.control} name={`optionGroups.${groupIndex}.title`} render={({ field }) => <FormItem><Input placeholder="Group Title (e.g., Size, Toppings)" {...field} /></FormItem>} />
+                          <div className="flex gap-4">
+                            <FormField control={form.control} name={`optionGroups.${groupIndex}.selectionType`} render={({ field }) => <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="single">Single Choice</SelectItem><SelectItem value="multi">Multiple Choice</SelectItem></SelectContent></Select></FormItem>} />
+                            <FormField control={form.control} name={`optionGroups.${groupIndex}.isRequired`} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><Checkbox checked={field.value} onCheckedChange={field.onChange} /><Label>Required</Label></FormItem>} />
+                          </div>
+                          <OptionsArray control={form.control} groupIndex={groupIndex} />
+                        </div>
+                      </Card>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendGroup({ title: "", selectionType: 'single', isRequired: false, options: [{ name: "", price: 0 }] })}>
+                      <PlusCircle className="mr-2 h-4 w-4" />Add Option Group
+                    </Button>
+                  </div>
                 </div>
               </div>
             </ScrollArea>
             <DialogFooter className="pt-6">
               <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Saving...</> : "Save Menu Item"}
+                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Menu Item"}
               </Button>
             </DialogFooter>
           </form>
@@ -216,7 +217,7 @@ export function MenuItemFormDialog({ isOpen, onClose, item, restaurantId, catego
 }
 
 
-function OptionsArray({ groupIndex, control }: { groupIndex: number, control: any}) {
+function OptionsArray({ groupIndex, control }: { groupIndex: number, control: any }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: `optionGroups.${groupIndex}.options`
@@ -227,13 +228,13 @@ function OptionsArray({ groupIndex, control }: { groupIndex: number, control: an
       <h5 className="text-sm font-medium">Options</h5>
       {fields.map((option, optionIndex) => (
         <div key={option.id} className="flex items-end gap-2">
-          <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.name`} render={({field}) => (<FormItem className="flex-1"><FormLabel className="text-xs">Name</FormLabel><Input placeholder="e.g., Extra Cheese" {...field}/></FormItem>)}/>
-          <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.price`} render={({field}) => (<FormItem><FormLabel className="text-xs">Price ($)</FormLabel><Input type="number" placeholder="0.00" {...field}/></FormItem>)}/>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => remove(optionIndex)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+          <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.name`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className="text-xs">Name</FormLabel><Input placeholder="e.g., Extra Cheese" {...field} /></FormItem>)} />
+          <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.price`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Price ($)</FormLabel><Input type="number" placeholder="0.00" {...field} /></FormItem>)} />
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => remove(optionIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
         </div>
       ))}
-       <Button type="button" variant="ghost" size="sm" onClick={() => append({ name: "", price: 0 })}>
-        <PlusCircle className="mr-2 h-4 w-4"/>Add Option
+      <Button type="button" variant="ghost" size="sm" onClick={() => append({ name: "", price: 0 })}>
+        <PlusCircle className="mr-2 h-4 w-4" />Add Option
       </Button>
     </div>
   )

@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       validatedData.participants.adults +
       validatedData.participants.children +
       validatedData.participants.seniors;
-
     if (totalParticipants === 0) {
       return NextResponse.json({ message: 'At least one participant is required' }, { status: 400 });
     }
