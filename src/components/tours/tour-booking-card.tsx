@@ -48,7 +48,7 @@ interface TourBookingCardProps {
 export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourBookingCardProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const format = useFormatPrice();
+  const formatCurrency = useFormatPrice();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<BookingFormValues>({
@@ -257,7 +257,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
                 name="adults"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Adults ({format(adultPrice, 'USD')} each)</FormLabel>
+                    <FormLabel>Adults ({formatCurrency(adultPrice, 'USD')} each)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" {...field} />
                     </FormControl>
@@ -271,7 +271,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
                 name="children"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Children ({format(childPrice, 'USD')} each - 30% off)</FormLabel>
+                    <FormLabel>Children ({formatCurrency(childPrice, 'USD')} each - 30% off)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" {...field} />
                     </FormControl>
@@ -286,7 +286,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
                 name="seniors"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Seniors ({format(seniorPrice, 'USD')} each - 15% off)</FormLabel>
+                    <FormLabel>Seniors ({formatCurrency(seniorPrice, 'USD')} each - 15% off)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" {...field} />
                     </FormControl>
@@ -429,16 +429,16 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
             <div className="space-y-2 bg-muted p-4 rounded-lg">
               <div className="flex justify-between text-sm">
                 <span>Subtotal ({totalParticipants} {totalParticipants === 1 ? 'person' : 'people'})</span>
-                <span>{format(subtotal, 'USD')}</span>
+                <span>{formatCurrency(subtotal, 'USD')}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Tax (10%)</span>
-                <span>{format(tax, 'USD')}</span>
+                <span>{formatCurrency(tax, 'USD')}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>{format(total, 'USD')}</span>
+                <span>{formatCurrency(total, 'USD')}</span>
               </div>
             </div>
           </CardContent>
@@ -458,7 +458,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
               ) : (
                 <>
                   <DollarSign className="mr-2 h-4 w-4" />
-                  Book Now - {format(total, 'USD')}
+                  Book Now - {formatCurrency(total, 'USD')}
                 </>
               )}
             </Button>

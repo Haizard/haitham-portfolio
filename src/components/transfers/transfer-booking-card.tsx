@@ -105,7 +105,7 @@ export function TransferBookingCard({
 }: TransferBookingCardProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const format = useFormatPrice();
+  const formatCurrency = useFormatPrice();
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [availability, setAvailability] = useState<{ available: boolean } | null>(null);
@@ -290,27 +290,27 @@ export function TransferBookingCard({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Base Price</span>
-                <span>{format(pricing.basePrice, vehicle.pricing.currency as any)}</span>
+                <span>{formatCurrency(pricing.basePrice, vehicle.pricing.currency as any)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Distance ({watchedDistance} km)</span>
-                <span>{format(pricing.distanceCharge, vehicle.pricing.currency as any)}</span>
+                <span>{formatCurrency(pricing.distanceCharge, vehicle.pricing.currency as any)}</span>
               </div>
               {pricing.airportSurcharge > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Airport Surcharge</span>
-                  <span>{format(pricing.airportSurcharge, vehicle.pricing.currency as any)}</span>
+                  <span>{formatCurrency(pricing.airportSurcharge, vehicle.pricing.currency as any)}</span>
                 </div>
               )}
               {pricing.nightSurcharge > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Night Surcharge</span>
-                  <span>{format(pricing.nightSurcharge, vehicle.pricing.currency as any)}</span>
+                  <span>{formatCurrency(pricing.nightSurcharge, vehicle.pricing.currency as any)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                 <span>Total</span>
-                <span>{format(pricing.total, vehicle.pricing.currency as any)}</span>
+                <span>{formatCurrency(pricing.total, vehicle.pricing.currency as any)}</span>
               </div>
             </div>
 
