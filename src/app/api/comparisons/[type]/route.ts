@@ -11,15 +11,16 @@ import {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
   try {
+    const { type } = await params;
     // Require authentication
     const user = await requireAuth();
 
     // Validate type
     const validTypes = ['property', 'vehicle', 'tour', 'transfer'];
-    if (!validTypes.includes(params.type)) {
+    if (!validTypes.includes(type)) {
       return NextResponse.json(
         { success: false, error: 'Invalid comparison type' },
         { status: 400 }
@@ -29,7 +30,7 @@ export async function GET(
     // Get or create comparison
     const comparison = await getOrCreateComparison(
       user.id,
-      params.type as any
+      type as any
     );
 
     return NextResponse.json({
@@ -59,15 +60,16 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
   try {
+    const { type } = await params;
     // Require authentication
     const user = await requireAuth();
 
     // Validate type
     const validTypes = ['property', 'vehicle', 'tour', 'transfer'];
-    if (!validTypes.includes(params.type)) {
+    if (!validTypes.includes(type)) {
       return NextResponse.json(
         { success: false, error: 'Invalid comparison type' },
         { status: 400 }
@@ -75,7 +77,7 @@ export async function DELETE(
     }
 
     // Clear comparison
-    const cleared = await clearComparison(user.id, params.type as any);
+    const cleared = await clearComparison(user.id, type as any);
 
     return NextResponse.json({
       success: true,
