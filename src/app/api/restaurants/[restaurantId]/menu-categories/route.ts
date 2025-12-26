@@ -5,15 +5,15 @@ import { addMenuCategory } from '@/lib/restaurants-data';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
     const body = await request.json();
-    
+
     // Add restaurantId to the body before passing to the data function
     const categoryData = { ...body, restaurantId };
-    
+
     const newCategory = await addMenuCategory(categoryData);
     return NextResponse.json(newCategory, { status: 201 });
   } catch (error: any) {

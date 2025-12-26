@@ -94,6 +94,8 @@ export function VehicleBookingCard({
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
+      pickupDate: initialPickupDate ? parseISO(initialPickupDate) : undefined,
+      returnDate: initialReturnDate ? parseISO(initialReturnDate) : undefined,
       pickupTime: initialPickupTime || '10:00',
       returnTime: initialReturnTime || '10:00',
     },

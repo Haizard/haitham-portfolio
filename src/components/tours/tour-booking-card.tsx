@@ -54,6 +54,8 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
+      tourDate: undefined,
+      tourTime: undefined,
       adults: 1,
       children: 0,
       seniors: 0,

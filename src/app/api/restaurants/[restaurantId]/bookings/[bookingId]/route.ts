@@ -9,11 +9,11 @@ const statusUpdateSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { restaurantId: string; bookingId: string } }
+  { params }: { params: Promise<{ restaurantId: string; bookingId: string }> }
 ) {
   try {
     // TODO: Add authentication to ensure the user owns this restaurant.
-    const { bookingId } = params;
+    const { bookingId } = await params;
     const body = await request.json();
     const validation = statusUpdateSchema.safeParse(body);
 

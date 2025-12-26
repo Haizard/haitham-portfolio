@@ -5,23 +5,23 @@ import { getSession } from '@/lib/session';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { ownerId: string } }
+  { params }: { params: Promise<{ ownerId: string }> }
 ) {
   try {
     const session = await getSession();
-    const { ownerId } = params;
+    const { ownerId } = await params;
 
     if (!ownerId) {
       return NextResponse.json({ message: "Owner ID is required." }, { status: 400 });
     }
-    
+
     // Authorization: ensure the logged-in user is requesting their own data
     if (!session.user || session.user.id !== ownerId) {
       return NextResponse.json({ message: "Unauthorized." }, { status: 403 });
     }
-    
+
     let restaurant = await getRestaurantByOwnerId(ownerId);
-    
+
     if (!restaurant) {
       // If no restaurant exists, create a default one for this new owner
       console.log(`No restaurant found for owner ${ownerId}, creating a new one.`);

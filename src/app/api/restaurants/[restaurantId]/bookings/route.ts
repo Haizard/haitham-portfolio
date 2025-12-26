@@ -14,12 +14,12 @@ const bookingSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
     if (!ObjectId.isValid(restaurantId)) {
-        return NextResponse.json({ message: "Invalid restaurant ID." }, { status: 400 });
+      return NextResponse.json({ message: "Invalid restaurant ID." }, { status: 400 });
     }
 
     const body = await request.json();
@@ -40,12 +40,12 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
     if (!ObjectId.isValid(restaurantId)) {
-        return NextResponse.json({ message: "Invalid restaurant ID." }, { status: 400 });
+      return NextResponse.json({ message: "Invalid restaurant ID." }, { status: 400 });
     }
     // TODO: Authorize that the requester owns this restaurant
     const bookings = await getBookingsForRestaurant(restaurantId);

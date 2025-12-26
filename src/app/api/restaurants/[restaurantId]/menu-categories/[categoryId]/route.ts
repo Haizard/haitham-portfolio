@@ -5,10 +5,10 @@ import { updateMenuCategory, deleteMenuCategory } from '@/lib/restaurants-data';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { restaurantId: string; categoryId: string } }
+  { params }: { params: Promise<{ restaurantId: string; categoryId: string }> }
 ) {
   try {
-    const { categoryId } = params;
+    const { categoryId } = await params;
     const body = await request.json();
     const updatedCategory = await updateMenuCategory(categoryId, body);
 
@@ -24,10 +24,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { restaurantId: string; categoryId: string } }
+  { params }: { params: Promise<{ restaurantId: string; categoryId: string }> }
 ) {
   try {
-    const { categoryId } = params;
+    const { categoryId } = await params;
     const success = await deleteMenuCategory(categoryId);
     if (success) {
       return NextResponse.json({ message: "Category deleted successfully." });

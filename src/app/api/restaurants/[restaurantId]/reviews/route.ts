@@ -10,7 +10,7 @@ const reviewSubmitSchema = z.object({
   rating: z.coerce.number().min(1, "Rating must be between 1 and 5.").max(5),
   comment: z.string().min(10, "Comment must be at least 10 characters.").max(2000),
   // In a real app, reviewerId would come from the session, not the body
-  reviewerId: z.string().min(1, "Reviewer ID is required."), 
+  reviewerId: z.string().min(1, "Reviewer ID is required."),
   reviewerName: z.string().min(1, "Reviewer name is required."),
   reviewerAvatar: z.string().url().optional(),
 });
@@ -18,10 +18,10 @@ const reviewSubmitSchema = z.object({
 // GET handler to fetch all reviews for a product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
     if (!ObjectId.isValid(restaurantId)) {
       return NextResponse.json({ message: "Invalid Restaurant ID provided for reviews." }, { status: 400 });
     }
@@ -36,10 +36,10 @@ export async function GET(
 // POST handler to submit a new review for a product
 export async function POST(
   request: NextRequest,
-  { params }: { params: { restaurantId: string } }
+  { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
-    const { restaurantId } = params;
+    const { restaurantId } = await params;
     if (!ObjectId.isValid(restaurantId)) {
       return NextResponse.json({ message: "Invalid Restaurant ID provided for review submission." }, { status: 400 });
     }
