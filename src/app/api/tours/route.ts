@@ -32,21 +32,24 @@ const tourCreateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
+
+    const showAll = searchParams.get('all') === 'true';
+
     const filters = {
-        locations: searchParams.get('locations')?.split(','),
-        tourTypes: searchParams.get('tourTypes')?.split(','),
-        durations: searchParams.get('durations')?.split(','),
-        activityIds: searchParams.get('activityIds')?.split(','),
-        minPrice: searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined,
-        maxPrice: searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined,
-        excludeSlug: searchParams.get('excludeSlug') || undefined,
-        limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+      locations: searchParams.get('locations')?.split(','),
+      tourTypes: searchParams.get('tourTypes')?.split(','),
+      durations: searchParams.get('durations')?.split(','),
+      activityIds: searchParams.get('activityIds')?.split(','),
+      minPrice: searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined,
+      maxPrice: searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined,
+      excludeSlug: searchParams.get('excludeSlug') || undefined,
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+      isActive: showAll ? undefined : true, // If all=true, don't filter by isActive
     };
 
     // The API now returns a flat object, not a tuple.
     const responseData = await getAllTours(filters);
-    
+
     // For the public page, we return both tours and the options for filters
     return NextResponse.json(responseData);
 

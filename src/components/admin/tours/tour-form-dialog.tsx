@@ -78,7 +78,7 @@ const ArrayField = ({ name, label, control, fields, append, remove, placeholder 
         render={({ field: rhfField }) => (
           <FormItem className="flex items-center gap-2">
             <Input {...rhfField} placeholder={`${placeholder} #${index + 1}`} />
-            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
             <FormMessage />
           </FormItem>
         )}
@@ -108,7 +108,9 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
         const response = await fetch('/api/tour-guides');
         if (response.ok) {
           const data = await response.json();
-          setGuides(data);
+          setGuides(Array.isArray(data) ? data : []);
+        } else {
+          setGuides([]);
         }
       } catch (error) {
         console.error('Failed to fetch guides:', error);
@@ -116,7 +118,7 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
     }
     fetchGuides();
   }, []);
-  
+
   const { fields: itineraryFields, append: appendItinerary, remove: removeItinerary } = useFieldArray({ control: form.control, name: "itinerary" });
   const { fields: inclusionsFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({ control: form.control, name: "inclusions" });
   const { fields: exclusionsFields, append: appendExclusion, remove: removeExclusion } = useFieldArray({ control: form.control, name: "exclusions" });
@@ -134,16 +136,16 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
           description: tour.description,
           location: tour.location,
           tourType: tour.tourType,
-          tags: (tour.tags || []).join(', '),
+          tags: Array.isArray(tour.tags) ? tour.tags.join(', ') : '',
           price: tour.price,
           featuredImageUrl: tour.featuredImageUrl,
           isActive: tour.isActive,
-          itinerary: tour.itinerary.map(value => ({ value })),
-          inclusions: tour.inclusions.map(value => ({ value })),
-          exclusions: tour.exclusions.map(value => ({ value })),
-          galleryImages: tour.galleryImages,
-          highlights: tour.highlights || [],
-          faqs: tour.faqs || [],
+          itinerary: Array.isArray(tour.itinerary) ? tour.itinerary.map(value => ({ value })) : [],
+          inclusions: Array.isArray(tour.inclusions) ? tour.inclusions.map(value => ({ value })) : [],
+          exclusions: Array.isArray(tour.exclusions) ? tour.exclusions.map(value => ({ value })) : [],
+          galleryImages: Array.isArray(tour.galleryImages) ? tour.galleryImages : [],
+          highlights: Array.isArray(tour.highlights) ? tour.highlights : [],
+          faqs: Array.isArray(tour.faqs) ? tour.faqs : [],
           mapEmbedUrl: tour.mapEmbedUrl || "",
           guideId: tour.guideId || "",
           rating: tour.rating || undefined,
@@ -160,12 +162,12 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
           price: 0,
           featuredImageUrl: 'https://placehold.co/800x600.png',
           isActive: false,
-          itinerary: [{value: ''}],
-          inclusions: [{value: ''}],
-          exclusions: [{value: ''}],
+          itinerary: [{ value: '' }],
+          inclusions: [{ value: '' }],
+          exclusions: [{ value: '' }],
           galleryImages: [],
-          highlights: [{icon: "Star", text: ""}],
-          faqs: [{question: "", answer: ""}],
+          highlights: [{ icon: "Star", text: "" }],
+          faqs: [{ question: "", answer: "" }],
           mapEmbedUrl: "",
         });
       }
@@ -176,12 +178,12 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
     setIsSaving(true);
     const apiUrl = tour ? `/api/tours/${tour.id}` : '/api/tours';
     const method = tour ? 'PUT' : 'POST';
-    
+
     const payload = {
-        ...values,
-        itinerary: values.itinerary.map(item => item.value),
-        inclusions: values.inclusions.map(item => item.value),
-        exclusions: values.exclusions.map(item => item.value),
+      ...values,
+      itinerary: values.itinerary.map(item => item.value),
+      inclusions: values.inclusions.map(item => item.value),
+      exclusions: values.exclusions.map(item => item.value),
     };
 
     try {
@@ -215,102 +217,102 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <ScrollArea className="h-[calc(100vh-18rem)] pr-6">
-            <div className="space-y-4 py-4">
-              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><Input {...field} /></FormItem>)}/>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="duration" render={({ field }) => (<FormItem><FormLabel>Duration</FormLabel><Input placeholder="e.g., 3 Days, 2 Nights" {...field} /></FormItem>)}/>
-                <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price ($)</FormLabel><Input type="number" {...field} /></FormItem>)}/>
-              </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><Input placeholder="e.g., Arusha, Tanzania" {...field} /></FormItem>)}/>
-                 <FormField control={form.control} name="tourType" render={({ field }) => (<FormItem><FormLabel>Tour Type</FormLabel><Input placeholder="e.g., Safari" {...field} /></FormItem>)}/>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-4 py-4">
+                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><Input {...field} /></FormItem>)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="duration" render={({ field }) => (<FormItem><FormLabel>Duration</FormLabel><Input placeholder="e.g., 3 Days, 2 Nights" {...field} /></FormItem>)} />
+                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price ($)</FormLabel><Input type="number" {...field} /></FormItem>)} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><Input placeholder="e.g., Arusha, Tanzania" {...field} /></FormItem>)} />
+                  <FormField control={form.control} name="tourType" render={({ field }) => (<FormItem><FormLabel>Tour Type</FormLabel><Input placeholder="e.g., Safari" {...field} /></FormItem>)} />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="guideId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tour Guide (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a guide" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {Array.isArray(guides) && guides.map((guide) => (
+                              <SelectItem key={guide.id} value={guide.id}>
+                                {guide.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField control={form.control} name="rating" render={({ field }) => (<FormItem><FormLabel>Rating (0-5)</FormLabel><Input type="number" step="0.1" min="0" max="5" placeholder="4.5" {...field} /></FormItem>)} />
+                  <FormField control={form.control} name="reviewCount" render={({ field }) => (<FormItem><FormLabel>Review Count</FormLabel><Input type="number" min="0" placeholder="127" {...field} /></FormItem>)} />
+                </div>
                 <FormField
                   control={form.control}
-                  name="guideId"
+                  name="tags"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tour Guide (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a guide" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">None</SelectItem>
-                          {guides.map((guide) => (
-                            <SelectItem key={guide.id} value={guide.id}>
-                              {guide.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel className="flex items-center gap-1.5"><Tag className="h-4 w-4" />Tags (comma-separated)</FormLabel>
+                      <Input
+                        placeholder="e.g., Budget Travel, Adventure, Family Friendly"
+                        {...field}
+                        value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="rating" render={({ field }) => (<FormItem><FormLabel>Rating (0-5)</FormLabel><Input type="number" step="0.1" min="0" max="5" placeholder="4.5" {...field} /></FormItem>)}/>
-                <FormField control={form.control} name="reviewCount" render={({ field }) => (<FormItem><FormLabel>Review Count</FormLabel><Input type="number" min="0" placeholder="127" {...field} /></FormItem>)}/>
+                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><Textarea className="min-h-[100px]" {...field} /></FormItem>)} />
+                <FormField control={form.control} name="featuredImageUrl" render={({ field }) => (<FormItem><FormLabel>Featured Image URL</FormLabel><Input {...field} /></FormItem>)} />
+                <FormField control={form.control} name="mapEmbedUrl" render={({ field }) => (<FormItem><FormLabel>Google Maps Embed URL (Optional)</FormLabel><Input placeholder="https://www.google.com/maps/embed?..." {...field} /></FormItem>)} />
+                <FormField control={form.control} name="isActive" render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Active & Visible</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                )} />
+
+                <ArrayField name="itinerary" label="Itinerary" control={form.control} fields={itineraryFields} append={appendItinerary} remove={removeItinerary} placeholder="Day" />
+                <ArrayField name="inclusions" label="Inclusions" control={form.control} fields={inclusionsFields} append={appendInclusion} remove={removeInclusion} placeholder="Included item" />
+                <ArrayField name="exclusions" label="Exclusions" control={form.control} fields={exclusionsFields} append={appendExclusion} remove={removeExclusion} placeholder="Excluded item" />
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5"><Star className="h-4 w-4" />Highlights</Label>
+                  {highlightFields.map((field, index) => (
+                    <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
+                      <FormField control={form.control} name={`highlights.${index}.icon`} render={({ field: rhfField }) => <FormItem className="w-1/3"><FormLabel className="text-xs">Icon Name</FormLabel><Input placeholder="e.g., Clock" {...rhfField} /></FormItem>} />
+                      <FormField control={form.control} name={`highlights.${index}.text`} render={({ field: rhfField }) => <FormItem className="flex-1"><FormLabel className="text-xs">Text</FormLabel><Input placeholder="e.g., 8 hours" {...rhfField} /></FormItem>} />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeHighlight(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={() => appendHighlight({ icon: "", text: "" })}><PlusCircle className="mr-2 h-4 w-4" />Add Highlight</Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5"><HelpCircle className="h-4 w-4" />FAQs</Label>
+                  {faqFields.map((field, index) => (
+                    <div key={field.id} className="space-y-2 p-2 border rounded-md">
+                      <FormField control={form.control} name={`faqs.${index}.question`} render={({ field: rhfField }) => <FormItem><FormLabel className="text-xs">Question</FormLabel><Input {...rhfField} /></FormItem>} />
+                      <FormField control={form.control} name={`faqs.${index}.answer`} render={({ field: rhfField }) => <FormItem><FormLabel className="text-xs">Answer</FormLabel><Textarea className="min-h-[60px]" {...rhfField} /></FormItem>} />
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeFaq(index)} className="text-destructive"><Trash2 className="h-4 w-4 mr-1" />Remove FAQ</Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={() => appendFaq({ question: "", answer: "" })}><PlusCircle className="mr-2 h-4 w-4" />Add FAQ</Button>
+                </div>
+
+
               </div>
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1.5"><Tag className="h-4 w-4"/>Tags (comma-separated)</FormLabel>
-                    <Input
-                      placeholder="e.g., Budget Travel, Adventure, Family Friendly"
-                      {...field}
-                      value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><Textarea className="min-h-[100px]" {...field} /></FormItem>)}/>
-              <FormField control={form.control} name="featuredImageUrl" render={({ field }) => (<FormItem><FormLabel>Featured Image URL</FormLabel><Input {...field} /></FormItem>)}/>
-              <FormField control={form.control} name="mapEmbedUrl" render={({ field }) => (<FormItem><FormLabel>Google Maps Embed URL (Optional)</FormLabel><Input placeholder="https://www.google.com/maps/embed?..." {...field} /></FormItem>)}/>
-              <FormField control={form.control} name="isActive" render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Active & Visible</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-              )}/>
-              
-              <ArrayField name="itinerary" label="Itinerary" control={form.control} fields={itineraryFields} append={appendItinerary} remove={removeItinerary} placeholder="Day"/>
-              <ArrayField name="inclusions" label="Inclusions" control={form.control} fields={inclusionsFields} append={appendInclusion} remove={removeInclusion} placeholder="Included item"/>
-              <ArrayField name="exclusions" label="Exclusions" control={form.control} fields={exclusionsFields} append={appendExclusion} remove={removeExclusion} placeholder="Excluded item"/>
-
-                <div className="space-y-2">
-                    <Label className="flex items-center gap-1.5"><Star className="h-4 w-4"/>Highlights</Label>
-                    {highlightFields.map((field, index) => (
-                        <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
-                            <FormField control={form.control} name={`highlights.${index}.icon`} render={({field: rhfField})=><FormItem className="w-1/3"><FormLabel className="text-xs">Icon Name</FormLabel><Input placeholder="e.g., Clock" {...rhfField}/></FormItem>}/>
-                            <FormField control={form.control} name={`highlights.${index}.text`} render={({field: rhfField})=><FormItem className="flex-1"><FormLabel className="text-xs">Text</FormLabel><Input placeholder="e.g., 8 hours" {...rhfField}/></FormItem>}/>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeHighlight(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                        </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendHighlight({icon: "", text: ""})}><PlusCircle className="mr-2 h-4 w-4"/>Add Highlight</Button>
-                </div>
-
-                <div className="space-y-2">
-                    <Label className="flex items-center gap-1.5"><HelpCircle className="h-4 w-4"/>FAQs</Label>
-                    {faqFields.map((field, index) => (
-                        <div key={field.id} className="space-y-2 p-2 border rounded-md">
-                             <FormField control={form.control} name={`faqs.${index}.question`} render={({field: rhfField})=><FormItem><FormLabel className="text-xs">Question</FormLabel><Input {...rhfField}/></FormItem>}/>
-                             <FormField control={form.control} name={`faqs.${index}.answer`} render={({field: rhfField})=><FormItem><FormLabel className="text-xs">Answer</FormLabel><Textarea className="min-h-[60px]" {...rhfField}/></FormItem>}/>
-                             <Button type="button" variant="ghost" size="sm" onClick={() => removeFaq(index)} className="text-destructive"><Trash2 className="h-4 w-4 mr-1"/>Remove FAQ</Button>
-                        </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendFaq({question: "", answer: ""})}><PlusCircle className="mr-2 h-4 w-4"/>Add FAQ</Button>
-                </div>
-
-
-            </div>
             </ScrollArea>
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Saving...</> : (tour ? "Save Changes" : "Create Tour")}
+                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : (tour ? "Save Changes" : "Create Tour")}
               </Button>
             </DialogFooter>
           </form>

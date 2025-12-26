@@ -107,9 +107,10 @@ export default function EcommerceStorePage() {
   };
 
   const renderCategoriesRecursive = (nodes: ProductCategoryNode[]) => {
+    if (!Array.isArray(nodes)) return null;
     return nodes.map((cat, index) => {
       const Icon = categoryIcons[cat.slug] || categoryIcons.default;
-      const hasChildren = cat.children && cat.children.length > 0;
+      const hasChildren = cat.children && Array.isArray(cat.children) && cat.children.length > 0;
 
       return (
         <AccordionItem value={`item-cat-${cat.id}`} key={cat.id} className="border-b-0">

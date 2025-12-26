@@ -36,6 +36,7 @@ export function ServiceCategoriesWidget({ selectedCategoryId, onCategorySelect }
     }, []);
 
     const renderCategoryList = (categoryNodes: ServiceCategoryNode[], level = 0) => {
+        if (!Array.isArray(categoryNodes)) return null;
         return categoryNodes.map(category => {
             const isSelected = selectedCategoryId === category.id;
 
@@ -58,7 +59,7 @@ export function ServiceCategoriesWidget({ selectedCategoryId, onCategorySelect }
                             {isSelected && <Check className="h-3 w-3 text-primary" />}
                         </div>
                     </button>
-                    {category.children && category.children.length > 0 && (
+                    {category.children && Array.isArray(category.children) && category.children.length > 0 && (
                         <ul className="space-y-0">
                             {renderCategoryList(category.children, level + 1)}
                         </ul>

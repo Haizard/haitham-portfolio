@@ -33,6 +33,7 @@ export function CategoriesWidget() {
   }, []);
 
   const renderCategoryList = (categoryNodes: CategoryNode[], currentPathSegments: string[] = []) => {
+    if (!Array.isArray(categoryNodes)) return null;
     return categoryNodes.map(category => {
       if (!category.slug || category.slug.trim() === '') return null;
 
@@ -60,7 +61,7 @@ export function CategoriesWidget() {
               </span>
             </div>
           </Link>
-          {category.children && category.children.length > 0 && (
+          {category.children && Array.isArray(category.children) && category.children.length > 0 && (
             <ul className="space-y-0">
               {renderCategoryList(category.children, newPathSegments)}
             </ul>

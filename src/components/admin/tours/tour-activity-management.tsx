@@ -42,10 +42,11 @@ export function TourActivityManagement() {
     try {
       const response = await fetch('/api/tour-activities');
       if (!response.ok) throw new Error('Failed to fetch activities');
-      const data: TourActivity[] = await response.json();
-      setActivities(data);
+      const data = await response.json();
+      setActivities(Array.isArray(data) ? data : []);
     } catch (error: any) {
       toast({ title: "Error", description: "Could not load tour activities.", variant: "destructive" });
+      setActivities([]);
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +80,7 @@ export function TourActivityManagement() {
         throw new Error(errorData.message || `Failed to delete activity`);
       }
       toast({ title: `Activity Deleted`, description: `"${activityToDelete.name}" has been removed.` });
-      fetchActivities(); 
+      fetchActivities();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -87,7 +88,7 @@ export function TourActivityManagement() {
       setActivityToDelete(null);
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -101,7 +102,7 @@ export function TourActivityManagement() {
       <Card className="shadow-xl mb-8">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <CardTitle className="text-2xl font-headline flex items-center"><MountainSnow className="mr-2 h-6 w-6 text-primary"/>Activity List</CardTitle>
+            <CardTitle className="text-2xl font-headline flex items-center"><MountainSnow className="mr-2 h-6 w-6 text-primary" />Activity List</CardTitle>
             <CardDescription>Manage all tour activities.</CardDescription>
           </div>
           <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
@@ -119,7 +120,7 @@ export function TourActivityManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activities.map(activity => (
+                {Array.isArray(activities) && activities.map(activity => (
                   <TableRow key={activity.id}>
                     <TableCell className="font-medium">{activity.name}</TableCell>
                     <TableCell><code>{activity.slug}</code></TableCell>
@@ -148,7 +149,7 @@ export function TourActivityManagement() {
           setIsFormOpen(false);
         }}
       />
-      
+
       <AlertDialog open={!!activityToDelete} onOpenChange={setActivityToDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>

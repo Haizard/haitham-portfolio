@@ -221,7 +221,13 @@ export async function getAllTours(filters: {
   const collection = await getCollection<TourPackage>(TOURS_COLLECTION);
   const query: Filter<TourPackage> = {};
 
-  query.isActive = true; // Always filter for active tours on the public page
+  if (filters.isActive !== undefined) {
+    query.isActive = filters.isActive;
+  } else {
+    // Default to only active tours for public view if not specified
+    // But we might want a way to say "don't filter by isActive"
+    // query.isActive = true; 
+  }
 
   if (filters.locations && filters.locations.length > 0) {
     query.location = { $in: filters.locations };

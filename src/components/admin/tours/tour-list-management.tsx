@@ -31,7 +31,7 @@ import { TourFormDialog } from './tour-form-dialog';
 
 
 const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 };
 
 export function TourListManagement() {
@@ -47,12 +47,17 @@ export function TourListManagement() {
   const fetchTours = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/tours');
+      // Use "all=true" to signal we want both active and draft tours
+      const response = await fetch('/api/tours?all=true');
       if (!response.ok) throw new Error('Failed to fetch tours');
-      const data: TourPackage[] = await response.json();
-      setTours(data);
+      const data = await response.json();
+
+      // The API returns { tours: [], filterOptions: {} }
+      const tourList = Array.isArray(data.tours) ? data.tours : (Array.isArray(data) ? data : []);
+      setTours(tourList);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+      setTours([]);
     } finally {
       setIsLoading(false);
     }
@@ -119,14 +124,14 @@ export function TourListManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tours.map(tour => (
+                {Array.isArray(tours) && tours.map(tour => (
                   <TableRow key={tour.id}>
                     <TableCell className="font-medium">{tour.name}</TableCell>
                     <TableCell>{tour.duration}</TableCell>
                     <TableCell>{formatCurrency(tour.price)}</TableCell>
                     <TableCell>
                       <Badge variant={tour.isActive ? 'default' : 'secondary'} className={tour.isActive ? 'bg-success' : ''}>
-                        {tour.isActive ? <CheckCircle className="mr-1 h-3 w-3"/> : <XCircle className="mr-1 h-3 w-3"/>}
+                        {tour.isActive ? <CheckCircle className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
                         {tour.isActive ? 'Active' : 'Draft'}
                       </Badge>
                     </TableCell>
@@ -156,7 +161,7 @@ export function TourListManagement() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteTour} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Delete'}
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

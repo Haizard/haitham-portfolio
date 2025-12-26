@@ -111,6 +111,7 @@ export default function ShopPage() {
   };
 
   const renderCategoriesRecursive = (nodes: ProductCategoryNode[], level = 0) => {
+    if (!Array.isArray(nodes)) return null;
     return nodes.map(cat => (
       <li key={cat.id} className="space-y-2">
         <div className="flex items-center justify-between" style={{ paddingLeft: `${level * 12}px` }}>
@@ -124,7 +125,7 @@ export default function ShopPage() {
           </label>
           <span className="text-xs">({cat.productCount})</span>
         </div>
-        {cat.children && cat.children.length > 0 && (
+        {cat.children && Array.isArray(cat.children) && cat.children.length > 0 && (
           <ul className="space-y-2 mt-2">
             {renderCategoriesRecursive(cat.children, level + 1)}
           </ul>
