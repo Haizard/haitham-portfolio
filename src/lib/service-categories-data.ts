@@ -6,20 +6,26 @@ import type { Service } from './services-data';
 const SERVICE_CATEGORIES_COLLECTION = 'serviceCategories';
 
 export interface ServiceCategoryNode {
-  _id?: ObjectId; 
-  id?: string; 
+  _id?: ObjectId;
+  id?: string;
   name: string;
   slug: string;
   description?: string;
-  parentId?: string | null; 
-  children?: ServiceCategoryNode[]; 
+  parentId?: string | null;
+  children?: ServiceCategoryNode[];
   serviceCount?: number;
 }
 
 function docToCategoryNode(doc: any): ServiceCategoryNode {
   if (!doc) return doc;
-  const { _id, ...rest } = doc;
-  return { id: _id?.toString(), ...rest, children: rest.children || [], serviceCount: rest.serviceCount || 0 } as ServiceCategoryNode;
+  const { _id, parentId, ...rest } = doc;
+  return {
+    id: _id?.toString(),
+    parentId: parentId?.toString() || null,
+    ...rest,
+    children: rest.children || [],
+    serviceCount: rest.serviceCount || 0
+  } as ServiceCategoryNode;
 }
 
 function createSlugFromName(name: string): string {
@@ -29,10 +35,10 @@ function createSlugFromName(name: string): string {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
-  
+
   if (slug.startsWith('-')) slug = slug.substring(1);
   if (slug.endsWith('-')) slug = slug.slice(0, -1);
-  
+
   return slug || `category-${Date.now()}`;
 }
 
@@ -88,7 +94,7 @@ export async function getServiceCategoryById(id: string): Promise<ServiceCategor
   const collection = await getCollection<ServiceCategoryNode>(SERVICE_CATEGORIES_COLLECTION);
   const doc = await collection.findOne({ _id: new ObjectId(id) });
   if (!doc) return null;
-  
+
   const category = docToCategoryNode(doc);
   const servicesCollection = await getCollection<Service>('services');
   category.serviceCount = await servicesCollection.countDocuments({ categoryId: category.id });
@@ -105,7 +111,7 @@ export async function addServiceCategory(
   if (!(await isSlugUnique(slug, categoryData.parentId || null))) {
     throw new Error(`Category with slug '${slug}' already exists at this level.`);
   }
-  
+
   if (categoryData.parentId && !ObjectId.isValid(categoryData.parentId)) {
     throw new Error(`Invalid parentId format: ${categoryData.parentId}`);
   }
@@ -114,7 +120,7 @@ export async function addServiceCategory(
     name: categoryData.name,
     slug,
     description: categoryData.description,
-    parentId: categoryData.parentId || null, 
+    parentId: categoryData.parentId || null,
   };
 
   const result = await collection.insertOne(docToInsert as any);
@@ -128,7 +134,7 @@ export async function updateServiceCategory(
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<ServiceCategoryNode>(SERVICE_CATEGORIES_COLLECTION);
 
-  const existingCategory = await collection.findOne({_id: new ObjectId(id)});
+  const existingCategory = await collection.findOne({ _id: new ObjectId(id) });
   if (!existingCategory) return null;
 
   const updatePayload: any = {};
@@ -137,13 +143,13 @@ export async function updateServiceCategory(
 
   if (updates.name && updates.name !== existingCategory.name) {
     const newSlug = createSlugFromName(updates.name);
-     if (!newSlug) throw new Error("Updated category name resulted in an empty slug.");
+    if (!newSlug) throw new Error("Updated category name resulted in an empty slug.");
     if (!(await isSlugUnique(newSlug, existingCategory.parentId || null, id))) {
       throw new Error(`Update failed: Category slug '${newSlug}' would conflict with an existing category at the same level.`);
     }
     updatePayload.slug = newSlug;
   }
-  
+
   if (Object.keys(updatePayload).length === 0) {
     const currentCategory = docToCategoryNode(existingCategory);
     const servicesCollection = await getCollection<Service>('services');
@@ -156,7 +162,7 @@ export async function updateServiceCategory(
     { $set: updatePayload },
     { returnDocument: 'after' }
   );
-  if(!result) return null;
+  if (!result) return null;
 
   const updatedCategory = docToCategoryNode(result);
   const servicesCollection = await getCollection<Service>('services');
@@ -167,12 +173,12 @@ export async function updateServiceCategory(
 export async function deleteServiceCategory(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const collection = await getCollection<ServiceCategoryNode>(SERVICE_CATEGORIES_COLLECTION);
-  
+
   const children = await collection.find({ parentId: id }).toArray();
   for (const child of children) {
-    await deleteServiceCategory(child._id.toString()); 
+    await deleteServiceCategory(child._id.toString());
   }
-  
+
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }

@@ -38,8 +38,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const freelancerId = searchParams.get('freelancerId') || undefined;
+    const categoryId = searchParams.get('categoryId') || undefined;
 
-    const allServicesData = await getAllServices(freelancerId);
+    const allServicesData = await getAllServices(freelancerId, categoryId);
     return NextResponse.json(allServicesData);
   } catch (error) {
     console.error("[API /api/services GET] Critical error in GET handler:", error);
@@ -57,12 +58,12 @@ export async function POST(request: NextRequest) {
       console.error("API Service Create Validation Error:", validation.error.flatten());
       return NextResponse.json({ message: "Invalid service data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
-    
+
     const serviceData: Omit<Service, 'id' | '_id' | 'slug'> = {
-        ...validation.data,
-        freelancerId: MOCK_FREELANCER_ID, // Associate with the authenticated freelancer
+      ...validation.data,
+      freelancerId: MOCK_FREELANCER_ID, // Associate with the authenticated freelancer
     };
-    
+
     const addedService = await addService(serviceData);
     return NextResponse.json(addedService, { status: 201 });
 
@@ -70,9 +71,9 @@ export async function POST(request: NextRequest) {
     console.error("[API /api/services POST] Failed to create service:", error);
     let errorMessage = "Failed to create service due to an unknown error";
     if (error instanceof Error) {
-        errorMessage = `Failed to create service: ${error.message}`;
+      errorMessage = `Failed to create service: ${error.message}`;
     } else if (typeof error === 'string') {
-        errorMessage = `Failed to create service: ${error}`;
+      errorMessage = `Failed to create service: ${error}`;
     }
     const statusCode = error.message?.includes('already exists') ? 409 : 500;
     return NextResponse.json({ message: errorMessage }, { status: statusCode });

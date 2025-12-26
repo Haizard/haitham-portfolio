@@ -70,11 +70,14 @@ async function isServiceSlugUnique(slug: string, excludeId?: string): Promise<bo
   return count === 0;
 }
 
-export async function getAllServices(freelancerId?: string): Promise<Service[]> {
+export async function getAllServices(freelancerId?: string, categoryId?: string): Promise<Service[]> {
   const collection = await getCollection<Service>(SERVICES_COLLECTION);
   const query: Filter<Service> = {};
   if (freelancerId) {
     query.freelancerId = freelancerId;
+  }
+  if (categoryId) {
+    query.categoryId = categoryId;
   }
   const serviceDocs = await collection.find(query).sort({ name: 1 }).toArray();
   return serviceDocs.map(docToService);
@@ -113,7 +116,7 @@ export async function addService(serviceData: Omit<Service, 'id' | '_id' | 'slug
     benefits: serviceData.benefits || [],
     offers: serviceData.offers || [],
     securityInfo: serviceData.securityInfo || undefined,
-    imageUrl: serviceData.imageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(serviceData.name.substring(0,15))}`,
+    imageUrl: serviceData.imageUrl || `https://placehold.co/800x400.png?text=${encodeURIComponent(serviceData.name.substring(0, 15))}`,
     imageHint: serviceData.imageHint || "service photo",
     testimonials: (serviceData.testimonials || []).map(t => ({ ...t, id: new ObjectId().toString() })),
     deliveryTime: serviceData.deliveryTime || undefined,
@@ -121,7 +124,7 @@ export async function addService(serviceData: Omit<Service, 'id' | '_id' | 'slug
   };
 
   const result = await collection.insertOne(docToInsert as any);
-  
+
   const newService: Service = {
     _id: result.insertedId,
     id: result.insertedId.toString(),
@@ -136,7 +139,7 @@ export async function updateService(id: string, updates: Partial<Omit<Service, '
     return null;
   }
   const collection = await getCollection<Service>(SERVICES_COLLECTION);
-  
+
   const existingService = await collection.findOne({ _id: new ObjectId(id) });
   if (!existingService) {
     console.warn(`updateService: Service with ID ${id} not found.`);
@@ -154,7 +157,7 @@ export async function updateService(id: string, updates: Partial<Omit<Service, '
     }
     (updatePayload as Service).slug = newSlug;
   }
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updatePayload },
@@ -175,7 +178,7 @@ export async function deleteService(id: string): Promise<boolean> {
   }
   const collection = await getCollection<Service>(SERVICES_COLLECTION);
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
-  
+
   if (result.deletedCount === 1) {
     console.log(`Service with ID '${id}' deleted successfully.`);
     return true;

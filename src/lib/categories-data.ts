@@ -6,21 +6,27 @@ import type { BlogPost } from './blog-data'; // Import for post counts
 const CATEGORIES_COLLECTION = 'categories';
 
 export interface CategoryNode {
-  _id?: ObjectId; 
-  id?: string; 
+  _id?: ObjectId;
+  id?: string;
   name: string;
   slug: string;
   description?: string;
-  parentId?: string | null; 
-  children?: CategoryNode[]; 
+  parentId?: string | null;
+  children?: CategoryNode[];
   postCount?: number; // Added for post count
 }
 
 // Helper to convert MongoDB document to CategoryNode interface
 function docToCategoryNode(doc: any): CategoryNode {
   if (!doc) return doc;
-  const { _id, ...rest } = doc;
-  return { id: _id?.toString(), ...rest, children: rest.children || [], postCount: rest.postCount || 0 } as CategoryNode;
+  const { _id, parentId, ...rest } = doc;
+  return {
+    id: _id?.toString(),
+    parentId: parentId?.toString() || null,
+    ...rest,
+    children: rest.children || [],
+    postCount: rest.postCount || 0
+  } as CategoryNode;
 }
 
 function createSlugFromName(name: string): string {
@@ -30,7 +36,7 @@ function createSlugFromName(name: string): string {
     .trim() // remove leading/trailing whitespace
     .replace(/\s+/g, '-') // replace spaces with -
     .replace(/-+/g, '-'); // replace multiple - with single -
-  
+
   // Remove leading/trailing hyphens that might result from trimming
   if (slug.startsWith('-')) {
     slug = slug.substring(1);
@@ -38,7 +44,7 @@ function createSlugFromName(name: string): string {
   if (slug.endsWith('-')) {
     slug = slug.slice(0, -1);
   }
-  
+
   return slug || `category-${Date.now()}`; // Default if empty
 }
 
@@ -100,7 +106,7 @@ export async function getCategoryById(id: string): Promise<CategoryNode | null> 
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
   const doc = await collection.findOne({ _id: new ObjectId(id) });
   if (!doc) return null;
-  
+
   const category = docToCategoryNode(doc);
   const postsCollection = await getCollection<BlogPost>('posts');
   category.postCount = await postsCollection.countDocuments({ categoryId: category.id });
@@ -110,7 +116,7 @@ export async function getCategoryById(id: string): Promise<CategoryNode | null> 
 export async function getCategoryBySlug(slug: string, parentId?: string | null): Promise<CategoryNode | null> {
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
   const query: Filter<CategoryNode> = { slug };
-  if (parentId !== undefined) { 
+  if (parentId !== undefined) {
     query.parentId = parentId;
   }
   const doc = await collection.findOne(query);
@@ -128,13 +134,13 @@ export async function addCategory(
   const collection = await getCollection<Omit<CategoryNode, 'id' | '_id' | 'children' | 'postCount'>>(CATEGORIES_COLLECTION);
   const slug = createSlugFromName(categoryData.name);
   if (!slug) { // Should not happen with the new createSlugFromName
-      throw new Error("Category name resulted in an empty slug.");
+    throw new Error("Category name resulted in an empty slug.");
   }
 
   if (!(await isSlugUnique(slug, categoryData.parentId || null))) {
     throw new Error(`Category with slug '${slug}' already exists at this level.`);
   }
-  
+
   if (categoryData.parentId && !ObjectId.isValid(categoryData.parentId)) {
     throw new Error(`Invalid parentId format: ${categoryData.parentId}`);
   }
@@ -143,7 +149,7 @@ export async function addCategory(
     name: categoryData.name,
     slug,
     description: categoryData.description,
-    parentId: categoryData.parentId || null, 
+    parentId: categoryData.parentId || null,
   };
 
   const result = await collection.insertOne(docToInsert as any);
@@ -157,7 +163,7 @@ export async function updateCategory(
   if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
 
-  const existingCategory = await collection.findOne({_id: new ObjectId(id)});
+  const existingCategory = await collection.findOne({ _id: new ObjectId(id) });
   if (!existingCategory) return null;
 
   const updatePayload: any = {};
@@ -166,15 +172,15 @@ export async function updateCategory(
 
   if (updates.name && updates.name !== existingCategory.name) {
     const newSlug = createSlugFromName(updates.name);
-     if (!newSlug) { // Should not happen
-        throw new Error("Updated category name resulted in an empty slug.");
+    if (!newSlug) { // Should not happen
+      throw new Error("Updated category name resulted in an empty slug.");
     }
     if (!(await isSlugUnique(newSlug, existingCategory.parentId || null, id))) {
       throw new Error(`Update failed: Category slug '${newSlug}' would conflict with an existing category at the same level.`);
     }
     updatePayload.slug = newSlug;
   }
-  
+
   if (Object.keys(updatePayload).length === 0) {
     const currentCategory = docToCategoryNode(existingCategory);
     const postsCollection = await getCollection<BlogPost>('posts');
@@ -187,7 +193,7 @@ export async function updateCategory(
     { $set: updatePayload },
     { returnDocument: 'after' }
   );
-  if(!result) return null;
+  if (!result) return null;
 
   const updatedCategory = docToCategoryNode(result);
   const postsCollection = await getCollection<BlogPost>('posts');
@@ -198,12 +204,12 @@ export async function updateCategory(
 export async function deleteCategory(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const collection = await getCollection<CategoryNode>(CATEGORIES_COLLECTION);
-  
+
   const children = await collection.find({ parentId: id }).toArray();
   for (const child of children) {
-    await deleteCategory(child._id.toString()); 
+    await deleteCategory(child._id.toString());
   }
-  
+
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }
@@ -220,7 +226,7 @@ export async function getCategoryPath(categoryId: string): Promise<CategoryNode[
     if (!categoryDoc) break;
     const categoryNode = docToCategoryNode(categoryDoc);
     categoryNode.postCount = await postsCollection.countDocuments({ categoryId: categoryNode.id });
-    path.unshift(categoryNode); 
+    path.unshift(categoryNode);
     currentId = categoryNode.parentId || null;
   }
   return path;
@@ -232,11 +238,11 @@ export async function findCategoryBySlugPathRecursive(slugPath: string[]): Promi
   const postsCollection = await getCollection<BlogPost>('posts');
   let currentParentId: string | null = null;
   let foundNode: CategoryNode | null = null;
-  
+
   const validSlugPath = slugPath.filter(s => s && s.trim() !== '');
   if (validSlugPath.length === 0 && slugPath.length > 0) {
-      // Path contained only empty/whitespace slugs
-      return null;
+    // Path contained only empty/whitespace slugs
+    return null;
   }
 
 
@@ -244,27 +250,27 @@ export async function findCategoryBySlugPathRecursive(slugPath: string[]): Promi
     const query: Filter<CategoryNode> = { slug: slug, parentId: currentParentId };
     const nodeDoc = await collection.findOne(query);
     if (!nodeDoc) {
-      return null; 
+      return null;
     }
     foundNode = docToCategoryNode(nodeDoc);
-    currentParentId = foundNode.id!; 
+    currentParentId = foundNode.id!;
   }
-  
+
   if (foundNode && foundNode.id) {
     foundNode.postCount = await postsCollection.countDocuments({ categoryId: foundNode.id });
-    
+
     async function fetchChildrenWithCounts(parentId: string): Promise<CategoryNode[]> {
-        const childrenDocs = await collection.find({ parentId }).toArray();
-        const childrenNodes: CategoryNode[] = [];
-        for (const childDoc of childrenDocs) {
-            const node = docToCategoryNode(childDoc);
-            node.postCount = await postsCollection.countDocuments({ categoryId: node.id! });
-            node.children = await fetchChildrenWithCounts(node.id!); 
-            childrenNodes.push(node);
-        }
-        // Sort children by name for consistent order
-        childrenNodes.sort((a, b) => a.name.localeCompare(b.name));
-        return childrenNodes;
+      const childrenDocs = await collection.find({ parentId }).toArray();
+      const childrenNodes: CategoryNode[] = [];
+      for (const childDoc of childrenDocs) {
+        const node = docToCategoryNode(childDoc);
+        node.postCount = await postsCollection.countDocuments({ categoryId: node.id! });
+        node.children = await fetchChildrenWithCounts(node.id!);
+        childrenNodes.push(node);
+      }
+      // Sort children by name for consistent order
+      childrenNodes.sort((a, b) => a.name.localeCompare(b.name));
+      return childrenNodes;
     }
     foundNode.children = await fetchChildrenWithCounts(foundNode.id!);
   }
