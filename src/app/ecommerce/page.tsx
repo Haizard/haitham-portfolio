@@ -106,6 +106,40 @@ export default function EcommerceStorePage() {
     );
   };
 
+  const renderCategoriesRecursive = (nodes: ProductCategoryNode[]) => {
+    return nodes.map((cat, index) => {
+      const Icon = categoryIcons[cat.slug] || categoryIcons.default;
+      const hasChildren = cat.children && cat.children.length > 0;
+
+      return (
+        <AccordionItem value={`item-cat-${cat.id}`} key={cat.id} className="border-b-0">
+          {hasChildren ? (
+            <>
+              <AccordionTrigger className="text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-1.5 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-primary" /> {cat.name}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pl-4 py-1 text-sm space-y-1">
+                <Link href={`/shop?category=${cat.id}`} className="block py-1 italic text-muted-foreground hover:text-primary mb-1 border-b border-muted/30 pb-1">View all {cat.name}</Link>
+                <Accordion type="multiple" className="w-full">
+                  {renderCategoriesRecursive(cat.children!)}
+                </Accordion>
+              </AccordionContent>
+            </>
+          ) : (
+            <Link
+              href={`/shop?category=${cat.id}`}
+              className="flex items-center gap-2 text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-2.5 hover:no-underline"
+            >
+              <Icon className="h-4 w-4 text-primary" /> {cat.name}
+            </Link>
+          )}
+        </AccordionItem>
+      );
+    });
+  };
+
 
   return (
     <>
@@ -133,40 +167,6 @@ export default function EcommerceStorePage() {
                     ))}
 
                     <Separator className="my-2" />
-
-                  const renderCategoriesRecursive = (nodes: ProductCategoryNode[]) => {
-                    return nodes.map((cat, index) => {
-                      const Icon = categoryIcons[cat.slug] || categoryIcons.default;
-                      const hasChildren = cat.children && cat.children.length > 0;
-
-                    return (
-                    <AccordionItem value={`item-cat-${cat.id}`} key={cat.id} className="border-b-0">
-                      {hasChildren ? (
-                        <>
-                          <AccordionTrigger className="text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-1.5 hover:no-underline">
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4 text-primary" /> {cat.name}
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pl-4 py-1 text-sm space-y-1">
-                            <Link href={`/shop?category=${cat.id}`} className="block py-1 italic text-muted-foreground hover:text-primary mb-1 border-b border-muted/30 pb-1">View all {cat.name}</Link>
-                            <Accordion type="multiple" className="w-full">
-                              {renderCategoriesRecursive(cat.children!)}
-                            </Accordion>
-                          </AccordionContent>
-                        </>
-                      ) : (
-                        <Link
-                          href={`/shop?category=${cat.id}`}
-                          className="flex items-center gap-2 text-sm font-medium hover:bg-accent/50 rounded-md px-2 py-2.5 hover:no-underline"
-                        >
-                          <Icon className="h-4 w-4 text-primary" /> {cat.name}
-                        </Link>
-                      )}
-                    </AccordionItem>
-                    );
-                    });
-                  };
 
                     {isLoading ? <Skeleton className="h-24 w-full" /> : renderCategoriesRecursive(productCategories)}
                   </Accordion>
