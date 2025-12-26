@@ -9,11 +9,11 @@ const updateStatusSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { orderId: string; itemId: string } }
+  { params }: { params: Promise<{ orderId: string; itemId: string }> }
 ) {
   // TODO: Add authorization to ensure the user is the vendor for this line item.
   try {
-    const { orderId, itemId } = params;
+    const { orderId, itemId } = await params;
     const body = await request.json();
     const validation = updateStatusSchema.safeParse(body);
 
@@ -22,7 +22,7 @@ export async function PUT(
     }
 
     const { status } = validation.data;
-    
+
     const success = await updateLineItemStatus(orderId, itemId, status);
 
     if (success) {

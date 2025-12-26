@@ -4,14 +4,14 @@ import { getFreelancerProfile } from '@/lib/user-profile-data';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     if (!userId) {
       return NextResponse.json({ message: "User ID is required." }, { status: 400 });
     }
-    
+
     // In a real app, you might want to fetch a "public" version of the profile
     // to avoid exposing sensitive data. For now, we fetch the full profile.
     const profile = await getFreelancerProfile(userId);

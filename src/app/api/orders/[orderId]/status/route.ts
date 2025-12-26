@@ -10,16 +10,16 @@ const statusUpdateSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const session = await getSession();
     // TODO: Add role check to ensure only the restaurant owner or admin can update status.
     if (!session.user) {
-        return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
-    const { orderId } = params;
+    const { orderId } = await params;
     const body = await request.json();
     const validation = statusUpdateSchema.safeParse(body);
 
