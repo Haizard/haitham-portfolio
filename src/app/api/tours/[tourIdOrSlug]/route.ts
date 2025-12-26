@@ -17,7 +17,7 @@ const tourUpdateSchema = z.object({
   galleryImages: z.array(z.object({ url: z.string().url(), caption: z.string().optional() })).optional(),
   isActive: z.boolean().optional(),
   // New fields
-  guideId: z.string().optional(),
+  guideId: z.string().optional().or(z.literal('none').or(z.literal(''))),
   rating: z.number().min(0).max(5).optional(),
   reviewCount: z.number().int().min(0).optional(),
 });
@@ -32,10 +32,10 @@ export async function GET(
     let tour: TourPackage | null = null;
 
     if (ObjectId.isValid(idOrSlug)) {
-        tour = await getTourById(idOrSlug);
+      tour = await getTourById(idOrSlug);
     }
     if (!tour) {
-        tour = await getTourBySlug(idOrSlug);
+      tour = await getTourBySlug(idOrSlug);
     }
 
     if (!tour) {
@@ -60,7 +60,7 @@ export async function PUT(
   try {
     const { tourIdOrSlug } = await params;
     if (!ObjectId.isValid(tourIdOrSlug)) {
-        return NextResponse.json({ message: "Invalid Tour ID format." }, { status: 400 });
+      return NextResponse.json({ message: "Invalid Tour ID format." }, { status: 400 });
     }
     const body = await request.json();
     const validation = tourUpdateSchema.safeParse(body);
@@ -91,9 +91,9 @@ export async function DELETE(
   if (authError) return authError;
 
   try {
-     const { tourIdOrSlug } = await params;
-     if (!ObjectId.isValid(tourIdOrSlug)) {
-        return NextResponse.json({ message: "Invalid Tour ID format." }, { status: 400 });
+    const { tourIdOrSlug } = await params;
+    if (!ObjectId.isValid(tourIdOrSlug)) {
+      return NextResponse.json({ message: "Invalid Tour ID format." }, { status: 400 });
     }
     const success = await deleteTour(tourIdOrSlug);
     if (success) {

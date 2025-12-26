@@ -21,10 +21,10 @@ const tourCreateSchema = z.object({
   galleryImages: z.array(z.object({ url: z.string().url(), caption: z.string().optional() })).optional().default([]),
   highlights: z.array(z.object({ icon: z.string().optional(), text: z.string() })).optional(),
   faqs: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
-  mapEmbedUrl: z.string().url().optional(),
+  mapEmbedUrl: z.string().url().optional().or(z.literal('')),
   isActive: z.boolean(),
   // New fields
-  guideId: z.string().optional(),
+  guideId: z.string().optional().or(z.literal('none')),
   rating: z.number().min(0).max(5).optional(),
   reviewCount: z.number().int().min(0).optional(),
 });

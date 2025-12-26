@@ -9,6 +9,7 @@ import { Loader2, Plane, Clock, DollarSign, Check, X, GalleryHorizontal, Calenda
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -60,7 +61,7 @@ export default function TourDetailPage() {
         if (!tour) return { mainImage: null, thumbnails: [] };
         const allImages = [
             { url: tour.featuredImageUrl },
-             ...(tour.galleryImages || [])
+            ...(tour.galleryImages || [])
         ];
         return {
             mainImage: allImages[0] || { url: 'https://placehold.co/800x600.png' },
@@ -75,7 +76,7 @@ export default function TourDetailPage() {
             </div>
         );
     }
-    
+
     if (!tour) {
         notFound();
         return null;
@@ -86,30 +87,30 @@ export default function TourDetailPage() {
             {/* Image Gallery Header */}
             <section className="mb-8 grid grid-cols-2 grid-rows-2 gap-2 h-[50vh] max-h-[500px]">
                 <div className="col-span-1 row-span-2 relative rounded-lg overflow-hidden">
-                   {imageGallery.mainImage && <Image src={imageGallery.mainImage.url} alt={tour.name} fill className="object-cover" priority data-ai-hint="tour elephant landscape"/>}
+                    {imageGallery.mainImage && <Image src={imageGallery.mainImage.url} alt={tour.name} fill className="object-cover" priority data-ai-hint="tour elephant landscape" />}
                 </div>
                 {imageGallery.thumbnails[0] && (
                     <div className="col-span-1 row-span-1 relative rounded-lg overflow-hidden">
-                       <Image src={imageGallery.thumbnails[0].url} alt={tour.name} fill className="object-cover" data-ai-hint="jeep safari"/>
+                        <Image src={imageGallery.thumbnails[0].url} alt={tour.name} fill className="object-cover" data-ai-hint="jeep safari" />
                     </div>
                 )}
                 <div className="col-span-1 row-span-1 grid grid-cols-2 gap-2">
                     {imageGallery.thumbnails[1] && (
-                         <div className="relative rounded-lg overflow-hidden">
-                            <Image src={imageGallery.thumbnails[1].url} alt={tour.name} fill className="object-cover" data-ai-hint="jet ski water"/>
-                         </div>
+                        <div className="relative rounded-lg overflow-hidden">
+                            <Image src={imageGallery.thumbnails[1].url} alt={tour.name} fill className="object-cover" data-ai-hint="jet ski water" />
+                        </div>
                     )}
                     {imageGallery.thumbnails[2] && (
                         <div className="relative rounded-lg overflow-hidden">
-                            <Image src={imageGallery.thumbnails[2].url} alt={tour.name} fill className="object-cover" data-ai-hint="coastal cliff"/>
+                            <Image src={imageGallery.thumbnails[2].url} alt={tour.name} fill className="object-cover" data-ai-hint="coastal cliff" />
                             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                <Button variant="secondary"><GalleryHorizontal className="mr-2 h-4 w-4"/>Show all photos</Button>
+                                <Button variant="secondary"><GalleryHorizontal className="mr-2 h-4 w-4" />Show all photos</Button>
                             </div>
                         </div>
                     )}
                 </div>
             </section>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
                 {/* Main Content */}
                 <div className="lg:col-span-8 space-y-8">
@@ -118,13 +119,13 @@ export default function TourDetailPage() {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-2">
                             {tour.rating && tour.reviewCount ? (
                                 <span className="flex items-center gap-1">
-                                    <Star className="h-4 w-4 text-amber-400 fill-amber-400"/>
+                                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
                                     {tour.rating.toFixed(1)} ({tour.reviewCount} reviews)
                                 </span>
                             ) : (
                                 <span className="text-sm text-muted-foreground">No reviews yet</span>
                             )}
-                            <span className="flex items-center gap-1"><MapPin className="h-4 w-4"/> {tour.location}</span>
+                            <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {tour.location}</span>
                         </div>
 
                         {/* Price Alert Button */}
@@ -142,54 +143,67 @@ export default function TourDetailPage() {
                         </div>
                     </div>
 
-                    <Separator/>
-                    
+                    <Separator />
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {(tour.highlights || []).map((highlight, index) => (
                             <div key={index} className="flex items-center gap-2">
-                                <DynamicIcon name={highlight.icon || 'Star'}/>
+                                <DynamicIcon name={highlight.icon || 'Star'} />
                                 <span className="text-sm font-medium">{highlight.text}</span>
                             </div>
                         ))}
                     </div>
 
-                    <Separator/>
+                    <Separator />
 
                     <div>
                         <h2 className="text-2xl font-bold font-headline mb-4">Overview</h2>
                         <p className="text-muted-foreground leading-relaxed">{tour.description}</p>
                     </div>
-                    
+
+                    {tour.activities && tour.activities.length > 0 && (
+                        <div>
+                            <h2 className="text-2xl font-bold font-headline mb-4">What to Expect</h2>
+                            <div className="flex flex-wrap gap-2">
+                                {tour.activities.map((activity) => (
+                                    <Badge key={activity.id} variant="secondary" className="px-3 py-1 text-sm">
+                                        {activity.name}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div>
                         <h2 className="text-2xl font-bold font-headline mb-4">Itinerary</h2>
                         <div className="space-y-6 border-l-2 border-primary/20 pl-6">
                             {tour.itinerary.map((item, index) => (
                                 <div key={index} className="relative">
                                     <div className="absolute -left-[33px] top-1 bg-primary text-primary-foreground h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm ring-4 ring-background">{index + 1}</div>
-                                    <h3 className="font-semibold">Day {index+1}</h3>
+                                    <h3 className="font-semibold">Day {index + 1}</h3>
                                     <p className="text-muted-foreground text-sm">{item}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <h3 className="text-xl font-bold font-headline mb-3 flex items-center gap-2"><Check className="h-6 w-6 text-green-500"/> What's Included</h3>
+                            <h3 className="text-xl font-bold font-headline mb-3 flex items-center gap-2"><Check className="h-6 w-6 text-green-500" /> What's Included</h3>
                             <ul className="space-y-2 list-inside text-muted-foreground text-sm">
-                                {tour.inclusions.map((item, index) => <li key={index} className="flex items-start"><Check className="h-4 w-4 text-green-500 mr-2 mt-1 shrink-0"/>{item}</li>)}
+                                {tour.inclusions.map((item, index) => <li key={index} className="flex items-start"><Check className="h-4 w-4 text-green-500 mr-2 mt-1 shrink-0" />{item}</li>)}
                             </ul>
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold font-headline mb-3 flex items-center gap-2"><X className="h-6 w-6 text-red-500"/> What's Excluded</h3>
+                            <h3 className="text-xl font-bold font-headline mb-3 flex items-center gap-2"><X className="h-6 w-6 text-red-500" /> What's Excluded</h3>
                             <ul className="space-y-2 list-inside text-muted-foreground text-sm">
-                                {tour.exclusions.map((item, index) => <li key={index} className="flex items-start"><X className="h-4 w-4 text-red-500 mr-2 mt-1 shrink-0"/>{item}</li>)}
+                                {tour.exclusions.map((item, index) => <li key={index} className="flex items-start"><X className="h-4 w-4 text-red-500 mr-2 mt-1 shrink-0" />{item}</li>)}
                             </ul>
                         </div>
                     </div>
-                    
+
                     {tour.faqs && tour.faqs.length > 0 && (
-                         <div>
+                        <div>
                             <h2 className="text-2xl font-bold font-headline mb-4">FAQs</h2>
                             <Accordion type="single" collapsible className="w-full">
                                 {tour.faqs.map((faq, index) => (
@@ -199,20 +213,20 @@ export default function TourDetailPage() {
                                     </AccordionItem>
                                 ))}
                             </Accordion>
-                         </div>
+                        </div>
                     )}
-                    
+
                     {tour.mapEmbedUrl && (
-                         <div>
+                        <div>
                             <h2 className="text-2xl font-bold font-headline mb-4">Map</h2>
                             <div className="aspect-video rounded-lg overflow-hidden border">
-                                 <iframe src={tour.mapEmbedUrl} width="100%" height="100%" style={{border:0}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
+                                <iframe src={tour.mapEmbedUrl} width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
                             </div>
                         </div>
                     )}
 
                 </div>
-                
+
                 {/* Sticky Sidebar */}
                 <aside className="lg:col-span-4">
                     <div className="space-y-6">
@@ -251,7 +265,7 @@ export default function TourDetailPage() {
                 </aside>
             </div>
 
-            <Separator className="my-12"/>
+            <Separator className="my-12" />
 
             {/* Reviews Section */}
             <div className="mb-12">
@@ -263,7 +277,7 @@ export default function TourDetailPage() {
                 />
             </div>
 
-            <Separator className="my-12"/>
+            <Separator className="my-12" />
 
             <RelatedTours currentTourSlug={tour.slug} />
 

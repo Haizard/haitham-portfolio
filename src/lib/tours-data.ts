@@ -2,6 +2,7 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import type { TourActivity } from './tour-activities-data';
+import { getTourActivityById } from './tour-activities-data';
 import { getGuideById } from './tour-guides-data';
 
 export interface GalleryImage {
@@ -52,6 +53,7 @@ export interface TourPackage {
   // New fields for guide and ratings
   guideId?: string; // Reference to tour guide/operator
   guide?: TourGuide; // Populated guide data (not stored in DB, populated on fetch)
+  activities?: TourActivity[]; // Populated activity data (not stored in DB)
   rating?: number; // Average rating (0-5)
   reviewCount?: number; // Total number of reviews
   createdAt: string;
@@ -280,6 +282,15 @@ export async function getTourById(id: string): Promise<TourPackage | null> {
     }
   }
 
+  // Populate activity data if activityIds exist
+  if (tour.activityIds && tour.activityIds.length > 0) {
+    const activities = await Promise.all(
+      tour.activityIds.map(id => getTourActivityById(id))
+    );
+    // @ts-ignore
+    tour.activities = activities.filter((a): a is TourActivity => a !== null);
+  }
+
   return tour;
 }
 
@@ -296,6 +307,15 @@ export async function getTourBySlug(slug: string): Promise<TourPackage | null> {
     if (guide) {
       tour.guide = guide;
     }
+  }
+
+  // Populate activity data if activityIds exist
+  if (tour.activityIds && tour.activityIds.length > 0) {
+    const activities = await Promise.all(
+      tour.activityIds.map(id => getTourActivityById(id))
+    );
+    // @ts-ignore
+    tour.activities = activities.filter((a): a is TourActivity => a !== null);
   }
 
   return tour;

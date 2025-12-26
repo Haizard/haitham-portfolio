@@ -24,6 +24,8 @@ import type { TourPackage, TourGuide } from '@/lib/tours-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { TourActivity } from '@/lib/tour-activities-data';
 
 const highlightSchema = z.object({
   icon: z.string().optional().describe("e.g., Clock, Users. See lucide-react icons."),
@@ -41,7 +43,8 @@ const tourFormSchema = z.object({
   description: z.string().min(10, "Description is required."),
   location: z.string().min(3, "Location is required."),
   tourType: z.string().min(3, "Tour Type is required (e.g., Safari, Cultural)."),
-  tags: z.string().min(3, "Please add at least one tag.").transform(val => val.split(',').map(tag => tag.trim()).filter(Boolean)),
+  tags: z.string().min(3, "Please add at least one tag."),
+  activityIds: z.array(z.string()).optional().default([]),
   price: z.coerce.number().positive("Price must be a positive number."),
   featuredImageUrl: z.string().url("A valid image URL is required."),
   isActive: z.boolean().default(false),
@@ -90,15 +93,133 @@ const ArrayField = ({ name, label, control, fields, append, remove, placeholder 
   </div>
 );
 
+const GalleryImageField = ({ name, control, fields, append, remove }: any) => (
+  <div className="space-y-2">
+    <Label>Gallery Images</Label>
+    {fields.map((field: any, index: number) => (
+      <div key={field.id} className="flex items-end gap-2">
+        <FormField
+          control={control}
+          name={`${name}.${index}.url`}
+          render={({ field: rhfField }) => (
+            <FormItem className="flex-grow">
+              <FormLabel className={index === 0 ? "block" : "sr-only"}>Image URL</FormLabel>
+              <Input {...rhfField} placeholder="https://example.com/image.jpg" />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={`${name}.${index}.caption`}
+          render={({ field: rhfField }) => (
+            <FormItem className="flex-grow">
+              <FormLabel className={index === 0 ? "block" : "sr-only"}>Caption (Optional)</FormLabel>
+              <Input {...rhfField} placeholder="Image caption" />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+      </div>
+    ))}
+    <Button type="button" variant="outline" size="sm" onClick={() => append({ url: "", caption: "" })}>
+      <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+    </Button>
+  </div>
+);
+
+const HighlightField = ({ name, control, fields, append, remove }: any) => (
+  <div className="space-y-2">
+    <Label>Highlights</Label>
+    {fields.map((field: any, index: number) => (
+      <div key={field.id} className="flex items-end gap-2">
+        <FormField
+          control={control}
+          name={`${name}.${index}.icon`}
+          render={({ field: rhfField }) => (
+            <FormItem className="w-1/3">
+              <FormLabel className={index === 0 ? "block" : "sr-only"}>Icon (Lucide)</FormLabel>
+              <Input {...rhfField} placeholder="e.g., Star, Users" />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={`${name}.${index}.text`}
+          render={({ field: rhfField }) => (
+            <FormItem className="flex-grow">
+              <FormLabel className={index === 0 ? "block" : "sr-only"}>Text</FormLabel>
+              <Input {...rhfField} placeholder="Highlight description" />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+      </div>
+    ))}
+    <Button type="button" variant="outline" size="sm" onClick={() => append({ icon: "Star", text: "" })}>
+      <PlusCircle className="mr-2 h-4 w-4" /> Add Highlight
+    </Button>
+  </div>
+);
+
+const FaqField = ({ name, control, fields, append, remove }: any) => (
+  <div className="space-y-2">
+    <Label>FAQs</Label>
+    {fields.map((field: any, index: number) => (
+      <div key={field.id} className="space-y-2 border p-3 rounded-md">
+        <FormField
+          control={control}
+          name={`${name}.${index}.question`}
+          render={({ field: rhfField }) => (
+            <FormItem>
+              <FormLabel>Question</FormLabel>
+              <Input {...rhfField} placeholder="What is included?" />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={`${name}.${index}.answer`}
+          render={({ field: rhfField }) => (
+            <FormItem>
+              <FormLabel>Answer</FormLabel>
+              <Textarea {...rhfField} placeholder="Everything you need for a great trip!" />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)} className="text-destructive">
+          <Trash2 className="mr-2 h-4 w-4" /> Remove FAQ
+        </Button>
+      </div>
+    ))}
+    <Button type="button" variant="outline" size="sm" onClick={() => append({ question: "", answer: "" })}>
+      <PlusCircle className="mr-2 h-4 w-4" /> Add FAQ
+    </Button>
+  </div>
+);
+
 
 export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [guides, setGuides] = useState<TourGuide[]>([]);
+  const [activities, setActivities] = useState<TourActivity[]>([]);
 
   const form = useForm<TourFormValues>({
     resolver: zodResolver(tourFormSchema),
-    defaultValues: { isActive: false, galleryImages: [], tags: [], highlights: [], faqs: [] },
+    defaultValues: {
+      isActive: false,
+      galleryImages: [],
+      tags: '',
+      highlights: [],
+      faqs: [],
+      activityIds: []
+    },
   });
 
   // Fetch available guides
@@ -117,6 +238,19 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
       }
     }
     fetchGuides();
+
+    async function fetchActivities() {
+      try {
+        const response = await fetch('/api/tour-activities');
+        if (response.ok) {
+          const data = await response.json();
+          setActivities(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch activities:', error);
+      }
+    }
+    fetchActivities();
   }, []);
 
   const { fields: itineraryFields, append: appendItinerary, remove: removeItinerary } = useFieldArray({ control: form.control, name: "itinerary" });
@@ -147,9 +281,10 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
           highlights: Array.isArray(tour.highlights) ? tour.highlights : [],
           faqs: Array.isArray(tour.faqs) ? tour.faqs : [],
           mapEmbedUrl: tour.mapEmbedUrl || "",
-          guideId: tour.guideId || "",
+          guideId: (tour.guideId && tour.guideId !== "none") ? tour.guideId : "none",
           rating: tour.rating || undefined,
           reviewCount: tour.reviewCount || undefined,
+          activityIds: Array.isArray(tour.activityIds) ? tour.activityIds : [],
         });
       } else {
         form.reset({
@@ -181,9 +316,12 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
 
     const payload = {
       ...values,
+      tags: values.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       itinerary: values.itinerary.map(item => item.value),
       inclusions: values.inclusions.map(item => item.value),
       exclusions: values.exclusions.map(item => item.value),
+      guideId: (values.guideId === "none" || !values.guideId) ? null : values.guideId,
+      mapEmbedUrl: values.mapEmbedUrl || null,
     };
 
     try {
@@ -304,6 +442,57 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
                     </div>
                   ))}
                   <Button type="button" variant="outline" size="sm" onClick={() => appendFaq({ question: "", answer: "" })}><PlusCircle className="mr-2 h-4 w-4" />Add FAQ</Button>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Activities</Label>
+                  <div className="grid grid-cols-2 gap-3 border rounded-md p-4">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`activity-${activity.id}`}
+                          checked={form.watch("activityIds")?.includes(activity.id!)}
+                          onCheckedChange={(checked) => {
+                            const currentIds = form.getValues("activityIds") || [];
+                            if (checked) {
+                              form.setValue("activityIds", [...currentIds, activity.id!]);
+                            } else {
+                              form.setValue("activityIds", currentIds.filter(id => id !== activity.id));
+                            }
+                          }}
+                        />
+                        <label htmlFor={`activity-${activity.id}`} className="text-sm font-medium leading-none cursor-pointer">
+                          {activity.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Gallery Images</Label>
+                  <div className="space-y-3">
+                    {galleryFields.map((field, index) => (
+                      <div key={field.id} className="flex flex-col gap-2 p-3 border rounded-md bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            placeholder="Image URL"
+                            {...form.register(`galleryImages.${index}.url` as const)}
+                          />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeGallery(index)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <Input
+                          placeholder="Caption (Optional)"
+                          {...form.register(`galleryImages.${index}.caption` as const)}
+                        />
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendGallery({ url: "", caption: "" })}>
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Gallery Image
+                    </Button>
+                  </div>
                 </div>
 
 
