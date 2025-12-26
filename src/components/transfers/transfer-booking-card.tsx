@@ -474,122 +474,119 @@ export function TransferBookingCard({
                     )}
                   />
                 </div>
+              </div>
 
+              {/* Requirements */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Passengers & Luggage</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="numberOfPassengers"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Passengers</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            max={vehicle.capacity.passengers}
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="numberOfLuggage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Luggage Items</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            max={vehicle.capacity.luggage}
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="childSeatsRequired"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Child Seats</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="wheelchairAccessible"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Wheelchair
+                          </FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Requirements */}
-            <div className="space-y-4">
-              <h3 className="font-semibold">Passengers & Luggage</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="numberOfPassengers"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Passengers</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          max={vehicle.capacity.passengers}
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowBookingForm(false)}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button type="submit" disabled={isBooking} className="flex-1">
+                  {isBooking ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Booking...
+                    </>
+                  ) : (
+                    'Confirm Booking'
                   )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="numberOfLuggage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Luggage Items</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={vehicle.capacity.luggage}
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                </Button>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="childSeatsRequired"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Child Seats</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="wheelchairAccessible"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Wheelchair
-                        </FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowBookingForm(false)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button type="submit" disabled={isBooking} className="flex-1">
-                {isBooking ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Booking...
-                  </>
-                ) : (
-                  'Confirm Booking'
-                )}
-              </Button>
-            </div>
-          </form>
+            </form>
           </Form>
         )}
-    </CardContent>
+      </CardContent>
     </Card >
   );
 }
