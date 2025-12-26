@@ -199,10 +199,10 @@ export default function UniversalFeed() {
     }, [page]);
 
     return (
-        <div className="max-w-xl mx-auto pb-20 bg-background min-h-screen">
+        <div className="max-w-7xl mx-auto pb-20 bg-background min-h-screen">
             {/* Discover Header */}
             <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 px-6 py-4">
-                <div className="flex items-center justify-between">
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
                     <div className="flex gap-4">
                         <Camera className="w-6 h-6 text-slate-700" />
                         <Search className="w-6 h-6 text-slate-700" />
@@ -213,58 +213,62 @@ export default function UniversalFeed() {
             </header>
 
             {/* Stories Bar */}
-            <div className="py-6 px-6 overflow-x-auto no-scrollbar flex gap-6 border-b border-border/40 bg-background">
-                {/* My Story / Plus */}
-                <div className="flex flex-col items-center gap-2 flex-none">
-                    <div className="w-16 h-16 rounded-3xl border-2 border-dashed border-border flex items-center justify-center bg-slate-50 relative">
-                        <Plus className="w-8 h-8 text-border" />
-                    </div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Post</span>
-                </div>
-
-                {CATEGORIES.filter(c => c.id !== 'all').map((cat) => (
-                    <button
-                        key={cat.id}
-                        onClick={() => setActiveCategory(cat.id)}
-                        className="flex flex-col items-center gap-2 flex-none group"
-                    >
-                        <div className={cn(
-                            "w-16 h-16 rounded-3xl p-0.5 border-2 transition-all duration-300",
-                            activeCategory === cat.id ? "border-primary shadow-lg shadow-primary/10" : "border-border group-hover:border-primary/50"
-                        )}>
-                            <div className={cn(
-                                "w-full h-full rounded-[1.25rem] flex items-center justify-center text-white",
-                                cat.color || "bg-slate-200"
-                            )}>
-                                <cat.icon className="w-8 h-8" />
-                            </div>
+            <div className="bg-background border-b border-border/40">
+                <div className="max-w-5xl mx-auto py-6 px-6 overflow-x-auto no-scrollbar flex gap-6">
+                    {/* My Story / Plus */}
+                    <div className="flex flex-col items-center gap-2 flex-none">
+                        <div className="w-16 h-16 rounded-3xl border-2 border-dashed border-border flex items-center justify-center bg-slate-50 relative">
+                            <Plus className="w-8 h-8 text-border" />
                         </div>
-                        <span className={cn(
-                            "text-[10px] font-bold uppercase tracking-widest transition-colors",
-                            activeCategory === cat.id ? "text-primary font-black" : "text-slate-500"
-                        )}>
-                            {cat.name}
-                        </span>
-                    </button>
-                ))}
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Post</span>
+                    </div>
+
+                    {CATEGORIES.filter(c => c.id !== 'all').map((cat) => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setActiveCategory(cat.id)}
+                            className="flex flex-col items-center gap-2 flex-none group"
+                        >
+                            <div className={cn(
+                                "w-16 h-16 rounded-3xl p-0.5 border-2 transition-all duration-300",
+                                activeCategory === cat.id ? "border-primary shadow-lg shadow-primary/10" : "border-border group-hover:border-primary/50"
+                            )}>
+                                <div className={cn(
+                                    "w-full h-full rounded-[1.25rem] flex items-center justify-center text-white",
+                                    cat.color || "bg-slate-200"
+                                )}>
+                                    <cat.icon className="w-8 h-8" />
+                                </div>
+                            </div>
+                            <span className={cn(
+                                "text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                activeCategory === cat.id ? "text-primary font-black" : "text-slate-500"
+                            )}>
+                                {cat.name}
+                            </span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Feed List */}
-            <div className="space-y-4 pt-6 pb-24">
-                <AnimatePresence>
-                    {items.map((item, idx) => (
-                        <motion.div
-                            key={`${item.id}-${idx}`}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            ref={idx === items.length - 1 ? lastItemRef : null}
-                            className="px-4"
-                        >
-                            <PostCard item={item} />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+            {/* Feed List - Optimized Grid */}
+            <div className="max-w-6xl mx-auto px-6 pt-10 pb-24">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
+                    <AnimatePresence>
+                        {items.map((item, idx) => (
+                            <motion.div
+                                key={`${item.id}-${idx}`}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0 }}
+                                ref={idx === items.length - 1 ? lastItemRef : null}
+                                className="w-full"
+                            >
+                                <PostCard item={item} />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
 
                 {(isLoading || isFetchingMore) && (
                     <div className="flex flex-col items-center justify-center py-10 gap-3">
