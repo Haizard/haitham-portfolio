@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -71,8 +71,10 @@ interface ImageItem {
     isPrimary: boolean;
 }
 
-export default function EditVehiclePage({ params }: { params: { id: string } }) {
+export default function EditVehiclePage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -100,7 +102,7 @@ export default function EditVehiclePage({ params }: { params: { id: string } }) 
     useEffect(() => {
         const fetchVehicle = async () => {
             try {
-                const response = await fetch(`/api/cars/vehicles/${params.id}`);
+                const response = await fetch(`/api/cars/vehicles/${id}`);
                 if (!response.ok) throw new Error('Failed to fetch vehicle details');
 
                 const data = await response.json();
@@ -152,7 +154,7 @@ export default function EditVehiclePage({ params }: { params: { id: string } }) 
         };
 
         fetchVehicle();
-    }, [params.id, form, router, toast]);
+    }, [id, form, router, toast]);
 
     const handleAddImage = () => {
         if (imageInput) {
@@ -224,7 +226,7 @@ export default function EditVehiclePage({ params }: { params: { id: string } }) 
                 })),
             };
 
-            const response = await fetch(`/api/cars/vehicles/${params.id}`, {
+            const response = await fetch(`/api/cars/vehicles/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

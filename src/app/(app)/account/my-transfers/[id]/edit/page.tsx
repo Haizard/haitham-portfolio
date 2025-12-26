@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -66,8 +66,10 @@ const transferFormSchema = z.object({
 const TRANSFER_CATEGORIES = ['sedan', 'suv', 'van', 'minibus', 'bus', 'luxury'];
 const FEATURES_LIST = ['WiFi', 'AC', 'Water', 'Child Seat', 'Wheelchair', 'Meet & Greet', 'Newspaper', 'Tablet'];
 
-export default function EditTransferPage({ params }: { params: { id: string } }) {
+export default function EditTransferPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const { toast } = useToast();
     const [isFetching, setIsFetching] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -101,7 +103,7 @@ export default function EditTransferPage({ params }: { params: { id: string } })
     useEffect(() => {
         const fetchVehicle = async () => {
             try {
-                const response = await fetch(`/api/transfers/vehicles/${params.id}`);
+                const response = await fetch(`/api/transfers/vehicles/${id}`);
                 const data = await response.json();
 
                 if (!response.ok) throw new Error(data.message || 'Failed to fetch vehicle details');
@@ -155,7 +157,7 @@ export default function EditTransferPage({ params }: { params: { id: string } })
         };
 
         fetchVehicle();
-    }, [params.id, form, router, toast]);
+    }, [id, form, router, toast]);
 
     const addLanguage = () => {
         if (langInput && !languages.includes(langInput)) {
@@ -210,7 +212,7 @@ export default function EditTransferPage({ params }: { params: { id: string } })
                 images: images.map((img, i) => ({ url: img.url, isPrimary: i === 0, caption: img.caption || "" })),
             };
 
-            const response = await fetch(`/api/transfers/vehicles/${params.id}`, {
+            const response = await fetch(`/api/transfers/vehicles/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

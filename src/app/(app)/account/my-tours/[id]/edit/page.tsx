@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,8 +48,10 @@ interface GalleryItem {
     caption: string;
 }
 
-export default function EditTourPage({ params }: { params: { id: string } }) {
+export default function EditTourPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const { toast } = useToast();
     const [isFetching, setIsFetching] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -91,7 +93,7 @@ export default function EditTourPage({ params }: { params: { id: string } }) {
     useEffect(() => {
         const fetchTour = async () => {
             try {
-                const response = await fetch(`/api/tours/${params.id}`);
+                const response = await fetch(`/api/tours/${id}`);
                 if (!response.ok) throw new Error('Failed to fetch tour details');
 
                 const tour = await response.json();
@@ -130,7 +132,7 @@ export default function EditTourPage({ params }: { params: { id: string } }) {
         };
 
         fetchTour();
-    }, [params.id, form, router, toast]);
+    }, [id, form, router, toast]);
 
     const addGalleryItem = () => {
         if (galleryInput) {
@@ -182,7 +184,7 @@ export default function EditTourPage({ params }: { params: { id: string } }) {
                 mapEmbedUrl: values.mapEmbedUrl || undefined
             };
 
-            const response = await fetch(`/api/tours/${params.id}`, {
+            const response = await fetch(`/api/tours/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

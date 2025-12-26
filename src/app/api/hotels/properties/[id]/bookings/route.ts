@@ -5,9 +5,10 @@ import { getPropertyById, getHotelBookingsByPropertyId } from '@/lib/hotels-data
 // GET /api/hotels/properties/[id]/bookings - Get bookings for a property
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
@@ -15,7 +16,7 @@ export async function GET(
     }
 
     // Get the property to check ownership
-    const property = await getPropertyById(params.id);
+    const property = await getPropertyById(id);
     if (!property) {
       return NextResponse.json({
         success: false,
@@ -35,7 +36,7 @@ export async function GET(
     }
 
     // Get bookings
-    const bookings = await getHotelBookingsByPropertyId(params.id);
+    const bookings = await getHotelBookingsByPropertyId(id);
 
     return NextResponse.json({
       success: true,

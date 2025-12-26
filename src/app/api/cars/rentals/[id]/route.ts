@@ -13,9 +13,10 @@ const updateRentalSchema = z.object({
 // GET /api/cars/rentals/[id] - Get rental by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authorized) {
       return NextResponse.json(
@@ -24,7 +25,7 @@ export async function GET(
       );
     }
 
-    const rental = await getCarRentalById(params.id);
+    const rental = await getCarRentalById(id);
     if (!rental) {
       return NextResponse.json(
         { success: false, error: 'Rental not found' },
@@ -61,9 +62,10 @@ export async function GET(
 // PATCH /api/cars/rentals/[id] - Update rental
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authorized) {
       return NextResponse.json(
@@ -72,7 +74,7 @@ export async function PATCH(
       );
     }
 
-    const rental = await getCarRentalById(params.id);
+    const rental = await getCarRentalById(id);
     if (!rental) {
       return NextResponse.json(
         { success: false, error: 'Rental not found' },
@@ -115,7 +117,7 @@ export async function PATCH(
           cancelledAt: new Date().toISOString(),
         };
 
-        const updatedRental = await updateCarRental(params.id, updates);
+        const updatedRental = await updateCarRental(id, updates);
         return NextResponse.json({
           success: true,
           rental: updatedRental,
@@ -154,7 +156,7 @@ export async function PATCH(
       }
     }
 
-    const updatedRental = await updateCarRental(params.id, validatedData);
+    const updatedRental = await updateCarRental(id, validatedData);
 
     return NextResponse.json({
       success: true,

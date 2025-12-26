@@ -5,9 +5,10 @@ import { getVehicleById, getCarRentalsByVehicleId } from '@/lib/cars-data';
 // GET /api/cars/vehicles/[id]/rentals - Get rentals for a vehicle
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
@@ -17,7 +18,7 @@ export async function GET(
     const { user } = authResult;
 
     // Get the vehicle to check ownership
-    const vehicle = await getVehicleById(params.id);
+    const vehicle = await getVehicleById(id);
     if (!vehicle) {
       return NextResponse.json({
         success: false,
@@ -37,7 +38,7 @@ export async function GET(
     }
 
     // Get all rentals for this vehicle
-    const rentals = await getCarRentalsByVehicleId(params.id);
+    const rentals = await getCarRentalsByVehicleId(id);
 
     return NextResponse.json({
       success: true,

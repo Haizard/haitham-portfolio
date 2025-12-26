@@ -4,9 +4,10 @@ import { checkTransferVehicleAvailability, getTransferVehicleById } from '@/lib/
 // GET /api/transfers/vehicles/[id]/availability - Check vehicle availability
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const pickupDate = searchParams.get('pickupDate');
     const pickupTime = searchParams.get('pickupTime');
@@ -34,7 +35,7 @@ export async function GET(
       }, { status: 400 });
     }
 
-    const vehicle = await getTransferVehicleById(params.id);
+    const vehicle = await getTransferVehicleById(id);
     if (!vehicle) {
       return NextResponse.json({
         success: false,
@@ -43,7 +44,7 @@ export async function GET(
     }
 
     const availability = await checkTransferVehicleAvailability(
-      params.id,
+      id,
       pickupDate,
       pickupTime
     );

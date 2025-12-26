@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -64,8 +64,10 @@ const propertyFormSchema = z.object({
 const PROPERTY_TYPES = ['hotel', 'apartment', 'resort', 'villa', 'hostel', 'guesthouse'];
 const AMENITIES_LIST = ['WiFi', 'Pool', 'Parking', 'Gym', 'Restaurant', 'Bar', 'Spa', 'AC', 'TV'];
 
-export default function EditPropertyPage({ params }: { params: { id: string } }) {
+export default function EditPropertyPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -104,7 +106,7 @@ export default function EditPropertyPage({ params }: { params: { id: string } })
     useEffect(() => {
         const fetchProperty = async () => {
             try {
-                const response = await fetch(`/api/hotels/properties/${params.id}`);
+                const response = await fetch(`/api/hotels/properties/${id}`);
                 if (!response.ok) throw new Error('Failed to fetch property details');
 
                 const data = await response.json();
@@ -157,7 +159,7 @@ export default function EditPropertyPage({ params }: { params: { id: string } })
         };
 
         fetchProperty();
-    }, [params.id, form, router, toast]);
+    }, [id, form, router, toast]);
 
     const handleAddImage = () => {
         if (imageInput) {
@@ -211,7 +213,7 @@ export default function EditPropertyPage({ params }: { params: { id: string } })
                 images: images.map((img, i) => ({ url: img.url, order: i, caption: img.caption || "" })),
             };
 
-            const response = await fetch(`/api/hotels/properties/${params.id}`, {
+            const response = await fetch(`/api/hotels/properties/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

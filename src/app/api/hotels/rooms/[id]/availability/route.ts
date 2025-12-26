@@ -11,9 +11,10 @@ const availabilitySchema = z.object({
 // GET /api/hotels/rooms/[id]/availability - Check room availability
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const checkInDate = searchParams.get('checkInDate');
     const checkOutDate = searchParams.get('checkOutDate');
@@ -32,7 +33,7 @@ export async function GET(
     });
 
     // Verify room exists
-    const room = await getRoomById(params.id);
+    const room = await getRoomById(id);
     if (!room) {
       return NextResponse.json({
         success: false,
@@ -94,7 +95,7 @@ export async function GET(
 
     // Check availability
     const availability = await checkRoomAvailability(
-      params.id,
+      id,
       validatedData.checkInDate,
       validatedData.checkOutDate
     );

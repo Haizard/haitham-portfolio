@@ -157,6 +157,10 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
     }
   };
 
+  const onError = (errors: any) => {
+    console.error('Form validation errors:', errors);
+  };
+
   return (
     <Card className="sticky top-4">
       <CardHeader>
@@ -170,7 +174,7 @@ export function TourBookingCard({ tourId, tourName, basePrice, duration }: TourB
       </CardHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit, onError)}>
           <CardContent className="space-y-6">
             {/* Tour Date */}
             <FormField

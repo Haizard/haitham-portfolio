@@ -13,16 +13,17 @@ const updateBookingSchema = z.object({
 // GET /api/hotels/bookings/[id] - Get booking by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }
 
-    const booking = await getHotelBookingById(params.id);
+    const booking = await getHotelBookingById(id);
 
     if (!booking) {
       return NextResponse.json({
@@ -65,16 +66,17 @@ export async function GET(
 // PATCH /api/hotels/bookings/[id] - Update booking
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
       return authResult;
     }
 
-    const booking = await getHotelBookingById(params.id);
+    const booking = await getHotelBookingById(id);
 
     if (!booking) {
       return NextResponse.json({
@@ -132,7 +134,7 @@ export async function PATCH(
     }
 
     // Update booking
-    const updatedBooking = await updateHotelBooking(params.id, updateData);
+    const updatedBooking = await updateHotelBooking(id, updateData);
 
     if (!updatedBooking) {
       return NextResponse.json({

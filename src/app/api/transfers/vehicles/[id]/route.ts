@@ -56,10 +56,11 @@ const updateVehicleSchema = z.object({
 // GET /api/transfers/vehicles/[id] - Get vehicle by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const vehicle = await getTransferVehicleById(params.id);
+    const { id } = await params;
+    const vehicle = await getTransferVehicleById(id);
 
     if (!vehicle) {
       return NextResponse.json({
@@ -85,9 +86,10 @@ export async function GET(
 // PATCH /api/transfers/vehicles/[id] - Update vehicle
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
@@ -118,7 +120,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateVehicleSchema.parse(body);
 
-    const updatedVehicle = await updateTransferVehicle(params.id, validatedData);
+    const updatedVehicle = await updateTransferVehicle(id, validatedData);
 
     return NextResponse.json({
       success: true,
@@ -146,9 +148,10 @@ export async function PATCH(
 // DELETE /api/transfers/vehicles/[id] - Delete vehicle
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
@@ -176,7 +179,7 @@ export async function DELETE(
       }, { status: 403 });
     }
 
-    const deleted = await deleteTransferVehicle(params.id);
+    const deleted = await deleteTransferVehicle(id);
 
     if (!deleted) {
       return NextResponse.json({

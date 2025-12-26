@@ -5,9 +5,10 @@ import { getTransferVehicleById, getTransferBookingsByVehicleId } from '@/lib/tr
 // GET /api/transfers/vehicles/[id]/bookings - Get bookings for a vehicle
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
@@ -18,7 +19,7 @@ export async function GET(
     }
 
     // Get the vehicle to check ownership
-    const vehicle = await getTransferVehicleById(params.id);
+    const vehicle = await getTransferVehicleById(id);
     if (!vehicle) {
       return NextResponse.json({
         success: false,
@@ -38,7 +39,7 @@ export async function GET(
     }
 
     // Get all bookings for this vehicle
-    const bookings = await getTransferBookingsByVehicleId(params.id);
+    const bookings = await getTransferBookingsByVehicleId(id);
 
     return NextResponse.json({
       success: true,

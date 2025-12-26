@@ -42,10 +42,11 @@ const updateRoomSchema = z.object({
 // GET /api/hotels/rooms/[id] - Get room by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const room = await getRoomById(params.id);
+    const { id } = await params;
+    const room = await getRoomById(id);
 
     if (!room) {
       return NextResponse.json({
@@ -71,9 +72,10 @@ export async function GET(
 // PATCH /api/hotels/rooms/[id] - Update room
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
@@ -81,7 +83,7 @@ export async function PATCH(
     }
 
     // Get the room to check ownership
-    const room = await getRoomById(params.id);
+    const room = await getRoomById(id);
     if (!room) {
       return NextResponse.json({
         success: false,
@@ -113,7 +115,7 @@ export async function PATCH(
     const validatedData = updateRoomSchema.parse(body);
 
     // Update room
-    const updatedRoom = await updateRoom(params.id, validatedData);
+    const updatedRoom = await updateRoom(id, validatedData);
 
     if (!updatedRoom) {
       return NextResponse.json({
@@ -148,9 +150,10 @@ export async function PATCH(
 // DELETE /api/hotels/rooms/[id] - Delete room
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
@@ -158,7 +161,7 @@ export async function DELETE(
     }
 
     // Get the room to check ownership
-    const room = await getRoomById(params.id);
+    const room = await getRoomById(id);
     if (!room) {
       return NextResponse.json({
         success: false,
@@ -187,7 +190,7 @@ export async function DELETE(
     }
 
     // Delete room
-    const deleted = await deleteRoom(params.id);
+    const deleted = await deleteRoom(id);
 
     if (!deleted) {
       return NextResponse.json({

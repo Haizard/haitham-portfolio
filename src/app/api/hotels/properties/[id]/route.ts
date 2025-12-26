@@ -48,10 +48,11 @@ const updatePropertySchema = z.object({
 // GET /api/hotels/properties/[id] - Get property by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const property = await getPropertyById(params.id);
+    const { id } = await params;
+    const property = await getPropertyById(id);
 
     if (!property) {
       return NextResponse.json({
@@ -77,9 +78,10 @@ export async function GET(
 // PATCH /api/hotels/properties/[id] - Update property
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
@@ -87,7 +89,7 @@ export async function PATCH(
     }
 
     // Get the property to check ownership
-    const property = await getPropertyById(params.id);
+    const property = await getPropertyById(id);
     if (!property) {
       return NextResponse.json({
         success: false,
@@ -110,7 +112,7 @@ export async function PATCH(
     const validatedData = updatePropertySchema.parse(body);
 
     // Update property
-    const updatedProperty = await updateProperty(params.id, validatedData);
+    const updatedProperty = await updateProperty(id, validatedData);
 
     if (!updatedProperty) {
       return NextResponse.json({
@@ -145,9 +147,10 @@ export async function PATCH(
 // DELETE /api/hotels/properties/[id] - Delete property
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Require authentication
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) {
@@ -155,7 +158,7 @@ export async function DELETE(
     }
 
     // Get the property to check ownership
-    const property = await getPropertyById(params.id);
+    const property = await getPropertyById(id);
     if (!property) {
       return NextResponse.json({
         success: false,
@@ -175,7 +178,7 @@ export async function DELETE(
     }
 
     // Delete property
-    const deleted = await deleteProperty(params.id);
+    const deleted = await deleteProperty(id);
 
     if (!deleted) {
       return NextResponse.json({

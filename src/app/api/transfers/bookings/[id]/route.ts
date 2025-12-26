@@ -19,9 +19,10 @@ const updateBookingSchema = z.object({
 // GET /api/transfers/bookings/[id] - Get booking by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
@@ -30,7 +31,7 @@ export async function GET(
       }, { status: 401 });
     }
 
-    const booking = await getTransferBookingById(params.id);
+    const booking = await getTransferBookingById(id);
     if (!booking) {
       return NextResponse.json({
         success: false,
@@ -68,9 +69,10 @@ export async function GET(
 // PATCH /api/transfers/bookings/[id] - Update booking
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authenticated || !authResult.user) {
       return NextResponse.json({
@@ -79,7 +81,7 @@ export async function PATCH(
       }, { status: 401 });
     }
 
-    const booking = await getTransferBookingById(params.id);
+    const booking = await getTransferBookingById(id);
     if (!booking) {
       return NextResponse.json({
         success: false,
@@ -141,7 +143,7 @@ export async function PATCH(
       }, { status: 403 });
     }
 
-    const updatedBooking = await updateTransferBooking(params.id, validatedData);
+    const updatedBooking = await updateTransferBooking(id, validatedData);
 
     return NextResponse.json({
       success: true,

@@ -11,11 +11,12 @@ const availabilityQuerySchema = z.object({
 // GET /api/cars/vehicles/[id]/availability - Check vehicle availability
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
-    
+
     const pickupDate = searchParams.get('pickupDate');
     const returnDate = searchParams.get('returnDate');
 
@@ -60,7 +61,7 @@ export async function GET(
     }
 
     // Get vehicle
-    const vehicle = await getVehicleById(params.id);
+    const vehicle = await getVehicleById(id);
     if (!vehicle) {
       return NextResponse.json(
         { success: false, error: 'Vehicle not found' },
@@ -69,7 +70,7 @@ export async function GET(
     }
 
     // Check availability
-    const availability = await checkVehicleAvailability(params.id, pickupDate, returnDate);
+    const availability = await checkVehicleAvailability(id, pickupDate, returnDate);
 
     // Calculate pricing
     const numberOfDays = differenceInDays(returnD, pickup);

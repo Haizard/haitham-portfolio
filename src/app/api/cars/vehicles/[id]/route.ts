@@ -51,10 +51,11 @@ const updateVehicleSchema = z.object({
 // GET /api/cars/vehicles/[id] - Get vehicle by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const vehicle = await getVehicleById(params.id);
+    const { id } = await params;
+    const vehicle = await getVehicleById(id);
 
     if (!vehicle) {
       return NextResponse.json(
@@ -79,9 +80,10 @@ export async function GET(
 // PATCH /api/cars/vehicles/[id] - Update vehicle
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authorized) {
       return NextResponse.json(
@@ -91,7 +93,7 @@ export async function PATCH(
     }
 
     // Get the vehicle to check ownership
-    const vehicle = await getVehicleById(params.id);
+    const vehicle = await getVehicleById(id);
     if (!vehicle) {
       return NextResponse.json(
         { success: false, error: 'Vehicle not found' },
@@ -113,7 +115,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateVehicleSchema.parse(body);
 
-    const updatedVehicle = await updateVehicle(params.id, validatedData);
+    const updatedVehicle = await updateVehicle(id, validatedData);
 
     return NextResponse.json({
       success: true,
@@ -139,9 +141,10 @@ export async function PATCH(
 // DELETE /api/cars/vehicles/[id] - Delete vehicle
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await requireAuth();
     if (!authResult.authorized) {
       return NextResponse.json(
@@ -151,7 +154,7 @@ export async function DELETE(
     }
 
     // Get the vehicle to check ownership
-    const vehicle = await getVehicleById(params.id);
+    const vehicle = await getVehicleById(id);
     if (!vehicle) {
       return NextResponse.json(
         { success: false, error: 'Vehicle not found' },
@@ -170,7 +173,7 @@ export async function DELETE(
       );
     }
 
-    const deleted = await deleteVehicle(params.id);
+    const deleted = await deleteVehicle(id);
 
     if (!deleted) {
       return NextResponse.json(

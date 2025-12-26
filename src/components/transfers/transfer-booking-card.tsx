@@ -268,6 +268,7 @@ export function TransferBookingCard({
       router.push('/account/bookings');
 
     } catch (error: any) {
+      console.error('Booking error:', error);
       toast({
         title: 'Booking failed',
         description: error.message || 'Something went wrong',
@@ -276,6 +277,10 @@ export function TransferBookingCard({
     } finally {
       setIsBooking(false);
     }
+  };
+
+  const onError = (errors: any) => {
+    console.error('Form validation errors:', errors);
   };
 
   return (
@@ -338,7 +343,7 @@ export function TransferBookingCard({
           </>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-4">
               {/* Transfer Details */}
               <div className="space-y-4">
                 <h3 className="font-semibold">Transfer Details</h3>
@@ -470,14 +475,28 @@ export function TransferBookingCard({
                   />
                 </div>
 
+                  />
+              </div>
+            </div>
+
+            {/* Requirements */}
+            <div className="space-y-4">
+              <h3 className="font-semibold">Passengers & Luggage</h3>
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="numberOfPassengers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Passengers</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} />
+                        <Input
+                          type="number"
+                          min="1"
+                          max={vehicle.capacity.passengers}
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -486,12 +505,18 @@ export function TransferBookingCard({
 
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="numberOfLuggage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <FormLabel>Luggage Items</FormLabel>
                       <FormControl>
-                        <Input type="tel" {...field} />
+                        <Input
+                          type="number"
+                          min="0"
+                          max={vehicle.capacity.luggage}
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -499,31 +524,73 @@ export function TransferBookingCard({
                 />
               </div>
 
-              <div className="flex gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowBookingForm(false)}
-                  className="flex-1"
-                >
-                  Back
-                </Button>
-                <Button type="submit" disabled={isBooking} className="flex-1">
-                  {isBooking ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Booking...
-                    </>
-                  ) : (
-                    'Confirm Booking'
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="childSeatsRequired"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Child Seats</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Button>
+                />
+
+                <FormField
+                  control={form.control}
+                  name="wheelchairAccessible"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Wheelchair
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
               </div>
-            </form>
+            </div>
+
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowBookingForm(false)}
+                className="flex-1"
+              >
+                Back
+              </Button>
+              <Button type="submit" disabled={isBooking} className="flex-1">
+                {isBooking ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Booking...
+                  </>
+                ) : (
+                  'Confirm Booking'
+                )}
+              </Button>
+            </div>
+          </form>
           </Form>
         )}
-      </CardContent>
-    </Card>
+    </CardContent>
+    </Card >
   );
 }
 

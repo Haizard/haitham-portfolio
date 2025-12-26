@@ -2,14 +2,45 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Bed, Maximize, Loader2 } from 'lucide-react';
+import { Users, Bed, Maximize, Loader2, User, Mail, Phone, Globe } from 'lucide-react';
 import Image from 'next/image';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useFormatPrice } from '@/contexts/currency-context';
 import type { Room } from '@/lib/hotels-data';
+
+const guestInfoSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Valid email is required'),
+  phone: z.string().min(5, 'Phone number is required'),
+  country: z.string().min(2, 'Country is required'),
+});
+
+type GuestInfoValues = z.infer<typeof guestInfoSchema>;
 
 interface RoomCardProps {
   room: Room;
@@ -41,6 +72,18 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const form = useForm<GuestInfoValues>({
+    resolver: zodResolver(guestInfoSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      country: '',
+    },
+  });
 
   const primaryImage = room.images.find((img) => img.isPrimary) || room.images[0];
 
@@ -77,7 +120,7 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
     }
   };
 
-  const handleBookNow = async () => {
+  const handleBookNow = async (guestInfo: GuestInfoValues) => {
     if (!checkIn || !checkOut) {
       toast({
         title: 'Missing Dates',
@@ -111,12 +154,9 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
             children,
             infants: 0,
           },
-          guestInfo: {
-            firstName: '',
-            lastName: '',
-            email: '',
-            phone: '',
-          },
+          guestInfo,
+          checkInDate: checkIn,
+          checkOutDate: checkOut,
         }),
       });
 
@@ -134,17 +174,25 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
       });
 
       // In a real app, redirect to Stripe checkout or payment page
+      if (data.paymentIntent?.clientSecret) {
+        // Handle payment...
+      }
       router.push(`/bookings/${data.booking.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating booking:', error);
       toast({
         title: 'Booking Failed',
-        description: error instanceof Error ? error.message : 'Failed to create booking',
+        description: error.message || 'Failed to create booking',
         variant: 'destructive',
       });
     } finally {
       setIsBooking(false);
+      setIsDialogOpen(false);
     }
+  };
+
+  const onFormError = (errors: any) => {
+    console.error('Guest info validation errors:', errors);
   };
 
   return (
@@ -253,8 +301,12 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
                 )}
               </div>
 
+                )}
+          </div>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
               <Button
-                onClick={handleBookNow}
                 disabled={
                   isBooking ||
                   isCheckingAvailability ||
@@ -263,20 +315,106 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
                   !checkOut
                 }
               >
-                {isBooking ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Booking...
-                  </>
-                ) : (
-                  'Book Now'
-                )}
+                Book Now
               </Button>
-            </CardFooter>
-          </div>
-        </CardContent>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Guest Information</DialogTitle>
+                <DialogDescription>
+                  Please provide guest details to complete your booking for {room.name}.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleBookNow, onFormError)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input type="tel" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button type="submit" disabled={isBooking} className="w-full">
+                      {isBooking ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Creating Booking...
+                        </>
+                      ) : (
+                        'Confirm & Pay'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </CardFooter>
       </div>
-    </Card>
+    </CardContent>
+      </div >
+    </Card >
   );
 }
 
