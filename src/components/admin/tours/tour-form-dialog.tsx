@@ -301,8 +301,8 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
           inclusions: [{ value: '' }],
           exclusions: [{ value: '' }],
           galleryImages: [],
-          highlights: [{ icon: "Star", text: "" }],
-          faqs: [{ question: "", answer: "" }],
+          highlights: [],
+          faqs: [],
           mapEmbedUrl: "",
         });
       }
@@ -353,17 +353,17 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
           <DialogDescription>Fill in the details for the tour package.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <form onSubmit={form.handleSubmit(handleSubmit, (errors) => console.log('Form Errors:', errors))}>
             <ScrollArea className="h-[calc(100vh-18rem)] pr-6">
               <div className="space-y-4 py-4">
-                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><Input {...field} /></FormItem>)} />
+                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><Input {...field} /><FormMessage /></FormItem>)} />
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="duration" render={({ field }) => (<FormItem><FormLabel>Duration</FormLabel><Input placeholder="e.g., 3 Days, 2 Nights" {...field} /></FormItem>)} />
-                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price ($)</FormLabel><Input type="number" {...field} /></FormItem>)} />
+                  <FormField control={form.control} name="duration" render={({ field }) => (<FormItem><FormLabel>Duration</FormLabel><Input placeholder="e.g., 3 Days, 2 Nights" {...field} /><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price ($)</FormLabel><Input type="number" {...field} /><FormMessage /></FormItem>)} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><Input placeholder="e.g., Arusha, Tanzania" {...field} /></FormItem>)} />
-                  <FormField control={form.control} name="tourType" render={({ field }) => (<FormItem><FormLabel>Tour Type</FormLabel><Input placeholder="e.g., Safari" {...field} /></FormItem>)} />
+                  <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><Input placeholder="e.g., Arusha, Tanzania" {...field} /><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="tourType" render={({ field }) => (<FormItem><FormLabel>Tour Type</FormLabel><Input placeholder="e.g., Safari" {...field} /><FormMessage /></FormItem>)} />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <FormField
@@ -391,8 +391,8 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
                       </FormItem>
                     )}
                   />
-                  <FormField control={form.control} name="rating" render={({ field }) => (<FormItem><FormLabel>Rating (0-5)</FormLabel><Input type="number" step="0.1" min="0" max="5" placeholder="4.5" {...field} /></FormItem>)} />
-                  <FormField control={form.control} name="reviewCount" render={({ field }) => (<FormItem><FormLabel>Review Count</FormLabel><Input type="number" min="0" placeholder="127" {...field} /></FormItem>)} />
+                  <FormField control={form.control} name="rating" render={({ field }) => (<FormItem><FormLabel>Rating (0-5)</FormLabel><Input type="number" step="0.1" min="0" max="5" placeholder="4.5" {...field} /><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="reviewCount" render={({ field }) => (<FormItem><FormLabel>Review Count</FormLabel><Input type="number" min="0" placeholder="127" {...field} /><FormMessage /></FormItem>)} />
                 </div>
                 <FormField
                   control={form.control}
@@ -409,9 +409,9 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><Textarea className="min-h-[100px]" {...field} /></FormItem>)} />
-                <FormField control={form.control} name="featuredImageUrl" render={({ field }) => (<FormItem><FormLabel>Featured Image URL</FormLabel><Input {...field} /></FormItem>)} />
-                <FormField control={form.control} name="mapEmbedUrl" render={({ field }) => (<FormItem><FormLabel>Google Maps Embed URL (Optional)</FormLabel><Input placeholder="https://www.google.com/maps/embed?..." {...field} /></FormItem>)} />
+                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><Textarea className="min-h-[100px]" {...field} /><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="featuredImageUrl" render={({ field }) => (<FormItem><FormLabel>Featured Image URL</FormLabel><Input {...field} /><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="mapEmbedUrl" render={({ field }) => (<FormItem><FormLabel>Google Maps Embed URL (Optional)</FormLabel><Input placeholder="https://www.google.com/maps/embed?..." {...field} /><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="isActive" render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Active & Visible</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
@@ -424,8 +424,8 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
                   <Label className="flex items-center gap-1.5"><Star className="h-4 w-4" />Highlights</Label>
                   {highlightFields.map((field, index) => (
                     <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
-                      <FormField control={form.control} name={`highlights.${index}.icon`} render={({ field: rhfField }) => <FormItem className="w-1/3"><FormLabel className="text-xs">Icon Name</FormLabel><Input placeholder="e.g., Clock" {...rhfField} /></FormItem>} />
-                      <FormField control={form.control} name={`highlights.${index}.text`} render={({ field: rhfField }) => <FormItem className="flex-1"><FormLabel className="text-xs">Text</FormLabel><Input placeholder="e.g., 8 hours" {...rhfField} /></FormItem>} />
+                      <FormField control={form.control} name={`highlights.${index}.icon`} render={({ field: rhfField }) => <FormItem className="w-1/3"><FormLabel className="text-xs">Icon Name</FormLabel><Input placeholder="e.g., Clock" {...rhfField} /><FormMessage /></FormItem>} />
+                      <FormField control={form.control} name={`highlights.${index}.text`} render={({ field: rhfField }) => <FormItem className="flex-1"><FormLabel className="text-xs">Text</FormLabel><Input placeholder="e.g., 8 hours" {...rhfField} /><FormMessage /></FormItem>} />
                       <Button type="button" variant="ghost" size="icon" onClick={() => removeHighlight(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                   ))}
@@ -436,8 +436,8 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
                   <Label className="flex items-center gap-1.5"><HelpCircle className="h-4 w-4" />FAQs</Label>
                   {faqFields.map((field, index) => (
                     <div key={field.id} className="space-y-2 p-2 border rounded-md">
-                      <FormField control={form.control} name={`faqs.${index}.question`} render={({ field: rhfField }) => <FormItem><FormLabel className="text-xs">Question</FormLabel><Input {...rhfField} /></FormItem>} />
-                      <FormField control={form.control} name={`faqs.${index}.answer`} render={({ field: rhfField }) => <FormItem><FormLabel className="text-xs">Answer</FormLabel><Textarea className="min-h-[60px]" {...rhfField} /></FormItem>} />
+                      <FormField control={form.control} name={`faqs.${index}.question`} render={({ field: rhfField }) => <FormItem><FormLabel className="text-xs">Question</FormLabel><Input {...rhfField} /><FormMessage /></FormItem>} />
+                      <FormField control={form.control} name={`faqs.${index}.answer`} render={({ field: rhfField }) => <FormItem><FormLabel className="text-xs">Answer</FormLabel><Textarea className="min-h-[60px]" {...rhfField} /><FormMessage /></FormItem>} />
                       <Button type="button" variant="ghost" size="sm" onClick={() => removeFaq(index)} className="text-destructive"><Trash2 className="h-4 w-4 mr-1" />Remove FAQ</Button>
                     </div>
                   ))}
@@ -507,6 +507,6 @@ export function TourFormDialog({ isOpen, onClose, tour, onSuccess }: TourFormDia
           </form>
         </Form>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }
