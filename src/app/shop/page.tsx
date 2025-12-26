@@ -34,14 +34,14 @@ export default function ShopPage() {
   const [categories, setCategories] = useState<ProductCategoryNode[]>([]);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category');
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<number[][]>([]);
   const [sortOption, setSortOption] = useState("featured");
-  
+
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
@@ -55,34 +55,34 @@ export default function ShopPage() {
   const fetchProductsAndMeta = useCallback(async () => {
     setIsLoading(true);
     try {
-        const query = new URLSearchParams();
-        if (selectedCategories.length > 0) {
-            query.append('categoryIds', selectedCategories.join(','));
+      const query = new URLSearchParams();
+      if (selectedCategories.length > 0) {
+        query.append('categoryIds', selectedCategories.join(','));
+      }
+      if (selectedPriceRanges.length > 0) {
+        const min = Math.min(...selectedPriceRanges.map(r => r[0]));
+        const max = Math.max(...selectedPriceRanges.map(r => r[1]));
+        if (max !== Infinity) {
+          query.append('priceRange', `${min},${max}`);
+        } else {
+          query.append('priceRange', `${min}`);
         }
-        if (selectedPriceRanges.length > 0) {
-            const min = Math.min(...selectedPriceRanges.map(r => r[0]));
-            const max = Math.max(...selectedPriceRanges.map(r => r[1]));
-            if (max !== Infinity) {
-              query.append('priceRange', `${min},${max}`);
-            } else {
-              query.append('priceRange', `${min}`);
-            }
-        }
-        if (sortOption !== 'featured') {
-            query.append('sortBy', sortOption);
-        }
-        
+      }
+      if (sortOption !== 'featured') {
+        query.append('sortBy', sortOption);
+      }
+
       const [productsRes, categoriesRes, bestSellersRes] = await Promise.all([
         fetch(`/api/products?${query.toString()}`),
-        fetch('/api/product-categories'), 
+        fetch('/api/product-categories'),
         fetch('/api/products?sortBy=sales&limit=5')
       ]);
       if (!productsRes.ok || !categoriesRes.ok || !bestSellersRes.ok) throw new Error("Failed to fetch shop data.");
-      
+
       const productsData = await productsRes.json();
       const categoriesData = await categoriesRes.json();
       const bestSellersData = await bestSellersRes.json();
-      
+
       setProducts(productsData);
       setCategories(categoriesData);
       setBestSellers(bestSellersData);
@@ -97,17 +97,40 @@ export default function ShopPage() {
   useEffect(() => {
     fetchProductsAndMeta();
   }, [fetchProductsAndMeta]);
-  
+
   const handleCategoryChange = (categoryId: string, checked: boolean | 'indeterminate') => {
-    setSelectedCategories(prev => 
+    setSelectedCategories(prev =>
       checked ? [...prev, categoryId] : prev.filter(c => c !== categoryId)
     );
   };
-  
+
   const handlePriceRangeChange = (range: number[], checked: boolean | 'indeterminate') => {
-      setSelectedPriceRanges(prev => 
+    setSelectedPriceRanges(prev =>
       checked ? [...prev, range] : prev.filter(r => r[0] !== range[0] || r[1] !== range[1])
     );
+  };
+
+  const renderCategoriesRecursive = (nodes: ProductCategoryNode[], level = 0) => {
+    return nodes.map(cat => (
+      <li key={cat.id} className="space-y-2">
+        <div className="flex items-center justify-between" style={{ paddingLeft: `${level * 12}px` }}>
+          <label htmlFor={`cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary">
+            <Checkbox
+              id={`cat-${cat.id}`}
+              checked={selectedCategories.includes(cat.id!)}
+              onCheckedChange={(c) => cat.id && handleCategoryChange(cat.id, c)}
+            />
+            <span className={level === 0 ? "font-medium text-foreground" : ""}>{cat.name}</span>
+          </label>
+          <span className="text-xs">({cat.productCount})</span>
+        </div>
+        {cat.children && cat.children.length > 0 && (
+          <ul className="space-y-2 mt-2">
+            {renderCategoriesRecursive(cat.children, level + 1)}
+          </ul>
+        )}
+      </li>
+    ));
   };
 
   const SidebarContent = () => (
@@ -115,26 +138,19 @@ export default function ShopPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Shop By Category</CardTitle></CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm">
-            {categories.map(cat => (
-              <li key={cat.id} className="flex items-center justify-between">
-                <label htmlFor={`cat-${cat.id}`} className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary">
-                   <Checkbox id={`cat-${cat.id}`} checked={selectedCategories.includes(cat.id!)} onCheckedChange={(c) => cat.id && handleCategoryChange(cat.id, c)} /> {cat.name}
-                </label>
-                <span className="text-xs">({cat.productCount})</span>
-              </li>
-            ))}
+          <ul className="space-y-4 text-sm">
+            {renderCategoriesRecursive(categories)}
           </ul>
         </CardContent>
       </Card>
       <Card>
         <CardHeader><CardTitle className="text-base">Shop By Price</CardTitle></CardHeader>
         <CardContent>
-           <ul className="space-y-2 text-sm">
+          <ul className="space-y-2 text-sm">
             {priceRanges.map(range => (
               <li key={range.label} className="flex items-center">
                 <label htmlFor={`price-${range.min}`} className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary">
-                   <Checkbox id={`price-${range.min}`} onCheckedChange={(c) => handlePriceRangeChange([range.min, range.max], c)} /> {range.label}
+                  <Checkbox id={`price-${range.min}`} onCheckedChange={(c) => handlePriceRangeChange([range.min, range.max], c)} /> {range.label}
                 </label>
               </li>
             ))}
@@ -146,11 +162,11 @@ export default function ShopPage() {
         <CardContent className="space-y-4">
           {isLoading ? <Skeleton className="h-48 w-full" /> : bestSellers.map(p => (
             <Link href={`/products/${p.slug}`} key={p.id} className="flex gap-3 group">
-              <Image src={p.imageUrl} alt={p.name} width={64} height={64} className="rounded-md object-contain border" data-ai-hint={p.imageHint}/>
+              <Image src={p.imageUrl} alt={p.name} width={64} height={64} className="rounded-md object-contain border" data-ai-hint={p.imageHint} />
               <div>
                 <p className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary">{p.name}</p>
                 <p className="text-xs font-semibold text-primary mt-1">${p.price?.toFixed(2)}</p>
-                <div className="flex text-yellow-400 mt-1">{[...Array(5)].map((_,i) => <Star key={i} className="h-3 w-3 fill-current"/>)}</div>
+                <div className="flex text-yellow-400 mt-1">{[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-current" />)}</div>
               </div>
             </Link>
           ))}
@@ -161,82 +177,82 @@ export default function ShopPage() {
 
   return (
     <>
-    <EcommerceHeader />
-    <div className="bg-background">
-      <div className="container mx-auto py-8">
-        <div className="mb-6 flex items-center text-sm text-muted-foreground">
-            <Link href="/" className="hover:text-primary flex items-center gap-1"><Home className="h-4 w-4"/> Home</Link>
+      <EcommerceHeader />
+      <div className="bg-background">
+        <div className="container mx-auto py-8">
+          <div className="mb-6 flex items-center text-sm text-muted-foreground">
+            <Link href="/" className="hover:text-primary flex items-center gap-1"><Home className="h-4 w-4" /> Home</Link>
             <ChevronRight className="h-4 w-4 mx-1" />
             <Link href="/ecommerce" className="hover:text-primary">E-commerce</Link>
             <ChevronRight className="h-4 w-4 mx-1" />
             <span>Shop</span>
-        </div>
-        
-        <div className="lg:hidden mb-4">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="w-full">
-                <Filter className="mr-2 h-4 w-4" />
-                Show Filters
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-full max-w-sm overflow-y-auto">
-              <SheetHeader className="pb-4">
-                <SheetTitle>Filter Products</SheetTitle>
-              </SheetHeader>
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="hidden lg:block lg:col-span-1">
-            <SidebarContent />
           </div>
 
-          <main className="lg:col-span-3">
-             <div className="flex flex-col sm:flex-row justify-between items-center border-b pb-4 mb-6">
+          <div className="lg:hidden mb-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Show Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-full max-w-sm overflow-y-auto">
+                <SheetHeader className="pb-4">
+                  <SheetTitle>Filter Products</SheetTitle>
+                </SheetHeader>
+                <SidebarContent />
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="hidden lg:block lg:col-span-1">
+              <SidebarContent />
+            </div>
+
+            <main className="lg:col-span-3">
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b pb-4 mb-6">
                 <h1 className="text-3xl font-bold font-headline mb-2 sm:mb-0">Shop All</h1>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">View:</span>
-                        <Button variant="outline" size="icon"><LayoutGrid className="h-4 w-4"/></Button>
-                        <Button variant="ghost" size="icon"><List className="h-4 w-4"/></Button>
-                    </div>
-                    <Select value={sortOption} onValueChange={setSortOption}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="featured">Sort by: Featured</SelectItem>
-                            <SelectItem value="price-asc">Sort by: Price low to high</SelectItem>
-                            <SelectItem value="price-desc">Sort by: Price high to low</SelectItem>
-                            <SelectItem value="name-asc">Sort by: Name A-Z</SelectItem>
-                            <SelectItem value="name-desc">Sort by: Name Z-A</SelectItem>
-                        </SelectContent>
-                    </Select>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">View:</span>
+                    <Button variant="outline" size="icon"><LayoutGrid className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon"><List className="h-4 w-4" /></Button>
+                  </div>
+                  <Select value={sortOption} onValueChange={setSortOption}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="featured">Sort by: Featured</SelectItem>
+                      <SelectItem value="price-asc">Sort by: Price low to high</SelectItem>
+                      <SelectItem value="price-desc">Sort by: Price high to low</SelectItem>
+                      <SelectItem value="name-asc">Sort by: Name A-Z</SelectItem>
+                      <SelectItem value="name-desc">Sort by: Name Z-A</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-             </div>
-            {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {[...Array(9)].map((_, i) => <Skeleton key={i} className="h-80 w-full" />)}
               </div>
-            ) : products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
-              </div>
-            ) : (
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(9)].map((_, i) => <Skeleton key={i} className="h-80 w-full" />)}
+                </div>
+              ) : products.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {products.map(p => <ProductCard key={p.id} product={p} onQuickView={handleQuickView} />)}
+                </div>
+              ) : (
                 <div className="text-center py-20">
-                    <h2 className="text-xl font-semibold">No Products Found</h2>
-                    <p className="text-muted-foreground mt-2">Try adjusting your filters to find what you're looking for.</p>
+                  <h2 className="text-xl font-semibold">No Products Found</h2>
+                  <p className="text-muted-foreground mt-2">Try adjusting your filters to find what you're looking for.</p>
                 </div>
-            )}
-            {/* TODO: Add Pagination */}
-          </main>
+              )}
+              {/* TODO: Add Pagination */}
+            </main>
+          </div>
         </div>
       </div>
-    </div>
-    <ProductQuickView product={quickViewProduct} isOpen={isQuickViewOpen} onOpenChange={setIsQuickViewOpen} />
+      <ProductQuickView product={quickViewProduct} isOpen={isQuickViewOpen} onOpenChange={setIsQuickViewOpen} />
     </>
   );
 }
