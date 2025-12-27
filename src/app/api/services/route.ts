@@ -16,6 +16,7 @@ const testimonialSchema = z.object({
 
 const serviceCreateSchema = z.object({
   name: z.string().min(3, "Service name must be at least 3 characters."),
+  categoryIds: z.array(z.string()).optional(),
   price: z.string().refine(value => !isNaN(parseFloat(value)) && parseFloat(value) >= 0, {
     message: "Price must be a valid non-negative number.",
   }),
@@ -32,6 +33,7 @@ const serviceCreateSchema = z.object({
   deliveryTime: z.string().max(50).optional().or(z.literal('')),
   revisionsIncluded: z.string().max(50).optional().or(z.literal('')),
 });
+
 
 
 export async function GET(request: NextRequest) {

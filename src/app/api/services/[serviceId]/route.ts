@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { ObjectId } from 'mongodb';
 
 const testimonialUpdateSchema = z.object({
-  id: z.string().optional(), 
+  id: z.string().optional(),
   customerName: z.string().min(1, "Customer name is required"),
   customerAvatar: z.string().url("Avatar URL must be valid").optional().or(z.literal('')),
   comment: z.string().min(5, "Comment must be at least 5 characters"),
@@ -15,6 +15,7 @@ const testimonialUpdateSchema = z.object({
 
 const serviceUpdateSchema = z.object({
   name: z.string().min(3, "Service name must be at least 3 characters.").optional(),
+  categoryIds: z.array(z.string()).optional(),
   price: z.string().refine(value => !isNaN(parseFloat(value)) && parseFloat(value) >= 0, {
     message: "Price must be a valid non-negative number.",
   }).optional(),
@@ -25,12 +26,13 @@ const serviceUpdateSchema = z.object({
   benefits: z.array(z.string()).optional(),
   offers: z.array(z.string()).optional(),
   securityInfo: z.string().optional().or(z.literal('')),
-  imageUrl: z.string().url("Image URL must be valid").optional().or(z.literal('')), 
+  imageUrl: z.string().url("Image URL must be valid").optional().or(z.literal('')),
   imageHint: z.string().max(50).optional().or(z.literal('')),
   testimonials: z.array(testimonialUpdateSchema).optional(),
   deliveryTime: z.string().max(50).optional().or(z.literal('')),
   revisionsIncluded: z.string().max(50).optional().or(z.literal('')),
 });
+
 
 
 export async function GET(
@@ -70,19 +72,19 @@ export async function PUT(
       return NextResponse.json({ message: "Invalid service ID format for update." }, { status: 400 });
     }
     const body = await request.json();
-    
+
     const validation = serviceUpdateSchema.safeParse(body);
-    if(!validation.success) {
+    if (!validation.success) {
       console.error("API Service Update Validation Error:", validation.error.flatten());
       return NextResponse.json({ message: "Invalid service data for update", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
-    
+
     const updates = validation.data as Partial<Omit<Service, 'id' | '_id' | 'slug'>>;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ message: "No update fields provided" }, { status: 400 });
     }
-    
+
     const updatedService = await updateService(serviceId, updates);
 
     if (updatedService) {
@@ -104,8 +106,8 @@ export async function DELETE(
 ) {
   const { serviceId } = await params;
   try {
-     if (!ObjectId.isValid(serviceId)) {
-        return NextResponse.json({ message: "Invalid service ID format for delete." }, { status: 400 });
+    if (!ObjectId.isValid(serviceId)) {
+      return NextResponse.json({ message: "Invalid service ID format for delete." }, { status: 400 });
     }
     const success = await deleteService(serviceId);
 

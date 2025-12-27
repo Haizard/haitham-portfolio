@@ -22,7 +22,7 @@ export interface Service {
   price: string;
   duration: string;
   description: string; // Short description for listing
-  categoryId?: string; // NEW: Link to the service category
+  categoryIds?: string[]; // Array of service category IDs (supports multiple categories)
   detailedDescription?: string; // Longer, potentially HTML content for detail page
   howItWorks?: string[]; // Array of steps or process points
   benefits?: string[]; // Array of benefits
@@ -37,10 +37,18 @@ export interface Service {
 
 function docToService(doc: any): Service {
   if (!doc) return doc;
-  const { _id, ...rest } = doc;
+  const { _id, categoryId, ...rest } = doc;
+
+  // Backward compatibility: convert old single categoryId to categoryIds array
+  let categoryIds = rest.categoryIds;
+  if (!categoryIds && categoryId) {
+    categoryIds = [categoryId];
+  }
+
   return {
     id: _id?.toString(),
     ...rest,
+    categoryIds: categoryIds || [],
     howItWorks: rest.howItWorks || [],
     benefits: rest.benefits || [],
     offers: rest.offers || [],
@@ -77,7 +85,11 @@ export async function getAllServices(freelancerId?: string, categoryId?: string)
     query.freelancerId = freelancerId;
   }
   if (categoryId) {
-    query.categoryId = categoryId;
+    // Support both old categoryId (string) and new categoryIds (array)
+    query.$or = [
+      { categoryIds: categoryId },
+      { categoryId: categoryId } // Backward compatibility
+    ];
   }
   const serviceDocs = await collection.find(query).sort({ name: 1 }).toArray();
   return serviceDocs.map(docToService);
