@@ -1,10 +1,10 @@
 
-
 import { NextResponse, type NextRequest } from 'next/server';
-import { getFreelancerProfile, updateFreelancerProfile, type FreelancerProfile } from '@/lib/user-profile-data';
-import { getClientProfile } from '@/lib/client-profile-data';
+import { getFreelancerProfile, updateFreelancerProfile, createFreelancerProfileIfNotExists, type FreelancerProfile } from '@/lib/user-profile-data';
+import { getClientProfile, createClientProfileIfNotExists } from '@/lib/client-profile-data';
 import { z } from 'zod';
 import { getSession } from '@/lib/session';
+
 
 const portfolioLinkSchema = z.object({
   id: z.string().optional(),
@@ -38,18 +38,46 @@ export async function GET(request: NextRequest) {
   try {
     let profile;
     const userRoles = session.user.roles || [];
-    
-    // A user is considered a "freelancer type" if they have any of these creative/selling roles.
-    const isFreelancerType = userRoles.some(r => ['freelancer', 'vendor', 'transport_partner', 'creator'].includes(r));
+
+    // A user is considered a "freelancer type" if they have any of these creative/selling/provider roles.
+    // This includes legacy roles (freelancer, vendor, transport_partner, creator) and new booking platform roles
+    const isFreelancerType = userRoles.some(r => [
+      'freelancer',
+      'vendor',
+      'transport_partner',
+      'creator',
+      'car_owner',
+      'property_owner',
+      'tour_operator',
+      'transfer_provider'
+    ].includes(r));
 
     if (isFreelancerType) {
-      // If they have any role that uses the extended profile, fetch that one.
+      // If they have any role that uses the extended profile, fetch or create that one.
       profile = await getFreelancerProfile(session.user.id);
-    } else if (userRoles.includes('client')) {
-      // If they are ONLY a client, fetch the client profile.
+
+      // Auto-create profile if it doesn't exist
+      if (!profile) {
+        profile = await createFreelancerProfileIfNotExists(session.user.id, {
+          name: session.user.name,
+          email: session.user.email,
+          roles: session.user.roles,
+          avatarUrl: session.user.avatar,
+        });
+      }
+    } else if (userRoles.includes('client') || userRoles.includes('customer')) {
+      // If they are a client or customer, fetch or create the client profile.
       profile = await getClientProfile(session.user.id);
+
+      // Auto-create profile if it doesn't exist
+      if (!profile) {
+        profile = await createClientProfileIfNotExists(session.user.id, {
+          name: session.user.name,
+          email: session.user.email,
+        });
+      }
     }
-    
+
     if (!profile) {
       // This is a fallback. A profile should be auto-created if one doesn't exist.
       // If we reach here, it implies a more serious issue or a new role without a profile creation path.
@@ -67,7 +95,7 @@ export async function POST(request: NextRequest) {
   if (!session.user || !session.user.id) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
-  
+
   try {
     const body = await request.json();
     const validation = profileUpdateSchema.safeParse(body);
@@ -76,14 +104,14 @@ export async function POST(request: NextRequest) {
       console.error("API Profile Update Validation Error:", validation.error.flatten());
       return NextResponse.json({ message: "Invalid profile data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
-    
+
     const validatedData = validation.data;
-    
+
     // For now, we assume only the FreelancerProfile is editable via this form.
     // A more complex system might have separate profile editing forms/APIs.
     const updateData: Partial<Omit<FreelancerProfile, 'id' | '_id' | 'userId' | 'createdAt' | 'updatedAt'>> = {
-        ...validatedData,
-        hourlyRate: validatedData.hourlyRate,
+      ...validatedData,
+      hourlyRate: validatedData.hourlyRate,
     };
 
     const updatedProfile = await updateFreelancerProfile(session.user.id, updateData);
