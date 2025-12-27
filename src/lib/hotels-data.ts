@@ -88,6 +88,7 @@ export interface BedConfiguration {
 export interface RoomPricing {
   basePrice: number;
   currency: string;
+  unit?: 'nightly' | 'monthly'; // Defaults to nightly
   taxRate: number; // percentage
   cleaningFee?: number;
   extraGuestFee?: number;

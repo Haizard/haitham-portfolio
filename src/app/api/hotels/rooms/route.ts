@@ -18,6 +18,7 @@ const roomCapacitySchema = z.object({
 const roomPricingSchema = z.object({
   basePrice: z.number().min(0),
   currency: z.string().length(3),
+  unit: z.enum(['nightly', 'monthly']).optional().default('nightly'),
   taxRate: z.number().min(0).max(100),
   cleaningFee: z.number().min(0).optional(),
   extraGuestFee: z.number().min(0).optional(),

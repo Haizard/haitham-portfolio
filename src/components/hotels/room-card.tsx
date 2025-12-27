@@ -62,6 +62,11 @@ interface AvailabilityData {
     extraGuestFee: number;
     totalPrice: number;
     currency: string;
+    unit?: 'nightly' | 'monthly';
+    breakdown?: {
+      description: string;
+      unitsCount: number;
+    };
   };
 }
 
@@ -278,13 +283,13 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
                   availability.available && availability.pricing ? (
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        {availability.numberOfNights} night{availability.numberOfNights !== 1 ? 's' : ''}
+                        {availability.pricing.breakdown?.description || `${availability.numberOfNights} night${availability.numberOfNights !== 1 ? 's' : ''}`}
                       </p>
                       <p className="text-2xl font-bold">
                         {format(availability.pricing.totalPrice, 'USD')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {format(availability.pricing.basePrice, 'USD')}/night + taxes & fees
+                        {format(availability.pricing.basePrice, 'USD')}/{availability.pricing.unit === 'monthly' ? 'month' : 'night'} + taxes & fees
                       </p>
                     </div>
                   ) : (
@@ -295,7 +300,7 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
                     <p className="text-xs text-muted-foreground">From</p>
                     <p className="text-2xl font-bold">
                       {format(room.pricing.basePrice, 'USD')}
-                      <span className="text-sm font-normal text-muted-foreground">/night</span>
+                      <span className="text-sm font-normal text-muted-foreground">/{room.pricing.unit === 'monthly' ? 'month' : 'night'}</span>
                     </p>
                   </div>
                 )}

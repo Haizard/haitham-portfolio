@@ -44,6 +44,7 @@ const roomFormSchema = z.object({
     pricing: z.object({
         basePrice: z.coerce.number().min(0),
         currency: z.string().default('USD'),
+        unit: z.enum(['nightly', 'monthly']).default('nightly'),
         taxRate: z.coerce.number().min(0).max(100).default(0),
         cleaningFee: z.coerce.number().min(0).optional(),
         extraGuestFee: z.coerce.number().min(0).optional(),
@@ -270,13 +271,40 @@ export function RoomForm({ defaultValues, onSubmit, isLoading, propertyId }: Roo
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Banknote className="h-5 w-5" /> Pricing & Availability</CardTitle></CardHeader>
                     <CardContent className="grid gap-6 md:grid-cols-2">
-                        <FormField control={form.control} name="pricing.basePrice" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Base Price (per night)</FormLabel>
-                                <FormControl><Input type="number" min="0" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+                        <FormField
+                            control={form.control}
+                            name="pricing.basePrice"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Base Price</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" min="0" step="0.01" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="pricing.unit"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Pricing Unit</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select unit" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="nightly">Per Night</SelectItem>
+                                            <SelectItem value="monthly">Per Month</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField control={form.control} name="pricing.taxRate" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Tax Rate (%)</FormLabel>

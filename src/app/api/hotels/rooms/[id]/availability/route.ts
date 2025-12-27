@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { checkRoomAvailability, getRoomById } from '@/lib/hotels-data';
+import { calculateBookingPrice } from '@/lib/pricing-utils';
 
 // Validation schema
 const availabilitySchema = z.object({
@@ -71,7 +72,7 @@ export async function GET(
       }, { status: 400 });
     }
 
-    // Calculate number of nights
+    // Calculate number of nights (still useful for min stay check)
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
     // Check minimum/maximum stay requirements
@@ -100,24 +101,31 @@ export async function GET(
       validatedData.checkOutDate
     );
 
-    // Calculate pricing
-    const basePrice = room.pricing.basePrice * nights;
+    // Calculate pricing using robust logic
+    const unit = room.pricing.unit || 'nightly';
+    const priceResult = calculateBookingPrice(checkIn, checkOut, room.pricing.basePrice, unit);
+
+    const basePrice = priceResult.totalPrice;
     const taxAmount = basePrice * (room.pricing.taxRate / 100);
     const cleaningFee = room.pricing.cleaningFee || 0;
-    const totalPrice = basePrice + taxAmount + cleaningFee;
+    const extraGuestFee = 0; // Logic for extra guests can be added here if needed
+    const totalPrice = basePrice + taxAmount + cleaningFee + extraGuestFee;
 
     return NextResponse.json({
       success: true,
       available: availability.available,
       availableRooms: availability.availableRooms,
-      nights,
+      numberOfNights: nights, // Providing explicit field
       pricing: {
         basePrice,
         taxAmount,
         cleaningFee,
+        extraGuestFee,
         totalPrice,
         currency: room.pricing.currency,
-        pricePerNight: room.pricing.basePrice,
+        pricePerUnit: room.pricing.basePrice,
+        unit: unit,
+        breakdown: priceResult.breakdown
       },
       room: {
         id: room.id,
@@ -143,4 +151,3 @@ export async function GET(
     }, { status: 500 });
   }
 }
-
