@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth, requireRoles } from '@/lib/rbac';
-import { createRoom, getRoomsByPropertyId, getPropertyById } from '@/lib/hotels-data';
+import { createRoom, getRoomsByPropertyId, getPropertyById, getPropertyBySlug } from '@/lib/hotels-data';
 
 // Validation schemas
 const bedConfigurationSchema = z.object({
@@ -49,6 +49,9 @@ const createRoomSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+// Helper to check valid ObjectId
+const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
+
 // POST /api/hotels/rooms - Create a new room
 export async function POST(request: NextRequest) {
   try {
@@ -67,7 +70,22 @@ export async function POST(request: NextRequest) {
     const validatedData = createRoomSchema.parse(body);
 
     // Verify property exists and user owns it
-    const property = await getPropertyById(validatedData.propertyId);
+    // Note: This expects ID. If slug is passed, it might fail validation implicitly via getPropertyById usage later if strict on regex, 
+    // but here we just call validation.
+    // To prevent 500, we check if ID is valid format, if not try slug? 
+    // Usually POST uses IDs. 
+
+    let property;
+    if (isValidObjectId(validatedData.propertyId)) {
+      property = await getPropertyById(validatedData.propertyId);
+    } else {
+      // Graceful fallback or fail
+      return NextResponse.json({
+        success: false,
+        message: 'Invalid Property ID format',
+      }, { status: 400 });
+    }
+
     if (!property) {
       return NextResponse.json({
         success: false,
@@ -125,17 +143,32 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Verify property exists
-    const property = await getPropertyById(propertyId);
-    if (!property) {
-      return NextResponse.json({
-        success: false,
-        message: 'Property not found',
-      }, { status: 404 });
+    let targetPropertyId = propertyId;
+
+    // Enhanced property lookup: Support Slug or ID
+    if (!isValidObjectId(propertyId)) {
+      const property = await getPropertyBySlug(propertyId);
+      if (property) {
+        targetPropertyId = property.id;
+      } else {
+        return NextResponse.json({
+          success: false,
+          message: 'Property not found',
+        }, { status: 404 });
+      }
+    } else {
+      // Verify property exists by ID
+      const property = await getPropertyById(propertyId);
+      if (!property) {
+        return NextResponse.json({
+          success: false,
+          message: 'Property not found',
+        }, { status: 404 });
+      }
     }
 
     // Get rooms
-    const rooms = await getRoomsByPropertyId(propertyId);
+    const rooms = await getRoomsByPropertyId(targetPropertyId);
 
     return NextResponse.json({
       success: true,
@@ -151,4 +184,3 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
-
