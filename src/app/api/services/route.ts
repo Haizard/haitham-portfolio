@@ -53,6 +53,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
     const body = await request.json();
     const validation = serviceCreateSchema.safeParse(body);
 
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const serviceData: Omit<Service, 'id' | '_id' | 'slug'> = {
       ...validation.data,
-      freelancerId: MOCK_FREELANCER_ID, // Associate with the authenticated freelancer
+      freelancerId: authResult.user.id, // Associate with the authenticated freelancer
     };
 
     const addedService = await addService(serviceData);

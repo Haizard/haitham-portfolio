@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, ArrowLeft, Mail, Briefcase, Link as LinkIcon, DollarSign, Settings2, Info, Star, MessageSquare, ExternalLink, Globe } from 'lucide-react';
 import type { FreelancerProfile } from '@/lib/user-profile-data';
+import type { Service } from '@/lib/services-data'; // Import Service type
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -21,6 +22,7 @@ export default function FreelancerProfilePage() {
   const { userId } = params;
 
   const [profile, setProfile] = useState<FreelancerProfile | null>(null);
+  const [services, setServices] = useState<Service[]>([]); // State for services
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,26 +33,37 @@ export default function FreelancerProfilePage() {
       return;
     }
 
-    async function fetchProfile() {
+    async function fetchData() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/freelancers/${userId}`);
-        if (!response.ok) {
-          if (response.status === 404) notFound();
+        // Fetch Profile
+        const profileResponse = await fetch(`/api/freelancers/${userId}`);
+        if (!profileResponse.ok) {
+          if (profileResponse.status === 404) notFound();
           throw new Error('Failed to fetch freelancer profile.');
         }
-        const data: FreelancerProfile = await response.json();
-        setProfile(data);
+        const profileData: FreelancerProfile = await profileResponse.json();
+        setProfile(profileData);
+
+        // Fetch Services
+        const servicesResponse = await fetch(`/api/services?freelancerId=${userId}`);
+        if (servicesResponse.ok) {
+          const servicesData: Service[] = await servicesResponse.json();
+          setServices(servicesData);
+        } else {
+          console.warn("Failed to fetch services");
+        }
+
       } catch (err: any) {
         setError(err.message);
-        console.error("Error fetching freelancer profile:", err);
+        console.error("Error fetching data:", err);
       } finally {
         setIsLoading(false);
       }
     }
 
-    fetchProfile();
+    fetchData();
   }, [userId]);
 
   if (isLoading) {
@@ -72,14 +85,14 @@ export default function FreelancerProfilePage() {
       </div>
     );
   }
-  
+
   if (!profile) {
     notFound();
     return null;
   }
 
   const getAvailabilityColor = (status: FreelancerProfile['availabilityStatus']) => {
-    switch(status) {
+    switch (status) {
       case 'available': return 'bg-green-500';
       case 'busy': return 'bg-yellow-500';
       case 'not_available': return 'bg-red-500';
@@ -94,78 +107,115 @@ export default function FreelancerProfilePage() {
       </Button>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-            <Card className="shadow-xl sticky top-24">
-                <CardHeader className="items-center text-center">
-                    <Avatar className="h-28 w-28 mb-3 ring-4 ring-primary ring-offset-2">
-                        <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="freelancer avatar"/>
-                        <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <CardTitle className="text-2xl font-bold font-headline">{profile.name}</CardTitle>
-                    <CardDescription className="text-md">{profile.occupation}</CardDescription>
-                     <div className="flex items-center gap-2 pt-2">
-                        <span className={cn("h-3 w-3 rounded-full", getAvailabilityColor(profile.availabilityStatus))}></span>
-                        <span className="text-sm text-muted-foreground capitalize">{profile.availabilityStatus.replace('_', ' ')}</span>
-                    </div>
-                </CardHeader>
-                <CardContent className="text-center space-y-4">
-                    <Button className="w-full bg-primary hover:bg-primary/90">
-                        <MessageSquare className="mr-2 h-4 w-4"/> Contact {profile.name.split(' ')[0]}
-                    </Button>
-                     {profile.hourlyRate && (
-                         <div className="flex items-center justify-center gap-2 text-lg">
-                            <DollarSign className="h-5 w-5 text-green-600"/>
-                            <span className="font-semibold">${profile.hourlyRate}</span>
-                            <span className="text-muted-foreground text-sm">/ hour</span>
-                         </div>
-                     )}
-                </CardContent>
-            </Card>
+          <Card className="shadow-xl sticky top-24">
+            <CardHeader className="items-center text-center">
+              <Avatar className="h-28 w-28 mb-3 ring-4 ring-primary ring-offset-2">
+                <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="freelancer avatar" />
+                <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <CardTitle className="text-2xl font-bold font-headline">{profile.name}</CardTitle>
+              <CardDescription className="text-md">{profile.occupation}</CardDescription>
+              <div className="flex items-center gap-2 pt-2">
+                <span className={cn("h-3 w-3 rounded-full", getAvailabilityColor(profile.availabilityStatus))}></span>
+                <span className="text-sm text-muted-foreground capitalize">{profile.availabilityStatus.replace('_', ' ')}</span>
+              </div>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <Button className="w-full bg-primary hover:bg-primary/90">
+                <MessageSquare className="mr-2 h-4 w-4" /> Contact {profile.name.split(' ')[0]}
+              </Button>
+              {profile.hourlyRate && (
+                <div className="flex items-center justify-center gap-2 text-lg">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  <span className="font-semibold">${profile.hourlyRate}</span>
+                  <span className="text-muted-foreground text-sm">/ hour</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
         <main className="lg:col-span-2 space-y-8">
           <Card className="shadow-xl">
-            <CardHeader><CardTitle className="flex items-center gap-2"><Info className="h-5 w-5 text-primary"/>About Me</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Info className="h-5 w-5 text-primary" />About Me</CardTitle></CardHeader>
             <CardContent>
-                <p className="text-muted-foreground whitespace-pre-line">{profile.bio}</p>
+              <p className="text-muted-foreground whitespace-pre-line">{profile.bio}</p>
             </CardContent>
           </Card>
-           <Card className="shadow-xl">
-            <CardHeader><CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-primary"/>Skills</CardTitle></CardHeader>
+          <Card className="shadow-xl">
+            <CardHeader><CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-primary" />Skills</CardTitle></CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               {profile.skills.map(skill => (
                 <Badge key={skill} variant="secondary" className="text-sm px-3 py-1">{skill}</Badge>
               ))}
             </CardContent>
           </Card>
+
+          {/* Services Section */}
+          <Card className="shadow-xl">
+            <CardHeader><CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary" />Services Offered</CardTitle></CardHeader>
+            <CardContent>
+              {services.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {services.map(service => (
+                    <a href={`/our-services/${service.slug}`} key={service.id} className="group block h-full">
+                      <Card className="h-full border hover:border-primary/50 transition-colors overflow-hidden flex flex-col">
+                        <div className="aspect-video relative bg-muted">
+                          <Image
+                            src={service.imageUrl || `https://placehold.co/600x400.png?text=${encodeURIComponent(service.name)}`}
+                            alt={service.name}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </div>
+                        <CardContent className="p-4 flex flex-col flex-grow">
+                          <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">{service.name}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-grow">{service.description}</p>
+                          <div className="flex items-center justify-between mt-auto">
+                            <span className="font-bold text-green-600">{service.price}</span>
+                            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">{service.duration}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No services listed yet.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           {profile.portfolioLinks && profile.portfolioLinks.length > 0 && (
-              <Card className="shadow-xl">
-                  <CardHeader><CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary"/>Portfolio</CardTitle></CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {profile.portfolioLinks.map(link => (
-                      <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="block border rounded-lg p-3 hover:bg-muted/50 hover:border-primary transition-all group">
-                          <p className="font-semibold text-sm truncate group-hover:text-primary">{link.title}</p>
-                          <p className="text-xs text-blue-500 truncate flex items-center gap-1">
-                              <ExternalLink className="h-3 w-3"/>
-                              {link.url}
-                          </p>
-                      </a>
-                    ))}
-                  </CardContent>
-              </Card>
+            <Card className="shadow-xl">
+              <CardHeader><CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary" />Portfolio</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profile.portfolioLinks.map(link => (
+                  <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="block border rounded-lg p-3 hover:bg-muted/50 hover:border-primary transition-all group">
+                    <p className="font-semibold text-sm truncate group-hover:text-primary">{link.title}</p>
+                    <p className="text-xs text-blue-500 truncate flex items-center gap-1">
+                      <ExternalLink className="h-3 w-3" />
+                      {link.url}
+                    </p>
+                  </a>
+                ))}
+              </CardContent>
+            </Card>
           )}
 
-           <Card className="shadow-xl">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary"/>Client Reviews ({profile.reviewCount})</CardTitle>
-                    <div className="flex items-center gap-2 pt-1">
-                        <StarRating rating={profile.averageRating || 0} disabled/>
-                        <span className="font-bold text-lg">{profile.averageRating?.toFixed(1)}</span>
-                        <span className="text-sm text-muted-foreground">average rating</span>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <ReviewsList freelancerId={userId} />
-                </CardContent>
-            </Card>
+          <Card className="shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" />Client Reviews ({profile.reviewCount})</CardTitle>
+              <div className="flex items-center gap-2 pt-1">
+                <StarRating rating={profile.averageRating || 0} disabled />
+                <span className="font-bold text-lg">{profile.averageRating?.toFixed(1)}</span>
+                <span className="text-sm text-muted-foreground">average rating</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ReviewsList freelancerId={userId} />
+            </CardContent>
+          </Card>
         </main>
       </div>
     </div>
