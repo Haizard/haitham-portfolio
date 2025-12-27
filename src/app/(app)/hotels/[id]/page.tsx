@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { RoomCard } from '@/components/hotels/room-card';
 import { PriceAlertButton } from '@/components/price-alerts/price-alert-button';
+import { PropertyBookingWidget } from '@/components/hotels/property-booking-widget';
 import type { Property, Room } from '@/lib/hotels-data';
 
 const amenityIcons: Record<string, any> = {
@@ -282,8 +283,9 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
+          <div className="lg:col-span-1 space-y-6">
+            <PropertyBookingWidget />
+            <Card>
               <CardHeader>
                 <CardTitle>Contact Information</CardTitle>
               </CardHeader>
