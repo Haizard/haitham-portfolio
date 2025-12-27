@@ -103,7 +103,7 @@ export default function PropertyDetailPage() {
               className="object-cover"
               priority
             />
-            
+
             {/* Navigation Arrows */}
             {property.images.length > 1 && (
               <>
@@ -154,9 +154,9 @@ export default function PropertyDetailPage() {
                   </div>
                 )}
               </div>
-              
+
               <h1 className="text-3xl md:text-4xl font-bold mb-2">{property.name}</h1>
-              
+
               <div className="flex items-center gap-2 text-muted-foreground">
                 <MapPin className="h-4 w-4" />
                 <span>
@@ -243,14 +243,14 @@ export default function PropertyDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Pets:</span>
-                  <span className="font-medium capitalize">
-                    {property.policies.petPolicy.replace('_', ' ')}
+                  <span className="font-medium">
+                    {property.policies.petsAllowed ? 'Allowed' : 'Not Allowed'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Smoking:</span>
-                  <span className="font-medium capitalize">
-                    {property.policies.smokingPolicy.replace('_', ' ')}
+                  <span className="font-medium">
+                    {property.policies.smokingAllowed ? 'Allowed' : 'Not Allowed'}
                   </span>
                 </div>
               </div>
