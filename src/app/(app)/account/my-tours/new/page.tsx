@@ -27,7 +27,9 @@ const tourFormSchema = z.object({
     description: z.string().min(10),
     location: z.string().min(3),
     tourType: z.string().min(3),
-    price: z.coerce.number().positive(),
+    price: z.coerce.number().positive("Price must be positive"),
+    featuredImageUrl: z.string().url("Must be a valid URL"),
+    videoUrl: z.string().url().optional().or(z.literal("")),
     mapEmbedUrl: z.string().url().optional().or(z.literal("")),
     isActive: z.boolean().default(true),
 });
@@ -53,7 +55,6 @@ export default function NewTourPage() {
     const [isLoading, setIsLoading] = useState(false);
 
     // Rich Data States
-    const [featuredImage, setFeaturedImage] = useState("");
     const [gallery, setGallery] = useState<GalleryItem[]>([]);
     const [galleryInput, setGalleryInput] = useState("");
 
@@ -82,7 +83,9 @@ export default function NewTourPage() {
             tourType: "Adventure",
             price: 0,
             isActive: true,
-            mapEmbedUrl: ""
+            mapEmbedUrl: "",
+            featuredImageUrl: "",
+            videoUrl: "",
         },
     });
 
@@ -117,11 +120,6 @@ export default function NewTourPage() {
     };
 
     async function onSubmit(values: z.infer<typeof tourFormSchema>) {
-        if (!featuredImage) {
-            toast({ title: "Featured Image Required", variant: "destructive" });
-            return;
-        }
-
         setIsLoading(true);
         try {
             const payload = {
@@ -130,11 +128,11 @@ export default function NewTourPage() {
                 itinerary,
                 inclusions,
                 exclusions,
-                featuredImageUrl: featuredImage,
                 galleryImages: gallery,
                 highlights,
                 faqs,
-                mapEmbedUrl: values.mapEmbedUrl || undefined
+                mapEmbedUrl: values.mapEmbedUrl || undefined,
+                videoUrl: values.videoUrl || undefined
             };
 
             const response = await fetch('/api/tours', {
@@ -185,6 +183,17 @@ export default function NewTourPage() {
                                 )} />
                                 <FormField control={form.control} name="mapEmbedUrl" render={({ field }) => (
                                     <FormItem><FormLabel>Map Embed URL (Optional)</FormLabel><FormControl><Input placeholder="https://maps.google.com/..." {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="featuredImageUrl" render={({ field }) => (
+                                    <FormItem><FormLabel>Featured Image URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                        <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                        <FormDescription>This video will replace the featured image in the social feed.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
                                 )} />
                                 <FormField control={form.control} name="description" render={({ field }) => (
                                     <FormItem className="col-span-2"><FormLabel>Description</FormLabel><FormControl><Textarea className="h-32" {...field} /></FormControl><FormMessage /></FormItem>

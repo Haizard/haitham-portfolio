@@ -34,8 +34,8 @@ export interface Product {
   slug: string;
   name: string;
   description: string;
-  categoryId?: string; 
-  categoryName?: string; 
+  categoryId?: string;
+  categoryName?: string;
   vendorId: string;
   vendorName?: string;
   imageUrl: string;
@@ -53,7 +53,7 @@ export interface Product {
   price?: number;
   stock?: number;
   sku?: string;
-  
+
   // Rating and Review fields
   averageRating?: number;
   reviewCount?: number;
@@ -61,6 +61,9 @@ export interface Product {
   // Enriched fields for analytics
   sales?: number;
   revenue?: number;
+
+  // Social Shopping
+  videoUrl?: string; // YouTube or TikTok URL
 }
 
 // For MongoDB document representation
@@ -71,12 +74,12 @@ interface ProductDocument extends Omit<Product, 'id'> {
 function docToProduct(doc: any): Product {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
-  return { 
-      id: _id?.toString(), 
-      ...rest,
-      averageRating: rest.averageRating || 0,
-      reviewCount: rest.reviewCount || 0,
-    } as Product;
+  return {
+    id: _id?.toString(),
+    ...rest,
+    averageRating: rest.averageRating || 0,
+    reviewCount: rest.reviewCount || 0,
+  } as Product;
 }
 
 function createProductSlug(name: string): string {
@@ -100,14 +103,14 @@ async function isProductSlugUnique(slug: string, excludeId?: string): Promise<bo
 }
 
 export async function getAllProducts(
-  filters: { 
-      categoryIds?: string[], 
-      productType?: ProductType, 
-      vendorId?: string,
-      slug?: string,
-      priceMin?: number,
-      priceMax?: number,
-      sortBy?: 'sales' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'featured',
+  filters: {
+    categoryIds?: string[],
+    productType?: ProductType,
+    vendorId?: string,
+    slug?: string,
+    priceMin?: number,
+    priceMax?: number,
+    sortBy?: 'sales' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'featured',
   } = {},
   limit?: number,
   excludeId?: string
@@ -135,7 +138,7 @@ export async function getAllProducts(
   if (filters.categoryIds && filters.categoryIds.length > 0) {
     query.categoryId = { $in: filters.categoryIds };
   }
-   if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+  if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
     query.price = {};
     if (filters.priceMin !== undefined) {
       query.price.$gte = filters.priceMin;
@@ -151,24 +154,24 @@ export async function getAllProducts(
     query.vendorId = filters.vendorId;
   }
   if (filters.slug) {
-      query.slug = filters.slug;
+    query.slug = filters.slug;
   }
   if (excludeId && ObjectId.isValid(excludeId)) {
-      query._id = { $ne: new ObjectId(excludeId) };
+    query._id = { $ne: new ObjectId(excludeId) };
   }
 
   const sortOptions: any = {};
   switch (filters.sortBy) {
-      case 'name-asc': sortOptions.name = 1; break;
-      case 'name-desc': sortOptions.name = -1; break;
-      case 'price-asc': sortOptions.price = 1; break;
-      case 'price-desc': sortOptions.price = -1; break;
-      default: sortOptions.name = 1; // Default sort
+    case 'name-asc': sortOptions.name = 1; break;
+    case 'name-desc': sortOptions.name = -1; break;
+    case 'price-asc': sortOptions.price = 1; break;
+    case 'price-desc': sortOptions.price = -1; break;
+    default: sortOptions.name = 1; // Default sort
   }
 
   const cursor = productsCollection.find(query).sort(sortOptions);
   if (limit) {
-      cursor.limit(limit);
+    cursor.limit(limit);
   }
   const productDocs = await cursor.toArray();
 
@@ -207,8 +210,8 @@ export async function getProductById(id: string): Promise<Product | null> {
 
   // Enrich with vendor name
   if (product.vendorId) {
-      const vendorProfile = await getFreelancerProfile(product.vendorId);
-      product.vendorName = vendorProfile?.name || 'Unknown Vendor';
+    const vendorProfile = await getFreelancerProfile(product.vendorId);
+    product.vendorName = vendorProfile?.name || 'Unknown Vendor';
   }
 
   return product;
@@ -218,13 +221,13 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const productDoc = await collection.findOne({ slug });
   if (!productDoc) return null;
-  
+
   const product = docToProduct(productDoc);
 
   // Enrich with vendor name
   if (product.vendorId) {
-      const vendorProfile = await getFreelancerProfile(product.vendorId);
-      product.vendorName = vendorProfile?.name || 'Unknown Vendor';
+    const vendorProfile = await getFreelancerProfile(product.vendorId);
+    product.vendorName = vendorProfile?.name || 'Unknown Vendor';
   }
   return product;
 }
@@ -239,14 +242,14 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
   }
 
   if (!productData.vendorId) {
-      throw new Error("Cannot add product: vendorId is missing.");
+    throw new Error("Cannot add product: vendorId is missing.");
   }
-  
+
   // Handle tags: convert names to IDs
   let tagIds: string[] = [];
   if (productData.tags && Array.isArray(productData.tags) && productData.tags.length > 0) {
-      const foundOrCreatedTags = await findOrCreateProductTagsByNames(productData.tags);
-      tagIds = foundOrCreatedTags.map(t => t.id!);
+    const foundOrCreatedTags = await findOrCreateProductTagsByNames(productData.tags);
+    tagIds = foundOrCreatedTags.map(t => t.id!);
   }
 
   const docToInsert: Omit<ProductDocument, '_id'> = {
@@ -258,12 +261,13 @@ export async function addProduct(productData: Omit<Product, 'id' | '_id' | 'slug
     price: productData.productType === 'creator' || productData.productType === 'restaurant-item' ? (productData.price || 0) : undefined,
     stock: productData.productType === 'creator' ? (productData.stock || 0) : undefined,
     sku: productData.productType === 'creator' ? (productData.sku || '') : undefined,
+    videoUrl: productData.videoUrl || undefined,
     averageRating: 0,
     reviewCount: 0,
   };
 
   const result = await collection.insertOne(docToInsert as any);
-  
+
   const newProduct: Product = {
     _id: result.insertedId,
     id: result.insertedId.toString(),
@@ -278,7 +282,7 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, '
     return null;
   }
   const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
-  
+
   const existingProduct = await collection.findOne({ _id: new ObjectId(id) });
   if (!existingProduct) {
     console.warn(`updateProduct: Product with ID ${id} not found.`);
@@ -296,14 +300,14 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, '
     }
     (updatePayload as Product).slug = newSlug;
   }
-  
+
   // Handle tags update
   if (updates.tags && Array.isArray(updates.tags)) {
-      const foundOrCreatedTags = await findOrCreateProductTagsByNames(updates.tags);
-      updatePayload.tagIds = foundOrCreatedTags.map(t => t.id!);
-      delete updatePayload.tags; // Remove the old tags string array
+    const foundOrCreatedTags = await findOrCreateProductTagsByNames(updates.tags);
+    updatePayload.tagIds = foundOrCreatedTags.map(t => t.id!);
+    delete updatePayload.tags; // Remove the old tags string array
   }
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updatePayload },
@@ -325,7 +329,7 @@ export async function deleteProduct(id: string): Promise<boolean> {
   }
   const collection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
-  
+
   return result.deletedCount === 1;
 }
 
@@ -335,47 +339,47 @@ export async function countProducts(): Promise<number> {
 }
 
 export async function getTopSellingProducts(limit: number = 5): Promise<Product[]> {
-    const ordersCollection = await getCollection('orders'); // No specific type needed for aggregation
-    const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
+  const ordersCollection = await getCollection('orders'); // No specific type needed for aggregation
+  const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
 
-    const salesPipeline = [
-        { $unwind: "$lineItems" },
-        { $match: { "lineItems.status": "Delivered" } },
-        { 
-            $group: { 
-                _id: "$lineItems.productId", 
-                sales: { $sum: "$lineItems.quantity" },
-                revenue: { $sum: { $multiply: ["$lineItems.quantity", "$lineItems.price"] } }
-            } 
-        },
-        { $sort: { sales: -1 } },
-        { $limit: limit }
-    ];
+  const salesPipeline = [
+    { $unwind: "$lineItems" },
+    { $match: { "lineItems.status": "Delivered" } },
+    {
+      $group: {
+        _id: "$lineItems.productId",
+        sales: { $sum: "$lineItems.quantity" },
+        revenue: { $sum: { $multiply: ["$lineItems.quantity", "$lineItems.price"] } }
+      }
+    },
+    { $sort: { sales: -1 } },
+    { $limit: limit }
+  ];
 
-    const topProductsData = await ordersCollection.aggregate(salesPipeline).toArray();
+  const topProductsData = await ordersCollection.aggregate(salesPipeline).toArray();
 
-    if (topProductsData.length === 0) {
-        return [];
+  if (topProductsData.length === 0) {
+    return [];
+  }
+
+  const topProductIds = topProductsData.map(p => new ObjectId(p._id));
+  const productDocs = await productsCollection.find({ _id: { $in: topProductIds } }).toArray();
+
+  const productsById = new Map(productDocs.map(p => [p._id.toString(), docToProduct(p)]));
+
+  const enrichedTopProducts = topProductsData.map(salesData => {
+    const productInfo = productsById.get(salesData._id);
+    if (productInfo) {
+      return {
+        ...productInfo,
+        sales: salesData.sales,
+        revenue: salesData.revenue,
+      };
     }
+    return null;
+  }).filter((p): p is Product => p !== null);
 
-    const topProductIds = topProductsData.map(p => new ObjectId(p._id));
-    const productDocs = await productsCollection.find({ _id: { $in: topProductIds } }).toArray();
-
-    const productsById = new Map(productDocs.map(p => [p._id.toString(), docToProduct(p)]));
-    
-    const enrichedTopProducts = topProductsData.map(salesData => {
-        const productInfo = productsById.get(salesData._id);
-        if (productInfo) {
-            return {
-                ...productInfo,
-                sales: salesData.sales,
-                revenue: salesData.revenue,
-            };
-        }
-        return null;
-    }).filter((p): p is Product => p !== null);
-
-    return enrichedTopProducts;
+  return enrichedTopProducts;
 }
 
 export async function updateProductRating(productId: string, newAverageRating: number, newReviewCount: number): Promise<boolean> {

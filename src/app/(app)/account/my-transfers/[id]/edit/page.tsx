@@ -35,6 +35,7 @@ const transferFormSchema = z.object({
     year: z.coerce.number().min(1990),
     color: z.string().min(2),
     licensePlate: z.string().min(2),
+    videoUrl: z.string().url().optional().or(z.literal("")),
     status: z.enum(['available', 'in_service', 'maintenance', 'inactive']).default('available'),
 
     passengers: z.coerce.number().min(1),
@@ -97,6 +98,7 @@ export default function EditTransferPage({ params: paramsPromise }: { params: Pr
             status: "available",
             lat: 0,
             lng: 0,
+            videoUrl: "",
         } as any,
     });
 
@@ -137,6 +139,7 @@ export default function EditTransferPage({ params: paramsPromise }: { params: Pr
                     driverPhone: vehicle.driverInfo.phone,
                     driverLicense: vehicle.driverInfo.licenseNumber,
                     driverExperience: vehicle.driverInfo.yearsOfExperience,
+                    videoUrl: vehicle.videoUrl || "",
                 });
 
                 setImages(vehicle.images || []);
@@ -378,6 +381,16 @@ export default function EditTransferPage({ params: paramsPromise }: { params: Pr
                                                     <button type="button" onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
                                                 </div>
                                             ))}
+                                        </div>
+                                        <div className="pt-4">
+                                            <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                            <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                                    <FormDescription>If provided, this video will replace the primary image in the social feed.</FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
                                         </div>
                                     </div>
                                 </div>

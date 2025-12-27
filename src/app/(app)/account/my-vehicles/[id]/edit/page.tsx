@@ -56,6 +56,7 @@ const vehicleFormSchema = z.object({
     currency: z.string().default("USD"),
     deposit: z.coerce.number().min(0),
     status: z.enum(['available', 'rented', 'maintenance', 'inactive']).default('available'),
+    videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 const CAR_FEATURES = [
@@ -96,6 +97,7 @@ export default function EditVehiclePage({ params: paramsPromise }: { params: Pro
             deposit: 0,
             lat: 0,
             lng: 0,
+            videoUrl: "",
         } as any,
     });
 
@@ -135,6 +137,7 @@ export default function EditVehiclePage({ params: paramsPromise }: { params: Pro
                     currency: vehicle.pricing.currency,
                     deposit: vehicle.pricing.deposit,
                     status: vehicle.status || 'available',
+                    videoUrl: vehicle.videoUrl || "",
                 });
 
                 setImages(vehicle.images || []);
@@ -438,6 +441,14 @@ export default function EditVehiclePage({ params: paramsPromise }: { params: Pro
                             )} />
                             <FormField control={form.control} name="deposit" render={({ field }) => (
                                 <FormItem><FormLabel>Security Deposit ($)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                <FormItem className="col-span-2">
+                                    <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                    <FormDescription>If provided, this video will replace the main image in the social feed.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                         </CardContent>
                     </Card>

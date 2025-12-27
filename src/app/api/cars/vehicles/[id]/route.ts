@@ -46,6 +46,7 @@ const updateVehicleSchema = z.object({
     insuranceFee: z.number().min(0).optional(),
   }).optional(),
   status: z.enum(['available', 'rented', 'maintenance', 'inactive']).optional(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 // GET /api/cars/vehicles/[id] - Get vehicle by ID

@@ -51,6 +51,7 @@ const updateVehicleSchema = z.object({
     languages: z.array(z.string()).min(1),
   }).optional(),
   status: z.enum(['available', 'in_service', 'maintenance', 'inactive']).optional(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 // GET /api/transfers/vehicles/[id] - Get vehicle by ID

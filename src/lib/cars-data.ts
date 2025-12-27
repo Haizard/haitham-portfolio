@@ -62,6 +62,7 @@ export interface Vehicle {
   features: string[]; // ['gps', 'bluetooth', 'backup_camera', 'sunroof', 'child_seat']
   location: VehicleLocation;
   pricing: VehiclePricing;
+  videoUrl?: string;
   status: VehicleStatus;
   averageRating?: number;
   reviewCount?: number;

@@ -16,6 +16,7 @@ const tourUpdateSchema = z.object({
   featuredImageUrl: z.string().url().optional(),
   galleryImages: z.array(z.object({ url: z.string().url(), caption: z.string().optional() })).optional(),
   isActive: z.boolean().optional(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
   // New fields
   guideId: z.string().optional().or(z.literal('none').or(z.literal(''))),
   rating: z.number().min(0).max(5).optional(),

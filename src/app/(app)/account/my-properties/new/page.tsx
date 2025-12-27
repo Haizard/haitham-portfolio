@@ -56,6 +56,7 @@ const propertyFormSchema = z.object({
     phone: z.string().min(5, "Phone is required"),
     email: z.string().email("Invalid email"),
     website: z.string().url().optional().or(z.literal("")),
+    videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 const PROPERTY_TYPES = ['hotel', 'apartment', 'resort', 'villa', 'hostel', 'guesthouse'];
@@ -83,6 +84,7 @@ export default function NewPropertyPage() {
             petsAllowed: false,
             smokingAllowed: false,
             partiesAllowed: false,
+            videoUrl: "",
         } as any,
     });
 
@@ -311,6 +313,14 @@ export default function NewPropertyPage() {
                             )} />
                             <FormField control={form.control} name="website" render={({ field }) => (
                                 <FormItem className="col-span-2"><FormLabel>Website (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                <FormItem className="col-span-2">
+                                    <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                    <FormDescription>If provided, this video will replace the main image in the social feed.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                         </CardContent>
                     </Card>

@@ -31,6 +31,7 @@ const serviceUpdateSchema = z.object({
   testimonials: z.array(testimonialUpdateSchema).optional(),
   deliveryTime: z.string().max(50).optional().or(z.literal('')),
   revisionsIncluded: z.string().max(50).optional().or(z.literal('')),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 

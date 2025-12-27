@@ -14,7 +14,7 @@ export async function GET(
     if (!restaurantId || !ObjectId.isValid(restaurantId)) {
       return NextResponse.json({ message: "A valid restaurant ID is required." }, { status: 400 });
     }
-    
+
     const restaurant = await getRestaurantById(restaurantId);
 
     if (!restaurant) {
@@ -37,6 +37,7 @@ const restaurantUpdateSchema = z.object({
   cuisineTypes: z.array(z.string()).min(1, "At least one cuisine type is required."),
   status: z.enum(["Open", "Closed"]),
   specialDeals: z.string().optional(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 export async function PUT(
@@ -54,7 +55,7 @@ export async function PUT(
     if (!session.user) {
       return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
-     if (!restaurantId || !ObjectId.isValid(restaurantId)) {
+    if (!restaurantId || !ObjectId.isValid(restaurantId)) {
       return NextResponse.json({ message: "A valid restaurant ID is required." }, { status: 400 });
     }
 
@@ -70,7 +71,7 @@ export async function PUT(
     if (!updatedRestaurant) {
       return NextResponse.json({ message: "Restaurant not found or update failed" }, { status: 404 });
     }
-    
+
     return NextResponse.json(updatedRestaurant);
 
   } catch (error: any) {

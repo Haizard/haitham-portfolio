@@ -60,6 +60,7 @@ const createVehicleSchema = z.object({
   pricing: vehiclePricingSchema,
   driverInfo: driverInfoSchema.optional(),
   status: z.enum(['available', 'in_service', 'maintenance', 'inactive']).default('available'),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 // POST /api/transfers/vehicles - Create transfer vehicle

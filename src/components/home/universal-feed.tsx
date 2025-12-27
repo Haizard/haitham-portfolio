@@ -52,6 +52,7 @@ interface FeedItem {
         location?: string;
     };
     likedBy: string[];
+    videoUrl?: string; // Video URL
 }
 
 const CATEGORIES = [
@@ -64,6 +65,25 @@ const CATEGORIES = [
     { id: 'products', name: 'Shop', icon: ShoppingBag, color: 'bg-cyan-600' },
     { id: 'freelancers', name: 'Talent', icon: UserCheck, color: 'bg-indigo-600' },
 ];
+
+function getVideoEmbedUrl(url: string | undefined): string | null {
+    if (!url) return null;
+
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (ytMatch && ytMatch[1]) {
+        // Use logic to determine parameters if needed, for shorts strictly we use embed
+        return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&controls=1&mute=1&loop=1&playlist=${ytMatch[1]}`;
+    }
+
+    // TikTok
+    const tkMatch = url.match(/tiktok\.com\/@[\w.-]+\/video\/(\d+)/);
+    if (tkMatch && tkMatch[1]) {
+        return `https://www.tiktok.com/embed/v2/${tkMatch[1]}`;
+    }
+
+    return null;
+}
 
 export default function UniversalFeed() {
     const [items, setItems] = useState<FeedItem[]>([]);
@@ -104,6 +124,7 @@ export default function UniversalFeed() {
                 fetch('/api/transfers/vehicles').then(r => r.json()),
                 fetch('/api/restaurants').then(r => r.json()),
                 fetch('/api/products').then(r => r.json()),
+                fetch('/api/services').then(r => r.json()),
             ]);
 
             const mapItems = (res: any, type: ServiceType): FeedItem[] => {
@@ -129,13 +150,15 @@ export default function UniversalFeed() {
                         ...baseItem,
                         description: item.description || '',
                         image: item.images?.[0]?.url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
-                        price: 0, currency: 'USD', tags: [item.type || 'Hotel', ...(item.amenities || []).slice(0, 2)], link: `/hotels/${item.id}`
+                        price: 0, currency: 'USD', tags: [item.type || 'Hotel', ...(item.amenities || []).slice(0, 2)], link: `/hotels/${item.id}`,
+                        videoUrl: item.videoUrl
                     };
                     if (type === 'tour') return {
                         ...baseItem,
                         description: item.description || '',
                         image: item.featuredImageUrl || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800',
-                        price: item.price || 0, currency: 'USD', tags: [item.duration || 'Day Trip', item.tourType || 'Leisure'], link: `/tours/${item.slug}`
+                        price: item.price || 0, currency: 'USD', tags: [item.duration || 'Day Trip', item.tourType || 'Leisure'], link: `/tours/${item.slug}`,
+                        videoUrl: item.videoUrl
                     };
                     if (type === 'vehicle') return {
                         ...baseItem,
@@ -143,7 +166,8 @@ export default function UniversalFeed() {
                         description: item.description || `Luxury ${item.category || 'car'} available for rent.`,
                         image: item.images?.find((i: any) => i.isPrimary)?.url || item.images?.[0]?.url || 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800',
                         price: item.pricing?.dailyRate || 0, currency: item.pricing?.currency || 'USD',
-                        tags: [item.category || 'Car', item.transmission || 'Auto'], link: `/cars/${item.id}`
+                        tags: [item.category || 'Car', item.transmission || 'Auto'], link: `/cars/${item.id}`,
+                        videoUrl: item.videoUrl
                     };
                     if (type === 'transfer') return {
                         ...baseItem,
@@ -151,19 +175,29 @@ export default function UniversalFeed() {
                         description: item.description || `Professional transfer service.`,
                         image: item.images?.[0]?.url || 'https://images.unsplash.com/photo-1449965072335-64441113239e?w=800',
                         price: item.pricing?.basePrice || 0, currency: item.pricing?.currency || 'USD',
-                        tags: ['Transfer', `${item.capacity?.passengers || 4} Pax`], link: `/transfers/${item.id}`
+                        tags: ['Transfer', `${item.capacity?.passengers || 4} Pax`], link: `/transfers/${item.id}`,
+                        videoUrl: item.videoUrl
                     }
                     if (type === 'restaurant') return {
                         ...baseItem,
                         description: item.description || `Experience the finest ${item.cuisineTypes?.join(', ') || 'Dining'} in the city.`,
                         image: item.logoUrl || 'https://images.unsplash.com/photo-1517248135467-4c7ed9d42177?w=800',
-                        price: 0, currency: 'USD', tags: item.cuisineTypes?.slice(0, 2) || ['Dining'], link: `/restaurants/${item.id}`
+                        price: 0, currency: 'USD', tags: item.cuisineTypes?.slice(0, 2) || ['Dining'], link: `/restaurants/${item.id}`,
+                        videoUrl: item.videoUrl
                     };
                     if (type === 'product') return {
                         ...baseItem,
                         description: item.description || '',
                         image: item.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
-                        price: item.price || 0, currency: 'USD', tags: [item.productType || item.status || 'Shop'], link: `/products/${item.slug}`
+                        price: item.price || 0, currency: 'USD', tags: [item.productType || item.status || 'Shop'], link: `/products/${item.slug}`,
+                        videoUrl: item.videoUrl // Map video URL
+                    };
+                    if (type === 'freelancer') return {
+                        ...baseItem,
+                        description: item.description || '',
+                        image: item.imageUrl || 'https://images.unsplash.com/photo-1522071823914-7ad2488f2882?w=800',
+                        price: parseFloat(item.price) || 0, currency: 'USD', tags: ['Service', ...(item.categoryIds || []).slice(0, 1)], link: `/our-services`,
+                        videoUrl: item.videoUrl
                     };
                     return null;
                 }).filter(Boolean);
@@ -176,6 +210,7 @@ export default function UniversalFeed() {
                 ...mapItems(transfersRes, 'transfer'),
                 ...mapItems(restaurantsRes, 'restaurant'),
                 ...mapItems(productsRes, 'product'),
+                ...mapItems(servicesRes, 'freelancer'),
             ].sort(() => Math.random() - 0.5);
 
             setItems(prev => isInitial ? allFetched : [...prev, ...allFetched]);
@@ -306,11 +341,21 @@ function PostCard({ item }: { item: FeedItem }) {
             {/* Image & Side Actions */}
             <div className="relative group">
                 <div className="aspect-[4/5] overflow-hidden rounded-[2.5rem] shadow-2xl shadow-slate-200">
-                    <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
+                    {item.videoUrl && getVideoEmbedUrl(item.videoUrl) ? (
+                        <iframe
+                            src={getVideoEmbedUrl(item.videoUrl)!}
+                            className="w-full h-full object-cover"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title={item.title}
+                        />
+                    ) : (
+                        <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                    )}
                 </div>
 
                 {/* Vertical Action Bar on Right */}

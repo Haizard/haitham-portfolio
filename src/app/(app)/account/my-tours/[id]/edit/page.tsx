@@ -29,6 +29,8 @@ const tourFormSchema = z.object({
     location: z.string().min(3),
     tourType: z.string().min(3),
     price: z.coerce.number().positive(),
+    featuredImageUrl: z.string().url("Must be a valid URL"),
+    videoUrl: z.string().url().optional().or(z.literal("")),
     mapEmbedUrl: z.string().url().optional().or(z.literal("")),
     isActive: z.boolean().default(true),
 });
@@ -86,7 +88,9 @@ export default function EditTourPage({ params: paramsPromise }: { params: Promis
             tourType: "Adventure",
             price: 0,
             isActive: true,
-            mapEmbedUrl: ""
+            mapEmbedUrl: "",
+            featuredImageUrl: "",
+            videoUrl: "",
         },
     });
 
@@ -107,6 +111,8 @@ export default function EditTourPage({ params: paramsPromise }: { params: Promis
                     price: tour.price || 0,
                     mapEmbedUrl: tour.mapEmbedUrl || "",
                     isActive: tour.isActive ?? true,
+                    featuredImageUrl: tour.featuredImageUrl || "",
+                    videoUrl: tour.videoUrl || "",
                 });
 
                 setFeaturedImage(tour.featuredImageUrl || "");
@@ -164,10 +170,6 @@ export default function EditTourPage({ params: paramsPromise }: { params: Promis
     };
 
     async function onSubmit(values: z.infer<typeof tourFormSchema>) {
-        if (!featuredImage) {
-            toast({ title: "Featured Image Required", variant: "destructive" });
-            return;
-        }
 
         setIsSaving(true);
         try {
@@ -181,7 +183,8 @@ export default function EditTourPage({ params: paramsPromise }: { params: Promis
                 galleryImages: gallery,
                 highlights,
                 faqs,
-                mapEmbedUrl: values.mapEmbedUrl || undefined
+                mapEmbedUrl: values.mapEmbedUrl || undefined,
+                videoUrl: values.videoUrl || undefined
             };
 
             const response = await fetch(`/api/tours/${id}`, {
@@ -257,6 +260,17 @@ export default function EditTourPage({ params: paramsPromise }: { params: Promis
                                 )} />
                                 <FormField control={form.control} name="mapEmbedUrl" render={({ field }) => (
                                     <FormItem className="col-span-2"><FormLabel>Map Embed URL (Optional)</FormLabel><FormControl><Input placeholder="https://maps.google.com/..." {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="featuredImageUrl" render={({ field }) => (
+                                    <FormItem className="col-span-2"><FormLabel>Featured Image URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                    <FormItem className="col-span-2">
+                                        <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                        <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                        <FormDescription>This video will replace the featured image in the social feed.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
                                 )} />
                                 <FormField control={form.control} name="description" render={({ field }) => (
                                     <FormItem className="col-span-2"><FormLabel>Description</FormLabel><FormControl><Textarea className="h-32" {...field} /></FormControl><FormMessage /></FormItem>
@@ -379,10 +393,10 @@ export default function EditTourPage({ params: paramsPromise }: { params: Promis
                             <CardContent className="space-y-6">
                                 <div className="space-y-2">
                                     <FormLabel>Featured Image (Cover)</FormLabel>
-                                    <Input value={featuredImage} onChange={e => setFeaturedImage(e.target.value)} placeholder="Main Cover Image URL" />
-                                    {featuredImage && (
+                                    <Input value={form.watch("featuredImageUrl")} onChange={e => form.setValue("featuredImageUrl", e.target.value)} placeholder="Main Cover Image URL" />
+                                    {form.watch("featuredImageUrl") && (
                                         <div className="relative h-48 w-full mt-2 rounded overflow-hidden border">
-                                            <img src={featuredImage} className="w-full h-full object-cover" />
+                                            <img src={form.watch("featuredImageUrl")} className="w-full h-full object-cover" />
                                         </div>
                                     )}
                                 </div>

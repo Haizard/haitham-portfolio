@@ -44,6 +44,7 @@ export interface TourPackage {
   inclusions: string[];
   exclusions: string[];
   price: number;
+  videoUrl?: string;
   featuredImageUrl: string;
   galleryImages: GalleryImage[];
   highlights?: Highlight[];

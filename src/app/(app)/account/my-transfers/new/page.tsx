@@ -34,6 +34,7 @@ const transferFormSchema = z.object({
     year: z.coerce.number().min(1990),
     color: z.string().min(2),
     licensePlate: z.string().min(2),
+    videoUrl: z.string().url().optional().or(z.literal("")),
 
     passengers: z.coerce.number().min(1),
     luggage: z.coerce.number().min(0),
@@ -85,7 +86,8 @@ export default function NewTransferPage() {
             pricePerHour: 30,
             currency: "USD",
             airportSurcharge: 10,
-            driverExperience: 5
+            driverExperience: 5,
+            videoUrl: "",
         } as any,
     });
 
@@ -253,6 +255,15 @@ export default function NewTransferPage() {
                                         <div className="flex gap-2">
                                             <Input value={imageInput} onChange={e => setImageInput(e.target.value)} placeholder="URL..." />
                                             <Button type="button" onClick={() => { if (imageInput) { setImages([...images, imageInput]); setImageInput(""); } }} size="sm">Add</Button>
+                                        </div>
+                                        <div className="pt-2">
+                                            <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                            <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
                                         </div>
                                         <div className="grid grid-cols-4 gap-2">
                                             {images.map((url, i) => <img key={i} src={url} className="w-full h-12 object-cover rounded" />)}

@@ -56,6 +56,7 @@ const vehicleFormSchema = z.object({
     dailyRate: z.coerce.number().positive("Rate must be positive"),
     currency: z.string().default("USD"),
     deposit: z.coerce.number().min(0),
+    videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 const CAR_FEATURES = [
@@ -93,6 +94,7 @@ export default function NewVehiclePage() {
             deposit: 0,
             lat: 0,
             lng: 0,
+            videoUrl: "",
         } as any,
     });
 
@@ -350,6 +352,14 @@ export default function NewVehiclePage() {
                             )} />
                             <FormField control={form.control} name="deposit" render={({ field }) => (
                                 <FormItem><FormLabel>Security Deposit ($)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                <FormItem className="col-span-2">
+                                    <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                    <FormDescription>If provided, this video will replace the main image in the social feed.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                         </CardContent>
                     </Card>

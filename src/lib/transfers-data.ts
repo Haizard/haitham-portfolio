@@ -58,6 +58,7 @@ export interface TransferVehicle {
     yearsOfExperience: number;
     languages: string[];
   };
+  videoUrl?: string;
   status: TransferVehicleStatus;
   averageRating?: number;
   reviewCount?: number;

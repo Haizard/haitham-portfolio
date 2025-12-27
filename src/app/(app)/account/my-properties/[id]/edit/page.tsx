@@ -59,6 +59,7 @@ const propertyFormSchema = z.object({
     phone: z.string().min(5, "Phone is required"),
     email: z.string().email("Invalid email"),
     website: z.string().url().optional().or(z.literal("")),
+    videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 const PROPERTY_TYPES = ['hotel', 'apartment', 'resort', 'villa', 'hostel', 'guesthouse'];
@@ -90,6 +91,7 @@ export default function EditPropertyPage({ params: paramsPromise }: { params: Pr
             smokingAllowed: false,
             partiesAllowed: false,
             status: "active",
+            videoUrl: "",
             lat: 0,
             lng: 0,
         } as any,
@@ -139,6 +141,7 @@ export default function EditPropertyPage({ params: paramsPromise }: { params: Pr
                     phone: property.contactInfo.phone,
                     email: property.contactInfo.email,
                     website: property.contactInfo.website || "",
+                    videoUrl: property.videoUrl || "",
                 });
 
                 setImages(property.images || []);
@@ -425,6 +428,14 @@ export default function EditPropertyPage({ params: paramsPromise }: { params: Pr
                             )} />
                             <FormField control={form.control} name="website" render={({ field }) => (
                                 <FormItem className="col-span-2"><FormLabel>Website (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                                <FormItem className="col-span-2">
+                                    <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                    <FormDescription>If provided, this video will replace the main image in the social feed.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                         </CardContent>
                     </Card>

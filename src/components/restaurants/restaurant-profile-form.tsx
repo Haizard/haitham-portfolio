@@ -26,6 +26,7 @@ const profileFormSchema = z.object({
   cuisineTypes: z.string().min(3, "Please enter at least one cuisine type."),
   status: z.enum(["Open", "Closed"]),
   specialDeals: z.string().optional(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -46,6 +47,7 @@ export function RestaurantProfileForm() {
       cuisineTypes: "",
       status: "Open",
       specialDeals: "",
+      videoUrl: "",
     },
   });
 
@@ -64,9 +66,10 @@ export function RestaurantProfileForm() {
           cuisineTypes: data.cuisineTypes.join(', '),
           status: data.status,
           specialDeals: data.specialDeals || "",
+          videoUrl: data.videoUrl || "",
         });
       } else if (response.status === 404) {
-        toast({ title: "No Restaurant Found", description: "You don't have a restaurant profile yet. One will be created when you save.", variant: "default"});
+        toast({ title: "No Restaurant Found", description: "You don't have a restaurant profile yet. One will be created when you save.", variant: "default" });
       } else {
         throw new Error("Failed to fetch restaurant data.");
       }
@@ -85,39 +88,39 @@ export function RestaurantProfileForm() {
 
   const handleSubmit = async (values: ProfileFormValues) => {
     if (!restaurant?.id) {
-        toast({ title: "Error", description: "No restaurant profile to update.", variant: "destructive" });
-        return;
+      toast({ title: "Error", description: "No restaurant profile to update.", variant: "destructive" });
+      return;
     }
     setIsSaving(true);
     try {
-        const payload = {
-            ...values,
-            cuisineTypes: values.cuisineTypes.split(',').map(c => c.trim()).filter(Boolean),
-        };
-        const response = await fetch(`/api/restaurants/${restaurant.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
+      const payload = {
+        ...values,
+        cuisineTypes: values.cuisineTypes.split(',').map(c => c.trim()).filter(Boolean),
+      };
+      const response = await fetch(`/api/restaurants/${restaurant.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to update profile.");
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile.");
+      }
 
-        const updatedData = await response.json();
-        setRestaurant(updatedData);
-        toast({ title: "Profile Updated", description: "Your restaurant information has been saved." });
+      const updatedData = await response.json();
+      setRestaurant(updatedData);
+      toast({ title: "Profile Updated", description: "Your restaurant information has been saved." });
 
     } catch (error: any) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
-  
+
   if (isLoading) {
-    return <Card><CardContent className="p-6 flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary"/></CardContent></Card>;
+    return <Card><CardContent className="p-6 flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></CardContent></Card>;
   }
 
   return (
@@ -130,43 +133,51 @@ export function RestaurantProfileForm() {
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Restaurant Name</FormLabel><Input {...field} /></FormItem>
-            )}/>
+              <FormItem><FormLabel>Restaurant Name</FormLabel><Input {...field} /></FormItem>
+            )} />
             <FormField control={form.control} name="logoUrl" render={({ field }) => (
-                <FormItem><FormLabel>Logo URL</FormLabel><Input {...field} /></FormItem>
-            )}/>
+              <FormItem><FormLabel>Logo URL</FormLabel><Input {...field} /></FormItem>
+            )} />
             <FormField control={form.control} name="location" render={({ field }) => (
-                <FormItem><FormLabel>Address / Location</FormLabel><Input {...field} /></FormItem>
-            )}/>
+              <FormItem><FormLabel>Address / Location</FormLabel><Input {...field} /></FormItem>
+            )} />
             <FormField control={form.control} name="cuisineTypes" render={({ field }) => (
-                <FormItem><FormLabel>Cuisine Types (comma-separated)</FormLabel><Input placeholder="e.g., Pizza, Italian, Pasta" {...field} /></FormItem>
-            )}/>
+              <FormItem><FormLabel>Cuisine Types (comma-separated)</FormLabel><Input placeholder="e.g., Pizza, Italian, Pasta" {...field} /></FormItem>
+            )} />
             <FormField control={form.control} name="status" render={({ field }) => (
-                <FormItem><FormLabel>Operating Status</FormLabel>
+              <FormItem><FormLabel>Operating Status</FormLabel>
                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2">
-                    <FormItem className="flex items-center space-x-2"><RadioGroupItem value="Open" id="status-open"/><Label htmlFor="status-open">Open</Label></FormItem>
-                    <FormItem className="flex items-center space-x-2"><RadioGroupItem value="Closed" id="status-closed"/><Label htmlFor="status-closed">Closed</Label></FormItem>
+                  <FormItem className="flex items-center space-x-2"><RadioGroupItem value="Open" id="status-open" /><Label htmlFor="status-open">Open</Label></FormItem>
+                  <FormItem className="flex items-center space-x-2"><RadioGroupItem value="Closed" id="status-closed" /><Label htmlFor="status-closed">Closed</Label></FormItem>
                 </RadioGroup>
-                </FormItem>
-            )}/>
+              </FormItem>
+            )} />
             <Separator />
             <FormField control={form.control} name="specialDeals" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Special Deals & Offers</FormLabel>
-                    <FormControl>
-                        <Textarea
-                            placeholder="Describe your current deals, e.g., 'Happy Hour: 5-7 PM, 50% off appetizers!'"
-                            className="min-h-[120px]"
-                            {...field}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
+              <FormItem>
+                <FormLabel>Special Deals & Offers</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Describe your current deals, e.g., 'Happy Hour: 5-7 PM, 50% off appetizers!'"
+                    className="min-h-[120px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="videoUrl" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
+                <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                <FormDescription>This video will be featured in the social feed.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Saving...</> : <><Save className="mr-2 h-4 w-4"/> Save Changes</>}
+              {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
             </Button>
           </CardFooter>
         </form>

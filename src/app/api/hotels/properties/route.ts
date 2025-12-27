@@ -48,6 +48,7 @@ const createPropertySchema = z.object({
     website: z.string().url().optional(),
   }),
   totalRooms: z.number().int().min(1),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 const searchPropertiesSchema = z.object({

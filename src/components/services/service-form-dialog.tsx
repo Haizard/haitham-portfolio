@@ -57,6 +57,7 @@ const serviceFormSchema = z.object({
   testimonials: z.array(testimonialSchemaDialog).optional().default([]),
   deliveryTime: z.string().max(50, "Delivery time max 50 chars.").optional().or(z.literal('')),
   revisionsIncluded: z.string().max(50, "Revisions info max 50 chars.").optional().or(z.literal('')),
+  videoUrl: z.string().url("Video URL must be a valid URL.").optional().or(z.literal('')),
 });
 
 type ServiceFormValues = z.infer<typeof serviceFormSchema>;
@@ -111,6 +112,7 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
       testimonials: [],
       deliveryTime: "",
       revisionsIncluded: "",
+      videoUrl: "",
     },
   });
 
@@ -163,6 +165,7 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
           })) || [],
           deliveryTime: service.deliveryTime || "",
           revisionsIncluded: service.revisionsIncluded || "",
+          videoUrl: service.videoUrl || "",
         });
       } else {
         form.reset({
@@ -170,7 +173,7 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
           imageUrl: "", imageHint: "", detailedDescription: "",
           howItWorks: [], benefits: [], offers: [], securityInfo: "",
           testimonials: [],
-          deliveryTime: "", revisionsIncluded: "",
+          deliveryTime: "", revisionsIncluded: "", videoUrl: "",
         });
       }
     }
@@ -332,6 +335,14 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
                   )} />
                   <FormField control={form.control} name="imageHint" render={({ field }) => (
                     <FormItem><Label>Image Hint (for AI)</Label><Input placeholder="e.g., business consultation" {...field} /><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="videoUrl" render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <Label>Video URL (YouTube or TikTok)</Label>
+                      <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
+                      <p className="text-xs text-muted-foreground mt-1">If provided, this video will replace the featured image in the social feed.</p>
+                      <FormMessage />
+                    </FormItem>
                   )} />
                 </div>
 

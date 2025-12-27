@@ -51,6 +51,7 @@ const createVehicleSchema = z.object({
   features: z.array(z.string()).min(0),
   location: vehicleLocationSchema,
   pricing: vehiclePricingSchema,
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 // POST /api/cars/vehicles - Create a new vehicle

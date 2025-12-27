@@ -23,6 +23,7 @@ const tourCreateSchema = z.object({
   faqs: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
   mapEmbedUrl: z.string().url().optional().or(z.literal('')),
   isActive: z.boolean(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
   // New fields
   guideId: z.string().optional().or(z.literal('none')),
   rating: z.number().min(0).max(5).optional(),

@@ -60,6 +60,7 @@ export interface Property {
     email: string;
     website?: string;
   };
+  videoUrl?: string;
   status: PropertyStatus;
   averageRating?: number;
   reviewCount?: number;

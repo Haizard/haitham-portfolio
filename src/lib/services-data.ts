@@ -33,6 +33,7 @@ export interface Service {
   testimonials?: Testimonial[];
   deliveryTime?: string; // e.g., "3 days", "1 week"
   revisionsIncluded?: string; // e.g., "2 revisions", "Unlimited"
+  videoUrl?: string;
 }
 
 function docToService(doc: any): Service {
@@ -55,6 +56,7 @@ function docToService(doc: any): Service {
     testimonials: (rest.testimonials || []).map((t: any) => ({ id: new ObjectId().toString(), ...t })),
     deliveryTime: rest.deliveryTime || undefined,
     revisionsIncluded: rest.revisionsIncluded || undefined,
+    videoUrl: rest.videoUrl || undefined,
   } as Service;
 }
 
