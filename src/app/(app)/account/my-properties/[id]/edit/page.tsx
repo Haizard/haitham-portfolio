@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Building, MapPin, Clock, ArrowLeft } from 'lucide-react';
+import { Loader2, Upload, X, Building, MapPin, Clock, ArrowLeft, Bed } from 'lucide-react';
 
 const propertyFormSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters"),
@@ -242,14 +242,19 @@ export default function EditPropertyPage({ params: paramsPromise }: { params: Pr
 
     return (
         <div className="container max-w-4xl mx-auto py-8 px-4">
-            <div className="mb-8 flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div>
-                    <h1 className="text-3xl font-bold mb-2">Edit Property</h1>
-                    <p className="text-muted-foreground">Manage your property details and availability.</p>
+            <div className="mb-8 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold mb-2">Edit Property</h1>
+                        <p className="text-muted-foreground">Manage your property details and availability.</p>
+                    </div>
                 </div>
+                <Button onClick={() => router.push(`/account/my-properties/${id}/rooms`)} variant="outline">
+                    <Bed className="mr-2 h-4 w-4" /> Manage Rooms
+                </Button>
             </div>
 
             <Form {...form}>
