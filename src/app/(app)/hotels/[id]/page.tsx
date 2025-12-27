@@ -49,7 +49,8 @@ export default function PropertyDetailPage() {
       setProperty(propertyData.property);
 
       // Fetch rooms
-      const roomsResponse = await fetch(`/api/hotels/rooms?propertyId=${params.id}`);
+      // Fetch rooms using resolved property ID
+      const roomsResponse = await fetch(`/api/hotels/rooms?propertyId=${propertyData.property.id}`);
       if (roomsResponse.ok) {
         const roomsData = await roomsResponse.json();
         setRooms(roomsData.rooms || []);
