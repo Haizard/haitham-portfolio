@@ -57,16 +57,24 @@ const roomFormSchema = z.object({
     }),
 
     isActive: z.boolean().default(true),
+
+    // Added fields for validation
+    images: z.array(z.object({
+        url: z.string().url(),
+        order: z.number(),
+        caption: z.string().default('')
+    })).min(1, "At least one image is required"),
+    amenities: z.array(z.string()).min(1, "At least one amenity must be selected"),
+    bedConfiguration: z.array(z.object({
+        type: z.enum(['single', 'double', 'queen', 'king', 'sofa_bed']),
+        count: z.number().min(1)
+    })).min(1, "At least one bed is required"),
 });
 
 const ROOM_TYPES = ['single', 'double', 'twin', 'suite', 'deluxe', 'family'];
 const AMENITIES_LIST = ['WiFi', 'TV', 'Minibar', 'Safe', 'Balcony', 'Sea View', 'Bathtub', 'AC', 'Coffee Maker', 'Desk'];
 
-export type RoomFormValues = z.infer<typeof roomFormSchema> & {
-    images: { url: string; order: number; caption: string }[];
-    amenities: string[];
-    bedConfiguration: { type: 'single' | 'double' | 'queen' | 'king' | 'sofa_bed'; count: number }[];
-};
+export type RoomFormValues = z.infer<typeof roomFormSchema>;
 
 interface RoomFormProps {
     defaultValues?: Partial<RoomFormValues>;
@@ -76,10 +84,7 @@ interface RoomFormProps {
 }
 
 export function RoomForm({ defaultValues, onSubmit, isLoading, propertyId }: RoomFormProps) {
-    const [images, setImages] = useState<{ url: string; order: number; caption: string }[]>(defaultValues?.images || []);
     const [imageInput, setImageInput] = useState("");
-    const [selectedAmenities, setSelectedAmenities] = useState<string[]>(defaultValues?.amenities || []);
-    const [bedConfig, setBedConfig] = useState<{ type: any; count: number }[]>(defaultValues?.bedConfiguration || [{ type: 'queen', count: 1 }]);
 
     const form = useForm<z.infer<typeof roomFormSchema>>({
         resolver: zodResolver(roomFormSchema),
@@ -106,46 +111,60 @@ export function RoomForm({ defaultValues, onSubmit, isLoading, propertyId }: Roo
                 maximumStay: defaultValues?.availability?.maximumStay,
             },
             isActive: defaultValues?.isActive ?? true,
+            images: defaultValues?.images || [],
+            amenities: defaultValues?.amenities || [],
+            bedConfiguration: defaultValues?.bedConfiguration || [{ type: 'queen', count: 1 }],
         },
     });
 
+    const images = form.watch('images') || [];
+    const selectedAmenities = form.watch('amenities') || [];
+    const bedConfig = form.watch('bedConfiguration') || [];
+
     const handleAddImage = () => {
         if (imageInput) {
-            setImages([...images, { url: imageInput, order: images.length, caption: "" }]);
+            const newImages = [...images, { url: imageInput, order: images.length, caption: "" }];
+            form.setValue('images', newImages, { shouldValidate: true });
             setImageInput("");
         }
     };
 
+    const removeImage = (index: number) => {
+        const newImages = images.filter((_, idx) => idx !== index);
+        form.setValue('images', newImages, { shouldValidate: true });
+    };
+
     const toggleAmenity = (amenity: string) => {
-        if (selectedAmenities.includes(amenity)) {
-            setSelectedAmenities(selectedAmenities.filter(a => a !== amenity));
+        const normalizedAmenity = amenity.toLowerCase().replace(' ', '_');
+        let newAmenities;
+        if (selectedAmenities.includes(normalizedAmenity)) {
+            newAmenities = selectedAmenities.filter(a => a !== normalizedAmenity);
         } else {
-            setSelectedAmenities([...selectedAmenities, amenity]);
+            newAmenities = [...selectedAmenities, normalizedAmenity];
         }
+        form.setValue('amenities', newAmenities, { shouldValidate: true });
     };
 
     const addBed = () => {
-        setBedConfig([...bedConfig, { type: 'single', count: 1 }]);
+        const newConfig = [...bedConfig, { type: 'single', count: 1 }];
+        // @ts-ignore
+        form.setValue('bedConfiguration', newConfig, { shouldValidate: true });
     };
 
     const removeBed = (index: number) => {
-        setBedConfig(bedConfig.filter((_, i) => i !== index));
+        const newConfig = bedConfig.filter((_, i) => i !== index);
+        form.setValue('bedConfiguration', newConfig, { shouldValidate: true });
     };
 
     const updateBed = (index: number, field: string, value: any) => {
         const newConfig = [...bedConfig];
+        // @ts-ignore
         (newConfig[index] as any)[field] = value;
-        setBedConfig(newConfig);
+        form.setValue('bedConfiguration', newConfig, { shouldValidate: true });
     };
 
     const handleSubmit = async (values: z.infer<typeof roomFormSchema>) => {
-        const fullValues: RoomFormValues = {
-            ...values,
-            images,
-            amenities: selectedAmenities,
-            bedConfiguration: bedConfig,
-        };
-        await onSubmit(fullValues);
+        await onSubmit(values);
     };
 
     return (
@@ -222,6 +241,9 @@ export function RoomForm({ defaultValues, onSubmit, isLoading, propertyId }: Roo
                                 <h3 className="text-sm font-medium">Bed Configuration</h3>
                                 <Button type="button" variant="outline" size="sm" onClick={addBed}>Add Bed</Button>
                             </div>
+                            {form.formState.errors.bedConfiguration && (
+                                <p className="text-sm font-medium text-destructive">{form.formState.errors.bedConfiguration.message}</p>
+                            )}
                             {bedConfig.map((bed, index) => (
                                 <div key={index} className="flex items-end gap-3">
                                     <div className="flex-1">
@@ -283,10 +305,13 @@ export function RoomForm({ defaultValues, onSubmit, isLoading, propertyId }: Roo
                 <Card>
                     <CardHeader><CardTitle>Amenities</CardTitle></CardHeader>
                     <CardContent>
+                        {form.formState.errors.amenities && (
+                            <p className="text-sm font-medium text-destructive mb-2">{form.formState.errors.amenities.message}</p>
+                        )}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {AMENITIES_LIST.map(amenity => (
                                 <div key={amenity} className="flex items-center space-x-2">
-                                    <Checkbox id={amenity} checked={selectedAmenities.includes(amenity.toLowerCase().replace(' ', '_'))} onCheckedChange={() => toggleAmenity(amenity.toLowerCase().replace(' ', '_'))} />
+                                    <Checkbox id={amenity} checked={selectedAmenities.includes(amenity.toLowerCase().replace(' ', '_'))} onCheckedChange={() => toggleAmenity(amenity)} />
                                     <label htmlFor={amenity} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{amenity}</label>
                                 </div>
                             ))}
@@ -298,6 +323,9 @@ export function RoomForm({ defaultValues, onSubmit, isLoading, propertyId }: Roo
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Images</CardTitle></CardHeader>
                     <CardContent>
+                        {form.formState.errors.images && (
+                            <p className="text-sm font-medium text-destructive mb-2">{form.formState.errors.images.message}</p>
+                        )}
                         <div className="flex gap-2 mb-4">
                             <Input value={imageInput} onChange={(e) => setImageInput(e.target.value)} placeholder="Image URL" />
                             <Button type="button" onClick={handleAddImage} variant="outline"><Upload className="h-4 w-4" /></Button>
@@ -305,9 +333,9 @@ export function RoomForm({ defaultValues, onSubmit, isLoading, propertyId }: Roo
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {images.map((img, i) => (
                                 <div key={i} className="relative aspect-video bg-muted rounded overflow-hidden group">
-                                    <img src={img.url} className="w-full h-full object-cover" alt="Room" />
+                                    <img src={img.url} className="w-full h-full object-contain bg-secondary" alt="Room" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <button type="button" onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="bg-red-500 text-white p-1 rounded-full"><X className="h-4 w-4" /></button>
+                                        <button type="button" onClick={() => removeImage(i)} className="bg-red-500 text-white p-1 rounded-full"><X className="h-4 w-4" /></button>
                                     </div>
                                 </div>
                             ))}
