@@ -18,12 +18,11 @@ export async function GET(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { user } = authResult;
 
     const rental = await getCarRentalById(id);
     if (!rental) {
@@ -34,10 +33,10 @@ export async function GET(
     }
 
     // Check permissions: rental owner, vehicle owner, or admin
-    const isRentalOwner = rental.userId === authResult.user!.id;
+    const isRentalOwner = rental.userId === user.id;
     const vehicle = await getVehicleById(rental.vehicleId);
-    const isVehicleOwner = vehicle?.ownerId === authResult.user!.id;
-    const isAdmin = authResult.user!.roles.includes('admin');
+    const isVehicleOwner = vehicle?.ownerId === user.id;
+    const isAdmin = user.roles.includes('admin');
 
     if (!isRentalOwner && !isVehicleOwner && !isAdmin) {
       return NextResponse.json(
@@ -67,12 +66,11 @@ export async function PATCH(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { user } = authResult;
 
     const rental = await getCarRentalById(id);
     if (!rental) {
@@ -83,10 +81,10 @@ export async function PATCH(
     }
 
     // Check permissions
-    const isRentalOwner = rental.userId === authResult.user!.id;
+    const isRentalOwner = rental.userId === user.id;
     const vehicle = await getVehicleById(rental.vehicleId);
-    const isVehicleOwner = vehicle?.ownerId === authResult.user!.id;
-    const isAdmin = authResult.user!.roles.includes('admin');
+    const isVehicleOwner = vehicle?.ownerId === user.id;
+    const isAdmin = user.roles.includes('admin');
 
     const body = await request.json();
     const validatedData = updateRentalSchema.parse(body);

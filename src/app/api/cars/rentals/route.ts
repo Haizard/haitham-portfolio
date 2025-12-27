@@ -39,12 +39,11 @@ const createRentalSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const authResult = await requireAuth();
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { user } = authResult;
 
     const body = await request.json();
     const validatedData = createRentalSchema.parse(body);
@@ -146,7 +145,7 @@ export async function POST(request: NextRequest) {
       currency: vehicle.pricing.currency.toLowerCase(),
       metadata: {
         vehicleId: validatedData.vehicleId,
-        userId: authResult.user!.id,
+        userId: user.id,
         pickupDate: validatedData.pickupDate,
         returnDate: validatedData.returnDate,
         numberOfDays: numberOfDays.toString(),
@@ -156,7 +155,7 @@ export async function POST(request: NextRequest) {
     // Create rental
     const rental = await createCarRental({
       vehicleId: validatedData.vehicleId,
-      userId: authResult.user!.id,
+      userId: user.id,
       driverInfo: validatedData.driverInfo,
       pickupDate: validatedData.pickupDate,
       pickupTime: validatedData.pickupTime,
@@ -216,14 +215,13 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const authResult = await requireAuth();
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
-    const rentals = await getCarRentalsByUserId(authResult.user!.id);
+    const { user } = authResult;
+
+    const rentals = await getCarRentalsByUserId(user.id);
 
     return NextResponse.json({
       success: true,

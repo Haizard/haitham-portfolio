@@ -85,12 +85,11 @@ export async function PATCH(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { user } = authResult;
 
     // Get the vehicle to check ownership
     const vehicle = await getVehicleById(id);
@@ -146,12 +145,11 @@ export async function DELETE(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { user } = authResult;
 
     // Get the vehicle to check ownership
     const vehicle = await getVehicleById(id);
