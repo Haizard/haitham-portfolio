@@ -27,7 +27,7 @@ interface MenuItemCardProps {
 
 export function MenuItemCard({ item, onOpenDialog }: MenuItemCardProps) {
   const { addToCart } = useCart();
-  
+
   const handleAction = () => {
     // If there are options, open the dialog. Otherwise, add directly to cart.
     if (item.optionGroups && item.optionGroups.length > 0) {
@@ -52,20 +52,20 @@ export function MenuItemCard({ item, onOpenDialog }: MenuItemCardProps) {
         <h3 className="font-bold">{item.name}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{item.description}</p>
         <div className="flex items-center justify-between mt-2">
-            <p className="font-semibold text-base">${item.price.toFixed(2)}</p>
-            <div className="flex items-center gap-2">
-                {item.dietaryFlags?.map(flag => {
-                    const Icon = DIETARY_ICONS[flag];
-                    const colorClass = DIETARY_COLORS[flag] || 'text-muted-foreground';
-                    return Icon ? <Icon key={flag} className={`h-4 w-4 ${colorClass}`} title={flag} /> : null;
-                })}
-            </div>
+          <p className="font-semibold text-base">${item.price.toFixed(2)}</p>
+          <div className="flex items-center gap-2">
+            {item.dietaryFlags?.map(flag => {
+              const Icon = DIETARY_ICONS[flag];
+              const colorClass = DIETARY_COLORS[flag] || 'text-muted-foreground';
+              return Icon ? <Icon key={flag} className={`h-4 w-4 ${colorClass}`} title={flag} /> : null;
+            })}
+          </div>
         </div>
       </div>
-       <div className="flex-shrink-0 flex flex-col items-end justify-start gap-2">
-        <Image src={item.imageUrl} alt={item.name} width={80} height={80} className="rounded-md object-cover border" />
-         <Button size="icon" variant="outline" className="rounded-full h-8 w-8 hover:bg-red-500 hover:text-white mt-auto" onClick={(e) => { e.stopPropagation(); handleAction(); }}>
-            <Plus className="h-5 w-5" />
+      <div className="flex-shrink-0 flex flex-col items-end justify-start gap-2">
+        <Image src={item.imageUrl} alt={item.name} width={80} height={80} className="rounded-md object-contain bg-secondary border" />
+        <Button size="icon" variant="outline" className="rounded-full h-8 w-8 hover:bg-red-500 hover:text-white mt-auto" onClick={(e) => { e.stopPropagation(); handleAction(); }}>
+          <Plus className="h-5 w-5" />
         </Button>
       </div>
     </Card>

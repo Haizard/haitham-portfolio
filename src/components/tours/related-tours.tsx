@@ -14,59 +14,59 @@ import { CompareButton } from '@/components/comparisons/compare-button';
 import { useFormatPrice } from '@/contexts/currency-context';
 
 const TourCard = ({ tour }: { tour: TourPackage }) => {
-    const format = useFormatPrice();
-    return (
+  const format = useFormatPrice();
+  return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
-        <div className="relative aspect-[4/3] overflow-hidden">
-            <Link href={`/tours/${tour.slug}`}>
-                <Image
-                    src={tour.featuredImageUrl}
-                    alt={tour.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    data-ai-hint="tour landscape"
-                />
-            </Link>
-            <div className="absolute top-2 right-2">
-                <WishlistButton
-                    itemType="tour"
-                    itemId={tour.id || ''}
-                    variant="ghost"
-                    size="icon"
-                    className="bg-card/70 hover:bg-card rounded-full h-8 w-8"
-                />
-            </div>
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <Link href={`/tours/${tour.slug}`}>
+          <Image
+            src={tour.featuredImageUrl}
+            alt={tour.name}
+            fill
+            className="object-contain bg-secondary"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            data-ai-hint="tour landscape"
+          />
+        </Link>
+        <div className="absolute top-2 right-2">
+          <WishlistButton
+            itemType="tour"
+            itemId={tour.id || ''}
+            variant="ghost"
+            size="icon"
+            className="bg-card/70 hover:bg-card rounded-full h-8 w-8"
+          />
         </div>
-        <CardContent className="p-4 flex flex-col flex-grow">
-            <h3 className="text-base font-bold font-headline group-hover:text-primary transition-colors line-clamp-2 h-12">
-                <Link href={`/tours/${tour.slug}`}>{tour.name}</Link>
-            </h3>
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><MapPin className="h-3 w-3"/>{tour.location}</p>
+      </div>
+      <CardContent className="p-4 flex flex-col flex-grow">
+        <h3 className="text-base font-bold font-headline group-hover:text-primary transition-colors line-clamp-2 h-12">
+          <Link href={`/tours/${tour.slug}`}>{tour.name}</Link>
+        </h3>
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><MapPin className="h-3 w-3" />{tour.location}</p>
 
-            <div className="border-t my-3"/>
+        <div className="border-t my-3" />
 
-            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary"/> Duration: <span className="font-semibold text-foreground">{tour.duration}</span></div>
-            </div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" /> Duration: <span className="font-semibold text-foreground">{tour.duration}</span></div>
+        </div>
 
-            <div className="mt-auto pt-4 space-y-2">
-                <div className="flex justify-between items-center">
-                    <p className="text-lg font-bold text-primary">{format(tour.price, 'USD')}</p>
-                    <Button asChild size="sm" variant="outline">
-                        <Link href={`/tours/${tour.slug}`}>View Details</Link>
-                    </Button>
-                </div>
-                <CompareButton
-                    itemType="tour"
-                    itemId={tour.id || ''}
-                    className="w-full"
-                    size="sm"
-                />
-            </div>
-        </CardContent>
+        <div className="mt-auto pt-4 space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="text-lg font-bold text-primary">{format(tour.price, 'USD')}</p>
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/tours/${tour.slug}`}>View Details</Link>
+            </Button>
+          </div>
+          <CompareButton
+            itemType="tour"
+            itemId={tour.id || ''}
+            className="w-full"
+            size="sm"
+          />
+        </div>
+      </CardContent>
     </Card>
-    );
+  );
 };
 
 interface RelatedToursProps {
@@ -105,7 +105,7 @@ export function RelatedTours({ currentTourSlug }: RelatedToursProps) {
   }
 
   if (relatedTours.length === 0) {
-    return null; 
+    return null;
   }
 
   return (

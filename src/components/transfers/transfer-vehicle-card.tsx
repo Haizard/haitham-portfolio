@@ -101,7 +101,7 @@ export function TransferVehicleCard({
           <img
             src={primaryImage.url}
             alt={`${vehicle.make} ${vehicle.model}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain bg-secondary"
           />
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -129,7 +129,7 @@ export function TransferVehicleCard({
           <h3 className="font-semibold text-lg line-clamp-1">
             {vehicle.make} {vehicle.model} {vehicle.year}
           </h3>
-          
+
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" />
             <span className="line-clamp-1">

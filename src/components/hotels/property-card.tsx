@@ -47,14 +47,14 @@ export function PropertyCard({ property, searchParams }: PropertyCardProps) {
               src={primaryImage.url}
               alt={property.name}
               fill
-              className="object-cover hover:scale-105 transition-transform duration-300"
+              className="object-contain bg-secondary"
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               No image available
             </div>
           )}
-          
+
           {/* Property Type Badge */}
           <Badge className="absolute top-2 left-2 capitalize">
             {property.type}

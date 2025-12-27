@@ -100,7 +100,7 @@ export default function PropertyDetailPage() {
               src={property.images[currentImageIndex].url}
               alt={property.images[currentImageIndex].caption || property.name}
               fill
-              className="object-cover"
+              className="object-contain bg-secondary"
               priority
             />
 

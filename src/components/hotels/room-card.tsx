@@ -205,7 +205,7 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
               src={primaryImage.url}
               alt={primaryImage.caption || room.name}
               fill
-              className="object-cover"
+              className="object-contain bg-muted"
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">

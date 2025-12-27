@@ -41,14 +41,14 @@ export function VehicleCard({ vehicle, searchParams }: VehicleCardProps) {
               src={primaryImage.url}
               alt={`${vehicle.make} ${vehicle.model}`}
               fill
-              className="object-cover hover:scale-105 transition-transform duration-300"
+              className="object-contain bg-secondary"
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               No image available
             </div>
           )}
-          
+
           {/* Category Badge */}
           <Badge className="absolute top-2 left-2 capitalize">
             {vehicle.category}
