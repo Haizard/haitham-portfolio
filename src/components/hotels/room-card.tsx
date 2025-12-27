@@ -229,7 +229,7 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    Up to {room.maxOccupancy.adults} adults, {room.maxOccupancy.children} children
+                    Up to {room.capacity.adults} adults, {room.capacity.children} children
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">

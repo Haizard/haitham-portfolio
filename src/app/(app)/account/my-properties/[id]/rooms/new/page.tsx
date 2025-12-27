@@ -28,10 +28,28 @@ export default function AddRoomPage() {
                 body: JSON.stringify(payload),
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                const text = await response.text();
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    // Not JSON, probably HTML error page
+                    console.error("Received non-JSON response:", text);
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+            } catch (e: any) {
+                throw new Error(e.message || 'Failed to read response');
+            }
 
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to create room');
+                console.error("Server validation errors:", data);
+                let errorMessage = data.message || 'Failed to create room';
+                if (data.errors && Array.isArray(data.errors)) {
+                    const details = data.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ');
+                    errorMessage += ` - ${details}`;
+                }
+                throw new Error(errorMessage);
             }
 
             toast({ title: "Success", description: "Room created successfully!" });

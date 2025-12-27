@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth, requireRoles } from '@/lib/rbac';
-import { getPropertyById, updateProperty, deleteProperty } from '@/lib/hotels-data';
+import { getPropertyById, getPropertyBySlug, updateProperty, deleteProperty } from '@/lib/hotels-data';
 
 // Validation schema for updates
 const updatePropertySchema = z.object({
@@ -45,14 +45,26 @@ const updatePropertySchema = z.object({
   status: z.enum(['active', 'inactive', 'pending_approval']).optional(),
 });
 
-// GET /api/hotels/properties/[id] - Get property by ID
+// Helper to check valid ObjectId
+const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
+
+// GET /api/hotels/properties/[id] - Get property by ID or Slug
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const property = await getPropertyById(id);
+
+    let property;
+    if (isValidObjectId(id)) {
+      property = await getPropertyById(id);
+    }
+
+    // If not found by ID (or invalid ID), try by slug
+    if (!property) {
+      property = await getPropertyBySlug(id);
+    }
 
     if (!property) {
       return NextResponse.json({
@@ -200,4 +212,3 @@ export async function DELETE(
     }, { status: 500 });
   }
 }
-

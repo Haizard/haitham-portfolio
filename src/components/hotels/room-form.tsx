@@ -30,7 +30,7 @@ import { Loader2, Upload, X, Bed, Users, Banknote, List, Image as ImageIcon } fr
 const roomFormSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters"),
     type: z.enum(['single', 'double', 'twin', 'suite', 'deluxe', 'family']),
-    description: z.string().min(20, "Description must be at least 20 characters"),
+    description: z.string().min(50, "Description must be at least 50 characters"),
     size: z.coerce.number().min(1, "Size is required"),
 
     // Capacity
