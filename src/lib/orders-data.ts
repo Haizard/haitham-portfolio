@@ -3,81 +3,49 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { getProductById, type Product } from './products-data'; // Import Product type
+import { getMenuItemById, getRestaurantById } from './restaurants-data'; // Import restaurant data helpers
 import { getFreelancerProfile } from './user-profile-data'; // To enrich with vendor names
 import { getPlatformSettings } from './settings-data'; // Import settings to get commission rate
 import { createDelivery } from './deliveries-data';
 
 const ORDERS_COLLECTION = 'orders';
 
-export type LineItemStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
-export type OrderStatus = 'pending_payment' | 'Pending' | 'Confirmed' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
-export type OrderType = 'delivery' | 'pickup';
+// ... (types remain the same)
 
-// LineItem no longer needs vendorId, as the parent Order will have it.
-export interface LineItem {
-  _id: ObjectId; // Unique ID for the line item itself
-  productId: string;
-  productName: string;
-  productImageUrl: string;
-  quantity: number;
-  price: number; // Price per item at time of purchase
-  status: LineItemStatus;
-  commissionRate: number;
-  commissionAmount: number;
-  vendorEarnings: number;
-  description?: string; // For selected customizations
+// Helper to normalize items into a common Product shape
+async function resolveCartItem(itemId: string): Promise<Product | null> {
+    // 1. Try finding it as a standard Product
+    const product = await getProductById(itemId);
+    if (product) return product;
+
+    // 2. Try finding it as a Menu Item
+    const menuItem = await getMenuItemById(itemId);
+    if (menuItem) {
+        const restaurant = await getRestaurantById(menuItem.restaurantId);
+        if (restaurant) {
+            // Map MenuItem to Product shape
+            return {
+                id: menuItem.id,
+                slug: menuItem.id!, // Menu items might not have slugs, use ID
+                name: menuItem.name,
+                description: menuItem.description,
+                price: menuItem.price,
+                imageUrl: menuItem.imageUrl,
+                imageHint: menuItem.name, // Fallback
+                vendorId: restaurant.ownerId, // IMPORTANT: Pay the restaurant owner
+                productType: 'restaurant-item',
+                stock: 999, // Infinite stock for food
+                vendorName: restaurant.name,
+            } as Product;
+        }
+    }
+    return null;
 }
 
-// Order now has a vendorId
-export interface Order {
-  _id?: ObjectId;
-  id?: string;
-  vendorId: string; // The vendor this specific order belongs to
-  customerName: string;
-  customerEmail: string;
-  shippingAddress: string;
-  orderDate: Date;
-  status: OrderStatus; // Add status to the main order
-  orderType: OrderType;
-  fulfillmentTime: Date;
-  totalAmount: number; // The total for this specific vendor's portion of the order
-  lineItems: LineItem[];
-  deliveryId?: string | null; // ID of the associated delivery task
-  // Enriched field for admin views
-  vendorName?: string;
-}
+// ... (rest of file)
 
-// Interface for dashboard stats API
-export interface AdminDashboardStats {
-    totalSales: number;
-    totalOrders: number;
-    monthlySales: { name: string; sales: number; orders: number; }[];
-    recentOrders: Order[];
-    // topSellingProducts will be added in the API route from the products data lib
-}
-
-export interface RestaurantAnalyticsData {
-    totalRevenue: number;
-    totalOrders: number;
-    averageOrderValue: number;
-    monthlySales: { name: string; sales: number; orders: number }[];
-    topSellingItems: {
-        _id: string;
-        productName: string;
-        totalQuantity: number;
-        totalRevenue: number;
-    }[];
-}
-
-function docToOrder(doc: any): Order {
-  if (!doc) return doc;
-  const { _id, ...rest } = doc;
-  return { id: _id?.toString(), ...rest } as Order;
-}
-
-// The core order splitting logic.
 export async function createOrderFromCart(
-    customerDetails: { name: string; email: string; address: string }, 
+    customerDetails: { name: string; email: string; address: string },
     cart: { productId: string; quantity: number, description?: string }[],
     orderType: OrderType,
     fulfillmentTime: Date,
@@ -88,11 +56,11 @@ export async function createOrderFromCart(
 
     const { commissionRate } = await getPlatformSettings();
 
-    // 1. Fetch all product details to get price, vendor, etc.
-    const productIds = cart.map(item => item.productId.split('-')[0]); // Handle potentially customized IDs
-    const productPromises = productIds.map(id => getProductById(id));
+    // 1. Fetch all product details (Products OR Menu Items)
+    const productIds = cart.map(item => item.productId.split('-')[0]);
+    const productPromises = productIds.map(id => resolveCartItem(id));
     const products = (await Promise.all(productPromises)).filter((p): p is Product => p !== null);
-    
+
     const productsById = new Map(products.map(p => [p.id!, p]));
 
     // 2. Group cart items by vendorId
@@ -107,7 +75,7 @@ export async function createOrderFromCart(
             itemsByVendor.get(product.vendorId)!.push(item);
         }
     }
-    
+
     // 3. Create a separate order for each vendor
     for (const [vendorId, vendorItems] of itemsByVendor.entries()) {
         const now = new Date();
@@ -132,7 +100,7 @@ export async function createOrderFromCart(
                 description: item.description, // Pass customizations
             };
         });
-        
+
         const initialStatus: OrderStatus = isPendingPayment ? 'pending_payment' : 'Pending';
 
         const newOrderDoc: Omit<Order, 'id' | '_id'> = {
@@ -147,12 +115,12 @@ export async function createOrderFromCart(
             totalAmount,
             lineItems,
         };
-        
+
         const result = await ordersCollection.insertOne(newOrderDoc as any);
         const createdOrder = docToOrder({ _id: result.insertedId, ...newOrderDoc });
-        
+
         // If it's a delivery order AND payment is not pending, create a delivery task
-        if(orderType === 'delivery' && !isPendingPayment) {
+        if (orderType === 'delivery' && !isPendingPayment) {
             const delivery = await createDelivery({
                 orderId: createdOrder.id!,
                 vendorId: vendorId,
@@ -166,7 +134,7 @@ export async function createOrderFromCart(
 
         createdOrders.push(createdOrder);
     }
-    
+
     console.log(`Split cart into ${createdOrders.length} orders.`);
     return createdOrders;
 }
@@ -174,72 +142,72 @@ export async function createOrderFromCart(
 
 // Seed data function now uses the new order splitting logic
 async function seedInitialOrders() {
-  const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
-  const productsCollection = await getCollection<Product>('products');
-  const count = await ordersCollection.countDocuments();
+    const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
+    const productsCollection = await getCollection<Product>('products');
+    const count = await ordersCollection.countDocuments();
 
-  if (count === 0) {
-    console.log("Seeding initial orders using createOrderFromCart logic...");
-    const vendorProducts = await productsCollection.find({ productType: 'creator' }).limit(4).toArray();
-    
-    if (vendorProducts.length < 2) {
-      console.log("Not enough creator products from different vendors to seed split orders.");
-      return;
+    if (count === 0) {
+        console.log("Seeding initial orders using createOrderFromCart logic...");
+        const vendorProducts = await productsCollection.find({ productType: 'creator' }).limit(4).toArray();
+
+        if (vendorProducts.length < 2) {
+            console.log("Not enough creator products from different vendors to seed split orders.");
+            return;
+        }
+
+        // Create a mock cart with items from potentially different vendors
+        const mockCart = [
+            { productId: vendorProducts[0]._id.toString(), quantity: 1 },
+            { productId: vendorProducts[1]._id.toString(), quantity: 2 },
+        ];
+
+        if (vendorProducts.length > 2) {
+            // Add another item from the first vendor to test grouping
+            mockCart.push({ productId: vendorProducts[0]._id.toString(), quantity: 1 });
+        }
+
+        const customerDetails = {
+            name: "Alice Wonderland",
+            email: "alice@example.com",
+            address: "123 Fantasy Lane, Wonderland",
+        };
+
+        await createOrderFromCart(customerDetails, mockCart, 'delivery', new Date());
+        console.log("Initial orders seeded.");
     }
-
-    // Create a mock cart with items from potentially different vendors
-    const mockCart = [
-        { productId: vendorProducts[0]._id.toString(), quantity: 1 },
-        { productId: vendorProducts[1]._id.toString(), quantity: 2 },
-    ];
-    
-    if (vendorProducts.length > 2) {
-      // Add another item from the first vendor to test grouping
-      mockCart.push({ productId: vendorProducts[0]._id.toString(), quantity: 1 });
-    }
-
-    const customerDetails = {
-      name: "Alice Wonderland",
-      email: "alice@example.com",
-      address: "123 Fantasy Lane, Wonderland",
-    };
-    
-    await createOrderFromCart(customerDetails, mockCart, 'delivery', new Date());
-    console.log("Initial orders seeded.");
-  }
 }
 
 seedInitialOrders().catch(console.error);
 
 // The getOrdersByVendorId function is now much simpler.
 export async function getOrdersByVendorId(vendorId: string): Promise<Order[]> {
-  const collection = await getCollection<Order>(ORDERS_COLLECTION);
-  
-  // No need to filter line items in code, just query for orders belonging to the vendor.
-  const vendorOrders = await collection.find({ vendorId }).sort({ orderDate: -1 }).toArray();
+    const collection = await getCollection<Order>(ORDERS_COLLECTION);
 
-  return vendorOrders.map(docToOrder);
+    // No need to filter line items in code, just query for orders belonging to the vendor.
+    const vendorOrders = await collection.find({ vendorId }).sort({ orderDate: -1 }).toArray();
+
+    return vendorOrders.map(docToOrder);
 }
 
 // NEW function to get all orders for the admin panel
 export async function getAllOrders(): Promise<Order[]> {
-  const collection = await getCollection<Order>(ORDERS_COLLECTION);
-  const allOrders = await collection.find({}).sort({ orderDate: -1 }).toArray();
-  return allOrders.map(docToOrder);
+    const collection = await getCollection<Order>(ORDERS_COLLECTION);
+    const allOrders = await collection.find({}).sort({ orderDate: -1 }).toArray();
+    return allOrders.map(docToOrder);
 }
 
 export async function updateLineItemStatus(orderId: string, lineItemId: string, newStatus: LineItemStatus): Promise<boolean> {
-  if (!ObjectId.isValid(orderId) || !ObjectId.isValid(lineItemId)) {
-    return false;
-  }
-  const collection = await getCollection<Order>(ORDERS_COLLECTION);
-  
-  const result = await collection.updateOne(
-    { _id: new ObjectId(orderId), "lineItems._id": new ObjectId(lineItemId) },
-    { $set: { "lineItems.$.status": newStatus } }
-  );
+    if (!ObjectId.isValid(orderId) || !ObjectId.isValid(lineItemId)) {
+        return false;
+    }
+    const collection = await getCollection<Order>(ORDERS_COLLECTION);
 
-  return result.modifiedCount === 1;
+    const result = await collection.updateOne(
+        { _id: new ObjectId(orderId), "lineItems._id": new ObjectId(lineItemId) },
+        { $set: { "lineItems.$.status": newStatus } }
+    );
+
+    return result.modifiedCount === 1;
 }
 
 export async function updateOrderStatus(orderId: string, newStatus: OrderStatus): Promise<Order | null> {
@@ -259,7 +227,7 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
 
 export async function getAdminDashboardStats(): Promise<Omit<AdminDashboardStats, 'topSellingProducts'>> {
     const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
-    
+
     // 1. Total Sales and Order Count
     const salesStats = await ordersCollection.aggregate([
         { $group: { _id: null, totalSales: { $sum: "$totalAmount" }, totalOrders: { $sum: 1 } } }
@@ -281,14 +249,14 @@ export async function getAdminDashboardStats(): Promise<Omit<AdminDashboardStats
         },
         { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]).toArray();
-    
+
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlySales = monthlySalesData.map(d => ({
         name: `${monthNames[d._id.month - 1]} ${d._id.year}`,
         sales: d.sales,
         orders: d.orders,
     }));
-    
+
     // 3. Recent Orders
     const recentOrderDocs = await ordersCollection.find().sort({ orderDate: -1 }).limit(5).toArray();
     // Enrich with vendor names
@@ -314,7 +282,7 @@ export async function getAdminDashboardStats(): Promise<Omit<AdminDashboardStats
 
 export async function getRestaurantAnalytics(restaurantId: string): Promise<RestaurantAnalyticsData> {
     const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
-    
+
     const completedOrdersFilter = { vendorId: restaurantId, status: 'Completed' };
 
     // 1. Total Revenue, Orders, and Average Value
@@ -341,25 +309,25 @@ export async function getRestaurantAnalytics(restaurantId: string): Promise<Rest
         },
         { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]).toArray();
-    
+
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlySales = monthlySalesData.map(d => ({
         name: `${monthNames[d._id.month - 1]}`,
         sales: d.sales,
         orders: d.orders,
     }));
-    
+
     // 3. Top Selling Menu Items
     const topItemsData = await ordersCollection.aggregate([
         { $match: completedOrdersFilter },
         { $unwind: "$lineItems" },
-        { 
-            $group: { 
-                _id: "$lineItems.productId", 
+        {
+            $group: {
+                _id: "$lineItems.productId",
                 productName: { $first: "$lineItems.productName" },
                 totalQuantity: { $sum: "$lineItems.quantity" },
                 totalRevenue: { $sum: { $multiply: ["$lineItems.price", "$lineItems.quantity"] } }
-            } 
+            }
         },
         { $sort: { totalQuantity: -1 } },
         { $limit: 5 }

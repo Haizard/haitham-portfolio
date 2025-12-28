@@ -16,6 +16,7 @@ import { StarRating } from '@/components/reviews/StarRating';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '../ui/separator';
+import { useUser } from '@/hooks/use-user';
 
 const reviewFormSchema = z.object({
   rating: z.coerce.number().min(1, "Please select a rating.").max(5),
@@ -33,6 +34,9 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
+
+  // ... (fetchReviews remains same)
 
   const fetchReviews = useCallback(async () => {
     setIsLoading(true);
@@ -58,14 +62,18 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   });
 
   const handleReviewSubmit = async (values: ReviewFormValues) => {
+    if (!user) {
+      toast({ title: "Error", description: "You must be logged in to review.", variant: "destructive" });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // In a real app, user details would come from a session/auth context
       const payload = {
         ...values,
-        reviewerId: "mockUser123",
-        reviewerName: "Mock User",
-        reviewerAvatar: `https://placehold.co/100x100.png?text=MU`,
+        reviewerId: user.id,
+        reviewerName: user.name || "Anonymous",
+        reviewerAvatar: user.avatar || `https://placehold.co/100x100.png?text=${user.name?.charAt(0) || 'U'}`,
       };
       const response = await fetch(`/api/products/${productId}/reviews`, {
         method: 'POST',
@@ -90,7 +98,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <MessageSquare className="h-6 w-6 text-primary"/> Customer Reviews
+          <MessageSquare className="h-6 w-6 text-primary" /> Customer Reviews
         </h2>
         {isLoading ? (
           <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>

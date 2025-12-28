@@ -392,11 +392,15 @@ export async function updateMenuItem(id: string, updates: Partial<Omit<MenuItem,
   return result ? docToMenuItem(result) : null;
 }
 
-export async function deleteMenuItem(id: string): Promise<boolean> {
-  if (!ObjectId.isValid(id)) return false;
+const result = await collection.deleteOne({ _id: new ObjectId(id) });
+return result.deletedCount === 1;
+}
+
+export async function getMenuItemById(id: string): Promise<MenuItem | null> {
+  if (!ObjectId.isValid(id)) return null;
   const collection = await getCollection<MenuItem>(MENU_ITEMS_COLLECTION);
-  const result = await collection.deleteOne({ _id: new ObjectId(id) });
-  return result.deletedCount === 1;
+  const doc = await collection.findOne({ _id: new ObjectId(id) });
+  return doc ? docToMenuItem(doc) : null;
 }
 
 // --- Restaurant Review Management ---
