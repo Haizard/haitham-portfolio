@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
@@ -7,8 +6,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Edit3, Eye, PlusCircle, Trash2, Loader2, DollarSign, Clock, Briefcase } from "lucide-react";
 import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
-import type { Service } from '@/lib/services-data'; 
+import type { Service } from '@/lib/services-data';
 import { ServiceFormDialog } from '@/components/services/service-form-dialog';
+import { useSession } from '@/contexts/session-context';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// This would come from an authenticated session
-const MOCK_FREELANCER_ID = "mockFreelancer456";
-
 export default function MyServicesPage() {
+  const { user } = useSession();
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -34,9 +32,14 @@ export default function MyServicesPage() {
   const { toast } = useToast();
 
   const fetchServices = useCallback(async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/services?freelancerId=${MOCK_FREELANCER_ID}`);
+      const response = await fetch(`/api/services?freelancerId=${user.id}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch services. Status: ${response.status}`);
       }
@@ -50,7 +53,7 @@ export default function MyServicesPage() {
           description: "Received unexpected data format for your services.",
           variant: "destructive",
         });
-        setServices([]); 
+        setServices([]);
       }
     } catch (error: any) {
       console.error("Error in fetchServices:", error);
@@ -59,11 +62,11 @@ export default function MyServicesPage() {
         description: error.message || "Could not load your services.",
         variant: "destructive",
       });
-      setServices([]); 
+      setServices([]);
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [user?.id, toast]);
 
   useEffect(() => {
     fetchServices();
@@ -78,7 +81,7 @@ export default function MyServicesPage() {
     setEditingService(service);
     setIsFormOpen(true);
   };
-  
+
   const confirmDeleteService = (service: Service) => {
     setServiceToDelete(service);
   };
@@ -93,12 +96,12 @@ export default function MyServicesPage() {
         throw new Error(errorData.message || 'Failed to delete service');
       }
       toast({ title: "Service Deleted", description: `"${serviceToDelete.name}" has been removed.` });
-      fetchServices(); 
+      fetchServices();
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Could not delete service.", variant: "destructive" });
     } finally {
       setIsDeleting(false);
-      setServiceToDelete(null); 
+      setServiceToDelete(null);
     }
   };
 
@@ -125,72 +128,72 @@ export default function MyServicesPage() {
         </div>
       ) : services.length === 0 ? (
         <Card className="shadow-lg text-center">
-            <CardHeader>
-                <CardTitle>You haven't created any services yet.</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">Click "Create New Service" to add your first service offering.</p>
-            </CardContent>
+          <CardHeader>
+            <CardTitle>You haven't created any services yet.</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">Click "Create New Service" to add your first service offering.</p>
+          </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {services.map(service => (
-              <Card key={service.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
-                  <CardHeader>
-                      <CardTitle className="text-xl">{service.name}</CardTitle>
-                      <CardDescription className="flex items-center gap-2 pt-1">
-                          <DollarSign className="h-4 w-4 text-green-600" /> ${service.price}
-                          <span className="text-muted-foreground/50">|</span>
-                          <Clock className="h-4 w-4 text-blue-600" /> {service.duration}
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                      <p className="text-sm text-muted-foreground line-clamp-3">{service.description}</p>
-                  </CardContent>
-                  <CardFooter className="flex justify-end gap-2 border-t pt-4">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/our-services/${service.slug}`} target="_blank">
-                          <Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View Public</span>
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleEditService(service)}>
-                        <Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span>
-                      </Button>
-                       <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}>
-                        <Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span>
-                       </Button>
-                  </CardFooter>
-              </Card>
+            <Card key={service.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-xl">{service.name}</CardTitle>
+                <CardDescription className="flex items-center gap-2 pt-1">
+                  <DollarSign className="h-4 w-4 text-green-600" /> ${service.price}
+                  <span className="text-muted-foreground/50">|</span>
+                  <Clock className="h-4 w-4 text-blue-600" /> {service.duration}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <p className="text-sm text-muted-foreground line-clamp-3">{service.description}</p>
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2 border-t pt-4">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/our-services/${service.slug}`} target="_blank">
+                    <Eye className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">View Public</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleEditService(service)}>
+                  <Edit3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Edit</span>
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => confirmDeleteService(service)}>
+                  <Trash2 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Delete</span>
+                </Button>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       )}
-      
-      <ServiceFormDialog 
-        isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+
+      <ServiceFormDialog
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
         service={editingService}
         onSuccess={() => {
-          fetchServices(); 
-          setIsFormOpen(false); 
+          fetchServices();
+          setIsFormOpen(false);
         }}
       />
 
       <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the service "{serviceToDelete?.name}".
-              </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setServiceToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteService} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                  {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Delete
-              </AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the service "{serviceToDelete?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setServiceToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteService} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
 
     </div>
