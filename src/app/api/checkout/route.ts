@@ -17,7 +17,7 @@ const checkoutRequestSchema = z.object({
     email: z.string().email(),
     address: z.string().min(1),
   }),
-  phoneNumber: z.string().regex(/^[0-9]{9,12}$/, "Invalid phone number format."),
+  phoneNumber: z.string().min(9, "Phone number is too short.").max(15, "Phone number is too long."),
   cart: z.array(cartItemSchema).min(1, "Cart cannot be empty."),
   orderType: z.enum(['delivery', 'pickup']).optional().nullable(),
   fulfillmentTime: z.string().datetime().optional().nullable(),
@@ -33,18 +33,21 @@ export async function POST(request: NextRequest) {
     }
 
     const { customerDetails, phoneNumber, cart, orderType, fulfillmentTime } = validation.data;
-    
+
+    // Sanitize phone number (remove non-digits)
+    const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
+
     // Step 1: Create the orders with a 'pending_payment' status.
     const createdOrders = await createOrderFromCart(
-        customerDetails, 
-        cart,
-        orderType || 'delivery',
-        fulfillmentTime ? new Date(fulfillmentTime) : new Date(),
-        true // Pass true for isPendingPayment
+      customerDetails,
+      cart,
+      orderType || 'delivery',
+      fulfillmentTime ? new Date(fulfillmentTime) : new Date(),
+      true // Pass true for isPendingPayment
     );
 
     if (createdOrders.length === 0) {
-        return NextResponse.json({ message: "Could not create an order from the cart." }, { status: 400 });
+      return NextResponse.json({ message: "Could not create an order from the cart." }, { status: 400 });
     }
 
     // Step 2: Calculate total amount across all split orders.
@@ -56,22 +59,22 @@ export async function POST(request: NextRequest) {
 
     // Step 4: Initiate payment with AzamPay.
     const paymentResponse = await initiateMnoCheckout(
-        totalAmount,
-        phoneNumber,
-        paymentReferenceId, // Send the comma-separated list of order IDs
-        'Mpesa' // This could be made dynamic
+      totalAmount,
+      sanitizedPhoneNumber,
+      paymentReferenceId, // Send the comma-separated list of order IDs
+      'Mpesa' // This could be made dynamic
     );
-    
+
     if (paymentResponse.success) {
-        return NextResponse.json({ 
-            message: paymentResponse.message, 
-            transactionId: paymentResponse.transactionId 
-        });
+      return NextResponse.json({
+        message: paymentResponse.message,
+        transactionId: paymentResponse.transactionId
+      });
     } else {
-        // If payment initiation fails, we should ideally clean up the pending orders.
-        // For now, we'll just return the error.
-        await Promise.all(createdOrders.map(order => updateOrderStatus(order.id!, 'Cancelled')));
-        return NextResponse.json({ message: paymentResponse.message || "Payment initiation failed." }, { status: 400 });
+      // If payment initiation fails, we should ideally clean up the pending orders.
+      // For now, we'll just return the error.
+      await Promise.all(createdOrders.map(order => updateOrderStatus(order.id!, 'Cancelled')));
+      return NextResponse.json({ message: paymentResponse.message || "Payment initiation failed." }, { status: 400 });
     }
 
   } catch (error: any) {

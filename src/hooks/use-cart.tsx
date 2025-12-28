@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Product } from '@/lib/products-data';
 import { useToast } from './use-toast';
+import { useUser } from './use-user';
 
 export interface CartItem extends Partial<Product> { // Make fields partial to accommodate simpler restaurant items
   id: string; // id is mandatory
@@ -40,30 +41,38 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { toast } = useToast();
 
+  const { user } = useUser();
+  const cartKey = user?.id ? `creatoros-cart-${user.id}` : 'creatoros-cart-guest';
+
+  // Load cart from local storage when the key changes (user logs in/out)
   useEffect(() => {
     try {
-      const storedCart = localStorage.getItem('creatoros-cart');
+      const storedCart = localStorage.getItem(cartKey);
       if (storedCart) {
         setCartItems(JSON.parse(storedCart));
+      } else {
+        setCartItems([]); // Reset cart if no data for this user
       }
     } catch (error) {
       console.error("Failed to parse cart from localStorage", error);
-      localStorage.removeItem('creatoros-cart');
+      localStorage.removeItem(cartKey);
+      setCartItems([]);
     }
-  }, []);
+  }, [cartKey]);
 
+  // Save cart to local storage whenever cartItems or key changes
   useEffect(() => {
     try {
-      localStorage.setItem('creatoros-cart', JSON.stringify(cartItems));
+      localStorage.setItem(cartKey, JSON.stringify(cartItems));
     } catch (error) {
-        console.error("Failed to save cart to localStorage", error);
+      console.error("Failed to save cart to localStorage", error);
     }
-  }, [cartItems]);
+  }, [cartItems, cartKey]);
 
   const addToCart = useCallback((product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
     if (!product.id) {
-        toast({ title: "Error", description: "Product does not have an ID.", variant: "destructive"});
-        return;
+      toast({ title: "Error", description: "Product does not have an ID.", variant: "destructive" });
+      return;
     }
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === product.id);
@@ -78,17 +87,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     });
     toast({
-        title: "Added to Order",
-        description: `${product.name} (x${quantity}) has been added.`,
+      title: "Added to Order",
+      description: `${product.name} (x${quantity}) has been added.`,
     });
   }, [toast]);
 
   const removeFromCart = useCallback((productId: string) => {
     setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
     toast({
-        title: "Item Removed",
-        description: "The item has been removed from your order.",
-        variant: "destructive"
+      title: "Item Removed",
+      description: "The item has been removed from your order.",
+      variant: "destructive"
     });
   }, [toast]);
 
@@ -102,9 +111,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       );
     });
   }, []);
-  
+
   const clearCart = useCallback(() => {
-      setCartItems([]);
+    setCartItems([]);
   }, []);
 
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
