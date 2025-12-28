@@ -176,8 +176,8 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
         description: 'Your booking has been created successfully!',
       });
 
-      // Redirect to my bookings page
-      router.push('/my-bookings');
+      // Redirect to account bookings page (travel bookings)
+      router.push('/account/bookings');
     } catch (error: any) {
       console.error('Error creating booking:', error);
       toast({

@@ -37,8 +37,8 @@ interface PropertyBooking {
   id: string;
   propertyId: string;
   roomId: string;
-  checkIn: string;
-  checkOut: string;
+  checkInDate: string;
+  checkOutDate: string;
   numberOfNights: number;
   guests: {
     adults: number;
@@ -147,7 +147,7 @@ export default function MyPropertiesPage() {
   const getUpcomingBookings = () => {
     const now = new Date();
     return bookings.filter((b) => {
-      const checkIn = new Date(b.checkIn);
+      const checkIn = new Date(b.checkInDate);
       return checkIn > now && (b.status === 'confirmed' || b.status === 'pending');
     });
   };
@@ -352,11 +352,11 @@ export default function MyPropertiesPage() {
                     <div className="grid md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Check-in:</span>
-                        <p className="font-medium">{new Date(booking.checkIn).toLocaleDateString()}</p>
+                        <p className="font-medium">{new Date(booking.checkInDate).toLocaleDateString()}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Check-out:</span>
-                        <p className="font-medium">{new Date(booking.checkOut).toLocaleDateString()}</p>
+                        <p className="font-medium">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Total:</span>

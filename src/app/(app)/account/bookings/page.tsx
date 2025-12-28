@@ -32,8 +32,8 @@ interface HotelBooking {
   id: string;
   propertyId: string;
   roomId: string;
-  checkIn: string;
-  checkOut: string;
+  checkInDate: string;
+  checkOutDate: string;
   numberOfNights: number;
   guests: {
     adults: number;
@@ -193,10 +193,10 @@ export default function BookingsPage() {
       const endpoint = bookingToCancel.type === 'hotel'
         ? `/api/hotels/bookings/${bookingToCancel.id}`
         : bookingToCancel.type === 'car'
-        ? `/api/cars/rentals/${bookingToCancel.id}`
-        : bookingToCancel.type === 'tour'
-        ? `/api/tours/bookings/${bookingToCancel.id}`
-        : `/api/transfers/bookings/${bookingToCancel.id}`;
+          ? `/api/cars/rentals/${bookingToCancel.id}`
+          : bookingToCancel.type === 'tour'
+            ? `/api/tours/bookings/${bookingToCancel.id}`
+            : `/api/transfers/bookings/${bookingToCancel.id}`;
 
       const response = await fetch(endpoint, {
         method: 'PATCH',
@@ -359,8 +359,8 @@ export default function BookingsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>
-                          {format(parseISO(booking.checkIn), 'MMM dd, yyyy')} -{' '}
-                          {format(parseISO(booking.checkOut), 'MMM dd, yyyy')}
+                          {format(parseISO(booking.checkInDate), 'MMM dd, yyyy')} -{' '}
+                          {format(parseISO(booking.checkOutDate), 'MMM dd, yyyy')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
@@ -403,7 +403,7 @@ export default function BookingsPage() {
                             Leave Review
                           </Button>
                         )}
-                        {canCancelBooking(booking.status, booking.checkIn) && (
+                        {canCancelBooking(booking.status, booking.checkInDate) && (
                           <Button
                             variant="destructive"
                             size="sm"
