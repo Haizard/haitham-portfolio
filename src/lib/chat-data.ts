@@ -1,6 +1,7 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { getFreelancerProfile } from './user-profile-data';
 
 const CHAT_CONVERSATIONS_COLLECTION = 'chat_conversations';
 const CHAT_MESSAGES_COLLECTION = 'chat_messages';
@@ -35,9 +36,9 @@ export interface Conversation {
   name?: string;
   avatarUrl?: string;
   lastMessage?: {
-      text: string;
-      timestamp: string;
-      senderId: string;
+    text: string;
+    timestamp: string;
+    senderId: string;
   };
   unreadCount?: number;
   participants: User[]; // Enriched participants
@@ -53,7 +54,7 @@ const mockUsers: Record<string, User> = {
 };
 
 export function getMockUser(userId: string): User | undefined {
-    return mockUsers[userId];
+  return mockUsers[userId];
 }
 
 // --- Helper Functions ---
@@ -100,8 +101,17 @@ export async function getConversationsForUser(currentUserId: string): Promise<Co
           lastMessageSenderId = lastMsgDoc.senderId;
         }
       }
-      
-      const participants = conv.participantIds.map(id => getMockUser(id)).filter(Boolean) as User[];
+
+      const participantsRaw = await Promise.all(conv.participantIds.map(id => getFreelancerProfile(id)));
+      const participants = participantsRaw.map((p, idx) => p ? {
+        id: p.userId,
+        name: p.name,
+        avatarUrl: p.avatarUrl
+      } : {
+        id: conv.participantIds[idx],
+        name: "Unknown User",
+        avatarUrl: `https://placehold.co/100x100.png?text=?`
+      }) as User[];
 
       let displayName = conv.groupName || "Chat";
       let displayAvatarUrl = conv.groupAvatarUrl;
@@ -112,9 +122,9 @@ export async function getConversationsForUser(currentUserId: string): Promise<Co
         displayAvatarUrl = otherParticipant?.avatarUrl;
       } else if (conv.isGroup) {
         displayName = conv.groupName || "Group Chat";
-        displayAvatarUrl = conv.groupAvatarUrl || `https://placehold.co/100x100.png?text=${displayName.substring(0,1) || 'G'}`;
+        displayAvatarUrl = conv.groupAvatarUrl || `https://placehold.co/100x100.png?text=${displayName.substring(0, 1) || 'G'}`;
       }
-      
+
       return {
         ...conv,
         participants, // Add enriched participants
@@ -126,7 +136,7 @@ export async function getConversationsForUser(currentUserId: string): Promise<Co
         name: displayName, // Used by ConversationListItem now
         avatarUrl: displayAvatarUrl, // Used by ConversationListItem
         // unreadCount will be 0 for now, real implementation is complex
-        unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 3) : 0, 
+        unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 3) : 0,
       };
     })
   );
@@ -140,18 +150,19 @@ export async function getMessagesForConversation(conversationId: string): Promis
   }
   const messagesCollection = await getCollection<Message>(CHAT_MESSAGES_COLLECTION);
   const messageDocs = await messagesCollection.find({
-    conversationId: conversationId 
+    conversationId: conversationId
   }).sort({ timestamp: 1 }).toArray();
 
-  return messageDocs.map(doc => {
-    const message = docToMessage(doc);
-    const sender = getMockUser(message.senderId);
+  const messages = messageDocs.map(doc => docToMessage(doc));
+
+  return Promise.all(messages.map(async (message) => {
+    const sender = await getFreelancerProfile(message.senderId);
     return {
       ...message,
-      senderName: sender?.name || 'Unknown Sender',
+      senderName: sender?.name || `User (${message.senderId})`,
       senderAvatarUrl: sender?.avatarUrl
     };
-  });
+  }));
 }
 
 export async function addMessageToConversation(
@@ -186,13 +197,13 @@ export async function addMessageToConversation(
       }
     }
   );
-  
+
   const finalMessage = { _id: insertedMessageId, id: insertedMessageId.toString(), ...newMessageDoc };
-  const sender = getMockUser(finalMessage.senderId);
+  const sender = await getFreelancerProfile(finalMessage.senderId);
   return {
-      ...finalMessage,
-      senderName: sender?.name || 'Unknown Sender',
-      senderAvatarUrl: sender?.avatarUrl
+    ...finalMessage,
+    senderName: sender?.name || `User (${finalMessage.senderId})`,
+    senderAvatarUrl: sender?.avatarUrl
   };
 }
 
@@ -204,7 +215,7 @@ export async function createConversation(
   groupAvatarUrl?: string
 ): Promise<Conversation> {
   const conversationsCollection = await getCollection<Omit<Conversation, 'id' | '_id'>>(CHAT_CONVERSATIONS_COLLECTION);
-  
+
   const allParticipantIds = Array.from(new Set([currentUserId, ...otherParticipantIds]));
   if (allParticipantIds.length < 2) {
     throw new Error("A conversation requires at least two distinct participants.");
@@ -226,15 +237,24 @@ export async function createConversation(
     participantIds: allParticipantIds,
     isGroup,
     groupName: isGroup ? (groupName || "New Group") : undefined,
-    groupAvatarUrl: isGroup ? (groupAvatarUrl || `https://placehold.co/100x100.png?text=${(groupName || "G").substring(0,1)}`) : undefined,
+    groupAvatarUrl: isGroup ? (groupAvatarUrl || `https://placehold.co/100x100.png?text=${(groupName || "G").substring(0, 1)}`) : undefined,
     lastMessageAt: now, // Initialize for sorting
     createdAt: now,
     updatedAt: now,
   };
 
   const result = await conversationsCollection.insertOne(newConversationDoc as any);
-  
+
   const finalConv = docToConversation({ _id: result.insertedId, ...newConversationDoc });
-  finalConv.participants = allParticipantIds.map(id => getMockUser(id)).filter(Boolean) as User[];
+  const participantsRaw = await Promise.all(allParticipantIds.map(id => getFreelancerProfile(id)));
+  finalConv.participants = participantsRaw.map((p, idx) => p ? {
+    id: p.userId,
+    name: p.name,
+    avatarUrl: p.avatarUrl
+  } : {
+    id: allParticipantIds[idx],
+    name: "Unknown User",
+    avatarUrl: `https://placehold.co/100x100.png?text=?`
+  }) as User[];
   return finalConv;
 }

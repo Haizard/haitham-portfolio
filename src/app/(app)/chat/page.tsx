@@ -30,14 +30,22 @@ export default function ChatPage() {
   const { isConnected: isSocketConnected } = useSocketProvider();
   const [isConnected, setIsConnected] = useState(false);
 
+  // Use a ref to track the selected conversation ID to avoid stale closures in socket listeners
+  const selectedConversationIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     setIsConnected(isSocketConnected);
   }, [isSocketConnected]);
+
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversation?.id || null;
+  }, [selectedConversation]);
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const handleSelectConversation = useCallback(async (conversation: Conversation) => {
-    if (selectedConversation?.id === conversation.id) return; // Don't re-select the same conversation
+    if (selectedConversationIdRef.current === conversation.id) return; // Don't re-select the same conversation
 
     setSelectedConversation(conversation);
     setIsLoadingMessages(true);
@@ -169,7 +177,7 @@ export default function ChatPage() {
       console.log('New message received via WebSocket:', newMessage);
 
       // Update messages for the current conversation in real-time
-      if (newMessage.conversationId === selectedConversation?.id) {
+      if (newMessage.conversationId === selectedConversationIdRef.current) {
         setMessages(prevMessages => [...prevMessages, newMessage]);
       }
 
@@ -224,8 +232,7 @@ export default function ChatPage() {
       socket.off('error', handleError);
       socket.off('conversationJoined', handleConversationJoined);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [socket, toast, setMessages, setConversations]);
 
 
   const handleSendMessage = async (text: string) => {
