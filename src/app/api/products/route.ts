@@ -1,4 +1,3 @@
-```typescript
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllProducts, addProduct, type Product, type ProductType } from '@/lib/products-data';
 import { z } from 'zod';
@@ -100,11 +99,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-return NextResponse.json(products);
+    return NextResponse.json(products);
   } catch (error: any) {
-  console.error("API Error in /api/products GET route:", error.message, error.stack);
-  return NextResponse.json({ message: `Server error: ${error.message || "Failed to fetch products"}` }, { status: 500 });
-}
+    console.error("API Error in /api/products GET route:", error.message, error.stack);
+    return NextResponse.json({ message: `Server error: ${error.message || "Failed to fetch products"}` }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -152,4 +151,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: errorMessage }, { status: statusCode });
   }
 }
-```
