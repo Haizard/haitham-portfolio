@@ -173,14 +173,11 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
       // Redirect to payment page or show success
       toast({
         title: 'Booking Created',
-        description: 'Redirecting to payment...',
+        description: 'Your booking has been created successfully!',
       });
 
-      // In a real app, redirect to Stripe checkout or payment page
-      if (data.paymentIntent?.clientSecret) {
-        // Handle payment...
-      }
-      router.push(`/bookings/${data.booking.id}`);
+      // Redirect to my bookings page
+      router.push('/my-bookings');
     } catch (error: any) {
       console.error('Error creating booking:', error);
       toast({
