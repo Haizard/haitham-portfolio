@@ -184,31 +184,66 @@ export default function EcommerceStorePage() {
               </section>
 
               {/* Hero Section */}
+              {/* Hero Section */}
               <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2 rounded-lg overflow-hidden relative aspect-[2/1]">
-                  <Image src="https://placehold.co/800x400.png" alt="Books for Cooks" fill className="object-contain" data-ai-hint="cooking books" />
-                  <div className="absolute inset-0 bg-black/30 flex flex-col justify-center p-8">
-                    <h2 className="text-4xl font-bold text-white">BOOKS FOR COOKS</h2>
-                    <p className="text-white/90 mt-2">Find your next new recipe</p>
-                    <Button className="mt-4 w-fit bg-accent text-accent-foreground hover:bg-accent/80">Shop Now</Button>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="rounded-lg overflow-hidden relative aspect-[3/2]">
-                    <Image src="https://placehold.co/400x300.png" alt="Headphones deal" fill className="object-contain" data-ai-hint="headphones product" />
-                    <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4">
-                      <h3 className="font-semibold text-white">Big Sale -50%</h3>
-                      <p className="text-xs text-white/80">Headphones & Headsets</p>
+                {featuredProducts.length > 0 ? (
+                  <>
+                    <div className="md:col-span-2 rounded-lg overflow-hidden relative aspect-[2/1] group">
+                      <Link href={`/products/${featuredProducts[0].slug}`} className="block w-full h-full">
+                        <Image
+                          src={featuredProducts[0].imageUrl}
+                          alt={featuredProducts[0].name}
+                          fill
+                          className="object-contain transition-transform duration-500 group-hover:scale-105"
+                          data-ai-hint={featuredProducts[0].imageHint}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-8">
+                          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-2 shadow-sm">{featuredProducts[0].name}</h2>
+                          <p className="text-white/90 line-clamp-2 max-w-lg mb-4 text-shadow-sm">{featuredProducts[0].description}</p>
+                          <Button className="w-fit">Shop Now</Button>
+                        </div>
+                      </Link>
                     </div>
-                  </div>
-                  <div className="rounded-lg overflow-hidden relative aspect-[3/2]">
-                    <Image src="https://placehold.co/400x300.png" alt="Gaming console" fill className="object-contain" data-ai-hint="gaming console" />
-                    <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4">
-                      <h3 className="font-semibold text-white">New Arrivals</h3>
-                      <p className="text-xs text-white/80">Game Console</p>
+                    <div className="space-y-4">
+                      {featuredProducts.length > 1 && (
+                        <div className="rounded-lg overflow-hidden relative aspect-[3/2] group">
+                          <Link href={`/products/${featuredProducts[1].slug}`} className="block w-full h-full">
+                            <Image
+                              src={featuredProducts[1].imageUrl}
+                              alt={featuredProducts[1].name}
+                              fill
+                              className="object-contain transition-transform duration-500 group-hover:scale-105"
+                              data-ai-hint={featuredProducts[1].imageHint}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+                              <h3 className="font-semibold text-white text-lg">{featuredProducts[1].name}</h3>
+                              <p className="text-xs text-white/80 font-medium">${featuredProducts[1].price?.toFixed(2) || 'Check Price'}</p>
+                            </div>
+                          </Link>
+                        </div>
+                      )}
+                      {featuredProducts.length > 2 && (
+                        <div className="rounded-lg overflow-hidden relative aspect-[3/2] group">
+                          <Link href={`/products/${featuredProducts[2].slug}`} className="block w-full h-full">
+                            <Image
+                              src={featuredProducts[2].imageUrl}
+                              alt={featuredProducts[2].name}
+                              fill
+                              className="object-contain transition-transform duration-500 group-hover:scale-105"
+                              data-ai-hint={featuredProducts[2].imageHint}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+                              <h3 className="font-semibold text-white text-lg">{featuredProducts[2].name}</h3>
+                              <p className="text-xs text-white/80 font-medium">${featuredProducts[2].price?.toFixed(2) || 'Check Price'}</p>
+                            </div>
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  !isLoading && <div className="col-span-3 h-64 flex items-center justify-center bg-secondary/20 rounded-lg text-muted-foreground">No featured products found.</div>
+                )}
               </section>
 
               {/* New Products */}
@@ -218,11 +253,6 @@ export default function EcommerceStorePage() {
               </section>
 
               {/* Ad Banners */}
-              <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 1" fill className="object-contain" data-ai-hint="smartphone ad" /></div>
-                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 2" fill className="object-contain" data-ai-hint="camera ad" /></div>
-                <div className="rounded-lg overflow-hidden relative aspect-video"><Image src="https://placehold.co/600x400.png" alt="Ad banner 3" fill className="object-contain" data-ai-hint="fruit juicy" /></div>
-              </section>
 
               {/* Best Sellers */}
               <section>

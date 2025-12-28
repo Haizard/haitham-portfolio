@@ -21,9 +21,17 @@ interface VendorData {
   products: Product[];
 }
 
-const StoreSidebar = () => {
+interface StoreSidebarProps {
+  categories: string[];
+  selectedCategory: string | null;
+  onSelectCategory: (category: string | null) => void;
+  vendorId: string;
+}
+
+const StoreSidebar = ({ categories, selectedCategory, onSelectCategory, vendorId }: StoreSidebarProps) => {
   const { toast } = useToast();
   const router = useRouter();
+
   return (
     <aside className="lg:col-span-1 space-y-8">
       <Card>
@@ -32,9 +40,22 @@ const StoreSidebar = () => {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="hover:text-primary cursor-pointer">Cell Phones</li>
-            <li className="hover:text-primary cursor-pointer">Tablets</li>
-            <li className="hover:text-primary cursor-pointer">Smart watches</li>
+            <li
+              className={`cursor-pointer hover:text-primary ${selectedCategory === null ? 'font-bold text-primary' : ''}`}
+              onClick={() => onSelectCategory(null)}
+            >
+              All Products
+            </li>
+            {categories.map((category) => (
+              <li
+                key={category}
+                className={`cursor-pointer hover:text-primary ${selectedCategory === category ? 'font-bold text-primary' : ''}`}
+                onClick={() => onSelectCategory(category)}
+              >
+                {category}
+              </li>
+            ))}
+            {categories.length === 0 && <li className="text-muted-foreground italic">No categories found</li>}
           </ul>
         </CardContent>
       </Card>
@@ -72,6 +93,10 @@ export default function VendorStorefrontPage() {
     setQuickViewProduct(product);
     setIsQuickViewOpen(true);
   };
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState("default");
 
   useEffect(() => {
     if (!vendorId) {
@@ -129,28 +154,63 @@ export default function VendorStorefrontPage() {
 
   const { profile, products } = vendorData;
 
+  // Extract unique categories
+  const categories = Array.from(new Set(products.map(p => p.categoryName).filter(Boolean))) as string[];
+
+  // Filter and Sort Products
+  let filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory ? product.categoryName === selectedCategory : true;
+    return matchesSearch && matchesCategory;
+  });
+
+  if (sortBy === 'price-asc') {
+    filteredProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+  } else if (sortBy === 'price-desc') {
+    filteredProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+  } else if (sortBy === 'rating') {
+    filteredProducts.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+  }
+  // 'default' and 'popularity' can be handled by default order or added logic if 'sales' field exists
+
   return (
     <>
       <div className="bg-background">
         <div className="container mx-auto py-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <StoreSidebar />
+            <StoreSidebar
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              vendorId={vendorId as string}
+            />
 
             <main className="lg:col-span-3 space-y-8">
               {/* Vendor Info Card */}
-              <Card className="bg-secondary/30 p-8 shadow-lg">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <Avatar className="h-28 w-28 border-4 border-background ring-4 ring-primary">
-                    <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="vendor avatar" />
-                    <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-3 text-center md:text-left">
-                    <h1 className="text-3xl font-bold font-headline">{profile.name}</h1>
-                    <div className="space-y-1 text-muted-foreground">
-                      <p className="flex items-center justify-center md:justify-start gap-2"><MapPin className="h-4 w-4 text-primary" /> 72 Comfort St, Apt 910, Austin, Texas, United States (US)</p>
-                      <p className="flex items-center justify-center md:justify-start gap-2"><Phone className="h-4 w-4 text-primary" /> +1 212-555-1717</p>
-                      <p className="flex items-center justify-center md:justify-start gap-2"><Mail className="h-4 w-4 text-primary" /> {profile.email}</p>
-                      <p className="flex items-center justify-center md:justify-start gap-2"><Star className="h-4 w-4 text-primary" /> No ratings found yet!</p>
+              {/* Vendor Info Card */}
+              <Card className="bg-secondary/30 shadow-lg overflow-hidden">
+                <div className="flex flex-col md:flex-row gap-0">
+                  {/* Rectangular Store Image */}
+                  <div className="relative w-full md:w-1/3 aspect-video md:aspect-auto md:h-auto min-h-[200px]">
+                    {/* Using a placeholder or profile.coverImage if available, fallback to avatar but large/boxy */}
+                    {/* Since we don't have coverImage in type yet, we use avatarUrl but displayed big/boxy */}
+                    {/* Or better, simulate a store front image */}
+                    <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                      <img
+                        src={profile.avatarUrl || "https://placehold.co/600x400"}
+                        alt={profile.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 p-8 flex flex-col justify-center">
+                    <h1 className="text-3xl font-bold font-headline mb-4">{profile.name}</h1>
+                    <div className="space-y-2 text-muted-foreground">
+                      <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> 72 Comfort St, Apt 910, Austin, Texas, United States (US)</p>
+                      <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> +1 212-555-1717</p>
+                      <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {profile.email}</p>
+                      <p className="flex items-center gap-2"><Star className="h-4 w-4 text-primary" /> No ratings found yet!</p>
                     </div>
                   </div>
                 </div>
@@ -160,10 +220,15 @@ export default function VendorStorefrontPage() {
               <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 border rounded-lg">
                 <div className="relative w-full md:w-auto md:flex-grow">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input placeholder="Enter product name" className="pl-10" />
+                  <Input
+                    placeholder="Enter product name"
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
                 <Button className="bg-accent text-accent-foreground hover:bg-accent/80 w-full md:w-auto">Search</Button>
-                <Select defaultValue="default">
+                <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Default sorting" />
                   </SelectTrigger>
@@ -171,7 +236,6 @@ export default function VendorStorefrontPage() {
                     <SelectItem value="default">Default sorting</SelectItem>
                     <SelectItem value="popularity">Sort by popularity</SelectItem>
                     <SelectItem value="rating">Sort by average rating</SelectItem>
-                    <SelectItem value="date">Sort by latest</SelectItem>
                     <SelectItem value="price-asc">Sort by price: low to high</SelectItem>
                     <SelectItem value="price-desc">Sort by price: high to low</SelectItem>
                   </SelectContent>
@@ -180,17 +244,17 @@ export default function VendorStorefrontPage() {
 
               {/* Product Grid */}
               <div>
-                {products.length > 0 ? (
+                {filteredProducts.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {products.map(product => <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />)}
+                    {filteredProducts.map(product => <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />)}
                   </div>
                 ) : (
                   <Card className="text-center py-12">
                     <CardHeader>
-                      <CardTitle>No Products Yet</CardTitle>
+                      <CardTitle>No Products Found</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">This vendor hasn't listed any products for sale.</p>
+                      <p className="text-muted-foreground">Try adjusting your filters or search query.</p>
                     </CardContent>
                   </Card>
                 )}
