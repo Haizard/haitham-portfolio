@@ -46,13 +46,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Load cart from local storage when the key changes (user logs in/out)
   useEffect(() => {
+    // Check if we are in the browser
+    if (typeof window === 'undefined') return;
+
     try {
+      // First, simply clear the in-memory cart to avoid showing stale data while loading
+      setCartItems([]);
+
       const storedCart = localStorage.getItem(cartKey);
       if (storedCart) {
         setCartItems(JSON.parse(storedCart));
-      } else {
-        setCartItems([]); // Reset cart if no data for this user
       }
+      // If no stored cart for this key, it remains empty (already set above)
     } catch (error) {
       console.error("Failed to parse cart from localStorage", error);
       localStorage.removeItem(cartKey);

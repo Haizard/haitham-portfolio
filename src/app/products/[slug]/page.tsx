@@ -39,8 +39,7 @@ async function getProductData(slug: string): Promise<Product | null> {
 }
 
 export default function ProductDetailPage() {
-    const params = useParams<{ slug: string }>();
-    const slug = params.slug;
+    const { slug } = useParams<{ slug: string }>();
     const router = useRouter();
     const { toast } = useToast();
 
@@ -66,7 +65,7 @@ export default function ProductDetailPage() {
         async function fetchData() {
             setIsLoading(true);
             setError(null);
-            
+
             try {
                 const productData = await getProductData(slug as string);
 
@@ -76,7 +75,7 @@ export default function ProductDetailPage() {
                     if (productData.colorOptions && productData.colorOptions.length > 0) {
                         setSelectedColor(productData.colorOptions[0]); // Set initial color
                     }
-                    
+
                     // Fetch related products
                     setIsLoadingRelated(true);
                     const relatedRes = await fetch(`/api/products?categoryId=${productData.categoryId}&limit=5`);
@@ -99,7 +98,7 @@ export default function ProductDetailPage() {
         }
         fetchData();
     }, [slug]);
-    
+
     if (isLoading) {
         return <div className="flex justify-center items-center h-[calc(100vh-8rem)]"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
@@ -110,12 +109,12 @@ export default function ProductDetailPage() {
                 <h2 className="text-2xl font-semibold text-destructive mb-4">Product Not Found</h2>
                 <p className="text-muted-foreground">{error || "The product you are looking for does not exist."}</p>
                 <Button onClick={() => router.back()} className="mt-6">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
             </div>
         );
     }
-    
+
     const originalPrice = product.price ? product.price * 1.2 : null;
     const isWishlisted = isInWishlist(product.id!);
     const allImages: GalleryImage[] = [{ url: product.imageUrl, hint: product.imageHint }, ...(product.galleryImages || [])];
@@ -123,13 +122,13 @@ export default function ProductDetailPage() {
 
     return (
         <div className="container mx-auto py-8 px-4">
-             <Button variant="outline" onClick={() => router.back()} className="mb-6">
+            <Button variant="outline" onClick={() => router.back()} className="mb-6">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Store
             </Button>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
                 {/* Image Gallery */}
                 <div>
-                     <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg mb-4">
+                    <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg mb-4">
                         <Image
                             key={selectedImage} // Use key to force re-render on image change
                             src={selectedImage}
@@ -139,16 +138,16 @@ export default function ProductDetailPage() {
                             priority
                             data-ai-hint={product.imageHint || "product image"}
                         />
-                         {product.price && originalPrice && product.price < originalPrice && (
+                        {product.price && originalPrice && product.price < originalPrice && (
                             <Badge variant="destructive" className="absolute top-3 left-3 text-sm z-10 shadow-md">
                                 -{Math.round(((originalPrice - product.price) / originalPrice) * 100)}%
                             </Badge>
                         )}
                     </div>
-                     <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-5 gap-2">
                         {allImages.map((image, index) => (
-                            <button 
-                                key={index} 
+                            <button
+                                key={index}
                                 className={cn(
                                     "relative aspect-square w-full overflow-hidden rounded-md border-2 transition-all",
                                     selectedImage === image.url ? "border-primary ring-2 ring-primary ring-offset-2" : "border-border hover:border-primary/50"
@@ -173,21 +172,21 @@ export default function ProductDetailPage() {
                         {product.categoryName && <Badge variant="secondary">{product.categoryName}</Badge>}
                         <h1 className="text-3xl md:text-4xl font-bold font-headline mt-2">{product.name}</h1>
                         <div className="flex items-center gap-4 mt-2">
-                           <div className="flex items-center">
+                            <div className="flex items-center">
                                 <StarRating rating={product.averageRating || 0} disabled />
                                 <span className="ml-2 text-sm text-muted-foreground">({product.reviewCount} reviews)</span>
-                           </div>
-                           <Separator orientation="vertical" className="h-4"/>
-                           <span className="text-sm text-muted-foreground">{product.sales || 0} sold</span>
+                            </div>
+                            <Separator orientation="vertical" className="h-4" />
+                            <span className="text-sm text-muted-foreground">{product.sales || 0} sold</span>
                         </div>
                     </div>
 
-                     {product.colorOptions && product.colorOptions.length > 0 && (
+                    {product.colorOptions && product.colorOptions.length > 0 && (
                         <div>
                             <p className="text-sm font-medium mb-2">Color: <span className="font-bold">{selectedColor?.name}</span></p>
                             <div className="flex flex-wrap gap-2">
                                 {product.colorOptions.map((color) => (
-                                    <button 
+                                    <button
                                         key={color.name}
                                         onClick={() => setSelectedColor(color)}
                                         className={cn(
@@ -201,47 +200,47 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
                     )}
-                    
+
                     <p className="text-muted-foreground leading-relaxed">{product.description}</p>
-                    
+
                     {product.productType === 'creator' ? (
                         <div className="flex items-baseline gap-3">
                             {product.price !== undefined && (
                                 <span className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</span>
                             )}
-                             {originalPrice && (
+                            {originalPrice && (
                                 <span className="text-xl text-muted-foreground line-through">${originalPrice.toFixed(2)}</span>
-                             )}
+                            )}
                         </div>
                     ) : (
                         product.links?.map(link => (
-                             <span key={link.url} className="text-3xl font-bold text-primary">{link.priceDisplay}</span>
+                            <span key={link.url} className="text-3xl font-bold text-primary">{link.priceDisplay}</span>
                         ))
                     )}
-                    
-                     <div className="flex flex-col sm:flex-row gap-3">
+
+                    <div className="flex flex-col sm:flex-row gap-3">
                         {product.productType === 'creator' && (
                             <>
-                             <div className="flex items-center border rounded-md p-1">
-                                <Button variant="ghost" size="icon" onClick={() => setQuantity(q => Math.max(1, q-1))}><Minus className="h-4 w-4"/></Button>
-                                <span className="w-12 text-center font-bold">{quantity}</span>
-                                <Button variant="ghost" size="icon" onClick={() => setQuantity(q => q+1)}><Plus className="h-4 w-4"/></Button>
-                            </div>
-                            <Button size="lg" className="flex-1" onClick={() => addToCart(product, quantity)}>
-                                <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
-                            </Button>
+                                <div className="flex items-center border rounded-md p-1">
+                                    <Button variant="ghost" size="icon" onClick={() => setQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
+                                    <span className="w-12 text-center font-bold">{quantity}</span>
+                                    <Button variant="ghost" size="icon" onClick={() => setQuantity(q => q + 1)}><Plus className="h-4 w-4" /></Button>
+                                </div>
+                                <Button size="lg" className="flex-1" onClick={() => addToCart(product, quantity)}>
+                                    <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+                                </Button>
                             </>
                         )}
                         {product.productType === 'affiliate' && product.links?.[0] && (
-                             <Button size="lg" className="flex-1" asChild>
+                            <Button size="lg" className="flex-1" asChild>
                                 <Link href={product.links[0].url} target="_blank" rel="noopener noreferrer">
                                     <ExternalLink className="mr-2 h-5 w-5" /> View Offer at {product.links[0].vendorName}
                                 </Link>
                             </Button>
                         )}
-                         <Button size="lg" variant="outline" onClick={() => toggleWishlist(product.id!, product.name)}>
-                           <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-current text-destructive")} />
-                         </Button>
+                        <Button size="lg" variant="outline" onClick={() => toggleWishlist(product.id!, product.name)}>
+                            <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-current text-destructive")} />
+                        </Button>
                     </div>
 
                     <Card className="bg-secondary/50">
@@ -251,8 +250,8 @@ export default function ProductDetailPage() {
                         <CardContent className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Avatar>
-                                    <AvatarImage src="https://placehold.co/100x100.png?text=V" alt={product.vendorName} data-ai-hint="vendor avatar"/>
-                                    <AvatarFallback>{product.vendorName?.substring(0,1)}</AvatarFallback>
+                                    <AvatarImage src="https://placehold.co/100x100.png?text=V" alt={product.vendorName} data-ai-hint="vendor avatar" />
+                                    <AvatarFallback>{product.vendorName?.substring(0, 1)}</AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <p className="text-xs text-muted-foreground">Sold by</p>
@@ -261,10 +260,10 @@ export default function ProductDetailPage() {
                             </div>
                             <div className="flex gap-2">
                                 <Button size="sm" variant="outline" asChild>
-                                    <Link href={`/store/${product.vendorId}`}><Store className="mr-2 h-4 w-4"/>Visit Shop</Link>
+                                    <Link href={`/store/${product.vendorId}`}><Store className="mr-2 h-4 w-4" />Visit Shop</Link>
                                 </Button>
-                                 <Button size="sm" variant="ghost" onClick={() => toast({title: "Coming Soon!", description: "Messaging feature is under development."})}>
-                                    <MessageSquare className="mr-2 h-4 w-4"/> Message
+                                <Button size="sm" variant="ghost" onClick={() => router.push(`/chat?recipientId=${product.vendorId}`)}>
+                                    <MessageSquare className="mr-2 h-4 w-4" /> Message
                                 </Button>
                             </div>
                         </CardContent>
@@ -272,20 +271,20 @@ export default function ProductDetailPage() {
 
                 </div>
             </div>
-            
-            <Separator className="my-12"/>
+
+            <Separator className="my-12" />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div className="lg:col-span-2">
-                     <ProductReviews productId={product.id!} />
+                    <ProductReviews productId={product.id!} />
                 </div>
                 <div className="lg:col-span-1">
                     <Card className="sticky top-24 shadow-lg">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-yellow-500"/> Best Deals Today</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-yellow-500" /> Best Deals Today</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                           {isLoadingRelated ? (
+                            {isLoadingRelated ? (
                                 <div className="space-y-4">
                                     {[...Array(3)].map((_, i) => (
                                         <div key={i} className="flex items-center gap-3">
@@ -303,7 +302,7 @@ export default function ProductDetailPage() {
                                     return (
                                         <Link href={`/products/${deal.slug}`} key={deal.id} className="block group">
                                             <div className="flex items-center gap-3 p-2 rounded-md group-hover:bg-secondary/50 transition-colors">
-                                                <Image src={deal.imageUrl} alt={deal.name} width={60} height={60} className="rounded-md object-contain" data-ai-hint={deal.imageHint || "product deal"}/>
+                                                <Image src={deal.imageUrl} alt={deal.name} width={60} height={60} className="rounded-md object-contain" data-ai-hint={deal.imageHint || "product deal"} />
                                                 <div>
                                                     <p className="text-sm font-medium line-clamp-2 group-hover:text-primary">{deal.name}</p>
                                                     <p className="text-xs text-primary font-semibold">
@@ -320,13 +319,13 @@ export default function ProductDetailPage() {
                             ) : (
                                 <p className="text-sm text-muted-foreground text-center py-4">No other deals available now.</p>
                             )}
-                             <Button className="w-full mt-2" variant="outline">View All Deals</Button>
+                            <Button className="w-full mt-2" variant="outline">View All Deals</Button>
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
-            <Separator className="my-12"/>
+            <Separator className="my-12" />
             <RelatedProducts categoryId={product.categoryId!} currentProductId={product.id!} />
 
         </div>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Star, Phone, Mail, MapPin, Search } from 'lucide-react';
+import { Loader2, Star, Phone, Mail, MapPin, Search, MessageSquare } from 'lucide-react';
 import type { Product } from '@/lib/products-data';
 import type { FreelancerProfile } from '@/lib/user-profile-data';
 import { ProductCard } from '@/components/products/ProductCard';
@@ -23,6 +24,7 @@ interface VendorData {
 
 const StoreSidebar = () => {
   const { toast } = useToast();
+  const router = useRouter();
   return (
     <aside className="lg:col-span-1 space-y-8">
       <Card>
@@ -45,7 +47,9 @@ const StoreSidebar = () => {
           <Input placeholder="Your Name" />
           <Input type="email" placeholder="you@example.com" />
           <Textarea placeholder="Type your message.." />
-          <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/80" onClick={() => toast({ title: "Message Sent", description: "Your message has been sent to the vendor." })}>Send Message</Button>
+          <Button className="w-full" onClick={() => router.push(`/chat?recipientId=${vendorId}`)}>
+            <MessageSquare className="mr-2 h-4 w-4" /> Send Message
+          </Button>
         </CardContent>
       </Card>
     </aside>
