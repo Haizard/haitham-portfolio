@@ -3,10 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getProductById, getProductBySlug, updateProduct, deleteProduct, type Product } from '@/lib/products-data';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
-
-
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123";
+import { getSession } from '@/lib/session';
 
 // Schemas for updating a product - all fields are optional.
 // productType is NOT updatable here to keep it simple. If type needs changing, delete & recreate.
@@ -32,18 +29,18 @@ const productUpdateSchema = z.object({
   links: z.array(affiliateLinkUpdateSchema).min(1, "Affiliate products must have at least one link").max(5).optional(),
   // productType: z.enum(["creator", "affiliate"]).optional(), // Not allowing type change for simplicity
 }).refine(data => {
-    // If 'price', 'stock', or 'sku' are provided, 'links' should not be (and vice-versa).
-    // This helps ensure that an update doesn't accidentally mix properties of different product types.
-    const creatorFieldsPresent = data.price !== undefined || data.stock !== undefined || data.sku !== undefined;
-    const affiliateFieldsPresent = data.links !== undefined;
+  // If 'price', 'stock', or 'sku' are provided, 'links' should not be (and vice-versa).
+  // This helps ensure that an update doesn't accidentally mix properties of different product types.
+  const creatorFieldsPresent = data.price !== undefined || data.stock !== undefined || data.sku !== undefined;
+  const affiliateFieldsPresent = data.links !== undefined;
 
-    if (creatorFieldsPresent && affiliateFieldsPresent) {
-        return false; // Cannot have fields for both types in one update.
-    }
-    return true;
+  if (creatorFieldsPresent && affiliateFieldsPresent) {
+    return false; // Cannot have fields for both types in one update.
+  }
+  return true;
 }, {
-    message: "Cannot mix creator product fields (price, stock, SKU) with affiliate product fields (links). Update fields relevant to the product's existing type.",
-    // path: ["price"], // Or a general path
+  message: "Cannot mix creator product fields (price, stock, SKU) with affiliate product fields (links). Update fields relevant to the product's existing type.",
+  // path: ["price"], // Or a general path
 });
 
 
@@ -56,11 +53,11 @@ export async function GET(
     // It's possible the identifier is a slug, not an ID. Let's try to fetch by both.
     let product: Product | null = null;
     if (ObjectId.isValid(productId)) {
-        product = await getProductById(productId);
+      product = await getProductById(productId);
     } else {
-        // If it's not a valid ObjectId, we assume it's a slug.
-        // This is a common pattern for pages that can be accessed via slug or ID.
-        product = await getProductBySlug(productId);
+      // If it's not a valid ObjectId, we assume it's a slug.
+      // This is a common pattern for pages that can be accessed via slug or ID.
+      product = await getProductBySlug(productId);
     }
 
     if (product) {
@@ -82,16 +79,21 @@ export async function PUT(
     const { productId } = await params;
     const productToUpdate = await getProductById(productId);
     if (!productToUpdate) {
-        return NextResponse.json({ message: "Product not found" }, { status: 404 });
+      return NextResponse.json({ message: "Product not found" }, { status: 404 });
     }
 
     // --- Authorization Check ---
-    // In a real app, this might also check for an admin role.
-    if (productToUpdate.vendorId !== MOCK_VENDOR_ID && productToUpdate.vendorId !== 'admin') {
-        return NextResponse.json({ message: "Unauthorized: You do not own this product." }, { status: 403 });
+    const session = await getSession();
+    if (!session.user) {
+      return NextResponse.json({ message: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
+    const isAdmin = session.user.roles.includes('admin');
+    if (productToUpdate.vendorId !== session.user.id && !isAdmin) {
+      return NextResponse.json({ message: "Unauthorized: You do not own this product." }, { status: 403 });
     }
     // ---
-    
+
     const body = await request.json();
     const validation = productUpdateSchema.safeParse(body);
     if (!validation.success) {
@@ -100,9 +102,9 @@ export async function PUT(
     }
 
     const productData = validation.data as Partial<Omit<Product, 'id' | '_id' | 'slug' | 'productType'>>;
-    
+
     if (Object.keys(productData).length === 0) {
-        return NextResponse.json({ message: "No update fields provided" }, { status: 400 });
+      return NextResponse.json({ message: "No update fields provided" }, { status: 400 });
     }
 
     const updatedProduct = await updateProduct(productId, productData);
@@ -113,14 +115,14 @@ export async function PUT(
       // This could be because the product wasn't found, or the update operation itself failed in the data layer.
       const existingProduct = await getProductById(productId);
       if (!existingProduct) {
-         return NextResponse.json({ message: "Product not found" }, { status: 404 });
+        return NextResponse.json({ message: "Product not found" }, { status: 404 });
       }
       return NextResponse.json({ message: "Product update failed for an unknown reason" }, { status: 500 });
     }
   } catch (error: any) {
     console.error(`API Error in /api/products/${params.productId} PUT route:`, error.message);
-     if (error.message?.includes('conflict')) {
-        return NextResponse.json({ message: error.message }, { status: 409 });
+    if (error.message?.includes('conflict')) {
+      return NextResponse.json({ message: error.message }, { status: 409 });
     }
     return NextResponse.json({ message: `Server error: ${error.message || "Failed to update product"}` }, { status: 500 });
   }
@@ -132,14 +134,20 @@ export async function DELETE(
 ) {
   try {
     const { productId } = await params;
-    
+
     const productToDelete = await getProductById(productId);
     if (!productToDelete) {
       return NextResponse.json({ message: "Product not found" }, { status: 404 });
     }
 
     // --- Authorization Check ---
-    if (productToDelete.vendorId !== MOCK_VENDOR_ID && productToDelete.vendorId !== 'admin') {
+    const session = await getSession();
+    if (!session.user) {
+      return NextResponse.json({ message: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
+    const isAdmin = session.user.roles.includes('admin');
+    if (productToDelete.vendorId !== session.user.id && !isAdmin) {
       return NextResponse.json({ message: "Unauthorized: You do not own this product." }, { status: 403 });
     }
     // ---

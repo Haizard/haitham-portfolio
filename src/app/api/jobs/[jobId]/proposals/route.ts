@@ -4,8 +4,8 @@ import { addProposal, getProposalsForJob } from '@/lib/proposals-data';
 import { getJobById } from '@/lib/jobs-data';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
-
-const MOCK_FREELANCER_ID = "mockFreelancer456"; // This should come from an authenticated session
+import { requireAuth } from '@/lib/auth-middleware';
+import { getSession } from '@/lib/session';
 
 const proposalSubmitSchema = z.object({
   coverLetter: z.string().min(20, "Cover letter must be at least 20 characters.").max(5000),
@@ -35,9 +35,15 @@ export async function POST(
     }
 
     const { coverLetter, proposedRate } = validation.data;
-    
-    // In a real app, freelancerId would come from the authenticated user's session
-    const freelancerId = MOCK_FREELANCER_ID; 
+
+    // Check authentication
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const session = await getSession();
+    const freelancerId = session.user!.id;
 
     const newProposal = await addProposal({
       jobId,

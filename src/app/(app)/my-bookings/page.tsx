@@ -1,4 +1,4 @@
-
+```
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -27,11 +27,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { useSession } from '@/contexts/session-context';
 
-// This would come from an authenticated session
-const MOCK_FREELANCER_ID = "mockFreelancer456";
 
 export default function MyBookingsPage() {
+  const { user } = useSession();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [bookingToUpdate, setBookingToUpdate] = useState<{ booking: Booking; newStatus: BookingStatus } | null>(null);
@@ -40,9 +40,14 @@ export default function MyBookingsPage() {
   const { toast } = useToast();
 
   const fetchBookings = useCallback(async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/bookings?freelancerId=${MOCK_FREELANCER_ID}`);
+      const response = await fetch(`/ api / bookings ? freelancerId = ${ user.id } `);
       if (!response.ok) throw new Error('Failed to fetch your bookings');
       const data: Booking[] = await response.json();
       setBookings(data);
@@ -53,7 +58,7 @@ export default function MyBookingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [user?.id, toast]);
 
   useEffect(() => {
     fetchBookings();
@@ -68,7 +73,7 @@ export default function MyBookingsPage() {
     setIsUpdating(true);
     const { booking, newStatus } = bookingToUpdate;
     try {
-      const response = await fetch(`/api/bookings/${booking.id}`, {
+      const response = await fetch(`/ api / bookings / ${ booking.id } `, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -77,7 +82,7 @@ export default function MyBookingsPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed to update booking status`);
       }
-      toast({ title: `Booking Status Updated`, description: `Booking for "${booking.serviceName}" is now ${newStatus}.` });
+      toast({ title: `Booking Status Updated`, description: `Booking for "${booking.serviceName}" is now ${ newStatus }.` });
       fetchBookings(); // Refresh the list
     } catch (error: any) {
       toast({ title: "Error", description: error.message || `Could not update booking status.`, variant: "destructive" });
@@ -169,7 +174,7 @@ export default function MyBookingsPage() {
                               <CheckCircle className="h-4 w-4 mr-1"/> Mark Completed
                             </Button>
                         )}
-                         <Button variant="ghost" size="sm" onClick={() => toast({title: "Details", description: `Notes: ${booking.clientNotes || 'N/A'}`})}>
+                         <Button variant="ghost" size="sm" onClick={() => toast({title: "Details", description: `Notes: ${ booking.clientNotes || 'N/A' } `})}>
                             <Info className="h-4 w-4"/> <span className="ml-1 hidden sm:inline">Notes</span>
                         </Button>
                       </TableCell>

@@ -2,9 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllServices, addService, type Service } from '@/lib/services-data';
 import { z } from 'zod';
-
-// This would come from an authenticated session in a real app
-const MOCK_FREELANCER_ID = "mockFreelancer456";
+import { requireAuth } from '@/lib/auth-middleware';
 
 const testimonialSchema = z.object({
   customerName: z.string().min(1, "Customer name is required"),

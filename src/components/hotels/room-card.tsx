@@ -152,16 +152,14 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
         body: JSON.stringify({
           propertyId: room.propertyId,
           roomId: room.id,
-          checkIn,
-          checkOut,
+          checkInDate: checkIn,
+          checkOutDate: checkOut,
           guests: {
             adults,
             children,
             infants: 0,
           },
           guestInfo,
-          checkInDate: checkIn,
-          checkOutDate: checkOut,
         }),
       });
 

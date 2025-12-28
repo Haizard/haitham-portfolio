@@ -1,11 +1,10 @@
-
+```typescript
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllProducts, addProduct, type Product, type ProductType } from '@/lib/products-data';
 import { z } from 'zod';
 import { getFreelancerProfilesByUserIds } from '@/lib/user-profile-data';
-
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123"; // Using a different ID to distinguish from client/freelancer mocks
+import { requireAuth } from '@/lib/auth-middleware';
+import { getSession } from '@/lib/session';
 
 // Schema for creating a new product
 const affiliateLinkSchema = z.object({
@@ -97,51 +96,60 @@ export async function GET(request: NextRequest) {
       if (products.length > 0) {
         return NextResponse.json(products[0]);
       } else {
-        return NextResponse.json({ message: `Product with slug "${slug}" not found.` }, { status: 404 });
+        return NextResponse.json({ message: `Product with slug "${slug}" not found."` }, { status: 404 });
       }
     }
 
-    return NextResponse.json(products);
+return NextResponse.json(products);
   } catch (error: any) {
-    console.error("API Error in /api/products GET route:", error.message, error.stack);
-    return NextResponse.json({ message: `Server error: ${error.message || "Failed to fetch products"}` }, { status: 500 });
-  }
+  console.error("API Error in /api/products GET route:", error.message, error.stack);
+  return NextResponse.json({ message: `Server error: ${error.message || "Failed to fetch products"}` }, { status: 500 });
+}
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // In a real app, this would come from an authenticated session.
-    // If an admin is creating a product, they might specify a vendorId in the body.
-    // If a vendor is creating a product, their ID comes from the session.
-    const vendorId = MOCK_VENDOR_ID;
+    // Check authentication
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const session = await getSession();
+    const vendorId = session.user!.id;
 
     const body = await request.json();
     const validation = productCreateSchema.safeParse(body);
 
     if (!validation.success) {
-      console.error("API Product Create Validation Error:", validation.error.flatten());
+      console.error("Product Create Validation Error:", validation.error.flatten());
       return NextResponse.json({ message: "Invalid product data", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    // The data is already correctly typed by the discriminated union
-    const productData = {
+    const productData: Omit<Product, 'id' | '_id' | 'slug' | 'sales' | 'createdAt' | 'updatedAt'> = {
       ...validation.data,
-      vendorId: vendorId, // Assign the product to the logged-in vendor
-    } as Omit<Product, 'id' | '_id' | 'slug' | 'categoryName'>;
+      vendorId,
+      status: 'active',
+    };
 
-    // Ensure tagIds array is present, even if empty, to avoid MongoDB errors if schema expects it
+    // Ensure tags array is present, even if empty, to avoid MongoDB errors if schema expects it
     if (!productData.tags) {
       productData.tags = [];
     }
 
-    const newProduct = await addProduct(productData);
-    return NextResponse.json(newProduct, { status: 201 });
+    const addedProduct = await addProduct(productData);
+    return NextResponse.json(addedProduct, { status: 201 });
 
   } catch (error: any) {
-    console.error("API Error in /api/products POST route:", error.message, error.stack);
-    if (error.message?.includes('already exists')) {
-      return NextResponse.json({ message: error.message }, { status: 409 });
+    console.error("Failed to create product:", error);
+    let errorMessage = "Failed to create product due to an unknown error";
+    if (error instanceof Error) {
+      errorMessage = `Failed to create product: ${error.message}`;
+    } else if (typeof error === 'string') {
+      errorMessage = `Failed to create product: ${error}`;
     }
-    return NextResponse.json({ message: `Server error: ${error.message || "Failed to create product"}` }, { status: 500 });
+    const statusCode = error.message?.includes('already exists') ? 409 : 500;
+    return NextResponse.json({ message: errorMessage }, { status: statusCode });
   }
 }
+```

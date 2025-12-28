@@ -3,9 +3,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getOrdersByVendorId, getAllOrders as getAllOrdersAdmin } from '@/lib/orders-data';
 import { getFreelancerProfile } from '@/lib/user-profile-data';
 
-// This would come from an authenticated session
-const MOCK_VENDOR_ID = "freelancer123";
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -16,7 +13,7 @@ export async function GET(request: NextRequest) {
       const orders = await getOrdersByVendorId(vendorId);
       return NextResponse.json(orders);
     }
-    
+
     // If no vendorId is provided, assume it's an admin request to fetch all orders
     // TODO: Add admin role check here
     const allOrders = await getAllOrdersAdmin();
@@ -29,7 +26,7 @@ export async function GET(request: NextRequest) {
       ...order,
       vendorName: vendorMap.get(order.vendorId) || 'Unknown Vendor'
     }));
-    
+
     return NextResponse.json(enrichedOrders);
 
   } catch (error: any) {
