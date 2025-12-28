@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { getTourById, getTourBySlug, getTourBookingsByTourId } from '@/lib/tours-data';
-import { requireAuth } from '@/lib/auth-middleware';
+import { requireAuth } from '@/lib/rbac';
 
 // GET /api/tours/[tourIdOrSlug]/bookings - Get all bookings for a specific tour
 export async function GET(
@@ -9,7 +9,11 @@ export async function GET(
   { params }: { params: Promise<{ tourIdOrSlug: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const session = authResult.user;
     const { tourIdOrSlug } = await params;
 
     // Get tour by ID or slug
@@ -23,7 +27,7 @@ export async function GET(
     }
 
     // Authorization: Only tour owner (guide) or admin can view tour bookings
-    const isTourOwner = tour.guideId === session.userId;
+    const isTourOwner = tour.guideId === session.id;
     const isAdmin = session.roles.includes('admin');
 
     if (!isTourOwner && !isAdmin) {

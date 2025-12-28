@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createTourBooking, getAllTourBookings, getTourById } from '@/lib/tours-data';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth-middleware';
+import { requireAuth } from '@/lib/rbac';
 import Stripe from 'stripe';
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -37,7 +37,11 @@ type TourBookingCreateInput = z.infer<typeof tourBookingCreateSchema>;
 // POST /api/tours/bookings - Create a new tour booking
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const session = authResult.user;
     const body = await request.json();
     const validatedData = tourBookingCreateSchema.parse(body);
 
@@ -87,7 +91,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         tourId: validatedData.tourId,
         tourName: tour.name,
-        userId: session.userId,
+        userId: session.id,
         tourDate: validatedData.tourDate,
         totalParticipants: totalParticipants.toString(),
       },
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
       tourId: validatedData.tourId,
       tourName: tour.name,
       tourSlug: tour.slug,
-      userId: session.userId,
+      userId: session.id,
       tourDate: validatedData.tourDate,
       tourTime: validatedData.tourTime,
       participants: validatedData.participants,
@@ -147,14 +151,18 @@ export async function POST(request: NextRequest) {
 // GET /api/tours/bookings - Get user's tour bookings or filter by query params
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const session = authResult.user;
     const { searchParams } = new URL(request.url);
 
     const filters: any = {};
 
     // If user is not admin, only show their bookings
     if (!session.roles.includes('admin')) {
-      filters.userId = session.userId;
+      filters.userId = session.id;
     } else {
       // Admin can filter by userId
       const userId = searchParams.get('userId');

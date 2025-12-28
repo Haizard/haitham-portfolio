@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getTourBookingById, updateTourBooking, deleteTourBooking } from '@/lib/tours-data';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth-middleware';
+import { requireAuth } from '@/lib/rbac';
 import Stripe from 'stripe';
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -30,7 +30,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const session = authResult.user;
     const { id } = await params;
 
     const booking = await getTourBookingById(id);
@@ -40,7 +44,7 @@ export async function GET(
     }
 
     // Check authorization: user can only view their own bookings unless they're admin
-    if (booking.userId !== session.userId && !session.roles.includes('admin')) {
+    if (booking.userId !== session.id && !session.roles.includes('admin')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
 
@@ -61,7 +65,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const session = authResult.user;
     const { id } = await params;
     const body = await request.json();
     const validatedData = tourBookingUpdateSchema.parse(body);
@@ -73,7 +81,7 @@ export async function PATCH(
     }
 
     // Authorization check
-    const isOwner = booking.userId === session.userId;
+    const isOwner = booking.userId === session.id;
     const isAdmin = session.roles.includes('admin');
 
     if (!isOwner && !isAdmin) {
@@ -141,7 +149,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const session = authResult.user;
     const { id } = await params;
 
     // Only admins can delete bookings
