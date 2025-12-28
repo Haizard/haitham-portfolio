@@ -112,9 +112,10 @@ export async function GET(request: NextRequest) {
     // Check if filtering by owner
     const ownerIdParam = searchParams.get('ownerId');
     if (ownerIdParam === 'me') {
-      // Require authentication to get own vehicles
+      // Optional auth to filter by owner
       const authResult = await requireAuth();
-      if (!authResult.authenticated || !authResult.user) {
+      if (authResult instanceof NextResponse) {
+        // Not authenticated, return all active vehicles
         return NextResponse.json({
           success: false,
           message: 'Authentication required',

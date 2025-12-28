@@ -11,11 +11,8 @@ export async function DELETE(
   try {
     // Require authentication
     const authResult = await requireAuth();
-    if (!authResult.authorized || !authResult.user) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const { id } = params;
@@ -54,11 +51,8 @@ export async function PATCH(
   try {
     // Require authentication
     const authResult = await requireAuth();
-    if (!authResult.authorized || !authResult.user) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const { id } = params;

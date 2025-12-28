@@ -24,11 +24,8 @@ export async function GET(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authenticated || !authResult.user) {
-      return NextResponse.json({
-        success: false,
-        message: 'Authentication required',
-      }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const booking = await getTransferBookingById(id);
@@ -74,11 +71,8 @@ export async function PATCH(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authenticated || !authResult.user) {
-      return NextResponse.json({
-        success: false,
-        message: 'Authentication required',
-      }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const booking = await getTransferBookingById(id);

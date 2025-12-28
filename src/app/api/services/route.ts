@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAllServices, addService, type Service } from '@/lib/services-data';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth-middleware';
+import { requireAuth } from '@/lib/rbac';
 
 const testimonialSchema = z.object({
   customerName: z.string().min(1, "Customer name is required"),

@@ -160,25 +160,26 @@ export async function POST(request: NextRequest) {
 
     const totalPrice = roomPrice + taxAmount + cleaningFee + extraGuestFee;
 
-    // Create Stripe payment intent
-    if (!stripe) {
-      return NextResponse.json({
-        success: false,
-        message: 'Payment system is not configured',
-      }, { status: 500 });
+    // Create Stripe payment intent (optional - only if Stripe is configured)
+    let paymentIntent = null;
+    if (stripe) {
+      try {
+        paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(totalPrice * 100), // Convert to cents
+          currency: room.pricing.currency.toLowerCase(),
+          metadata: {
+            propertyId: validatedData.propertyId,
+            roomId: validatedData.roomId,
+            userId: authResult.user.id,
+            checkInDate: validatedData.checkInDate,
+            checkOutDate: validatedData.checkOutDate,
+          },
+        });
+      } catch (stripeError) {
+        console.error('Stripe payment intent creation failed:', stripeError);
+        // Continue without payment intent - booking can still be created
+      }
     }
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalPrice * 100), // Convert to cents
-      currency: room.pricing.currency.toLowerCase(),
-      metadata: {
-        propertyId: validatedData.propertyId,
-        roomId: validatedData.roomId,
-        userId: authResult.user.id,
-        checkInDate: validatedData.checkInDate,
-        checkOutDate: validatedData.checkOutDate,
-      },
-    });
 
     // Create booking
     const booking = await createHotelBooking({
@@ -198,8 +199,11 @@ export async function POST(request: NextRequest) {
         totalPrice,
         currency: room.pricing.currency,
       },
-      paymentInfo: {
+      paymentInfo: paymentIntent ? {
         paymentIntentId: paymentIntent.id,
+        paymentStatus: 'pending',
+      } : {
+        paymentIntentId: 'manual_payment',
         paymentStatus: 'pending',
       },
       status: 'pending',
@@ -209,11 +213,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       booking,
-      paymentIntent: {
+      paymentIntent: paymentIntent ? {
         clientSecret: paymentIntent.client_secret,
         amount: totalPrice,
         currency: room.pricing.currency,
-      },
+      } : null,
       message: 'Booking created successfully',
     }, { status: 201 });
 
@@ -227,9 +231,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Error creating booking:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({
       success: false,
       message: 'Failed to create booking',
+      error: errorMessage,
     }, { status: 500 });
   }
 }

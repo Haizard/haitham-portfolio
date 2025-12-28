@@ -44,11 +44,8 @@ export async function POST(request: NextRequest) {
   try {
     // Require admin role
     const authResult = await requireRoles(['admin']);
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 403 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const body = await request.json();

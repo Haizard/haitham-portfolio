@@ -92,11 +92,8 @@ export async function PATCH(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authenticated || !authResult.user) {
-      return NextResponse.json({
-        success: false,
-        message: 'Authentication required',
-      }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const vehicle = await getTransferVehicleById(params.id);
@@ -154,11 +151,8 @@ export async function DELETE(
   try {
     const { id } = await params;
     const authResult = await requireAuth();
-    if (!authResult.authenticated || !authResult.user) {
-      return NextResponse.json({
-        success: false,
-        message: 'Authentication required',
-      }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const vehicle = await getTransferVehicleById(params.id);

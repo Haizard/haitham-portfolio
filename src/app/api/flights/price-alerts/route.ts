@@ -28,11 +28,8 @@ export async function GET(request: NextRequest) {
   try {
     // Require authentication
     const authResult = await requireAuth();
-    if (!authResult.authorized || !authResult.user) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const { searchParams } = new URL(request.url);
@@ -66,11 +63,8 @@ export async function POST(request: NextRequest) {
   try {
     // Require authentication
     const authResult = await requireAuth();
-    if (!authResult.authorized || !authResult.user) {
-      return NextResponse.json(
-        { success: false, error: authResult.message },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     const body = await request.json();
