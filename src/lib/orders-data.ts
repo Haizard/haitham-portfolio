@@ -14,30 +14,44 @@ const ORDERS_COLLECTION = 'orders';
 
 // Helper to normalize items into a common Product shape
 async function resolveCartItem(itemId: string): Promise<Product | null> {
+    console.log(`[resolveCartItem] Resolving item: ${itemId}`);
     // 1. Try finding it as a standard Product
     const product = await getProductById(itemId);
-    if (product) return product;
+    if (product) {
+        console.log(`[resolveCartItem] Found as Product: ${product.name}`);
+        return product;
+    }
 
     // 2. Try finding it as a Menu Item
-    const menuItem = await getMenuItemById(itemId);
-    if (menuItem) {
-        const restaurant = await getRestaurantById(menuItem.restaurantId);
-        if (restaurant) {
-            // Map MenuItem to Product shape
-            return {
-                id: menuItem.id,
-                slug: menuItem.id!, // Menu items might not have slugs, use ID
-                name: menuItem.name,
-                description: menuItem.description,
-                price: menuItem.price,
-                imageUrl: menuItem.imageUrl,
-                imageHint: menuItem.name, // Fallback
-                vendorId: restaurant.ownerId, // IMPORTANT: Pay the restaurant owner
-                productType: 'restaurant-item',
-                stock: 999, // Infinite stock for food
-                vendorName: restaurant.name,
-            } as Product;
+    try {
+        const menuItem = await getMenuItemById(itemId);
+        if (menuItem) {
+            console.log(`[resolveCartItem] Found as MenuItem: ${menuItem.name}, RestaurantId: ${menuItem.restaurantId}`);
+            const restaurant = await getRestaurantById(menuItem.restaurantId);
+            if (restaurant) {
+                console.log(`[resolveCartItem] Found Restaurant: ${restaurant.name}, OwnerId: ${restaurant.ownerId}`);
+                // Map MenuItem to Product shape
+                return {
+                    id: menuItem.id,
+                    slug: menuItem.id!, // Menu items might not have slugs, use ID
+                    name: menuItem.name,
+                    description: menuItem.description,
+                    price: menuItem.price,
+                    imageUrl: menuItem.imageUrl,
+                    imageHint: menuItem.name, // Fallback
+                    vendorId: restaurant.ownerId, // IMPORTANT: Pay the restaurant owner
+                    productType: 'restaurant-item',
+                    stock: 999, // Infinite stock for food
+                    vendorName: restaurant.name,
+                } as Product;
+            } else {
+                console.warn(`[resolveCartItem] Restaurant not found for MenuItem ${menuItem.name} (ID: ${menuItem.restaurantId})`);
+            }
+        } else {
+            console.log(`[resolveCartItem] MenuItem not found for ID: ${itemId}`);
         }
+    } catch (e) {
+        console.error(`[resolveCartItem] Error fetching menu item:`, e);
     }
     return null;
 }

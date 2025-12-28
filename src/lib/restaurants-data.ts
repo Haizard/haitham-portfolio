@@ -392,8 +392,11 @@ export async function updateMenuItem(id: string, updates: Partial<Omit<MenuItem,
   return result ? docToMenuItem(result) : null;
 }
 
-const result = await collection.deleteOne({ _id: new ObjectId(id) });
-return result.deletedCount === 1;
+export async function deleteMenuItem(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const collection = await getCollection<MenuItem>(MENU_ITEMS_COLLECTION);
+  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
 }
 
 export async function getMenuItemById(id: string): Promise<MenuItem | null> {
