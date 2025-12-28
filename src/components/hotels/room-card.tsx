@@ -102,8 +102,8 @@ export function RoomCard({ room, checkIn, checkOut, adults = 2, children = 0 }: 
     setIsCheckingAvailability(true);
     try {
       const params = new URLSearchParams({
-        checkIn: checkIn!,
-        checkOut: checkOut!,
+        checkInDate: checkIn!,
+        checkOutDate: checkOut!,
         adults: adults.toString(),
         children: children.toString(),
       });
