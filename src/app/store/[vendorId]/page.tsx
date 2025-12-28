@@ -6,7 +6,6 @@ import { useParams, notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Star, Phone, Mail, MapPin, Search } from 'lucide-react';
 import { Loader2, Star, Phone, Mail, MapPin, Search, MessageSquare } from 'lucide-react';
 import type { Product } from '@/lib/products-data';
 import type { FreelancerProfile } from '@/lib/user-profile-data';
