@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
 import type { Service } from '@/lib/services-data';
 import { ServiceFormDialog } from '@/components/services/service-form-dialog';
-import { useSession } from '@/contexts/session-context';
+import { useUser } from '@/hooks/use-user';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function MyServicesPage() {
-  const { user } = useSession();
+  const { user } = useUser();
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);

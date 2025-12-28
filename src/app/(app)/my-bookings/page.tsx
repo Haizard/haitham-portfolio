@@ -26,11 +26,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { useSession } from '@/contexts/session-context';
+import { useUser } from '@/hooks/use-user';
 
 
 export default function MyBookingsPage() {
-  const { user } = useSession();
+  const { user } = useUser();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [bookingToUpdate, setBookingToUpdate] = useState<{ booking: Booking; newStatus: BookingStatus } | null>(null);
