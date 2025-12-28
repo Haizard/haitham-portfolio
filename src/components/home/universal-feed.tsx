@@ -117,6 +117,7 @@ export default function UniversalFeed() {
                 transfersRes,
                 restaurantsRes,
                 productsRes,
+                servicesRes,
             ] = await Promise.all([
                 fetch('/api/hotels/properties').then(r => r.json()),
                 fetch('/api/tours').then(r => r.json()),
@@ -213,7 +214,24 @@ export default function UniversalFeed() {
                 ...mapItems(servicesRes, 'freelancer'),
             ].sort(() => Math.random() - 0.5);
 
-            setItems(prev => isInitial ? allFetched : [...prev, ...allFetched]);
+            let filteredItems = allFetched;
+            if (activeCategory !== 'all') {
+                const categoryToType: Record<string, ServiceType> = {
+                    'hotels': 'hotel',
+                    'tours': 'tour',
+                    'cars': 'vehicle',
+                    'transfers': 'transfer',
+                    'restaurants': 'restaurant',
+                    'products': 'product',
+                    'freelancers': 'freelancer'
+                };
+                const targetType = categoryToType[activeCategory];
+                if (targetType) {
+                    filteredItems = allFetched.filter(item => item.type === targetType);
+                }
+            }
+
+            setItems(prev => isInitial ? filteredItems : [...prev, ...filteredItems]);
 
         } catch (error) {
             console.error('Error fetching feed:', error);

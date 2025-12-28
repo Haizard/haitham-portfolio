@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 }
 
 const createConversationSchema = z.object({
-  currentUserId: z.string().min(1), 
+  currentUserId: z.string().min(1),
   participantIds: z.array(z.string().min(1)).min(1, "At least one other participant is required."),
   isGroup: z.boolean().optional().default(false),
   groupName: z.string().optional(),
@@ -33,14 +33,18 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json({ message: "Invalid data for creating conversation", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
-    
+
     const { currentUserId, participantIds, isGroup, groupName, groupAvatarUrl } = validation.data;
+
+    console.log(`[API /api/chat/conversations POST] Attempting to create conversation. currentUserId: ${currentUserId}, participantIds:`, participantIds);
 
     // Ensure currentUserId is part of the participants if not explicitly included by client
     const allParticipantIds = Array.from(new Set([currentUserId, ...participantIds]));
-    
+
     // If it's a DM, otherParticipantIds should effectively be just one ID from the client perspective
     const actualOtherIds = participantIds.filter(id => id !== currentUserId);
+
+    console.log(`[API /api/chat/conversations POST] actualOtherIds:`, actualOtherIds);
 
 
     const newConversation = await createConversation(currentUserId, actualOtherIds, isGroup, groupName, groupAvatarUrl); // Updated function call

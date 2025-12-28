@@ -218,7 +218,7 @@ export async function createConversation(
 
   const allParticipantIds = Array.from(new Set([currentUserId, ...otherParticipantIds]));
   if (allParticipantIds.length < 2) {
-    throw new Error("A conversation requires at least two distinct participants.");
+    throw new Error(`A conversation requires at least two distinct participants. Given IDs: [${allParticipantIds.join(', ')}]`);
   }
 
   // Check for existing DM

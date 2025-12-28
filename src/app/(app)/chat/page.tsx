@@ -107,6 +107,15 @@ export default function ChatPage() {
         }
         router.replace('/chat', { scroll: false }); // Clean up URL
       } else if (recipientIdFromUrl) {
+        if (recipientIdFromUrl === user.id || recipientIdFromUrl === "undefined" || recipientIdFromUrl === "null") {
+          if (recipientIdFromUrl === user.id) {
+            toast({ title: "Inquiry", description: "You cannot message yourself." });
+          } else {
+            toast({ title: "Error", description: "Invalid recipient ID.", variant: "destructive" });
+          }
+          router.replace('/chat', { scroll: false });
+          return;
+        }
         try {
           const createRes = await fetch('/api/chat/conversations', {
             method: 'POST',
@@ -125,10 +134,12 @@ export default function ChatPage() {
             }
             handleSelectConversation(newConv);
           } else {
-            toast({ title: "Error", description: "Could not start conversation with user.", variant: "destructive" });
+            const errData = await createRes.json();
+            toast({ title: "Error", description: errData.message || "Could not start conversation with user.", variant: "destructive" });
           }
         } catch (err) {
           console.error("Error creating conversation", err);
+          toast({ title: "Error", description: "An unexpected error occurred while starting the conversation.", variant: "destructive" });
         }
         router.replace('/chat', { scroll: false });
       } else if (allConversations.length > 0 && !selectedConversation) {
