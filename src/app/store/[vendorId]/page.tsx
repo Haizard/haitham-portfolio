@@ -14,39 +14,43 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProductQuickView } from '@/components/products/ProductQuickView';
+import { useToast } from '@/hooks/use-toast';
 
 interface VendorData {
   profile: FreelancerProfile;
   products: Product[];
 }
 
-const StoreSidebar = () => (
+const StoreSidebar = () => {
+  const { toast } = useToast();
+  return (
     <aside className="lg:col-span-1 space-y-8">
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-lg">Store Product Category</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="hover:text-primary cursor-pointer">Cell Phones</li>
-                    <li className="hover:text-primary cursor-pointer">Tablets</li>
-                    <li className="hover:text-primary cursor-pointer">Smart watches</li>
-                </ul>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-lg">Contact Vendor</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <Input placeholder="Your Name"/>
-                <Input type="email" placeholder="you@example.com"/>
-                <Textarea placeholder="Type your message.."/>
-                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/80">Send Message</Button>
-            </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Store Product Category</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li className="hover:text-primary cursor-pointer">Cell Phones</li>
+            <li className="hover:text-primary cursor-pointer">Tablets</li>
+            <li className="hover:text-primary cursor-pointer">Smart watches</li>
+          </ul>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Contact Vendor</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Input placeholder="Your Name" />
+          <Input type="email" placeholder="you@example.com" />
+          <Textarea placeholder="Type your message.." />
+          <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/80" onClick={() => toast({ title: "Message Sent", description: "Your message has been sent to the vendor." })}>Send Message</Button>
+        </CardContent>
+      </Card>
     </aside>
-);
+  );
+};
 
 
 export default function VendorStorefrontPage() {
@@ -114,85 +118,85 @@ export default function VendorStorefrontPage() {
       </div>
     );
   }
-  
+
   if (!vendorData) {
     notFound();
     return null;
   }
-  
+
   const { profile, products } = vendorData;
 
   return (
     <>
-    <div className="bg-background">
-      <div className="container mx-auto py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <StoreSidebar/>
+      <div className="bg-background">
+        <div className="container mx-auto py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <StoreSidebar />
 
             <main className="lg:col-span-3 space-y-8">
-                {/* Vendor Info Card */}
-                <Card className="bg-secondary/30 p-8 shadow-lg">
-                    <div className="flex flex-col md:flex-row items-center gap-8">
-                        <Avatar className="h-28 w-28 border-4 border-background ring-4 ring-primary">
-                            <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="vendor avatar" />
-                            <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-3 text-center md:text-left">
-                            <h1 className="text-3xl font-bold font-headline">{profile.name}</h1>
-                            <div className="space-y-1 text-muted-foreground">
-                                <p className="flex items-center justify-center md:justify-start gap-2"><MapPin className="h-4 w-4 text-primary"/> 72 Comfort St, Apt 910, Austin, Texas, United States (US)</p>
-                                <p className="flex items-center justify-center md:justify-start gap-2"><Phone className="h-4 w-4 text-primary"/> +1 212-555-1717</p>
-                                <p className="flex items-center justify-center md:justify-start gap-2"><Mail className="h-4 w-4 text-primary"/> {profile.email}</p>
-                                <p className="flex items-center justify-center md:justify-start gap-2"><Star className="h-4 w-4 text-primary"/> No ratings found yet!</p>
-                            </div>
-                        </div>
+              {/* Vendor Info Card */}
+              <Card className="bg-secondary/30 p-8 shadow-lg">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <Avatar className="h-28 w-28 border-4 border-background ring-4 ring-primary">
+                    <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="vendor avatar" />
+                    <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-3 text-center md:text-left">
+                    <h1 className="text-3xl font-bold font-headline">{profile.name}</h1>
+                    <div className="space-y-1 text-muted-foreground">
+                      <p className="flex items-center justify-center md:justify-start gap-2"><MapPin className="h-4 w-4 text-primary" /> 72 Comfort St, Apt 910, Austin, Texas, United States (US)</p>
+                      <p className="flex items-center justify-center md:justify-start gap-2"><Phone className="h-4 w-4 text-primary" /> +1 212-555-1717</p>
+                      <p className="flex items-center justify-center md:justify-start gap-2"><Mail className="h-4 w-4 text-primary" /> {profile.email}</p>
+                      <p className="flex items-center justify-center md:justify-start gap-2"><Star className="h-4 w-4 text-primary" /> No ratings found yet!</p>
                     </div>
-                </Card>
-
-                {/* Product Search & Sort */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 border rounded-lg">
-                    <div className="relative w-full md:w-auto md:flex-grow">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input placeholder="Enter product name" className="pl-10" />
-                    </div>
-                    <Button className="bg-accent text-accent-foreground hover:bg-accent/80 w-full md:w-auto">Search</Button>
-                    <Select defaultValue="default">
-                        <SelectTrigger className="w-full md:w-[180px]">
-                            <SelectValue placeholder="Default sorting" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="default">Default sorting</SelectItem>
-                            <SelectItem value="popularity">Sort by popularity</SelectItem>
-                            <SelectItem value="rating">Sort by average rating</SelectItem>
-                            <SelectItem value="date">Sort by latest</SelectItem>
-                            <SelectItem value="price-asc">Sort by price: low to high</SelectItem>
-                            <SelectItem value="price-desc">Sort by price: high to low</SelectItem>
-                        </SelectContent>
-                    </Select>
+                  </div>
                 </div>
+              </Card>
 
-                {/* Product Grid */}
-                <div>
+              {/* Product Search & Sort */}
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 border rounded-lg">
+                <div className="relative w-full md:w-auto md:flex-grow">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input placeholder="Enter product name" className="pl-10" />
+                </div>
+                <Button className="bg-accent text-accent-foreground hover:bg-accent/80 w-full md:w-auto">Search</Button>
+                <Select defaultValue="default">
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Default sorting" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default sorting</SelectItem>
+                    <SelectItem value="popularity">Sort by popularity</SelectItem>
+                    <SelectItem value="rating">Sort by average rating</SelectItem>
+                    <SelectItem value="date">Sort by latest</SelectItem>
+                    <SelectItem value="price-asc">Sort by price: low to high</SelectItem>
+                    <SelectItem value="price-desc">Sort by price: high to low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Product Grid */}
+              <div>
                 {products.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.map(product => <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />)}
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {products.map(product => <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />)}
+                  </div>
                 ) : (
-                    <Card className="text-center py-12">
-                        <CardHeader>
-                            <CardTitle>No Products Yet</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">This vendor hasn't listed any products for sale.</p>
-                        </CardContent>
-                    </Card>
+                  <Card className="text-center py-12">
+                    <CardHeader>
+                      <CardTitle>No Products Yet</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">This vendor hasn't listed any products for sale.</p>
+                    </CardContent>
+                  </Card>
                 )}
-                </div>
+              </div>
             </main>
+          </div>
         </div>
       </div>
-    </div>
-    <ProductQuickView product={quickViewProduct} isOpen={isQuickViewOpen} onOpenChange={setIsQuickViewOpen} />
+      <ProductQuickView product={quickViewProduct} isOpen={isQuickViewOpen} onOpenChange={setIsQuickViewOpen} />
     </>
   )
 }
