@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { 
-  ClientToServerEvents, 
-  ServerToClientEvents 
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents
 } from '@/lib/socket-types';
 
 type SocketType = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -16,11 +16,11 @@ export function useSocket() {
     // Initialize socket connection
     const initSocket = async () => {
       // First, initialize the Socket.IO server by calling the API route
-      await fetch('/api/socket');
-      
+      await fetch('/api/socket/io');
+
       // Then connect to the socket
       const socket: SocketType = io({
-        path: '/api/socket',
+        path: '/api/socket/io',
         addTrailingSlash: false,
       });
 
