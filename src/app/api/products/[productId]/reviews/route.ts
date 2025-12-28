@@ -17,7 +17,25 @@ const reviewSubmitSchema = z.object({
 });
 
 // GET handler to fetch all reviews for a product
-// ... (omitted)
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ productId: string }> }
+) {
+  try {
+    const { productId } = await params;
+
+    if (!ObjectId.isValid(productId)) {
+      return NextResponse.json({ message: "Invalid Product ID." }, { status: 400 });
+    }
+
+    const reviews = await getReviewsForProduct(productId);
+    return NextResponse.json(reviews);
+
+  } catch (error: any) {
+    console.error(`[API /products/reviews GET] Error:`, error);
+    return NextResponse.json({ message: `Failed to fetch reviews: ${error.message || 'Unknown error'}` }, { status: 500 });
+  }
+}
 
 // POST handler to submit a new review for a product
 export async function POST(

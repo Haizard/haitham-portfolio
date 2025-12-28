@@ -10,7 +10,61 @@ import { createDelivery } from './deliveries-data';
 
 const ORDERS_COLLECTION = 'orders';
 
-// ... (types remain the same)
+export type OrderStatus = 'Pending' | 'Processing' | 'Completed' | 'Cancelled' | 'pending_payment';
+export type OrderType = 'delivery' | 'pickup' | 'dine-in';
+
+export interface LineItem {
+    _id: ObjectId;
+    productId: string;
+    productName: string;
+    productImageUrl?: string;
+    quantity: number;
+    price: number;
+    status: 'Pending' | 'Cooking' | 'Ready' | 'Delivered' | 'Cancelled';
+    commissionRate: number;
+    vendorEarnings: number;
+    description?: string;
+}
+
+export interface Order {
+    id?: string;
+    _id?: ObjectId;
+    vendorId: string;
+    customerName: string;
+    customerEmail: string;
+    shippingAddress: string;
+    orderDate: Date;
+    status: OrderStatus;
+    orderType: OrderType;
+    fulfillmentTime: Date;
+    totalAmount: number;
+    lineItems: LineItem[];
+    deliveryId?: string;
+}
+
+function docToOrder(doc: any): Order {
+    return {
+        ...doc,
+        id: doc._id.toString(),
+        _id: undefined,
+    };
+}
+
+// Stats Interfaces
+interface AdminDashboardStats {
+    totalSales: number;
+    totalOrders: number;
+    monthlySales: { name: string; sales: number; orders: number }[];
+    recentOrders: Order[];
+}
+
+interface RestaurantAnalyticsData {
+    totalRevenue: number;
+    totalOrders: number;
+    averageOrderValue: number;
+    monthlySales: { name: string; sales: number; orders: number }[];
+    topSellingItems: { _id: string; productName: string; totalQuantity: number; totalRevenue: number; }[];
+}
 
 // Helper to normalize items into a common Product shape
 async function resolveCartItem(itemId: string): Promise<Product | null> {
@@ -355,3 +409,4 @@ export async function getRestaurantAnalytics(restaurantId: string): Promise<Rest
         topSellingItems: topItemsData,
     };
 }
+
