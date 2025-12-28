@@ -12,6 +12,7 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { CurrencyProvider } from '@/contexts/currency-context';
 import { NextIntlClientProvider } from 'next-intl';
+import { SocketProvider } from '@/providers/socket-provider';
 
 export function ClientProviders({
   children,
@@ -60,7 +61,9 @@ export function ClientProviders({
             <WishlistProvider>
               <CartProvider>
                 <ComparisonProvider>
-                  {content}
+                  <SocketProvider>
+                    {content}
+                  </SocketProvider>
                 </ComparisonProvider>
               </CartProvider>
             </WishlistProvider>

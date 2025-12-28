@@ -3,7 +3,9 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useSocket } from '@/hooks/use-socket';
+import { useSocket as useSocketHook } from '@/hooks/use-socket';
+import { useSocket as useSocketProvider } from '@/providers/socket-provider';
+import { useUser } from '@/hooks/use-user';
 import type { Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '@/lib/socket-types';
 import { ConversationList } from '@/components/chat/conversation-list';
@@ -13,17 +15,24 @@ import type { Conversation, Message as MessageType } from '@/lib/chat-data';
 import { Loader2, MessageCircleOff, MessageSquare, WifiOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const CURRENT_USER_ID = "user1"; // Replace with actual authenticated user ID
 export default function ChatPage() {
+  const { user, isLoading: isUserLoading } = useUser();
+  const CURRENT_USER_ID = user?.id || "anonymous";
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
 
-  const socket = useSocket();
+  const socket = useSocketHook();
+  const { isConnected: isSocketConnected } = useSocketProvider();
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    setIsConnected(isSocketConnected);
+  }, [isSocketConnected]);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -52,7 +61,7 @@ export default function ChatPage() {
     } finally {
       setIsLoadingMessages(false);
     }
-  }, [toast, selectedConversation?.id]);
+  }, [toast, selectedConversation?.id, socket]);
 
 
   useEffect(() => {
@@ -66,11 +75,13 @@ export default function ChatPage() {
     }
 
     async function initialize() {
+      if (!user?.id) return;
+
       // 1. Fetch all conversations for the user
       setIsLoadingConversations(true);
       let allConversations: Conversation[] = [];
       try {
-        const response = await fetch(`/api/chat/conversations?userId=${CURRENT_USER_ID}`);
+        const response = await fetch(`/api/chat/conversations?userId=${user.id}`);
         if (!response.ok) throw new Error('Failed to fetch conversations');
         allConversations = await response.json();
         setConversations(allConversations);
@@ -88,20 +99,14 @@ export default function ChatPage() {
         }
         router.replace('/chat', { scroll: false }); // Clean up URL
       } else if (recipientIdFromUrl) {
-        // Check if we already have a conversation with this recipient
-        // Assuming conversation name or participants might help identify, but we need participant IDs in Conversation type
-        // For now, let's assume valid 'id' match or try to find by participant logic if available.
-        // Since we don't have participants in the light 'Conversation' type, we will do a best effort or create new.
-
-        // To properly implement this, we ideally need to ask the API "Get or Create Conversation with User X"
         try {
-          // Determine logic to find conversation by recipient ID from the list 
-          // OR call API to get/create it.
-          // Assuming we can search for a conversation or just create one.
           const createRes = await fetch('/api/chat/conversations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ participantIds: [CURRENT_USER_ID, recipientIdFromUrl] })
+            body: JSON.stringify({
+              currentUserId: user.id,
+              participantIds: [recipientIdFromUrl]
+            })
           });
 
           if (createRes.ok) {
@@ -124,8 +129,10 @@ export default function ChatPage() {
       }
     }
 
-    initialize();
-  }, [searchParams, router, toast, handleSelectConversation, selectedConversation, socket]);
+    if (user?.id) {
+      initialize();
+    }
+  }, [searchParams, router, toast, handleSelectConversation, selectedConversation, socket, user?.id]);
 
   // Socket event listeners
   useEffect(() => {
@@ -222,24 +229,44 @@ export default function ChatPage() {
 
 
   const handleSendMessage = async (text: string) => {
-    if (!selectedConversation || !text.trim()) {
-      toast({ title: "Cannot Send", description: "No conversation selected or message is empty.", variant: "destructive" });
+    if (!selectedConversation || !text.trim() || !user) {
+      toast({ title: "Cannot Send", description: "No conversation selected or you are not logged in.", variant: "destructive" });
       return;
     }
     if (!socket || !socket.connected) {
-      toast({ title: "Cannot Send", description: "Chat not connected. Please ensure WebSocket server is running and client is connected.", variant: "destructive" });
+      toast({ title: "Cannot Send", description: "Chat not connected.", variant: "destructive" });
       return;
     }
 
     const messageData = {
       conversationId: selectedConversation.id!,
-      senderId: CURRENT_USER_ID,
+      senderId: user.id,
       text: text.trim(),
     };
 
     socket.emit('sendMessage', messageData);
-    console.log('Message sent via WebSocket:', messageData);
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.24))] text-center p-8 bg-card rounded-lg border shadow-xl">
+        <WifiOff className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
+        <h2 className="text-xl font-semibold text-muted-foreground">Login Required</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          You must be logged in to access the chat and message vendors.
+        </p>
+        <Button onClick={() => router.push('/login')}>Login Now</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-theme(spacing.20))] md:h-[calc(100vh-theme(spacing.24))] border rounded-lg shadow-xl bg-card overflow-hidden">
@@ -266,7 +293,7 @@ export default function ChatPage() {
               conversations={conversations}
               selectedConversationId={selectedConversation?.id}
               onSelectConversation={handleSelectConversation}
-              currentUserId={CURRENT_USER_ID}
+              currentUserId={user?.id || ""}
             />
           ) : (
             <div className="p-4 text-center text-muted-foreground">
@@ -282,7 +309,7 @@ export default function ChatPage() {
                 conversation={selectedConversation}
                 messages={messages}
                 isLoading={isLoadingMessages}
-                currentUserId={CURRENT_USER_ID}
+                currentUserId={user?.id || ""}
               />
               <MessageInput onSendMessage={handleSendMessage} disabled={!isConnected} />
             </>
