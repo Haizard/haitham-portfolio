@@ -64,12 +64,12 @@ export default function ProfilePage() {
       payoutPhoneNumber: "",
     },
   });
-  
+
   const { fields: portfolioFields, append: appendPortfolioLink, remove: removePortfolioLink } = useFieldArray({
     control: form.control,
     name: "portfolioLinks",
   });
-  
+
   const fetchProfile = useCallback(async () => {
     setIsLoadingProfile(true);
     try {
@@ -124,10 +124,10 @@ export default function ProfilePage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save profile');
       }
-      
+
       await mutate(); // Re-fetch session data (which is now just the simple user object)
       await fetchProfile(); // Re-fetch the detailed profile for this page
-      
+
       toast({ title: "Success", description: "Profile updated successfully!" });
     } catch (error: any) {
       console.error("Error saving profile:", error);
@@ -163,138 +163,140 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <main className="lg:col-span-2 space-y-8">
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSaveProfile)}>
-                <Card className="shadow-xl">
-                    <CardHeader className="flex flex-col items-center text-center sm:flex-row sm:text-left sm:space-x-6">
-                    <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 mb-4 sm:mb-0">
-                        <AvatarImage src={currentAvatar} alt={currentName} data-ai-hint="user avatar large" />
-                        <AvatarFallback>{currentName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <CardTitle className="text-3xl font-headline">{currentName}</CardTitle>
-                        <CardDescription className="text-lg">{currentOccupation}</CardDescription>
-                    </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6 pt-6">
-                    <ScrollArea className="h-[calc(100vh-28rem)] pr-3">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSaveProfile)}>
+              <Card className="shadow-xl">
+                <CardHeader className="flex flex-col items-center text-center sm:flex-row sm:text-left sm:space-x-6">
+                  <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 mb-4 sm:mb-0">
+                    <AvatarImage src={currentAvatar} alt={currentName} data-ai-hint="user avatar large" />
+                    <AvatarFallback>{currentName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-3xl font-headline">{currentName}</CardTitle>
+                    <CardDescription className="text-lg">{currentOccupation}</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                  <ScrollArea className="h-[calc(100vh-28rem)] pr-3">
                     <div className="space-y-6">
-                    {/* --- General User Info --- */}
-                    <FormField control={form.control} name="avatarUrl" render={({ field }) => (
+                      {/* --- General User Info --- */}
+                      <FormField control={form.control} name="avatarUrl" render={({ field }) => (
                         <FormItem><FormLabel className="flex items-center"><Palette className="mr-2 h-4 w-4 text-muted-foreground" />Avatar URL</FormLabel><Input {...field} placeholder="https://example.com/avatar.png" className="text-base p-3" /></FormItem>
-                    )}/>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      )} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel className="flex items-center"><UserCircle className="mr-2 h-4 w-4 text-muted-foreground" />Full Name</FormLabel><Input {...field} className="text-base p-3" /><FormMessage /></FormItem>
-                        )}/>
+                          <FormItem><FormLabel className="flex items-center"><UserCircle className="mr-2 h-4 w-4 text-muted-foreground" />Full Name</FormLabel><Input {...field} className="text-base p-3" /><FormMessage /></FormItem>
+                        )} />
                         <FormField control={form.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-muted-foreground" />Email Address</FormLabel><Input type="email" {...field} className="text-base p-3" /><FormMessage /></FormItem>
-                        )}/>
-                    </div>
-                    <FormField control={form.control} name="occupation" render={({ field }) => (
+                          <FormItem><FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-muted-foreground" />Email Address</FormLabel><Input type="email" {...field} className="text-base p-3" /><FormMessage /></FormItem>
+                        )} />
+                      </div>
+                      <FormField control={form.control} name="occupation" render={({ field }) => (
                         <FormItem><FormLabel className="flex items-center"><Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />Occupation / Title</FormLabel><Input {...field} className="text-base p-3" /><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="bio" render={({ field }) => (
+                      )} />
+                      <FormField control={form.control} name="bio" render={({ field }) => (
                         <FormItem><FormLabel className="flex items-center"><Info className="mr-2 h-4 w-4 text-muted-foreground" />Bio / About Me</FormLabel><Textarea {...field} placeholder="Tell us a little about yourself..." className="min-h-[120px] text-base p-3" /><FormMessage /></FormItem>
-                    )}/>
-                    {/* --- Freelancer-Specific Info --- */}
-                    <div className="border-t pt-6 space-y-6">
-                        <h3 className="text-lg font-semibold text-primary flex items-center"><Settings2 className="mr-2 h-5 w-5"/>Professional Details</h3>
-                        <FormField control={form.control} name="availabilityStatus" render={({ field }) => (
+                      )} />
+                      {/* --- Freelancer-Specific Info --- */}
+                      {canEarnMoney && (
+                        <div className="border-t pt-6 space-y-6">
+                          <h3 className="text-lg font-semibold text-primary flex items-center"><Settings2 className="mr-2 h-5 w-5" />Professional Details</h3>
+                          <FormField control={form.control} name="availabilityStatus" render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Availability Status</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormLabel>Availability Status</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl><SelectTrigger className="text-base p-3"><SelectValue placeholder="Set availability" /></SelectTrigger></FormControl>
                                 <SelectContent>
-                                <SelectItem value="available">Available</SelectItem>
-                                <SelectItem value="busy">Busy</SelectItem>
-                                <SelectItem value="not_available">Not Available</SelectItem>
+                                  <SelectItem value="available">Available</SelectItem>
+                                  <SelectItem value="busy">Busy</SelectItem>
+                                  <SelectItem value="not_available">Not Available</SelectItem>
                                 </SelectContent>
-                            </Select><FormMessage />
+                              </Select><FormMessage />
                             </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="skills" render={({ field }) => (
+                          )} />
+                          <FormField control={form.control} name="skills" render={({ field }) => (
                             <FormItem><FormLabel>Skills (comma-separated)</FormLabel><Input placeholder="e.g., React, Figma, Copywriting" {...field} className="text-base p-3" /><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="hourlyRate" render={({ field }) => (
-                        <FormItem><FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />Hourly Rate ($) (Optional)</FormLabel><Input type="number" step="0.01" placeholder="e.g., 50" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))} className="text-base p-3" /><FormMessage /></FormItem>
-                        )}/>
-                        
-                        <div>
-                        <FormLabel className="text-base block mb-2">Portfolio Links</FormLabel>
-                        {portfolioFields.map((item, index) => (
-                            <Card key={item.id} className="p-3 mb-3 space-y-2 bg-secondary/50 relative">
-                            <FormField control={form.control} name={`portfolioLinks.${index}.title`} render={({ field }) => (
-                                <FormItem><FormLabel className="text-xs">Title</FormLabel><Input placeholder="Project Title" {...field} className="text-sm p-2" /><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`portfolioLinks.${index}.url`} render={({ field }) => (
-                                <FormItem><FormLabel className="text-xs">URL</FormLabel><Input type="url" placeholder="https://example.com/project" {...field} className="text-sm p-2" /><FormMessage /></FormItem>
-                            )}/>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removePortfolioLink(index)} className="absolute top-1 right-1 h-7 w-7 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button>
-                            </Card>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendPortfolioLink({ id: `new-${Date.now()}`, title: "", url: "" })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Portfolio Link
-                        </Button>
+                          )} />
+                          <FormField control={form.control} name="hourlyRate" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />Hourly Rate ($) (Optional)</FormLabel><Input type="number" step="0.01" placeholder="e.g., 50" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))} className="text-base p-3" /><FormMessage /></FormItem>
+                          )} />
+
+                          <div>
+                            <FormLabel className="text-base block mb-2">Portfolio Links</FormLabel>
+                            {portfolioFields.map((item, index) => (
+                              <Card key={item.id} className="p-3 mb-3 space-y-2 bg-secondary/50 relative">
+                                <FormField control={form.control} name={`portfolioLinks.${index}.title`} render={({ field }) => (
+                                  <FormItem><FormLabel className="text-xs">Title</FormLabel><Input placeholder="Project Title" {...field} className="text-sm p-2" /><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name={`portfolioLinks.${index}.url`} render={({ field }) => (
+                                  <FormItem><FormLabel className="text-xs">URL</FormLabel><Input type="url" placeholder="https://example.com/project" {...field} className="text-sm p-2" /><FormMessage /></FormItem>
+                                )} />
+                                <Button type="button" variant="ghost" size="icon" onClick={() => removePortfolioLink(index)} className="absolute top-1 right-1 h-7 w-7 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button>
+                              </Card>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" onClick={() => appendPortfolioLink({ id: `new-${Date.now()}`, title: "", url: "" })}>
+                              <PlusCircle className="mr-2 h-4 w-4" /> Add Portfolio Link
+                            </Button>
+                          </div>
                         </div>
-                    </div>
-                     {canEarnMoney && (
+                      )}
+                      {canEarnMoney && (
                         <div className="border-t pt-6 space-y-4">
-                            <h3 className="text-lg font-semibold text-primary flex items-center"><DollarSign className="mr-2 h-5 w-5"/>Payout Information</h3>
-                            <Alert>
-                                <Phone className="h-4 w-4"/>
-                                <AlertTitle>AzamPay Payouts</AlertTitle>
-                                <AlertDescription>
-                                   We use AzamPay for all payouts. Please enter the phone number associated with your mobile money account.
-                                </AlertDescription>
-                            </Alert>
-                             <FormField
-                                control={form.control}
-                                name="payoutPhoneNumber"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Payout Phone Number</FormLabel>
-                                    <Input type="tel" placeholder="e.g., 255712345678" {...field} value={field.value ?? ""} className="text-base p-3"/>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
+                          <h3 className="text-lg font-semibold text-primary flex items-center"><DollarSign className="mr-2 h-5 w-5" />Payout Information</h3>
+                          <Alert>
+                            <Phone className="h-4 w-4" />
+                            <AlertTitle>AzamPay Payouts</AlertTitle>
+                            <AlertDescription>
+                              We use AzamPay for all payouts. Please enter the phone number associated with your mobile money account.
+                            </AlertDescription>
+                          </Alert>
+                          <FormField
+                            control={form.control}
+                            name="payoutPhoneNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Payout Phone Number</FormLabel>
+                                <Input type="tel" placeholder="e.g., 255712345678" {...field} value={field.value ?? ""} className="text-base p-3" />
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
-                     )}
+                      )}
                     </div>
-                    </ScrollArea>
-                    </CardContent>
-                    <CardFooter className="border-t pt-6 flex justify-end">
-                    <Button type="submit" disabled={isSaving || isUserLoading} size="lg" className="bg-primary hover:bg-primary/90">
-                        {isSaving ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving...</> : <><Save className="mr-2 h-5 w-5" /> Save Changes</>}
-                    </Button>
-                    </CardFooter>
-                </Card>
-                </form>
-            </Form>
+                  </ScrollArea>
+                </CardContent>
+                <CardFooter className="border-t pt-6 flex justify-end">
+                  <Button type="submit" disabled={isSaving || isUserLoading} size="lg" className="bg-primary hover:bg-primary/90">
+                    {isSaving ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving...</> : <><Save className="mr-2 h-5 w-5" /> Save Changes</>}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </form>
+          </Form>
         </main>
         <aside className="lg:col-span-1 space-y-8">
-            <Card className="shadow-xl">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-400"/>Rating & Reviews</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                    <p className="text-4xl font-bold">{profileData.averageRating?.toFixed(1) ?? '0.0'}</p>
-                    <div className="flex justify-center items-center my-1">
-                        <StarRating rating={profileData.averageRating || 0} disabled />
-                    </div>
-                    <p className="text-sm text-muted-foreground">from {profileData.reviewCount} reviews</p>
-                </CardContent>
-            </Card>
+          <Card className="shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-400" />Rating & Reviews</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-4xl font-bold">{profileData.averageRating?.toFixed(1) ?? '0.0'}</p>
+              <div className="flex justify-center items-center my-1">
+                <StarRating rating={profileData.averageRating || 0} disabled />
+              </div>
+              <p className="text-sm text-muted-foreground">from {profileData.reviewCount} reviews</p>
+            </CardContent>
+          </Card>
 
-            <Card className="shadow-xl">
-                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary"/>Client Feedback</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {profileData?.userId && <ReviewsList freelancerId={profileData.userId} />}
-                </CardContent>
-            </Card>
+          <Card className="shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" />Client Feedback</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profileData?.userId && <ReviewsList freelancerId={profileData.userId} />}
+            </CardContent>
+          </Card>
         </aside>
       </div>
     </div>
