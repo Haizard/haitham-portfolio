@@ -29,11 +29,11 @@ export default function ChatPage() {
 
   const handleSelectConversation = useCallback(async (conversation: Conversation) => {
     if (selectedConversation?.id === conversation.id) return; // Don't re-select the same conversation
-    
+
     setSelectedConversation(conversation);
     setIsLoadingMessages(true);
     setMessages([]);
-    
+
     if (socket?.connected && conversation.id) {
       console.log(`Emitting joinConversation for ${conversation.id}`);
       socket.emit('joinConversation', conversation.id);
@@ -58,37 +58,74 @@ export default function ChatPage() {
   useEffect(() => {
     // This effect runs once on mount to fetch data and setup sockets.
     const conversationIdFromUrl = searchParams.get('conversationId');
-    
-    async function initialize() {
-        // 1. Fetch all conversations for the user
-        setIsLoadingConversations(true);
-        let allConversations: Conversation[] = [];
-        try {
-            const response = await fetch(`/api/chat/conversations?userId=${CURRENT_USER_ID}`);
-            if (!response.ok) throw new Error('Failed to fetch conversations');
-            allConversations = await response.json();
-            setConversations(allConversations);
-        } catch (error: any) {
-            toast({ title: "Error", description: `Could not load conversations: ${error.message}`, variant: "destructive" });
-        } finally {
-            setIsLoadingConversations(false);
-        }
+    const recipientIdFromUrl = searchParams.get('recipientId');
 
-        // 2. Determine which conversation to select
-        if (conversationIdFromUrl) {
-            const target = allConversations.find(c => c.id === conversationIdFromUrl);
-            if (target) {
-                handleSelectConversation(target);
-            }
-            router.replace('/chat', { scroll: false }); // Clean up URL
-        } else if (allConversations.length > 0 && !selectedConversation) {
-            // Default to selecting first conversation if no specific one is requested and none is selected
-            handleSelectConversation(allConversations[0]);
+    // Check initial connection state
+    if (socket?.connected) {
+      setIsConnected(true);
+    }
+
+    async function initialize() {
+      // 1. Fetch all conversations for the user
+      setIsLoadingConversations(true);
+      let allConversations: Conversation[] = [];
+      try {
+        const response = await fetch(`/api/chat/conversations?userId=${CURRENT_USER_ID}`);
+        if (!response.ok) throw new Error('Failed to fetch conversations');
+        allConversations = await response.json();
+        setConversations(allConversations);
+      } catch (error: any) {
+        toast({ title: "Error", description: `Could not load conversations: ${error.message}`, variant: "destructive" });
+      } finally {
+        setIsLoadingConversations(false);
+      }
+
+      // 2. Determine which conversation to select
+      if (conversationIdFromUrl) {
+        const target = allConversations.find(c => c.id === conversationIdFromUrl);
+        if (target) {
+          handleSelectConversation(target);
         }
+        router.replace('/chat', { scroll: false }); // Clean up URL
+      } else if (recipientIdFromUrl) {
+        // Check if we already have a conversation with this recipient
+        // Assuming conversation name or participants might help identify, but we need participant IDs in Conversation type
+        // For now, let's assume valid 'id' match or try to find by participant logic if available.
+        // Since we don't have participants in the light 'Conversation' type, we will do a best effort or create new.
+
+        // To properly implement this, we ideally need to ask the API "Get or Create Conversation with User X"
+        try {
+          // Determine logic to find conversation by recipient ID from the list 
+          // OR call API to get/create it.
+          // Assuming we can search for a conversation or just create one.
+          const createRes = await fetch('/api/chat/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ participantIds: [CURRENT_USER_ID, recipientIdFromUrl] })
+          });
+
+          if (createRes.ok) {
+            const newConv: Conversation = await createRes.json();
+            // Add to list if not present
+            if (!allConversations.find(c => c.id === newConv.id)) {
+              setConversations(prev => [newConv, ...prev]);
+            }
+            handleSelectConversation(newConv);
+          } else {
+            toast({ title: "Error", description: "Could not start conversation with user.", variant: "destructive" });
+          }
+        } catch (err) {
+          console.error("Error creating conversation", err);
+        }
+        router.replace('/chat', { scroll: false });
+      } else if (allConversations.length > 0 && !selectedConversation) {
+        // Default to selecting first conversation if no specific one is requested and none is selected
+        handleSelectConversation(allConversations[0]);
+      }
     }
 
     initialize();
-  }, [searchParams, router, toast, handleSelectConversation, selectedConversation]);
+  }, [searchParams, router, toast, handleSelectConversation, selectedConversation, socket]);
 
   // Socket event listeners
   useEffect(() => {
@@ -123,21 +160,21 @@ export default function ChatPage() {
 
     const handleNewMessage = (newMessage: MessageType) => {
       console.log('New message received via WebSocket:', newMessage);
-    
+
       // Update messages for the current conversation in real-time
       if (newMessage.conversationId === selectedConversation?.id) {
         setMessages(prevMessages => [...prevMessages, newMessage]);
       }
-    
+
       // Update the conversation list (last message preview, timestamp, order)
       setConversations(prevConvs => {
         const targetConv = prevConvs.find(c => c.id === newMessage.conversationId);
-    
+
         if (!targetConv) {
           console.warn(`Received message for an unknown conversation: ${newMessage.conversationId}`);
           return prevConvs;
         }
-    
+
         const updatedConv: Conversation = {
           ...targetConv,
           lastMessage: {
@@ -150,7 +187,7 @@ export default function ChatPage() {
             ? (targetConv.unreadCount || 0) + 1
             : 0,
         };
-    
+
         // Move updated conversation to the top and re-sort
         return [updatedConv, ...prevConvs.filter(c => c.id !== newMessage.conversationId)]
           .sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
@@ -160,7 +197,7 @@ export default function ChatPage() {
     const handleError = (errorData: { message: string }) => {
       toast({ title: "Chat Error", description: errorData.message, variant: "destructive" });
     };
-    
+
     const handleConversationJoined = (conversationId: string) => {
       console.log(`Successfully joined room for conversation: ${conversationId}`);
     };
@@ -199,7 +236,7 @@ export default function ChatPage() {
       senderId: CURRENT_USER_ID,
       text: text.trim(),
     };
-    
+
     socket.emit('sendMessage', messageData);
     console.log('Message sent via WebSocket:', messageData);
   };
@@ -232,9 +269,9 @@ export default function ChatPage() {
               currentUserId={CURRENT_USER_ID}
             />
           ) : (
-             <div className="p-4 text-center text-muted-foreground">
-                <MessageCircleOff className="h-10 w-10 mx-auto mb-2 opacity-50"/>
-                No conversations yet.
+            <div className="p-4 text-center text-muted-foreground">
+              <MessageCircleOff className="h-10 w-10 mx-auto mb-2 opacity-50" />
+              No conversations yet.
             </div>
           )}
         </aside>
@@ -252,14 +289,14 @@ export default function ChatPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
               {isLoadingConversations ? (
-                  <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+                <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
               ) : (
                 <>
-                <MessageCircleOff className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-                <h2 className="text-xl font-semibold text-muted-foreground">Select a conversation</h2>
-                <p className="text-sm text-muted-foreground">
-                  Choose a conversation from the list to view messages.
-                </p>
+                  <MessageCircleOff className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
+                  <h2 className="text-xl font-semibold text-muted-foreground">Select a conversation</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Choose a conversation from the list to view messages.
+                  </p>
                 </>
               )}
             </div>
