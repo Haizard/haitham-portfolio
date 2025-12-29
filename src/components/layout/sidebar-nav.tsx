@@ -6,6 +6,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
+  Compass,
+  Zap,
+  ShoppingBag,
+  UserCheck,
+  PlaneLanding,
   LayoutDashboard,
   Sparkles,
   CalendarDays,
@@ -73,7 +78,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     roles: ['freelancer'],
     items: [
       { href: "/my-proposals", label: "My Proposals", icon: FileText },
-      { href: "/my-projects", label: "My Projects", icon: Briefcase },
+      { href: "/my-projects", label: "My Projects", icon: UserCheck },
     ],
   },
   {
@@ -97,7 +102,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     group: "E-commerce Marketplace",
     roles: ['vendor'],
     items: [
-      { href: "/vendor/dashboard", label: "Vendor Dashboard", icon: Store },
+      { href: "/vendor/dashboard", label: "Vendor Dashboard", icon: ShoppingBag },
       { href: "/vendor/products", label: "My Products", icon: Package },
       { href: "/vendor/posts", label: "My Blog Posts", icon: FileText },
       { href: "/vendor/orders", label: "Order Management", icon: ShoppingCart },
@@ -161,7 +166,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     group: "Tours & Activities",
     roles: ['tour_operator', 'admin'],
     items: [
-      { href: "/account/my-tours", label: "My Tours", icon: Map },
+      { href: "/account/my-tours", label: "My Tours", icon: Compass },
       { href: "/account/bookings", label: "Bookings", icon: Calendar },
     ],
   },
@@ -169,7 +174,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     group: "Transfer Services",
     roles: ['transfer_provider', 'admin'],
     items: [
-      { href: "/account/my-transfers", label: "My Transfers", icon: Plane },
+      { href: "/account/my-transfers", label: "My Transfers", icon: PlaneLanding },
       { href: "/account/bookings", label: "Jobs", icon: ClipboardList },
     ],
   },
@@ -191,10 +196,10 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/admin/payouts", label: "Manage Payouts", icon: Banknote },
       { href: "/admin/vendors", label: "Manage Vendors", icon: Users },
       { href: "/admin/transport-partners", label: "Manage Transport Partners", icon: Truck },
-      { href: "/admin/tours", label: "Manage Tours", icon: Plane },
-      { href: "/admin/tour-activities", label: "Tour Activities", icon: MountainSnow },
+      { href: "/admin/tours", label: "Manage Tours", icon: Compass },
+      { href: "/admin/tour-activities", label: "Tour Activities", icon: Compass },
       { href: "/admin/posts", label: "Manage Posts", icon: FileText },
-      { href: "/admin/products-management", label: "Manage Products", icon: PackageSearch },
+      { href: "/admin/products-management", label: "Manage Products", icon: ShoppingBag },
       { href: "/admin/categories", label: "Blog Categories", icon: FolderKanban },
       { href: "/admin/tags", label: "Blog Tags", icon: Tags },
       { href: "/admin/service-categories", label: "Service Categories", icon: FolderKanban },

@@ -1,6 +1,6 @@
 "use client";
 
-import { Hotel, Car, Map, Plane, Calendar, DollarSign, Users, TrendingUp, Package, Star, ShieldCheck } from 'lucide-react';
+import { Hotel, Car, Compass, PlaneLanding, ShoppingBag, UserCheck, Calendar, DollarSign, Users, TrendingUp, Package, Star, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -160,7 +160,7 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
               <Card className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Plane className="h-5 w-5 text-primary" />
+                    <PlaneLanding className="h-5 w-5 text-primary" />
                     Flight Referrals
                   </CardTitle>
                   <CardDescription>Track your flight referrals and earnings</CardDescription>
@@ -336,7 +336,7 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
         {isTourOperator && (
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold flex items-center gap-2">
-              <Map className="h-6 w-6" />
+              <Compass className="h-6 w-6" />
               Tour Operator Dashboard
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -406,7 +406,7 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
         {isTransferProvider && (
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold flex items-center gap-2">
-              <Plane className="h-6 w-6" />
+              <PlaneLanding className="h-6 w-6" />
               Transfer Provider Dashboard
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

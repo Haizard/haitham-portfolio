@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { Car, Users, Luggage, Star, MapPin, DollarSign } from 'lucide-react';
+import { PlaneLanding, Users, Luggage, Star, MapPin, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -105,7 +105,7 @@ export function TransferVehicleCard({
           />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <Car className="h-16 w-16 text-muted-foreground" />
+            <PlaneLanding className="h-16 w-16 text-muted-foreground" />
           </div>
         )}
         <Badge className="absolute top-2 left-2 capitalize">

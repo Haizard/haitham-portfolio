@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Compass, Newspaper, Store, LayoutDashboard, Plane, Hotel, Car, Bus } from 'lucide-react';
+import { Zap, ShoppingBag, UserCheck, Compass, PlaneLanding, Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Newspaper, Store, LayoutDashboard, Plane, Hotel, Car, Bus } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
@@ -32,21 +32,21 @@ const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
   // A curated list for the bottom nav to prevent overflow
   const mobileNavItems = user
     ? [
-      { href: "/", label: t('home'), icon: Home },
+      { href: "/", label: t('home'), icon: Zap },
       { href: "/hotels", label: t('hotels'), icon: Hotel },
-      { href: "/tours", label: t('tours'), icon: Plane },
-      { href: "/shop", label: t('shop'), icon: Store },
-      { href: "/find-work", label: t('freelancers'), icon: Briefcase },
+      { href: "/tours", label: t('tours'), icon: Compass },
+      { href: "/shop", label: t('shop'), icon: ShoppingBag },
+      { href: "/find-work", label: t('freelancers'), icon: UserCheck },
       { href: "/dashboard", label: t('dashboard'), icon: LayoutDashboard }
     ]
     : [
-      { href: "/", label: t('home'), icon: Home },
+      { href: "/", label: t('home'), icon: Zap },
       { href: "/restaurants", label: t('restaurants'), icon: Utensils },
       { href: "/hotels", label: t('hotels'), icon: Hotel },
-      { href: "/tours", label: t('tours'), icon: Plane },
+      { href: "/tours", label: t('tours'), icon: Compass },
       { href: "/blog", label: t('blog'), icon: Newspaper },
-      { href: "/shop", label: t('shop'), icon: Store },
-      { href: "/find-work", label: t('freelancers'), icon: Briefcase },
+      { href: "/shop", label: t('shop'), icon: ShoppingBag },
+      { href: "/find-work", label: t('freelancers'), icon: UserCheck },
     ];
 
   const gridColsClass = user ? 'grid-cols-5' : 'grid-cols-6';
