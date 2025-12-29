@@ -386,7 +386,7 @@ export default function EditTransferPage({ params: paramsPromise }: { params: Pr
                                             <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
                                             <FormField control={form.control} name="videoUrl" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                                    <FormControl><Input placeholder="YouTube, TikTok, or Instagram post/reel URL" {...field} /></FormControl>
                                                     <FormDescription>If provided, this video will replace the primary image in the social feed.</FormDescription>
                                                     <FormMessage />
                                                 </FormItem>

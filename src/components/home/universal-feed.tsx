@@ -82,6 +82,12 @@ function getVideoEmbedUrl(url: string | undefined): string | null {
         return `https://www.tiktok.com/embed/v2/${tkMatch[1]}?autoplay=1`;
     }
 
+    // Instagram (Posts & Reels)
+    const igMatch = url.match(/(?:instagram\.com\/(?:p|reels|reel)\/)([\w-]+)/);
+    if (igMatch && igMatch[1]) {
+        return `https://www.instagram.com/p/${igMatch[1]}/embed`;
+    }
+
     return null;
 }
 

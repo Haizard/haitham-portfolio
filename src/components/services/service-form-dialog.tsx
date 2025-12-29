@@ -339,7 +339,7 @@ export function ServiceFormDialog({ isOpen, onClose, service, onSuccess }: Servi
                   <FormField control={form.control} name="videoUrl" render={({ field }) => (
                     <FormItem className="col-span-2">
                       <Label>Video URL (YouTube or TikTok)</Label>
-                      <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
+                      <Input placeholder="YouTube, TikTok, or Instagram URL" {...field} />
                       <p className="text-xs text-muted-foreground mt-1">If provided, this video will replace the featured image in the social feed.</p>
                       <FormMessage />
                     </FormItem>

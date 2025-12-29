@@ -305,7 +305,7 @@ export function ProductFormDialog({ isOpen, onClose, product, onSuccess }: Produ
                   <FormItem>
                     <FormLabel>Video URL (Optional - YouTube or TikTok)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://www.youtube.com/watch?v=... or https://www.tiktok.com/@.../video/..." {...field} />
+                      <Input placeholder="URL from YouTube, TikTok, or Instagram" {...field} />
                     </FormControl>
                     <p className="text-xs text-muted-foreground mt-1">If provided, this video will replace the image in the homepage feed.</p>
                     <FormMessage />

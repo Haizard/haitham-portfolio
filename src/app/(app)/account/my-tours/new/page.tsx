@@ -190,7 +190,7 @@ export default function NewTourPage() {
                                 <FormField control={form.control} name="videoUrl" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
-                                        <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                        <FormControl><Input placeholder="YouTube, TikTok, or Instagram post/reel URL" {...field} /></FormControl>
                                         <FormDescription>This video will replace the featured image in the social feed.</FormDescription>
                                         <FormMessage />
                                     </FormItem>

@@ -260,7 +260,7 @@ export default function NewTransferPage() {
                                             <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
                                             <FormField control={form.control} name="videoUrl" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                                    <FormControl><Input placeholder="YouTube, TikTok, or Instagram post/reel URL" {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />

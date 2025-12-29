@@ -317,7 +317,7 @@ export default function NewPropertyPage() {
                             <FormField control={form.control} name="videoUrl" render={({ field }) => (
                                 <FormItem className="col-span-2">
                                     <FormLabel>Video URL (YouTube or TikTok)</FormLabel>
-                                    <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                                    <FormControl><Input placeholder="YouTube, TikTok, or Instagram post/reel URL" {...field} /></FormControl>
                                     <FormDescription>If provided, this video will replace the main image in the social feed.</FormDescription>
                                     <FormMessage />
                                 </FormItem>
