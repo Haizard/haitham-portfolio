@@ -31,6 +31,8 @@ import { Card } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useFormatPrice } from '@/contexts/currency-context';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 type ServiceType = 'hotel' | 'tour' | 'vehicle' | 'transfer' | 'restaurant' | 'product' | 'job' | 'post' | 'freelancer';
 
@@ -348,8 +350,8 @@ export default function UniversalFeed() {
                     )}
                 </div>
 
-                {/* Right Sidebar - Categories & Navigation */}
-                <aside className="w-full lg:w-80 flex-none space-y-10 order-first lg:order-last">
+                {/* Sidebar - Categories & Navigation (Left on Desktop) */}
+                <aside className="w-full lg:w-80 flex-none space-y-10 order-first lg:order-first">
                     <div className="sticky top-28 bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-border/40 p-8 shadow-2xl shadow-slate-100">
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Categories</h3>
                         <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-2 gap-y-8 gap-x-6">
