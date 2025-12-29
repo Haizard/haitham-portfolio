@@ -28,6 +28,7 @@ import { BreadcrumbDisplay } from '@/components/blog/breadcrumb-display';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BlogSidebar } from '@/components/blog/sidebar/blog-sidebar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { getVideoEmbedUrl } from '@/lib/video-utils';
 
 interface EnrichedBlogPost extends BlogPost {
   resolvedTags?: TagType[];
@@ -38,7 +39,7 @@ async function getPostData(slug: string): Promise<EnrichedBlogPost | null> {
     const response = await fetch(`/api/blog/${slug}`);
     if (!response.ok) {
       if (response.status === 404) {
-        return null; 
+        return null;
       }
       const errorText = await response.text().catch(() => "Failed to read error response");
       throw new Error(`API request failed with status ${response.status}: ${errorText}`);
@@ -89,13 +90,13 @@ export default function BlogPostPage() {
       setIsLoadingPost(false);
       setIsLoadingCategory(false);
       setError("No post slug provided.");
-      notFound(); 
+      notFound();
       return;
     }
 
     async function fetchData() {
       try {
-        const fetchedPost = await getPostData(slug); 
+        const fetchedPost = await getPostData(slug);
 
         if (fetchedPost) {
           setPost(fetchedPost);
@@ -125,19 +126,19 @@ export default function BlogPostPage() {
 
         } else {
           setError(`Post with slug "${slug}" not found. NEXT_HTTP_ERROR_FALLBACK;404`);
-          notFound(); 
+          notFound();
         }
       } catch (fetchError: any) {
         console.error("Error in fetchData for blog post:", fetchError);
         setError(fetchError.message || "An error occurred while trying to load the post.");
       } finally {
         setIsLoadingPost(false);
-        if (isLoadingCategory) setIsLoadingCategory(false); 
+        if (isLoadingCategory) setIsLoadingCategory(false);
       }
     }
 
     fetchData();
-  }, [slug, toast]); 
+  }, [slug, toast]);
 
   const handleLanguageChange = async (newLangCode: string) => {
     if (!post || !post.content) return;
@@ -194,7 +195,7 @@ export default function BlogPostPage() {
     // This case handles when notFound() might have been called or post is still null post-loading without explicit error
     // It's a safeguard, as ideally notFound() would prevent rendering further.
     return (
-       <div className="container mx-auto py-12 px-4 max-w-2xl text-center">
+      <div className="container mx-auto py-12 px-4 max-w-2xl text-center">
         <h2 className="text-2xl font-semibold text-destructive mb-4">Post Not Found</h2>
         <p className="text-muted-foreground">The post you are looking for does not exist or could not be loaded.</p>
         <Button asChild className="mt-6">
@@ -206,9 +207,9 @@ export default function BlogPostPage() {
 
   const displayContent = translatedContent ?? post.content;
   const currentLanguageName = availableLanguages.find(l => l.code === selectedLanguage)?.name || selectedLanguage;
-  
-  const categoryLinkPath = categoryDetails?.path 
-    ? categoryDetails.path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/') 
+
+  const categoryLinkPath = categoryDetails?.path
+    ? categoryDetails.path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/')
     : categoryDetails?.slug;
 
   return (
@@ -217,7 +218,7 @@ export default function BlogPostPage() {
         <main className="lg:col-span-8 xl:col-span-9">
           <article>
             {categoryDetails?.path && categoryDetails.path.length > 0 && (
-                <BreadcrumbDisplay path={categoryDetails.path} className="mb-4" />
+              <BreadcrumbDisplay path={categoryDetails.path} className="mb-4" />
             )}
             <header className="mb-8">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline mb-4">{post.title}</h1>
@@ -226,7 +227,7 @@ export default function BlogPostPage() {
                   <div className="flex items-center space-x-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={post.authorAvatar} alt={post.author} data-ai-hint="author avatar" />
-                      <AvatarFallback>{post.author.substring(0,1)}</AvatarFallback>
+                      <AvatarFallback>{post.author.substring(0, 1)}</AvatarFallback>
                     </Avatar>
                     <span>{post.author}</span>
                   </div>
@@ -236,20 +237,20 @@ export default function BlogPostPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Globe className="h-5 w-5 text-muted-foreground" />
-                    <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={isTranslating}>
-                      <SelectTrigger className="w-[180px] h-9 text-sm">
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableLanguages.map(lang => (
-                          <SelectItem key={lang.code} value={lang.code}>
-                            {lang.name} {lang.code === post.originalLanguage && "(Original)"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {isTranslating && <Loader2 className="h-5 w-5 animate-spin" />}
+                  <Globe className="h-5 w-5 text-muted-foreground" />
+                  <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={isTranslating}>
+                    <SelectTrigger className="w-[180px] h-9 text-sm">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableLanguages.map(lang => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name} {lang.code === post.originalLanguage && "(Original)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isTranslating && <Loader2 className="h-5 w-5 animate-spin" />}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mt-2 items-center">
@@ -257,14 +258,14 @@ export default function BlogPostPage() {
                 {isLoadingCategory ? (
                   <Badge variant="outline" className="text-sm">Loading category...</Badge>
                 ) : categoryDetails?.name && categoryLinkPath && categoryLinkPath.trim() !== '' ? (
-                   <Link href={`/blog/category/${categoryLinkPath}`} className="hover:underline">
+                  <Link href={`/blog/category/${categoryLinkPath}`} className="hover:underline">
                     <Badge variant="outline" className="text-sm cursor-pointer hover:bg-secondary">{categoryDetails.name}</Badge>
                   </Link>
                 ) : (
                   <Badge variant="outline" className="text-sm">Uncategorized</Badge>
                 )}
               </div>
-              
+
               {post.resolvedTags && post.resolvedTags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2 items-center">
                   <TagIcon className="h-4 w-4 text-muted-foreground mr-1" />
@@ -279,7 +280,17 @@ export default function BlogPostPage() {
               )}
             </header>
 
-            {post.featuredImageUrl && (
+            {getVideoEmbedUrl(post.videoUrl) ? (
+              <div className="aspect-video w-full mb-8 rounded-lg overflow-hidden shadow-lg bg-black">
+                <iframe
+                  src={getVideoEmbedUrl(post.videoUrl)!}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={post.title}
+                />
+              </div>
+            ) : post.featuredImageUrl && (
               <Image
                 src={post.featuredImageUrl}
                 alt={post.title}
@@ -289,10 +300,10 @@ export default function BlogPostPage() {
                 data-ai-hint={post.featuredImageHint || "featured image"}
               />
             )}
-            
+
             {post.galleryImages && post.galleryImages.length > 0 && (
               <>
-                <section className="mb-8"> 
+                <section className="mb-8">
                   <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline mb-6 flex items-center">
                     <ImageIcon className="mr-3 h-7 w-7 text-primary" />
                     Image Gallery
@@ -319,7 +330,7 @@ export default function BlogPostPage() {
                     ))}
                   </div>
                 </section>
-                <Separator className="mb-8" /> 
+                <Separator className="mb-8" />
               </>
             )}
 
@@ -334,7 +345,7 @@ export default function BlogPostPage() {
                 dangerouslySetInnerHTML={{ __html: displayContent }}
               />
             )}
-            
+
           </article>
 
           {post.downloads && post.downloads.length > 0 && (
@@ -372,11 +383,11 @@ export default function BlogPostPage() {
           <Separator className="my-12" />
           <CommentSection postId={post.slug} initialComments={post.comments || []} />
           <Separator className="my-12" />
-          
+
           {post.categoryId && (
-            <RelatedPostsSection 
+            <RelatedPostsSection
               categoryId={post.categoryId}
-              currentPostSlug={post.slug} 
+              currentPostSlug={post.slug}
             />
           )}
         </main>
@@ -405,7 +416,7 @@ export default function BlogPostPage() {
               </SheetContent>
             </Sheet>
           </div>
-          <div className="hidden lg:block sticky top-24 space-y-8"> 
+          <div className="hidden lg:block sticky top-24 space-y-8">
             <BlogSidebar
               onSearch={handleSearch}
               searchInitialQuery={currentSearchQuery}

@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { useFormatPrice } from '@/contexts/currency-context';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { getVideoEmbedUrl } from '@/lib/video-utils';
 
 type ServiceType = 'hotel' | 'tour' | 'vehicle' | 'transfer' | 'restaurant' | 'product' | 'job' | 'post' | 'freelancer';
 
@@ -69,29 +70,7 @@ const CATEGORIES = [
     { id: 'freelancers', name: 'Talent', icon: UserCheck, color: 'bg-indigo-600' },
 ];
 
-function getVideoEmbedUrl(url: string | undefined): string | null {
-    if (!url) return null;
-
-    // YouTube
-    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    if (ytMatch && ytMatch[1]) {
-        return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&controls=1&mute=1&loop=1&playlist=${ytMatch[1]}&playsinline=1`;
-    }
-
-    // TikTok
-    const tkMatch = url.match(/tiktok\.com\/@[\w.-]+\/video\/(\d+)/);
-    if (tkMatch && tkMatch[1]) {
-        return `https://www.tiktok.com/embed/v2/${tkMatch[1]}?autoplay=1`;
-    }
-
-    // Instagram (Posts & Reels)
-    const igMatch = url.match(/(?:instagram\.com\/(?:p|reels|reel)\/)([\w-]+)/);
-    if (igMatch && igMatch[1]) {
-        return `https://www.instagram.com/p/${igMatch[1]}/embed`;
-    }
-
-    return null;
-}
+// VIDEO UTILITY MOVED TO @/lib/video-utils.ts
 
 export default function UniversalFeed() {
     const [items, setItems] = useState<FeedItem[]>([]);
@@ -225,24 +204,7 @@ export default function UniversalFeed() {
 
             let filteredItems = allRaw;
 
-            // 1. Category Filter
-            if (activeCategory !== 'all') {
-                const categoryToType: Record<string, ServiceType> = {
-                    'hotels': 'hotel',
-                    'tours': 'tour',
-                    'cars': 'vehicle',
-                    'transfers': 'transfer',
-                    'restaurants': 'restaurant',
-                    'products': 'product',
-                    'freelancers': 'freelancer'
-                };
-                const targetType = categoryToType[activeCategory];
-                if (targetType) {
-                    filteredItems = filteredItems.filter(item => item.type === targetType);
-                }
-            }
-
-            // 2. Search Filter
+            // Search Filter
             if (searchQuery.trim()) {
                 const q = searchQuery.toLowerCase();
                 filteredItems = filteredItems.filter(item =>
@@ -254,7 +216,7 @@ export default function UniversalFeed() {
 
             setItems(prev => {
                 const combined = isInitial ? filteredItems : [...prev, ...filteredItems];
-                // 3. Duplicate Prevention (Unique by ID)
+                // Duplicate Prevention (Unique by ID)
                 const seen = new Set();
                 return combined.filter(item => {
                     if (seen.has(item.id)) return false;
@@ -275,7 +237,7 @@ export default function UniversalFeed() {
         setItems([]);
         setPage(1);
         fetchItems(true);
-    }, [activeCategory, searchQuery]);
+    }, [searchQuery]);
 
     useEffect(() => {
         if (page > 1) {
@@ -367,31 +329,31 @@ export default function UniversalFeed() {
                                     'freelancers': '/our-services'
                                 };
                                 return (
-                                    <div key={cat.id} className="flex flex-col items-center gap-3">
-                                        <button
-                                            onClick={() => setActiveCategory(cat.id)}
-                                            className={cn(
-                                                "w-14 h-14 rounded-2xl p-0.5 border-2 transition-all duration-300",
-                                                activeCategory === cat.id ? "border-primary shadow-lg shadow-primary/10 scale-110" : "border-border hover:border-primary/50"
-                                            )}
-                                        >
+                                    <Link
+                                        key={cat.id}
+                                        href={hrefMap[cat.id]}
+                                        className="flex flex-col items-center gap-3 transition-transform hover:scale-105 active:scale-95"
+                                    >
+                                        <div className={cn(
+                                            "w-14 h-14 rounded-2xl p-0.5 border-2 transition-all duration-300",
+                                            activeCategory === cat.id ? "border-primary shadow-lg shadow-primary/10 scale-110" : "border-border hover:border-primary/50"
+                                        )}>
                                             <div className={cn(
                                                 "w-full h-full rounded-[0.9rem] flex items-center justify-center text-white",
                                                 cat.color || "bg-slate-200"
                                             )}>
                                                 <cat.icon className="w-6 h-6" />
                                             </div>
-                                        </button>
-                                        <Link
-                                            href={hrefMap[cat.id]}
+                                        </div>
+                                        <span
                                             className={cn(
                                                 "text-[9px] font-black uppercase tracking-widest text-center hover:text-primary transition-colors",
                                                 activeCategory === cat.id ? "text-primary" : "text-slate-500"
                                             )}
                                         >
                                             {cat.name}
-                                        </Link>
-                                    </div>
+                                        </span>
+                                    </Link>
                                 );
                             })}
                         </div>

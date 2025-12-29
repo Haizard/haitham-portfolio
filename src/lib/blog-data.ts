@@ -38,9 +38,10 @@ export interface BlogPost {
   authorAvatar: string;
   date: string;
   tagIds?: string[];
-  
+
   featuredImageUrl?: string;
   featuredImageHint?: string;
+  videoUrl?: string;
   galleryImages?: GalleryImage[];
   downloads?: DownloadLink[];
 
@@ -62,8 +63,8 @@ function docToBlogPost(doc: any): BlogPost {
     ...comment,
     id: comment.id || new ObjectId().toString(), // Ensure comments always have an id
   }));
-  return { 
-    id: _id?.toString(), 
+  return {
+    id: _id?.toString(),
     ...rest,
     galleryImages: rest.galleryImages || [],
     downloads: rest.downloads || [],
@@ -72,8 +73,8 @@ function docToBlogPost(doc: any): BlogPost {
 }
 
 export async function getAllPosts(
-  enrich: boolean = false, 
-  categoryDataFetcher?: typeof getCategoryPathType, 
+  enrich: boolean = false,
+  categoryDataFetcher?: typeof getCategoryPathType,
   tagDataFetcher?: typeof getTagsByIdsType,
   searchQuery?: string,
   limit?: number,
@@ -82,13 +83,13 @@ export async function getAllPosts(
 ): Promise<BlogPost[]> {
   console.log(`Attempting to fetch posts from DB. Search: "${searchQuery || ''}", Limit: ${limit}, ExcludeSlugs: ${excludeSlugs?.join(',')}, AuthorId: ${authorId}`);
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
-  
+
   const query: Filter<BlogPost> = {};
   if (searchQuery) {
-    const regex = { $regex: searchQuery, $options: 'i' }; 
+    const regex = { $regex: searchQuery, $options: 'i' };
     query.$or = [
       { title: regex },
-      { content: regex } 
+      { content: regex }
     ];
   }
 
@@ -106,7 +107,7 @@ export async function getAllPosts(
   }
   let postsArray = await postsCursor.toArray();
   console.log(`Fetched ${postsArray.length} posts from DB with current filters.`);
-  
+
   let results = postsArray.map(docToBlogPost);
 
   if (enrich && categoryDataFetcher && tagDataFetcher) {
@@ -142,16 +143,16 @@ export async function getPostBySlug(slug: string, enrich: boolean = false, categ
   let post = docToBlogPost(postDoc);
 
   if (enrich && categoryDataFetcher && tagDataFetcher) {
-      if (post.categoryId) {
-        const path = await categoryDataFetcher(post.categoryId);
-        if (path && path.length > 0) {
-          post.categoryName = path[path.length - 1].name;
-          post.categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
-        }
+    if (post.categoryId) {
+      const path = await categoryDataFetcher(post.categoryId);
+      if (path && path.length > 0) {
+        post.categoryName = path[path.length - 1].name;
+        post.categorySlugPath = path.map(p => p.slug).filter(s => s && s.trim() !== '').join('/');
       }
-      if (post.tagIds && post.tagIds.length > 0) {
-        post.resolvedTags = await tagDataFetcher(post.tagIds);
-      }
+    }
+    if (post.tagIds && post.tagIds.length > 0) {
+      post.resolvedTags = await tagDataFetcher(post.tagIds);
+    }
   }
   return post;
 }
@@ -168,7 +169,7 @@ export async function getPostById(id: string): Promise<BlogPost | null> {
 
 export async function addPost(postData: Omit<BlogPost, 'id' | '_id' | 'date' | 'categoryName' | 'categorySlugPath' | 'resolvedTags'> & { date?: string }): Promise<BlogPost> {
   const collection = await getCollection<Omit<BlogPost, 'id' | '_id' | 'categoryName' | 'categorySlugPath' | 'resolvedTags'>>(POSTS_COLLECTION);
-  
+
   const existingPost = await collection.findOne({ slug: postData.slug });
   if (existingPost) {
     console.warn(`[addPost] Post with slug '${postData.slug}' already exists. Update or use new slug.`);
@@ -182,10 +183,10 @@ export async function addPost(postData: Omit<BlogPost, 'id' | '_id' | 'date' | '
     galleryImages: postData.galleryImages || [],
     downloads: postData.downloads || [],
   };
-  
+
   console.log("[addPost] Attempting to insert new post with slug:", postData.slug);
   const result = await collection.insertOne(docToInsert as any);
-  
+
   const newPost: BlogPost = {
     _id: result.insertedId,
     id: result.insertedId.toString(),
@@ -201,7 +202,7 @@ export async function updatePost(id: string, updates: Partial<Omit<BlogPost, 'id
     return null;
   }
   const collection = await getCollection<BlogPost>(POSTS_COLLECTION);
-    
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updates },
@@ -235,7 +236,7 @@ export async function getPostsByCategoryId(categoryId: string, limit?: number, e
   let results = postsArray.map(docToBlogPost);
 
   if (enrich && categoryDataFetcher && tagDataFetcher) {
-     results = await Promise.all(results.map(async (post) => {
+    results = await Promise.all(results.map(async (post) => {
       let categoryName: string | undefined;
       let categorySlugPath: string | undefined;
       let resolvedTags: Tag[] = [];
@@ -257,7 +258,7 @@ export async function getPostsByCategoryId(categoryId: string, limit?: number, e
 }
 
 export async function getPostsByTagId(tagId: string, limit?: number, excludeSlugs?: string[], enrich: boolean = false, categoryDataFetcher?: typeof getCategoryPathType, tagDataFetcher?: typeof getTagsByIdsType): Promise<BlogPost[]> {
-   if (!ObjectId.isValid(tagId)) {
+  if (!ObjectId.isValid(tagId)) {
     console.warn(`getPostsByTagId: Invalid tagId format: ${tagId}`);
     return [];
   }
@@ -274,7 +275,7 @@ export async function getPostsByTagId(tagId: string, limit?: number, excludeSlug
   let results = postsArray.map(docToBlogPost);
 
   if (enrich && categoryDataFetcher && tagDataFetcher) {
-     results = await Promise.all(results.map(async (post) => {
+    results = await Promise.all(results.map(async (post) => {
       let categoryName: string | undefined;
       let categorySlugPath: string | undefined;
       let resolvedTags: Tag[] = [];
@@ -305,13 +306,13 @@ export async function addCommentToPost(postSlug: string, commentData: Omit<Comme
   }
 
   const newComment: Comment = {
-    id: new ObjectId().toString(), 
+    id: new ObjectId().toString(),
     ...commentData,
   };
 
   const result = await collection.updateOne(
     { slug: postSlug },
-    { $push: { comments: { $each: [newComment], $position: 0 } } } 
+    { $push: { comments: { $each: [newComment], $position: 0 } } }
   );
 
   if (result.modifiedCount === 1) {
