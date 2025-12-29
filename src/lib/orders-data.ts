@@ -208,45 +208,7 @@ export async function createOrderFromCart(
 }
 
 
-// Seed data function now uses the new order splitting logic
-async function seedInitialOrders() {
-    const ordersCollection = await getCollection<Order>(ORDERS_COLLECTION);
-    const productsCollection = await getCollection<Product>('products');
-    const count = await ordersCollection.countDocuments();
-
-    if (count === 0) {
-        console.log("Seeding initial orders using createOrderFromCart logic...");
-        const vendorProducts = await productsCollection.find({ productType: 'creator' }).limit(4).toArray();
-
-        if (vendorProducts.length < 2) {
-            console.log("Not enough creator products from different vendors to seed split orders.");
-            return;
-        }
-
-        // Create a mock cart with items from potentially different vendors
-        const mockCart = [
-            { productId: vendorProducts[0]._id.toString(), quantity: 1 },
-            { productId: vendorProducts[1]._id.toString(), quantity: 2 },
-        ];
-
-        if (vendorProducts.length > 2) {
-            // Add another item from the first vendor to test grouping
-            mockCart.push({ productId: vendorProducts[0]._id.toString(), quantity: 1 });
-        }
-
-        const customerDetails = {
-            name: "Alice Wonderland",
-            email: "alice@example.com",
-            address: "123 Fantasy Lane, Wonderland",
-        };
-
-        await createOrderFromCart(customerDetails, mockCart, 'delivery', new Date());
-        console.log("Initial orders seeded.");
-    }
-}
-
-// Global invocation or call it somewhere appropriate
-seedInitialOrders().catch(console.error);
+// Seeds are handled elsewhere or manually to prevent connection issues on serverless/HMR environments.
 
 // NEW function to get an order by ID
 export async function getOrderById(orderId: string): Promise<Order | null> {

@@ -118,20 +118,8 @@ export async function getAllProducts(
   const productsCollection = await getCollection<ProductDocument>(PRODUCTS_COLLECTION);
   const ordersCollection = await getCollection('orders');
 
-  // 1. Get sales data first
-  const salesPipeline = [
-    { $unwind: "$lineItems" },
-    { $match: { "lineItems.status": "Delivered" } },
-    {
-      $group: {
-        _id: "$lineItems.productId",
-        sales: { $sum: "$lineItems.quantity" },
-        revenue: { $sum: { $multiply: ["$lineItems.quantity", "$lineItems.price"] } }
-      }
-    }
-  ];
-  const salesData = await ordersCollection.aggregate(salesPipeline).toArray();
-  const salesMap = new Map(salesData.map((item: any) => [item._id.toString(), { sales: item.sales, revenue: item.revenue }]));
+  // 1. Skip expensive sales data for general listings to prevent timeouts
+  const salesMap = new Map();
 
   // 2. Fetch products based on filters
   const query: Filter<ProductDocument> = {};
@@ -182,16 +170,13 @@ export async function getAllProducts(
 
   let enrichedProducts = productDocs.map(doc => {
     const product = docToProduct(doc);
-    const saleInfo = salesMap.get(product.id!);
-    product.sales = saleInfo?.sales || 0;
-    product.revenue = saleInfo?.revenue || 0;
+    product.sales = 0; // Temporarily disabled for performance
+    product.revenue = 0;
     product.vendorName = vendorMap.get(product.vendorId) || 'Unknown Vendor';
     return product;
   });
 
-  if (filters.sortBy === 'sales') {
-    enrichedProducts = enrichedProducts.sort((a, b) => (b.sales || 0) - (a.sales || 0));
-  }
+  // Sales sorting is skipped for stability 
 
 
   return enrichedProducts;
