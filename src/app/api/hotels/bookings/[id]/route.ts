@@ -93,7 +93,7 @@ export async function PATCH(
     const isAdmin = authResult.user.roles.includes('admin');
 
     const property = await getPropertyById(booking.propertyId);
-    const isPropertyOwner = property?.ownerId === authResult.user.id;
+    const isPropertyOwner = property?.ownerId?.toString() === authResult.user.id;
 
     // Only booking owner can cancel
     if (validatedData.status === 'cancelled' && !isBookingOwner && !isAdmin) {
@@ -110,6 +110,7 @@ export async function PATCH(
       !isPropertyOwner &&
       !isAdmin
     ) {
+      console.warn(`[HOTEL_PERM_DENIED] User ${authResult.user.id} tried to update booking ${id} to ${validatedData.status}. Property owner is ${property?.ownerId}`);
       return NextResponse.json({
         success: false,
         message: 'Only the property owner can update booking status',
@@ -165,4 +166,3 @@ export async function PATCH(
     }, { status: 500 });
   }
 }
-

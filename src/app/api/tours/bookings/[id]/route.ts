@@ -81,11 +81,22 @@ export async function PATCH(
     }
 
     // Authorization check
-    const isOwner = booking.userId === session.id;
+    const isCustomer = booking.userId === session.id;
     const isAdmin = session.roles.includes('admin');
 
-    if (!isOwner && !isAdmin) {
+    // Fetch tour activity to check owner
+    const tour = await getTourActivityById(booking.tourId);
+    const isTourOwner = tour?.guideId?.toString() === session.id;
+
+    if (!isCustomer && !isTourOwner && !isAdmin) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Status management: Customers can only cancel
+    if (validatedData.status && !isTourOwner && !isAdmin) {
+      if (validatedData.status !== 'cancelled') {
+        return NextResponse.json({ message: 'Only tour owners can update booking status' }, { status: 403 });
+      }
     }
 
     // Handle cancellation

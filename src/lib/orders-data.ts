@@ -245,7 +245,18 @@ async function seedInitialOrders() {
     }
 }
 
+// Global invocation or call it somewhere appropriate
 seedInitialOrders().catch(console.error);
+
+// NEW function to get an order by ID
+export async function getOrderById(orderId: string): Promise<Order | null> {
+    if (!ObjectId.isValid(orderId)) {
+        return null;
+    }
+    const collection = await getCollection<Order>(ORDERS_COLLECTION);
+    const doc = await collection.findOne({ _id: new ObjectId(orderId) });
+    return doc ? docToOrder(doc) : null;
+}
 
 // The getOrdersByVendorId function is now much simpler.
 export async function getOrdersByVendorId(vendorId: string): Promise<Order[]> {
@@ -264,7 +275,7 @@ export async function getAllOrders(): Promise<Order[]> {
     return allOrders.map(docToOrder);
 }
 
-export async function updateLineItemStatus(orderId: string, lineItemId: string, newStatus: LineItemStatus): Promise<boolean> {
+export async function updateLineItemStatus(orderId: string, lineItemId: string, newStatus: string): Promise<boolean> {
     if (!ObjectId.isValid(orderId) || !ObjectId.isValid(lineItemId)) {
         return false;
     }
@@ -278,14 +289,14 @@ export async function updateLineItemStatus(orderId: string, lineItemId: string, 
     return result.modifiedCount === 1;
 }
 
-export async function updateOrderStatus(orderId: string, newStatus: OrderStatus): Promise<Order | null> {
+export async function updateOrderStatus(orderId: string, newStatus: string): Promise<Order | null> {
     if (!ObjectId.isValid(orderId)) {
         return null;
     }
     const collection = await getCollection<Order>(ORDERS_COLLECTION);
     const result = await collection.findOneAndUpdate(
         { _id: new ObjectId(orderId) },
-        { $set: { status: newStatus } },
+        { $set: { status: newStatus as any } },
         { returnDocument: 'after' }
     );
     return result ? docToOrder(result) : null;

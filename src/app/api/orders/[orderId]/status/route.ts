@@ -1,6 +1,5 @@
-// src/app/api/orders/[orderId]/status/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
-import { updateOrderStatus, type OrderStatus } from '@/lib/orders-data';
+import { updateOrderStatus, getOrderById, type OrderStatus } from '@/lib/orders-data';
 import { z } from 'zod';
 import { getSession } from '@/lib/session';
 
@@ -14,12 +13,25 @@ export async function PUT(
 ) {
   try {
     const session = await getSession();
-    // TODO: Add role check to ensure only the restaurant owner or admin can update status.
-    if (!session.user) {
+    if (!session || !session.user) {
       return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     const { orderId } = await params;
+
+    // Fetch order to check ownership
+    const order = await getOrderById(orderId);
+    if (!order) {
+      return NextResponse.json({ message: "Order not found" }, { status: 404 });
+    }
+
+    const isOwner = order.vendorId === session.user.id;
+    const isAdmin = session.user.roles.includes('admin');
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ message: "Unauthorized: Only the vendor or admin can update status" }, { status: 403 });
+    }
+
     const body = await request.json();
     const validation = statusUpdateSchema.safeParse(body);
 
@@ -28,17 +40,15 @@ export async function PUT(
     }
 
     const { status } = validation.data;
-    const updatedOrder = await updateOrderStatus(orderId, status);
+    const updatedOrder = await updateOrderStatus(orderId, status as OrderStatus);
 
     if (!updatedOrder) {
       return NextResponse.json({ message: "Order not found or update failed." }, { status: 404 });
     }
 
-    // In a real app, you might trigger a notification to the customer here.
-
     return NextResponse.json({ message: "Order status updated successfully.", order: updatedOrder });
   } catch (error: any) {
-    console.error(`[API /orders/${params.orderId}/status PUT] Error:`, error);
+    console.error(`[API /orders/status PUT] Error:`, error);
     return NextResponse.json({ message: `Failed to update order status: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }

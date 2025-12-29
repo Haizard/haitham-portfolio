@@ -9,6 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -131,6 +138,36 @@ export default function MyPropertiesPage() {
       setDeletingId(null);
       setShowDeleteDialog(false);
       setPropertyToDelete(null);
+    }
+  };
+
+  const handleUpdateBookingStatus = async (bookingId: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/hotels/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update status');
+      }
+
+      toast({
+        title: 'Status Updated',
+        description: `Booking status changed to ${newStatus}`,
+      });
+
+      // Update local state
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
+    } catch (error: any) {
+      console.error('Error updating booking status:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update status',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -345,7 +382,30 @@ export default function MyPropertiesPage() {
                           Guest: {booking.guestInfo.firstName} {booking.guestInfo.lastName}
                         </p>
                       </div>
-                      <Badge>{booking.status}</Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge variant={
+                          booking.status === 'confirmed' ? 'default' :
+                            booking.status === 'checked_in' ? 'secondary' :
+                              booking.status === 'cancelled' ? 'destructive' : 'outline'
+                        }>
+                          {booking.status}
+                        </Badge>
+                        <Select
+                          defaultValue={booking.status}
+                          onValueChange={(val) => handleUpdateBookingStatus(booking.id, val)}
+                        >
+                          <SelectTrigger className="h-8 w-32 text-xs">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="checked_in">Checked In</SelectItem>
+                            <SelectItem value="checked_out">Checked Out</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
