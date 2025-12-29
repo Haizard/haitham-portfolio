@@ -1,10 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import Link from 'next/link';
 import Image from 'next/image';
 import Autoplay from "embla-carousel-autoplay";
+import { CalendarDays } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -86,7 +86,6 @@ export function TrendingPostsCarousel({ posts }: TrendingPostsCarouselProps) {
                         </Badge>
                       </Link>
                     )}
-                    {/* You can add more badges if you have multiple categories/tags here */}
                   </div>
                   <Link href={`/blog/${post.slug}`} className="block">
                     <h2 className="text-2xl md:text-4xl font-bold font-headline mb-3 leading-tight hover:text-primary transition-colors duration-300">
@@ -114,22 +113,12 @@ export function TrendingPostsCarousel({ posts }: TrendingPostsCarouselProps) {
                         })}
                       </time>
                     </div>
-                    {/* Optional: Comment count icon from example image */}
-                    {/* <div className="flex items-center space-x-1">
-                     <MessageSquare className="h-4 w-4" />
-                     <span>{post.comments?.length || 0}</span>
-                   </div> */}
                   </div>
                 </div>
-                {/* Optional: Play button icon from example image - might be for video posts */}
-                {/* <div className="absolute top-4 right-4">
-                <Button variant="ghost" size="icon" className="bg-black/50 hover:bg-black/75 text-white rounded-full">
-                  <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"></path></svg>
-                </Button>
-              </div> */}
               </div>
             </CarouselItem>
-          ))}
+          );
+        })}
       </CarouselContent>
       <div className="absolute bottom-6 right-6 hidden md:flex items-center gap-2">
         <CarouselPrevious className="static translate-y-0 w-10 h-10 bg-background/80 hover:bg-background text-foreground backdrop-blur-sm" />
