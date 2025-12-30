@@ -1,6 +1,6 @@
 "use client";
 
-import { Hotel, Car, Compass, PlaneLanding, ShoppingBag, UserCheck, Calendar, DollarSign, Users, TrendingUp, Package, Star, ShieldCheck } from 'lucide-react';
+import { Hotel, Car, Compass, PlaneLanding, ShoppingBag, UserCheck, Calendar, DollarSign, Users, TrendingUp, Package, Star, ShieldCheck, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -191,6 +191,7 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
               </Card>
             </div>
           </div>
+        )}
         {/* Client Dashboard */}
         {isClient && (
           <div className="space-y-4">
