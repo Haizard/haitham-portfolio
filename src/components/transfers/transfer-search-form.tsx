@@ -35,6 +35,7 @@ import { useTranslations } from 'next-intl';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchTrigger } from '../shared/mobile-search-trigger';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const searchFormSchema = z.object({
   pickupLocation: z.string().min(2, 'Pickup location is required'),
@@ -285,22 +286,25 @@ export function TransferSearchForm({ className, mode = 'full' }: TransferSearchF
     </Form>
   );
 
-  return (
-    <>
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
       <MobileSearchTrigger
         title="Book a Transfer"
         summary={summary}
-        className={cn(mode === 'full' ? 'md:hidden' : 'block')}
+        className={cn(mode === 'full' ? '' : 'block')}
       >
         {formContent}
       </MobileSearchTrigger>
+    );
+  }
 
-      <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'hidden md:block' : 'hidden', className)}>
-        <CardContent className="pt-8">
-          {formContent}
-        </CardContent>
-      </Card>
-    </>
+  return (
+    <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'block' : 'hidden', className)}>
+      <CardContent className="pt-8">
+        {formContent}
+      </CardContent>
+    </Card>
   );
 }
-

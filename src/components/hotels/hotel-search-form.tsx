@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import { MobileSearchTrigger } from '../shared/mobile-search-trigger';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const searchSchema = z.object({
   destination: z.string().min(2, 'Enter a destination'),
@@ -244,22 +245,25 @@ export function HotelSearchForm({ className, onSearch, mode = 'full' }: HotelSea
     </form>
   );
 
-  return (
-    <>
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
       <MobileSearchTrigger
         title="Search Hotels"
         summary={summary}
-        className={cn(mode === 'full' ? 'md:hidden' : 'block')}
+        className={cn(mode === 'full' ? '' : 'block')}
       >
         {formContent}
       </MobileSearchTrigger>
+    );
+  }
 
-      <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'hidden md:block' : 'hidden', className)}>
-        <CardContent className="pt-8">
-          {formContent}
-        </CardContent>
-      </Card>
-    </>
+  return (
+    <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'block' : 'hidden', className)}>
+      <CardContent className="pt-8">
+        {formContent}
+      </CardContent>
+    </Card>
   );
 }
-
