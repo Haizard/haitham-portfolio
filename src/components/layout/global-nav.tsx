@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Zap, ShoppingBag, UserCheck, Compass, PlaneLanding, Layers, ShoppingCart, Briefcase, Sparkles, Handshake, UserCircle, LogOut, Utensils, Home, Newspaper, Store, LayoutDashboard, Plane, Hotel, Car, Bus } from 'lucide-react';
+import { Zap, ShoppingBag, UserCheck, Compass, PlaneLanding, Layers, ShoppingCart, Sparkles, Handshake, UserCircle, LogOut, Utensils, Newspaper, LayoutDashboard, Hotel, Car, Bus } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { Logo } from './logo';
@@ -49,7 +49,7 @@ const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
       { href: "/find-work", label: t('freelancers'), icon: UserCheck },
     ];
 
-  const gridColsClass = user ? 'grid-cols-5' : 'grid-cols-6';
+  const gridColsClass = mobileNavItems.length === 6 ? 'grid-cols-6' : 'grid-cols-7';
 
   return (
     <AnimatePresence>

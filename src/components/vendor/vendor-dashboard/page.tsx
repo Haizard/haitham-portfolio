@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, DollarSign, Package, ShoppingCart, User, MoreHorizontal, Store, Landmark, ArrowRight, TrendingUp } from "lucide-react";
+import { Loader2, DollarSign, Package, ShoppingCart, User, MoreHorizontal, ShoppingBag, Landmark, ArrowRight, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from '@/lib/products-data';
 import type { FreelancerProfile } from '@/lib/user-profile-data';
@@ -19,10 +19,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/use-user'; // Import the useUser hook
 
 interface VendorDashboardData {
-  profile: FreelancerProfile;
-  products: Product[];
-  financeSummary: VendorFinanceSummary;
-  orders: Order[];
+    profile: FreelancerProfile;
+    products: Product[];
+    financeSummary: VendorFinanceSummary;
+    orders: Order[];
 }
 
 export default function VendorDashboardPage() {
@@ -64,23 +64,23 @@ export default function VendorDashboardPage() {
             </header>
 
             <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                 {isLoading ? (
+                {isLoading ? (
                     <>
                         <Skeleton className="h-28" />
                         <Skeleton className="h-28" />
                         <Skeleton className="h-28" />
                         <Skeleton className="h-28" />
                     </>
-                 ) : (
+                ) : (
                     <>
                         <MetricCard title="Available Balance" value={`$${data?.financeSummary.availableBalance.toFixed(2) || '0.00'}`} icon={DollarSign} description="Ready for withdrawal" />
                         <MetricCard title="Total Products" value={data?.products.length.toString() || '0'} icon={Package} description="Products listed in your store" />
                         <MetricCard title="Total Orders" value={data?.orders.length.toString() || '0'} icon={ShoppingCart} description="Lifetime orders received" />
                         <MetricCard title="Lifetime Earnings" value={`$${data?.financeSummary.totalEarnings.toFixed(2) || '0.00'}`} icon={TrendingUp} description="From all completed orders" />
                     </>
-                 )}
+                )}
             </section>
-            
+
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="col-span-1 lg:col-span-2 shadow-xl">
                     <CardHeader>
@@ -88,8 +88,8 @@ export default function VendorDashboardPage() {
                         <CardDescription>A summary of your most recent customer orders.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {isLoading ? <Skeleton className="h-64"/> : recentOrders.length === 0 ? (
-                             <p className="text-center text-muted-foreground py-10">You have no orders yet.</p>
+                        {isLoading ? <Skeleton className="h-64" /> : recentOrders.length === 0 ? (
+                            <p className="text-center text-muted-foreground py-10">You have no orders yet.</p>
                         ) : (
                             <Table>
                                 <TableHeader>
@@ -114,9 +114,9 @@ export default function VendorDashboardPage() {
                         )}
                     </CardContent>
                     <CardFooter className="justify-end">
-                         <Button asChild variant="outline">
+                        <Button asChild variant="outline">
                             <Link href="/vendor/orders">
-                                View All Orders <ArrowRight className="ml-2 h-4 w-4"/>
+                                View All Orders <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
                     </CardFooter>
@@ -128,17 +128,17 @@ export default function VendorDashboardPage() {
                         <CardDescription>Manage your store efficiently.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
-                         <Button asChild variant="default" size="lg" className="justify-start">
-                           <Link href="/vendor/products"><Package className="mr-3 h-5 w-5"/>Manage My Products</Link>
+                        <Button asChild variant="default" size="lg" className="justify-start">
+                            <Link href="/vendor/products"><Package className="mr-3 h-5 w-5" />Manage My Products</Link>
                         </Button>
                         <Button asChild variant="outline" size="lg" className="justify-start">
-                           <Link href="/vendor/orders"><ShoppingCart className="mr-3 h-5 w-5"/>Manage All Orders</Link>
+                            <Link href="/vendor/orders"><ShoppingCart className="mr-3 h-5 w-5" />Manage All Orders</Link>
                         </Button>
-                         <Button asChild variant="outline" size="lg" className="justify-start">
-                           <Link href="/vendor/finances"><Landmark className="mr-3 h-5 w-5"/>My Finances</Link>
+                        <Button asChild variant="outline" size="lg" className="justify-start">
+                            <Link href="/vendor/finances"><Landmark className="mr-3 h-5 w-5" />My Finances</Link>
                         </Button>
-                         <Button asChild variant="outline" size="lg" className="justify-start">
-                           <Link href={`/store/${user?.id}`} target="_blank"><Store className="mr-3 h-5 w-5"/>View My Storefront</Link>
+                        <Button asChild variant="outline" size="lg" className="justify-start">
+                            <Link href={`/store/${user?.id}`} target="_blank"><ShoppingBag className="mr-3 h-5 w-5" />View My Storefront</Link>
                         </Button>
                     </CardContent>
                 </Card>

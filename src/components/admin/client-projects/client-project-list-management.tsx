@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit3, Trash2, Loader2, PlusCircle, Briefcase, CalendarDays, CheckSquare, PlaySquare, Pause, FolderClock } from "lucide-react";
+import { Edit3, Trash2, Loader2, PlusCircle, UserCheck, CalendarDays, CheckSquare, PlaySquare, Pause, FolderClock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ClientProject } from '@/lib/client-projects-data';
 import { ClientProjectFormDialog } from './client-project-form-dialog';
@@ -94,18 +94,18 @@ export function ClientProjectListManagement() {
   };
 
   const handleFormSuccess = (savedProject: ClientProject) => {
-    fetchProjects(); 
+    fetchProjects();
     setIsFormOpen(false);
     setEditingProject(null);
   };
-  
+
   const getStatusInfo = (status: ClientProject['status']) => {
     switch (status) {
       case "Planning": return { variant: "secondary", icon: FolderClock, color: "text-blue-500" };
       case "In Progress": return { variant: "default", icon: PlaySquare, color: "text-yellow-500" };
       case "Completed": return { variant: "outline", icon: CheckSquare, color: "text-green-500" };
       case "On Hold": return { variant: "destructive", icon: Pause, color: "text-red-500" };
-      default: return { variant: "outline", icon: Briefcase, color: "text-muted-foreground" };
+      default: return { variant: "outline", icon: UserCheck, color: "text-muted-foreground" };
     }
   };
 
@@ -123,7 +123,7 @@ export function ClientProjectListManagement() {
       <Card className="shadow-xl mb-8">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <CardTitle className="text-2xl font-headline flex items-center"><Briefcase className="mr-2 h-6 w-6 text-primary"/>All Client Projects</CardTitle>
+            <CardTitle className="text-2xl font-headline flex items-center"><UserCheck className="mr-2 h-6 w-6 text-primary" />All Client Projects</CardTitle>
             <CardDescription>View and manage all client projects.</CardDescription>
           </div>
           <Button onClick={handleCreateNewProject} className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
@@ -150,34 +150,34 @@ export function ClientProjectListManagement() {
                   {projects.map(project => {
                     const statusInfo = getStatusInfo(project.status);
                     return (
-                        <TableRow key={project.id} className="hover:bg-muted/50">
+                      <TableRow key={project.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{project.name}</TableCell>
                         <TableCell>{project.client}</TableCell>
                         <TableCell>
-                            <Badge variant={statusInfo.variant} className="text-xs flex items-center w-fit">
+                          <Badge variant={statusInfo.variant} className="text-xs flex items-center w-fit">
                             <statusInfo.icon className={cn("h-4 w-4 mr-1.5", statusInfo.color)} />
                             {project.status}
-                            </Badge>
+                          </Badge>
                         </TableCell>
                         <TableCell>
-                            {project.startDate ? (
-                                <span className="flex items-center text-xs"><CalendarDays className="h-3.5 w-3.5 mr-1"/>{format(parseISO(project.startDate), "PPP")}</span>
-                            ) : '-'}
+                          {project.startDate ? (
+                            <span className="flex items-center text-xs"><CalendarDays className="h-3.5 w-3.5 mr-1" />{format(parseISO(project.startDate), "PPP")}</span>
+                          ) : '-'}
                         </TableCell>
                         <TableCell>
-                            {project.endDate ? (
-                                <span className="flex items-center text-xs"><CalendarDays className="h-3.5 w-3.5 mr-1"/>{format(parseISO(project.endDate), "PPP")}</span>
-                            ) : '-'}
+                          {project.endDate ? (
+                            <span className="flex items-center text-xs"><CalendarDays className="h-3.5 w-3.5 mr-1" />{format(parseISO(project.endDate), "PPP")}</span>
+                          ) : '-'}
                         </TableCell>
                         <TableCell className="text-right space-x-1">
-                            <Button variant="outline" size="sm" onClick={() => handleEditProject(project)}>
+                          <Button variant="outline" size="sm" onClick={() => handleEditProject(project)}>
                             <Edit3 className="h-4 w-4 mr-1 sm:mr-0" /> <span className="hidden sm:inline ml-1">Edit</span>
-                            </Button>
-                            <Button variant="destructive" size="sm" onClick={() => confirmDeleteProject(project)}>
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteProject(project)}>
                             <Trash2 className="h-4 w-4 mr-1 sm:mr-0" /> <span className="hidden sm:inline ml-1">Delete</span>
-                            </Button>
+                          </Button>
                         </TableCell>
-                        </TableRow>
+                      </TableRow>
                     );
                   })}
                 </TableBody>
@@ -193,7 +193,7 @@ export function ClientProjectListManagement() {
         project={editingProject}
         onSuccess={handleFormSuccess}
       />
-      
+
       <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

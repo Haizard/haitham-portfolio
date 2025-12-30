@@ -16,7 +16,6 @@ import {
   CalendarDays,
   MessagesSquare,
   Share2,
-  Briefcase,
   ShieldCheck,
   UserCircle,
   Lightbulb,
@@ -31,7 +30,6 @@ import {
   MessageCircle,
   FilePlus2,
   ClipboardList,
-  Store,
   ShoppingCart,
   Landmark,
   Users,
@@ -39,9 +37,7 @@ import {
   Leaf,
   Utensils,
   Truck,
-  Map,
   Star,
-  Plane,
   MountainSnow,
   Hotel,
   Car,
@@ -124,7 +120,7 @@ const navConfig: (NavItem | NavGroup)[] = [
     group: "Transport Partner",
     roles: ['transport_partner'],
     items: [
-      { href: "/transport/find-work", label: "Find Transport Jobs", icon: Map },
+      { href: "/transport/find-work", label: "Find Transport Jobs", icon: PlaneLanding },
       { href: "/transport/my-deliveries", label: "My Transport Jobs", icon: Truck },
     ]
   },
@@ -204,7 +200,7 @@ const navConfig: (NavItem | NavGroup)[] = [
       { href: "/admin/tags", label: "Blog Tags", icon: Tags },
       { href: "/admin/service-categories", label: "Service Categories", icon: FolderKanban },
       { href: "/admin/food-types", label: "Food Types", icon: Leaf },
-      { href: "/admin/client-projects", label: "Manage Client Projects", icon: Briefcase },
+      { href: "/admin/client-projects", label: "Manage Client Projects", icon: UserCheck },
     ],
   },
 ];

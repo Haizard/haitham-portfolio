@@ -22,7 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Briefcase, CalendarIcon } from "lucide-react";
+import { Loader2, UserCheck, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ClientProject } from '@/lib/client-projects-data';
 import { format, parseISO } from 'date-fns';
@@ -44,7 +44,7 @@ const clientProjectFormSchema = z.object({
   return true;
 }, {
   message: "End date cannot be earlier than start date.",
-  path: ["endDate"], 
+  path: ["endDate"],
 });
 
 export type ClientProjectFormValues = z.infer<typeof clientProjectFormSchema>;
@@ -131,13 +131,13 @@ export function ClientProjectFormDialog({ isOpen, onClose, project, onSuccess }:
       setIsSaving(false);
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Briefcase className="h-6 w-6 text-primary"/>
+            <UserCheck className="h-6 w-6 text-primary" />
             {project ? "Edit Client Project" : "Add New Client Project"}
           </DialogTitle>
           <DialogDescription>
@@ -148,10 +148,10 @@ export function ClientProjectFormDialog({ isOpen, onClose, project, onSuccess }:
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-2">
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem><Label>Project Name</Label><Input placeholder="e.g., New Website Launch" {...field} /><FormMessage /></FormItem>
-            )}/>
+            )} />
             <FormField control={form.control} name="client" render={({ field }) => (
               <FormItem><Label>Client Name</Label><Input placeholder="e.g., Acme Innovations Inc." {...field} /><FormMessage /></FormItem>
-            )}/>
+            )} />
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem>
                 <Label>Status</Label>
@@ -163,10 +163,10 @@ export function ClientProjectFormDialog({ isOpen, onClose, project, onSuccess }:
                 </Select>
                 <FormMessage />
               </FormItem>
-            )}/>
+            )} />
             <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem><Label>Description (Optional)</Label><Textarea placeholder="Detailed project description..." {...field} value={field.value ?? ""} className="min-h-[100px]"/><FormMessage /></FormItem>
-            )}/>
+              <FormItem><Label>Description (Optional)</Label><Textarea placeholder="Detailed project description..." {...field} value={field.value ?? ""} className="min-h-[100px]" /><FormMessage /></FormItem>
+            )} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="startDate" render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -185,7 +185,7 @@ export function ClientProjectFormDialog({ isOpen, onClose, project, onSuccess }:
                     </PopoverContent>
                   </Popover><FormMessage />
                 </FormItem>
-              )}/>
+              )} />
               <FormField control={form.control} name="endDate" render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <Label>End Date (Optional)</Label>
@@ -199,11 +199,11 @@ export function ClientProjectFormDialog({ isOpen, onClose, project, onSuccess }:
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value || undefined} onSelect={field.onChange} disabled={(date) => field.value && field.value > date && form.getValues("startDate") ? date < form.getValues("startDate")! : false } initialFocus />
+                      <Calendar mode="single" selected={field.value || undefined} onSelect={field.onChange} disabled={(date) => field.value && field.value > date && form.getValues("startDate") ? date < form.getValues("startDate")! : false} initialFocus />
                     </PopoverContent>
                   </Popover><FormMessage />
                 </FormItem>
-              )}/>
+              )} />
             </div>
             <DialogFooter className="pt-4">
               <DialogClose asChild><Button type="button" variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
