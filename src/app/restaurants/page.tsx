@@ -322,7 +322,7 @@ export default function RestaurantsPage() {
                             className="object-cover rounded-md"
                           />
                           {restaurant.status === 'Open' && (
-                            <Badge className="absolute -top-2 -left-2 bg-green-500 text-white text-xs">
+                            <Badge className="absolute -top-1 -left-1 sm:-top-2 sm:-left-2 bg-green-500 text-white text-[10px] sm:text-xs px-1 sm:px-2">
                               OPEN
                             </Badge>
                           )}
@@ -375,8 +375,8 @@ export default function RestaurantsPage() {
                             </Button>
                           </div>
 
-                          {/* Type of Food */}
-                          <p className="text-sm text-muted-foreground mb-2">
+                          {/* Type of Food - Hidden on mobile */}
+                          <p className="text-sm text-muted-foreground mb-2 hidden sm:block">
                             Type of food : {restaurant.cuisineTypes.join(', ')}
                           </p>
 
@@ -391,14 +391,15 @@ export default function RestaurantsPage() {
                           )}
 
                           {/* Location and Status */}
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
-                              <span>{restaurant.location}</span>
+                              <span className="truncate max-w-[150px] sm:max-w-none">{restaurant.location}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               <span className={cn(
+                                "text-[10px] sm:text-sm",
                                 restaurant.status === 'Open' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                               )}>
                                 {restaurant.status}
