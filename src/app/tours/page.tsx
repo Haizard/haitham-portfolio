@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useDebouncedCallback } from 'use-debounce';
 import { WishlistButton } from '@/components/wishlists/wishlist-button';
 import { CompareButton } from '@/components/comparisons/compare-button';
@@ -149,49 +150,92 @@ export default function ToursPage() {
         setFilters(prev => ({ ...prev, priceRange: [newRange[0], newRange[1]] }));
     };
 
+    const FilterContent = () => (
+        <div className="space-y-6">
+            <Accordion type="multiple" defaultValue={['destination', 'price', 'duration', 'type']} className="w-full">
+                <AccordionItem value="destination" className="border-b-0">
+                    <AccordionTrigger className="font-bold text-sm uppercase tracking-wider py-4 hover:no-underline">Destination</AccordionTrigger>
+                    <AccordionContent className="space-y-3 pb-4">
+                        {filterOptions.locations.map(loc => (
+                            <div key={loc} className="flex items-center space-x-3">
+                                <Checkbox id={`loc-${loc}`} onCheckedChange={() => handleFilterChange('locations', loc)} className="rounded-md h-5 w-5" />
+                                <label htmlFor={`loc-${loc}`} className="text-sm font-semibold">{loc}</label>
+                            </div>
+                        ))}
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="price" className="border-b-0">
+                    <AccordionTrigger className="font-bold text-sm uppercase tracking-wider py-4 hover:no-underline">Price</AccordionTrigger>
+                    <AccordionContent className="px-1 pb-4">
+                        <Slider defaultValue={[0, filterOptions.maxPrice]} max={filterOptions.maxPrice} step={10} value={filters.priceRange} onValueChange={handlePriceChange} className="py-4" />
+                        <div className="flex justify-between text-xs font-black uppercase tracking-widest mt-2 text-muted-foreground">
+                            <span>{format(filters.priceRange[0], 'USD')}</span>
+                            <span>{format(filters.priceRange[1], 'USD')}</span>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="duration" className="border-b-0">
+                    <AccordionTrigger className="font-bold text-sm uppercase tracking-wider py-4 hover:no-underline">Duration</AccordionTrigger>
+                    <AccordionContent className="space-y-3 pb-4">
+                        {filterOptions.durations.map(dur => (
+                            <div key={dur} className="flex items-center space-x-3">
+                                <Checkbox id={`dur-${dur}`} onCheckedChange={() => handleFilterChange('durations', dur)} className="rounded-md h-5 w-5" />
+                                <label htmlFor={`dur-${dur}`} className="text-sm font-semibold">{dur}</label>
+                            </div>
+                        ))}
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="type" className="border-b-0">
+                    <AccordionTrigger className="font-bold text-sm uppercase tracking-wider py-4 hover:no-underline">Tour Type</AccordionTrigger>
+                    <AccordionContent className="space-y-3 pb-4">
+                        {filterOptions.tourTypes.map(type => (
+                            <div key={type} className="flex items-center space-x-3">
+                                <Checkbox id={`type-${type}`} onCheckedChange={() => handleFilterChange('tourTypes', type)} className="rounded-md h-5 w-5" />
+                                <label htmlFor={`type-${type}`} className="text-sm font-semibold">{type}</label>
+                            </div>
+                        ))}
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </div>
+    );
+
     return (
         <div className="container mx-auto py-8 px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Filters Sidebar */}
-                <aside className="lg:col-span-1 space-y-6">
-                    <h2 className="text-lg font-semibold flex items-center"><Filter className="h-5 w-5 mr-2" />Filters</h2>
-                    <Accordion type="multiple" defaultValue={['destination', 'price', 'duration', 'type']}>
-                        <AccordionItem value="destination">
-                            <AccordionTrigger className="font-semibold">Destination</AccordionTrigger>
-                            <AccordionContent className="space-y-2">
-                                {filterOptions.locations.map(loc => (
-                                    <div key={loc} className="flex items-center space-x-2"><Checkbox id={`loc-${loc}`} onCheckedChange={() => handleFilterChange('locations', loc)} /><label htmlFor={`loc-${loc}`} className="text-sm">{loc}</label></div>
-                                ))}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="price">
-                            <AccordionTrigger className="font-semibold">Price</AccordionTrigger>
-                            <AccordionContent className="px-1">
-                                <Slider defaultValue={[0, filterOptions.maxPrice]} max={filterOptions.maxPrice} step={10} value={filters.priceRange} onValueChange={handlePriceChange} />
-                                <div className="flex justify-between text-sm mt-2"><span>{format(filters.priceRange[0], 'USD')}</span><span>{format(filters.priceRange[1], 'USD')}</span></div>
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="duration">
-                            <AccordionTrigger className="font-semibold">Duration</AccordionTrigger>
-                            <AccordionContent className="space-y-2">
-                                {filterOptions.durations.map(dur => (
-                                    <div key={dur} className="flex items-center space-x-2"><Checkbox id={`dur-${dur}`} onCheckedChange={() => handleFilterChange('durations', dur)} /><label htmlFor={`dur-${dur}`} className="text-sm">{dur}</label></div>
-                                ))}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="type">
-                            <AccordionTrigger className="font-semibold">Tour Type</AccordionTrigger>
-                            <AccordionContent className="space-y-2">
-                                {filterOptions.tourTypes.map(type => (
-                                    <div key={type} className="flex items-center space-x-2"><Checkbox id={`type-${type}`} onCheckedChange={() => handleFilterChange('tourTypes', type)} /><label htmlFor={`type-${type}`} className="text-sm">{type}</label></div>
-                                ))}
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+                {/* Filters Sidebar (Desktop) */}
+                <aside className="hidden lg:block space-y-8">
+                    <div className="sticky top-28 bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-border/40 p-10 shadow-2xl shadow-slate-100">
+                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center">
+                            <Filter className="h-4 w-4 mr-3" /> Filters
+                        </h2>
+                        <FilterContent />
+                    </div>
                 </aside>
 
                 {/* Tours Grid */}
                 <main className="lg:col-span-3">
+                    {/* Mobile Filters Header */}
+                    <div className="lg:hidden flex items-center justify-between mb-8 gap-4">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="outline" className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest bg-white shadow-xl border-slate-100">
+                                    <Filter className="h-4 w-4 mr-3 text-primary" /> Filters
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="bottom" className="h-[85vh] rounded-t-[3rem] px-8 pt-12 pb-10 overflow-y-auto">
+                                <SheetHeader className="mb-8 ">
+                                    <SheetTitle className="text-3xl font-black text-center">Filter Tours</SheetTitle>
+                                    <div className="w-12 h-1.5 bg-primary/20 rounded-full mx-auto mt-4" />
+                                </SheetHeader>
+                                <FilterContent />
+                            </SheetContent>
+                        </Sheet>
+                        <div className="bg-primary/10 px-6 h-14 rounded-2xl flex items-center justify-center">
+                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">{tours.length} results</span>
+                        </div>
+                    </div>
+
                     <div className="flex justify-between items-center mb-4">
                         <p className="text-sm text-muted-foreground">{isLoading ? "Loading..." : `${tours.length} tours found`}</p>
                         <div className="flex items-center gap-2">
@@ -204,7 +248,7 @@ export default function ToursPage() {
                             {[...Array(6)].map((_, i) => <Card key={i} className="h-[400px] animate-pulse bg-muted" />)}
                         </div>
                     ) : tours.length === 0 ? (
-                        <div className="text-center py-20 col-span-full">
+                        <div className="text-center py-20">
                             <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                             <h3 className="text-xl font-semibold">No Tours Found</h3>
                             <p className="text-muted-foreground mt-2">Try adjusting your filters to find the perfect tour.</p>

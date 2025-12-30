@@ -31,7 +31,7 @@ export default function HotelSearchPage() {
     try {
       // Build query string from search params
       const params = new URLSearchParams(searchParams.toString());
-      
+
       // Add filter params
       if (priceRange[0] > 0) params.set('minPrice', priceRange[0].toString());
       if (priceRange[1] < 1000) params.set('maxPrice', priceRange[1].toString());
@@ -132,7 +132,7 @@ export default function HotelSearchPage() {
     <div className="container mx-auto py-8 px-4">
       {/* Search Form */}
       <div className="mb-8">
-        <HotelSearchForm />
+        <HotelSearchForm mode="compact" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

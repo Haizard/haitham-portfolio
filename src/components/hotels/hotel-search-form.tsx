@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
+import { MobileSearchTrigger } from '../shared/mobile-search-trigger';
 
 const searchSchema = z.object({
   destination: z.string().min(2, 'Enter a destination'),
@@ -37,9 +38,10 @@ type SearchFormData = z.infer<typeof searchSchema>;
 interface HotelSearchFormProps {
   className?: string;
   onSearch?: (params: URLSearchParams) => void;
+  mode?: 'full' | 'compact';
 }
 
-export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
+export function HotelSearchForm({ className, onSearch, mode = 'full' }: HotelSearchFormProps) {
   const router = useRouter();
   const [checkInDate, setCheckInDate] = useState<Date>();
   const [checkOutDate, setCheckOutDate] = useState<Date>();
@@ -75,167 +77,189 @@ export function HotelSearchForm({ className, onSearch }: HotelSearchFormProps) {
     }
   };
 
-  return (
-    <Card className={cn('shadow-lg', className)}>
-      <CardContent className="pt-6">
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {/* Destination */}
-            <div className="space-y-2 lg:col-span-2">
-              <Label htmlFor="destination" className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                {t('destination')}
-              </Label>
-              <Input
-                id="destination"
-                placeholder={t('cityOrHotelName')}
-                {...form.register('destination')}
-                className="h-11"
-              />
-              {form.formState.errors.destination && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.destination.message}
-                </p>
-              )}
-            </div>
+  const destination = form.watch('destination');
+  const guests = form.watch('guests');
+  const summary = [
+    destination || 'Anywhere',
+    checkInDate ? format(checkInDate, 'MMM d') : '',
+    `${guests} ${guests === 1 ? 'Guest' : 'Guests'}`
+  ].filter(Boolean).join(' • ');
 
-            {/* Check-in Date */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                {t('checkIn')}
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full h-11 justify-start text-left font-normal',
-                      !checkInDate && 'text-muted-foreground'
-                    )}
-                  >
-                    {checkInDate ? format(checkInDate, 'PPP') : t('selectDate')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={checkInDate}
-                    onSelect={(date) => {
-                      setCheckInDate(date);
-                      form.setValue('checkInDate', date!);
-                    }}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {form.formState.errors.checkInDate && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.checkInDate.message}
-                </p>
-              )}
-            </div>
+  const FormContent = () => (
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {/* Destination */}
+        <div className="space-y-2 lg:col-span-2">
+          <Label htmlFor="destination" className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-muted-foreground">
+            <MapPin className="h-3 w-3" />
+            {t('destination')}
+          </Label>
+          <Input
+            id="destination"
+            placeholder={t('cityOrHotelName')}
+            {...form.register('destination')}
+            className="h-12 bg-slate-50/50 border-slate-200 focus:bg-white transition-all rounded-xl"
+          />
+          {form.formState.errors.destination && (
+            <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-1">
+              {form.formState.errors.destination.message}
+            </p>
+          )}
+        </div>
 
-            {/* Check-out Date */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                {t('checkOut')}
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full h-11 justify-start text-left font-normal',
-                      !checkOutDate && 'text-muted-foreground'
-                    )}
-                  >
-                    {checkOutDate ? format(checkOutDate, 'PPP') : t('selectDate')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={checkOutDate}
-                    onSelect={(date) => {
-                      setCheckOutDate(date);
-                      form.setValue('checkOutDate', date!);
-                    }}
-                    disabled={(date) => {
-                      const minDate = checkInDate || new Date();
-                      return date <= minDate;
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {form.formState.errors.checkOutDate && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.checkOutDate.message}
-                </p>
-              )}
-            </div>
-
-            {/* Guests */}
-            <div className="space-y-2">
-              <Label htmlFor="guests" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                {t('guests')}
-              </Label>
-              <Select
-                value={form.watch('guests')?.toString()}
-                onValueChange={(value) => form.setValue('guests', parseInt(value))}
+        {/* Check-in Date */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-muted-foreground">
+            <CalendarIcon className="h-3 w-3" />
+            {t('checkIn')}
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  'w-full h-12 justify-start text-left font-semibold rounded-xl bg-slate-50/50 border-slate-200',
+                  !checkInDate && 'text-muted-foreground'
+                )}
               >
-                <SelectTrigger id="guests" className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} {num === 1 ? t('guest') : t('guests')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Property Type (Optional) */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="propertyType">{t('propertyType')} ({tCommon('optional')})</Label>
-              <Select
-                value={form.watch('propertyType')}
-                onValueChange={(value) => form.setValue('propertyType', value)}
-              >
-                <SelectTrigger id="propertyType">
-                  <SelectValue placeholder={t('allTypes')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allTypes')}</SelectItem>
-                  <SelectItem value="hotel">{t('hotel')}</SelectItem>
-                  <SelectItem value="apartment">{t('apartment')}</SelectItem>
-                  <SelectItem value="resort">{t('resort')}</SelectItem>
-                  <SelectItem value="villa">{t('villa')}</SelectItem>
-                  <SelectItem value="hostel">{t('hostel')}</SelectItem>
-                  <SelectItem value="guesthouse">{t('guesthouse')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Search Button */}
-            <div className="flex items-end">
-              <Button type="submit" size="lg" className="w-full h-11">
-                <Search className="h-4 w-4 mr-2" />
-                {t('searchHotels')}
+                {checkInDate ? format(checkInDate, 'PPP') : t('selectDate')}
               </Button>
-            </div>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={checkInDate}
+                onSelect={(date) => {
+                  setCheckInDate(date);
+                  form.setValue('checkInDate', date!);
+                }}
+                disabled={(date) => date < new Date()}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {form.formState.errors.checkInDate && (
+            <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-1">
+              {form.formState.errors.checkInDate.message}
+            </p>
+          )}
+        </div>
+
+        {/* Check-out Date */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-muted-foreground">
+            <CalendarIcon className="h-3 w-3" />
+            {t('checkOut')}
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  'w-full h-12 justify-start text-left font-semibold rounded-xl bg-slate-50/50 border-slate-200',
+                  !checkOutDate && 'text-muted-foreground'
+                )}
+              >
+                {checkOutDate ? format(checkOutDate, 'PPP') : t('selectDate')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={checkOutDate}
+                onSelect={(date) => {
+                  setCheckOutDate(date);
+                  form.setValue('checkOutDate', date!);
+                }}
+                disabled={(date) => {
+                  const minDate = checkInDate || new Date();
+                  return date <= minDate;
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {form.formState.errors.checkOutDate && (
+            <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-1">
+              {form.formState.errors.checkOutDate.message}
+            </p>
+          )}
+        </div>
+
+        {/* Guests */}
+        <div className="space-y-2">
+          <Label htmlFor="guests" className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-muted-foreground">
+            <Users className="h-3 w-3" />
+            {t('guests')}
+          </Label>
+          <Select
+            value={form.watch('guests')?.toString()}
+            onValueChange={(value) => form.setValue('guests', parseInt(value))}
+          >
+            <SelectTrigger id="guests" className="h-12 rounded-xl bg-slate-50/50 border-slate-200 font-semibold">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                <SelectItem key={num} value={num.toString()} className="font-semibold">
+                  {num} {num === 1 ? t('guest') : t('guests')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Property Type (Optional) */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="propertyType" className="font-bold text-xs uppercase tracking-wider text-muted-foreground">{t('propertyType')} ({tCommon('optional')})</Label>
+          <Select
+            value={form.watch('propertyType')}
+            onValueChange={(value) => form.setValue('propertyType', value)}
+          >
+            <SelectTrigger id="propertyType" className="h-12 rounded-xl bg-slate-50/50 border-slate-200 font-semibold">
+              <SelectValue placeholder={t('allTypes')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="font-semibold">{t('allTypes')}</SelectItem>
+              <SelectItem value="hotel" className="font-semibold">{t('hotel')}</SelectItem>
+              <SelectItem value="apartment" className="font-semibold">{t('apartment')}</SelectItem>
+              <SelectItem value="resort" className="font-semibold">{t('resort')}</SelectItem>
+              <SelectItem value="villa" className="font-semibold">{t('villa')}</SelectItem>
+              <SelectItem value="hostel" className="font-semibold">{t('hostel')}</SelectItem>
+              <SelectItem value="guesthouse" className="font-semibold">{t('guesthouse')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Search Button */}
+        <div className="flex items-end">
+          <Button type="submit" size="lg" className="w-full h-12 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30">
+            <Search className="h-4 w-4 mr-2" />
+            {t('searchHotels')}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+
+  return (
+    <>
+      <MobileSearchTrigger
+        title="Search Hotels"
+        summary={summary}
+        className={cn(mode === 'full' ? 'md:hidden' : 'block')}
+      >
+        <FormContent />
+      </MobileSearchTrigger>
+
+      <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'hidden md:block' : 'hidden', className)}>
+        <CardContent className="pt-8">
+          <FormContent />
+        </CardContent>
+      </Card>
+    </>
   );
 }
 

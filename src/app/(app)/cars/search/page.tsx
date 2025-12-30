@@ -148,7 +148,7 @@ export default function CarSearchPage() {
     <div className="container mx-auto py-8 px-4">
       {/* Search Form */}
       <div className="mb-8">
-        <CarSearchForm />
+        <CarSearchForm mode="compact" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
