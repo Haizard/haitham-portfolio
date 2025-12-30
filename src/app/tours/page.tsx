@@ -17,6 +17,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { WishlistButton } from '@/components/wishlists/wishlist-button';
 import { CompareButton } from '@/components/comparisons/compare-button';
 import { useFormatPrice } from '@/contexts/currency-context';
+import { TourSearchForm } from '@/components/tours/tour-search-form';
 
 interface TourFilters {
     locations: string[];
@@ -202,6 +203,11 @@ export default function ToursPage() {
 
     return (
         <div className="container mx-auto py-8 px-4">
+            {/* Search Form */}
+            <div className="mb-8 ">
+                <TourSearchForm mode="compact" filterOptions={filterOptions} />
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
                 {/* Filters Sidebar (Desktop) */}
                 <aside className="hidden lg:block space-y-8">
@@ -215,26 +221,6 @@ export default function ToursPage() {
 
                 {/* Tours Grid */}
                 <main className="lg:col-span-3">
-                    {/* Mobile Filters Header */}
-                    <div className="lg:hidden flex items-center justify-between mb-8 gap-4">
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button variant="outline" className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest bg-white shadow-xl border-slate-100">
-                                    <Filter className="h-4 w-4 mr-3 text-primary" /> Filters
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent side="bottom" className="h-[85vh] rounded-t-[3rem] px-8 pt-12 pb-10 overflow-y-auto">
-                                <SheetHeader className="mb-8 ">
-                                    <SheetTitle className="text-3xl font-black text-center">Filter Tours</SheetTitle>
-                                    <div className="w-12 h-1.5 bg-primary/20 rounded-full mx-auto mt-4" />
-                                </SheetHeader>
-                                <FilterContent />
-                            </SheetContent>
-                        </Sheet>
-                        <div className="bg-primary/10 px-6 h-14 rounded-2xl flex items-center justify-center">
-                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">{tours.length} results</span>
-                        </div>
-                    </div>
 
                     <div className="flex justify-between items-center mb-4">
                         <p className="text-sm text-muted-foreground">{isLoading ? "Loading..." : `${tours.length} tours found`}</p>
