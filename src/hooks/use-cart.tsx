@@ -42,7 +42,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const { user } = useUser();
-  const cartKey = user?.id ? `creatoros-cart-${user.id}` : 'creatoros-cart-guest';
+  const cartKey = user?.id ? `ajira-online-cart-${user.id}` : 'ajira-online-cart-guest';
 
   // Load cart from local storage when the key changes (user logs in/out)
   useEffect(() => {

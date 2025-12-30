@@ -50,7 +50,7 @@ const mockUsers: Record<string, User> = {
   "user1": { id: "user1", name: "Alice Wonderland", avatarUrl: "https://placehold.co/100x100.png?text=AW" },
   "user2": { id: "user2", name: "Bob The Builder", avatarUrl: "https://placehold.co/100x100.png?text=BB" },
   "user3": { id: "user3", name: "Charlie Creator", avatarUrl: "https://placehold.co/100x100.png?text=CC" },
-  "admin": { id: "admin", name: "CreatorOS Admin", avatarUrl: "https://placehold.co/100x100.png?text=AD" },
+  "admin": { id: "admin", name: "Ajira Online Admin", avatarUrl: "https://placehold.co/100x100.png?text=AO" },
 };
 
 export function getMockUser(userId: string): User | undefined {

@@ -86,7 +86,7 @@ export default function LoginPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline">Welcome Back</CardTitle>
             <CardDescription>
-              Sign in to access your CreatorOS dashboard.
+              Sign in to access your Ajira Online dashboard.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -4,9 +4,9 @@
     "display": "standalone",
     "scope": "/",
     "start_url": "/",
-    "name": "CreatorOS",
-    "short_name": "CreatorOS",
-    "description": "The all-in-one platform for content creators.",
+    "name": "Ajira Online",
+    "short_name": "Ajira Online",
+    "description": "The all-in-one platform for travel and booking services.",
     "icons": [
         {
             "src": "/logo.png",

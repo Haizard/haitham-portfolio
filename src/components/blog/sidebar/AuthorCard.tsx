@@ -32,21 +32,21 @@ export function AuthorCard() {
         } else {
           console.log('Could not fetch logged-in user profile, showing default author card.');
           setProfile({
-              name: "CreatorOS User",
-              email: "user@creatoros.app",
-              bio: "Welcome to the CreatorOS blog! Discover insights, tutorials, and updates.",
-              avatarUrl: "https://placehold.co/100x100.png?text=CO",
-              occupation: "Content Creator"
+            name: "Ajira Online User",
+            email: "user@ajira.online",
+            bio: "Welcome to the Ajira Online blog! Discover insights, tutorials, and updates.",
+            avatarUrl: "https://placehold.co/100x100.png?text=AO",
+            occupation: "Traveler"
           });
         }
       } catch (error) {
         console.error("Network error fetching profile:", error);
         setProfile({
-            name: "CreatorOS User",
-            email: "user@creatoros.app",
-            bio: "Welcome to the CreatorOS blog! Discover insights, tutorials, and updates.",
-            avatarUrl: "https://placehold.co/100x100.png?text=CO",
-            occupation: "Content Creator"
+          name: "Ajira Online User",
+          email: "user@ajira.online",
+          bio: "Welcome to the Ajira Online blog! Discover insights, tutorials, and updates.",
+          avatarUrl: "https://placehold.co/100x100.png?text=AO",
+          occupation: "Traveler"
         });
       } finally {
         setIsLoading(false);
@@ -85,7 +85,7 @@ export function AuthorCard() {
         </Avatar>
         <h3 className="text-xl font-semibold font-headline">{profile.name}</h3>
         <p className="text-sm text-muted-foreground mb-1">{profile.occupation}</p>
-        <p className="text-xs text-muted-foreground px-2 mb-4">{(profile.bio || "").substring(0,150)}{(profile.bio?.length || 0) > 150 ? '...' : ''}</p>
+        <p className="text-xs text-muted-foreground px-2 mb-4">{(profile.bio || "").substring(0, 150)}{(profile.bio?.length || 0) > 150 ? '...' : ''}</p>
         <div className="flex space-x-2">
           <Button variant="outline" size="icon" asChild>
             <Link href="#" aria-label="Twitter">

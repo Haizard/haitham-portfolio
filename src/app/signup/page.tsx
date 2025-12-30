@@ -114,7 +114,7 @@ export default function SignupPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline">Create Your Account</CardTitle>
             <CardDescription>
-              Join CreatorOS and start your journey.
+              Join Ajira Online and start your journey.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -159,7 +159,7 @@ export default function SignupPage() {
                   name="role"
                   render={({ field }) => (
                     <FormItem className="space-y-3">
-                      <FormLabel>How will you use CreatorOS?</FormLabel>
+                      <FormLabel>How will you use Ajira Online?</FormLabel>
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}

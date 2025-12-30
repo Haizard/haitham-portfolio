@@ -18,7 +18,7 @@ const allFeatures = [
     icon: Briefcase,
     role: "freelancer",
   },
-   {
+  {
     title: "Client Suite",
     description: "Post jobs and manage your hired freelancers.",
     cta: "Manage My Jobs",
@@ -42,7 +42,7 @@ const allFeatures = [
     cta: "Find Transport Jobs",
     role: "transport_partner",
   },
-   {
+  {
     title: "Creator Suite",
     description: "Access AI content tools, manage your blog, and grow your audience.",
     cta: "Open Content Studio",
@@ -72,23 +72,23 @@ export default function DashboardHubPage() {
   }
 
   const features = allFeatures.filter(feature => userRoles.includes(feature.role as any));
-  
+
   // This case will now primarily handle users with multiple roles.
   if (features.length === 0 && user) {
-      return (
-           <div className="flex flex-col gap-8">
-              <header>
-                <h1 className="text-3xl font-bold tracking-tight font-headline">Welcome, {user?.name}</h1>
-                <p className="text-muted-foreground">Use the sidebar to navigate to your tools.</p>
-              </header>
-          </div>
-      )
+    return (
+      <div className="flex flex-col gap-8">
+        <header>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Welcome, {user?.name}</h1>
+          <p className="text-muted-foreground">Use the sidebar to navigate to your tools.</p>
+        </header>
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Welcome to Your CreatorOS Hub</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">Welcome to Your Ajira Online Hub</h1>
         <p className="text-muted-foreground">Select a panel to manage your creator activities.</p>
       </header>
 
@@ -96,22 +96,22 @@ export default function DashboardHubPage() {
         {features.map((feature) => (
           <Card key={feature.title} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
             <CardHeader className="flex-row items-center gap-4 space-y-0">
-               <div className="bg-primary/10 p-3 rounded-full">
-                 <feature.icon className="h-7 w-7 text-primary" />
-               </div>
-               <div>
+              <div className="bg-primary/10 p-3 rounded-full">
+                <feature.icon className="h-7 w-7 text-primary" />
+              </div>
+              <div>
                 <CardTitle>{feature.title}</CardTitle>
-               </div>
+              </div>
             </CardHeader>
             <CardContent className="flex-grow">
               <p className="text-muted-foreground">{feature.description}</p>
             </CardContent>
             <CardFooter>
-                <Button asChild className="w-full">
-                    <Link href={feature.href}>
-                        {feature.cta} <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
+              <Button asChild className="w-full">
+                <Link href={feature.href}>
+                  {feature.cta} <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
             </CardFooter>
           </Card>
         ))}

@@ -13,7 +13,7 @@ if (!SESSION_SECRET || SESSION_SECRET.length < 32) {
 }
 
 export const sessionOptions = {
-  cookieName: "creatoros_session",
+  cookieName: "ajira_online_session",
   password: SESSION_SECRET,
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
