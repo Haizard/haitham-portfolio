@@ -79,8 +79,9 @@ export function CarSearchForm({ className, onSearch, mode = 'full' }: CarSearchF
     }
   };
 
+  const watchedLocation = form.watch('location');
   const summary = [
-    location || 'Anywhere',
+    watchedLocation || 'Anywhere',
     pickupDate ? format(pickupDate, 'MMM d') : ''
   ].filter(Boolean).join(' • ');
 

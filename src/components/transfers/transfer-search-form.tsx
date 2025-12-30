@@ -33,6 +33,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
+import { Card, CardContent } from '@/components/ui/card';
+import { MobileSearchTrigger } from '../shared/mobile-search-trigger';
+
 const searchFormSchema = z.object({
   pickupLocation: z.string().min(2, 'Pickup location is required'),
   dropoffLocation: z.string().min(2, 'Dropoff location is required'),
@@ -47,7 +50,12 @@ const searchFormSchema = z.object({
 
 type SearchFormValues = z.infer<typeof searchFormSchema>;
 
-export function TransferSearchForm() {
+interface TransferSearchFormProps {
+  className?: string;
+  mode?: 'full' | 'compact';
+}
+
+export function TransferSearchForm({ className, mode = 'full' }: TransferSearchFormProps) {
   const router = useRouter();
   const [isSearching, setIsSearching] = useState(false);
   const t = useTranslations('search');
@@ -67,7 +75,7 @@ export function TransferSearchForm() {
 
   const onSubmit = async (data: SearchFormValues) => {
     setIsSearching(true);
-    
+
     const params = new URLSearchParams({
       pickupLocation: data.pickupLocation,
       dropoffLocation: data.dropoffLocation,
@@ -81,7 +89,13 @@ export function TransferSearchForm() {
     router.push(`/transfers/search?${params.toString()}`);
   };
 
-  return (
+  const pickupLocation = form.watch('pickupLocation');
+  const summary = [
+    pickupLocation || 'Anywhere',
+    form.watch('pickupDate') ? format(form.watch('pickupDate') as Date, 'MMM d') : ''
+  ].filter(Boolean).join(' • ');
+
+  const formContent = (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
@@ -94,7 +108,7 @@ export function TransferSearchForm() {
                 <FormLabel>{t('transferType')}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl bg-slate-50/50">
                       <SelectValue placeholder={t('selectTransferType')} />
                     </SelectTrigger>
                   </FormControl>
@@ -119,10 +133,10 @@ export function TransferSearchForm() {
                 <FormLabel>{t('pickupLocation')}</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <MapPin className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder={t('enterPickupAddress')}
-                      className="pl-10"
+                      className="pl-10 h-12 rounded-xl bg-slate-50/50"
                       {...field}
                     />
                   </div>
@@ -141,10 +155,10 @@ export function TransferSearchForm() {
                 <FormLabel>{t('dropoffLocation')}</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <MapPin className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder={t('enterDropoffAddress')}
-                      className="pl-10"
+                      className="pl-10 h-12 rounded-xl bg-slate-50/50"
                       {...field}
                     />
                   </div>
@@ -167,7 +181,7 @@ export function TransferSearchForm() {
                       <Button
                         variant="outline"
                         className={cn(
-                          'w-full pl-3 text-left font-normal',
+                          'w-full h-12 pl-3 text-left font-normal rounded-xl bg-slate-50/50',
                           !field.value && 'text-muted-foreground'
                         )}
                       >
@@ -205,7 +219,7 @@ export function TransferSearchForm() {
               <FormItem>
                 <FormLabel>{t('pickupTime')}</FormLabel>
                 <FormControl>
-                  <Input type="time" {...field} />
+                  <Input type="time" {...field} className="h-12 rounded-xl bg-slate-50/50" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -221,12 +235,12 @@ export function TransferSearchForm() {
                 <FormLabel>{t('passengers')}</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Users className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="number"
                       min="1"
                       max="50"
-                      className="pl-10"
+                      className="pl-10 h-12 rounded-xl bg-slate-50/50"
                       {...field}
                       onChange={(e) => field.onChange(parseInt(e.target.value))}
                     />
@@ -246,12 +260,12 @@ export function TransferSearchForm() {
                 <FormLabel>{t('luggagePieces')}</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Luggage className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Luggage className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="number"
                       min="0"
                       max="50"
-                      className="pl-10"
+                      className="pl-10 h-12 rounded-xl bg-slate-50/50"
                       {...field}
                       onChange={(e) => field.onChange(parseInt(e.target.value))}
                     />
@@ -263,12 +277,30 @@ export function TransferSearchForm() {
           />
         </div>
 
-        <Button type="submit" className="w-full" size="lg" disabled={isSearching}>
+        <Button type="submit" className="w-full h-12 rounded-xl font-bold uppercase tracking-wider" size="lg" disabled={isSearching}>
           <Search className="mr-2 h-5 w-5" />
           {isSearching ? tCommon('searching') : t('searchTransfers')}
         </Button>
       </form>
     </Form>
+  );
+
+  return (
+    <>
+      <MobileSearchTrigger
+        title="Book a Transfer"
+        summary={summary}
+        className={cn(mode === 'full' ? 'md:hidden' : 'block')}
+      >
+        {formContent}
+      </MobileSearchTrigger>
+
+      <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'hidden md:block' : 'hidden', className)}>
+        <CardContent className="pt-8">
+          {formContent}
+        </CardContent>
+      </Card>
+    </>
   );
 }
 

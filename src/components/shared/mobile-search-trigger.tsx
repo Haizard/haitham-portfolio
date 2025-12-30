@@ -30,12 +30,16 @@ export function MobileSearchTrigger({ title, summary, children, className }: Mob
                         </div>
                     </button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="h-[92vh] rounded-t-[3rem] px-6 pt-12 pb-8 overflow-y-auto bg-background/95 backdrop-blur-xl border-t-2 border-primary/10 shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.15)]">
+                <SheetContent
+                    side="bottom"
+                    className="h-[92vh] rounded-t-[3rem] px-6 pt-12 pb-8 overflow-y-auto bg-background/95 backdrop-blur-xl border-t-2 border-primary/10 shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.15)]"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                >
                     <SheetHeader className="mb-10 text-center">
                         <SheetTitle className="text-3xl font-black tracking-tight mb-2">{title}</SheetTitle>
                         <div className="w-12 h-1.5 bg-primary/20 rounded-full mx-auto" />
                     </SheetHeader>
-                    <div className="max-w-xl mx-auto">
+                    <div className="max-w-xl mx-auto relative z-[60] pointer-events-auto">
                         {children}
                     </div>
                 </SheetContent>
