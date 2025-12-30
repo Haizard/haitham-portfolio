@@ -79,13 +79,12 @@ export function CarSearchForm({ className, onSearch, mode = 'full' }: CarSearchF
     }
   };
 
-  const location = form.watch('location');
   const summary = [
     location || 'Anywhere',
     pickupDate ? format(pickupDate, 'MMM d') : ''
   ].filter(Boolean).join(' • ');
 
-  const FormContent = () => (
+  const formContent = (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         {/* Location */}
@@ -274,12 +273,12 @@ export function CarSearchForm({ className, onSearch, mode = 'full' }: CarSearchF
         summary={summary}
         className={cn(mode === 'full' ? 'md:hidden' : 'block')}
       >
-        <FormContent />
+        {formContent}
       </MobileSearchTrigger>
 
       <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'hidden md:block' : 'hidden', className)}>
         <CardContent className="pt-8">
-          <FormContent />
+          {formContent}
         </CardContent>
       </Card>
     </>

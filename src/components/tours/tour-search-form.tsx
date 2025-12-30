@@ -72,15 +72,13 @@ export function TourSearchForm({ className, onSearch, mode = 'full', filterOptio
         }
     };
 
-    const location = form.watch('location');
-    const guests = form.watch('guests');
     const summary = [
         location || 'Anywhere',
         date ? format(date, 'MMM d') : '',
         `${guests} ${guests === 1 ? 'Person' : 'People'}`
     ].filter(Boolean).join(' • ');
 
-    const FormContent = () => (
+    const formContent = (
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {/* Destination */}
@@ -202,12 +200,12 @@ export function TourSearchForm({ className, onSearch, mode = 'full', filterOptio
                 summary={summary}
                 className={cn(mode === 'full' ? 'md:hidden' : 'block')}
             >
-                <FormContent />
+                {formContent}
             </MobileSearchTrigger>
 
             <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'hidden md:block' : 'hidden', className)}>
                 <CardContent className="pt-8">
-                    <FormContent />
+                    {formContent}
                 </CardContent>
             </Card>
         </>

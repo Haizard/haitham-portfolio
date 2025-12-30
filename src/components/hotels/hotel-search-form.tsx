@@ -85,7 +85,7 @@ export function HotelSearchForm({ className, onSearch, mode = 'full' }: HotelSea
     `${guests} ${guests === 1 ? 'Guest' : 'Guests'}`
   ].filter(Boolean).join(' • ');
 
-  const FormContent = () => (
+  const formContent = (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {/* Destination */}
@@ -251,12 +251,12 @@ export function HotelSearchForm({ className, onSearch, mode = 'full' }: HotelSea
         summary={summary}
         className={cn(mode === 'full' ? 'md:hidden' : 'block')}
       >
-        <FormContent />
+        {formContent}
       </MobileSearchTrigger>
 
       <Card className={cn('shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden', mode === 'full' ? 'hidden md:block' : 'hidden', className)}>
         <CardContent className="pt-8">
-          <FormContent />
+          {formContent}
         </CardContent>
       </Card>
     </>
