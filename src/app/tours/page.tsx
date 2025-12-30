@@ -219,6 +219,26 @@ export default function ToursPage() {
                     </div>
                 </aside>
 
+                {/* Mobile Filters Trigger */}
+                <div className="lg:hidden mb-6">
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" className="w-full h-12 rounded-xl font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-primary/20 bg-primary/5 hover:bg-primary/10">
+                                <Filter className="h-4 w-4" />
+                                Filter Results
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                            <SheetHeader className="mb-6">
+                                <SheetTitle className="text-left font-black uppercase tracking-[0.2em] text-slate-400 text-xs">Filters</SheetTitle>
+                            </SheetHeader>
+                            <div className="overflow-y-auto h-full pb-20">
+                                <FilterContent />
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
+
                 {/* Tours Grid */}
                 <main className="lg:col-span-3">
 
@@ -230,8 +250,8 @@ export default function ToursPage() {
                         </div>
                     </div>
                     {isLoading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[...Array(6)].map((_, i) => <Card key={i} className="h-[400px] animate-pulse bg-muted" />)}
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(6)].map((_, i) => <Card key={i} className="h-[400px] animate-pulse bg-muted rounded-2xl" />)}
                         </div>
                     ) : tours.length === 0 ? (
                         <div className="text-center py-20">
@@ -240,7 +260,7 @@ export default function ToursPage() {
                             <p className="text-muted-foreground mt-2">Try adjusting your filters to find the perfect tour.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {tours.map(tour => <TourCard key={tour.id} tour={tour} />)}
                         </div>
                     )}
