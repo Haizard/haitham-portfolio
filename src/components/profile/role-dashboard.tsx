@@ -13,10 +13,13 @@ interface RoleDashboardProps {
 }
 
 export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
-  const isCustomer = roles.includes('customer') || roles.includes('client');
+  const isCustomer = roles.includes('customer');
+  const isClient = roles.includes('client');
   const isPropertyOwner = roles.includes('property_owner');
   const isCarOwner = roles.includes('car_owner');
-  const isTourOperator = roles.includes('tour_operator') || roles.includes('creator');
+  const isTourOperator = roles.includes('tour_operator');
+  const isFreelancer = roles.includes('freelancer');
+  const isCreator = roles.includes('creator');
   const isTransferProvider = roles.includes('transfer_provider') || roles.includes('transport_partner');
   const isAdmin = roles.includes('admin');
 
@@ -183,6 +186,63 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
                 <CardContent>
                   <Button variant="default" className="w-full" asChild>
                     <Link href="/account/bookings">Leave Reviews</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        {/* Client Dashboard */}
+        {isClient && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold flex items-center gap-2 text-indigo-600">
+              <Briefcase className="h-6 w-6" />
+              Client Dashboard
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">
+                    Jobs Posted
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">0</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Manage your active projects
+                  </p>
+                  <Button variant="default" size="sm" className="mt-3 w-full bg-indigo-600 hover:bg-indigo-700" asChild>
+                    <Link href="/my-jobs">Manage Jobs</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">
+                    Active Contracts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">0</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Freelancers currently working
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">
+                    Post a Project
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">New</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Find talent for your needs
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-3 w-full border-indigo-200 hover:bg-indigo-50" asChild>
+                    <Link href="/post-job">Create Posting</Link>
                   </Button>
                 </CardContent>
               </Card>

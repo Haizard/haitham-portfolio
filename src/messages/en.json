@@ -165,7 +165,10 @@
     "pickADate": "Pick a date",
     "luggagePieces": "Luggage Pieces",
     "infants": "Infants",
-    "premiumEconomy": "Premium Economy"
+    "premiumEconomy": "Premium Economy",
+    "date": "Date",
+    "participants": "Participants",
+    "tourType": "Tour Type"
   },
   "booking": {
     "bookingDetails": "Booking Details",
@@ -329,4 +332,3 @@
     "changesSaved": "Changes saved successfully"
   }
 }
-

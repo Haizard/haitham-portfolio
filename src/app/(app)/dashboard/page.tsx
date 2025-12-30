@@ -20,9 +20,9 @@ const allFeatures = [
   },
   {
     title: "Client Suite",
-    description: "Post jobs and manage your hired freelancers.",
-    cta: "Manage My Jobs",
-    href: "/my-jobs",
+    description: "Find talent, post new jobs, and manage your hired freelancers.",
+    cta: "Post a Job / Manage",
+    href: "/post-job",
     icon: Briefcase,
     role: "client",
   },

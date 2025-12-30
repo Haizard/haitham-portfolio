@@ -72,10 +72,13 @@ export function TourSearchForm({ className, onSearch, mode = 'full', filterOptio
         }
     };
 
+    const watchedLocation = form.watch('location');
+    const watchedGuests = form.watch('guests');
+
     const summary = [
-        location || 'Anywhere',
+        watchedLocation || 'Anywhere',
         date ? format(date, 'MMM d') : '',
-        `${guests} ${guests === 1 ? 'Person' : 'People'}`
+        `${watchedGuests} ${watchedGuests === 1 ? 'Person' : 'People'}`
     ].filter(Boolean).join(' • ');
 
     const formContent = (

@@ -27,6 +27,7 @@ const roleOptions = [
   { id: 'transfer_provider', label: 'Provide transfer services', icon: Plane },
   // Other Services
   { id: 'freelancer', label: 'Work as a freelancer', icon: Briefcase },
+  { id: 'client', label: 'Hire a freelancer / Post a job', icon: Users },
   { id: 'vendor', label: 'Sell products', icon: Store },
   { id: 'creator', label: 'Create content', icon: Sparkles },
 ] as const;
