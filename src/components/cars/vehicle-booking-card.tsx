@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, timeOptions } from '@/lib/utils';
 import { useFormatPrice } from '@/contexts/currency-context';
 import type { Vehicle } from '@/lib/cars-data';
 
@@ -195,10 +195,6 @@ export function VehicleBookingCard({
     }
   };
 
-  const timeOptions = Array.from({ length: 24 }, (_, i) => {
-    const hour = i.toString().padStart(2, '0');
-    return `${hour}:00`;
-  });
 
   return (
     <Card className="sticky top-4">
