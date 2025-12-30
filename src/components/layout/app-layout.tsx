@@ -118,16 +118,21 @@ const MobileBottomNav = ({ userRoles }: { userRoles: string[] }) => {
   ];
 
   // Example logic to add a role-specific primary action
-  let primaryAction = { href: "/find-work", label: "Work", icon: UserCheck };
+  let primaryAction = { href: "/find-work", label: "Work", icon: UserCheck, color: "bg-indigo-600" };
   if (userRoles.includes('vendor')) {
-    primaryAction = { href: "/vendor/dashboard", label: "Store", icon: ShoppingBag };
+    primaryAction = { href: "/vendor/dashboard", label: "Store", icon: ShoppingBag, color: "bg-cyan-600" };
   } else if (userRoles.includes('client')) {
-    primaryAction = { href: "/my-jobs", label: "Jobs", icon: UserCheck };
+    primaryAction = { href: "/my-jobs", label: "Jobs", icon: UserCheck, color: "bg-indigo-600" };
   } else if (userRoles.includes('creator')) {
-    primaryAction = { href: "/content-studio", label: "Create", icon: Sparkles };
+    primaryAction = { href: "/content-studio", label: "Create", icon: Sparkles, color: "bg-orange-500" };
   }
 
-  const allNavItems = [navItems[0], navItems[1], primaryAction, navItems[2]];
+  const allNavItems = [
+    { ...navItems[0], color: "bg-primary" },
+    { ...navItems[1], color: "bg-blue-500" },
+    primaryAction,
+    { ...navItems[2], color: "bg-purple-500" }
+  ];
 
   return (
     <AnimatePresence>
@@ -138,20 +143,37 @@ const MobileBottomNav = ({ userRoles }: { userRoles: string[] }) => {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border grid grid-cols-4 z-40"
       >
-        {allNavItems.map(item => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary w-full h-full",
-              pathname.includes(item.href) && item.href !== "/dashboard" ? "text-primary" : "",
-              pathname.endsWith("/dashboard") && item.href === "/dashboard" ? "text-primary" : ""
-            )}
-          >
-            <item.icon className="h-6 w-6" />
-            <span className="text-[10px] mt-0.5">{item.label}</span>
-          </Link>
-        ))}
+        {allNavItems.map(item => {
+          const isActive = (pathname.includes(item.href) && item.href !== "/dashboard") || (pathname.endsWith("/dashboard") && item.href === "/dashboard");
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center transition-all duration-300 w-full h-full gap-1",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              <div className={cn(
+                "w-10 h-10 rounded-xl p-0.5 border-2 transition-all duration-300 flex items-center justify-center",
+                isActive ? "border-primary shadow-lg shadow-primary/10 scale-110 bg-background" : "border-transparent"
+              )}>
+                <div className={cn(
+                  "w-full h-full rounded-[0.6rem] flex items-center justify-center text-white",
+                  item.color || "bg-slate-200"
+                )}>
+                  <item.icon className="h-5 w-5" />
+                </div>
+              </div>
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-tight",
+                isActive ? "text-primary" : "text-slate-500"
+              )}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </motion.div>
     </AnimatePresence>
   );

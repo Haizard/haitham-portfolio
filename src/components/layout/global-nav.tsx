@@ -32,21 +32,21 @@ const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
   // A curated list for the bottom nav to prevent overflow
   const mobileNavItems = user
     ? [
-      { href: "/", label: t('home'), icon: Zap },
-      { href: "/hotels", label: t('hotels'), icon: Hotel },
-      { href: "/tours", label: t('tours'), icon: Compass },
-      { href: "/shop", label: t('shop'), icon: ShoppingBag },
-      { href: "/find-work", label: t('freelancers'), icon: UserCheck },
-      { href: "/dashboard", label: t('dashboard'), icon: LayoutDashboard }
+      { href: "/", label: t('home'), icon: Zap, color: 'bg-primary' },
+      { href: "/hotels", label: t('hotels'), icon: Hotel, color: 'bg-blue-600' },
+      { href: "/tours", label: t('tours'), icon: Compass, color: 'bg-orange-600' },
+      { href: "/shop", label: t('shop'), icon: ShoppingBag, color: 'bg-cyan-600' },
+      { href: "/find-work", label: t('freelancers'), icon: UserCheck, color: 'bg-indigo-600' },
+      { href: "/dashboard", label: t('dashboard'), icon: LayoutDashboard, color: 'bg-slate-900' }
     ]
     : [
-      { href: "/", label: t('home'), icon: Zap },
-      { href: "/restaurants", label: t('restaurants'), icon: Utensils },
-      { href: "/hotels", label: t('hotels'), icon: Hotel },
-      { href: "/tours", label: t('tours'), icon: Compass },
-      { href: "/blog", label: t('blog'), icon: Newspaper },
-      { href: "/shop", label: t('shop'), icon: ShoppingBag },
-      { href: "/find-work", label: t('freelancers'), icon: UserCheck },
+      { href: "/", label: t('home'), icon: Zap, color: 'bg-primary' },
+      { href: "/restaurants", label: t('restaurants'), icon: Utensils, color: 'bg-rose-600' },
+      { href: "/hotels", label: t('hotels'), icon: Hotel, color: 'bg-blue-600' },
+      { href: "/tours", label: t('tours'), icon: Compass, color: 'bg-orange-600' },
+      { href: "/blog", label: t('blog'), icon: Newspaper, color: 'bg-slate-700' },
+      { href: "/shop", label: t('shop'), icon: ShoppingBag, color: 'bg-cyan-600' },
+      { href: "/find-work", label: t('freelancers'), icon: UserCheck, color: 'bg-indigo-600' },
     ];
 
   const gridColsClass = mobileNavItems.length === 6 ? 'grid-cols-6' : 'grid-cols-7';
@@ -63,12 +63,37 @@ const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
           gridColsClass
         )}
       >
-        {mobileNavItems.map(item => (
-          <Link key={item.href} href={item.href} className={cn("flex flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary w-full h-full", pathname === item.href && "text-primary")}>
-            <item.icon className="h-6 w-6" />
-            <span className="text-[10px] mt-0.5">{item.label}</span>
-          </Link>
-        ))}
+        {mobileNavItems.map(item => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center transition-all duration-300 w-full h-full gap-1",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              <div className={cn(
+                "w-10 h-10 rounded-xl p-0.5 border-2 transition-all duration-300 flex items-center justify-center",
+                isActive ? "border-primary shadow-lg shadow-primary/10 scale-110 bg-background" : "border-transparent"
+              )}>
+                <div className={cn(
+                  "w-full h-full rounded-[0.6rem] flex items-center justify-center text-white",
+                  item.color || "bg-slate-200"
+                )}>
+                  <item.icon className="h-5 w-5" />
+                </div>
+              </div>
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-tight",
+                isActive ? "text-primary" : "text-slate-500"
+              )}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </motion.div>
     </AnimatePresence>
   );
