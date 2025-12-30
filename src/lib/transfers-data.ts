@@ -1,5 +1,6 @@
 import { ObjectId, WithId, Document } from 'mongodb';
 import { getCollection } from './mongodb';
+import { enrichWithAuthors } from './data-aggregators';
 
 // Collection names
 const TRANSFER_VEHICLES_COLLECTION = 'transfer_vehicles';
@@ -275,7 +276,7 @@ export async function searchTransferVehicles(
     vehicles = availableVehicles.filter((v): v is TransferVehicle => v !== null);
   }
 
-  return vehicles;
+  return enrichWithAuthors(vehicles);
 }
 
 // --- Transfer Booking Operations ---

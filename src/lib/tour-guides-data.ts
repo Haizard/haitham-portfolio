@@ -61,6 +61,15 @@ export async function getGuideById(id: string): Promise<TourGuide | null> {
   return doc ? docToGuide(doc) : null;
 }
 
+export async function getGuidesByIds(ids: string[]): Promise<TourGuide[]> {
+  const validIds = ids.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+  if (validIds.length === 0) return [];
+
+  const collection = await getCollection<TourGuideDoc>(TOUR_GUIDES_COLLECTION);
+  const docs = await collection.find({ _id: { $in: validIds } }).toArray();
+  return docs.map(docToGuide);
+}
+
 export async function addGuide(guideData: Omit<TourGuide, 'id'>): Promise<TourGuide> {
   const collection = await getCollection<TourGuideDoc>(TOUR_GUIDES_COLLECTION);
   const result = await collection.insertOne(guideData as TourGuideDoc);

@@ -1,6 +1,7 @@
 
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { enrichWithAuthors } from './data-aggregators';
 import { SessionUser } from './session';
 import type { ServiceCategoryNode } from './service-categories-data';
 import type { FoodType } from './food-types-data';
@@ -283,7 +284,7 @@ export async function createRestaurantForUser(ownerId: string, initialData: { na
 export async function getAllRestaurants(filters: any = {}): Promise<Restaurant[]> {
   const collection = await getCollection<Restaurant>(RESTAURANTS_COLLECTION);
   const restaurantDocs = await collection.find(filters).toArray();
-  return restaurantDocs.map(docToRestaurant);
+  return enrichWithAuthors(restaurantDocs.map(docToRestaurant));
 }
 
 export async function getRestaurantById(id: string): Promise<Restaurant | null> {

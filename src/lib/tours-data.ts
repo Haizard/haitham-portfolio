@@ -4,6 +4,7 @@ import { getCollection } from './mongodb';
 import type { TourActivity } from './tour-activities-data';
 import { getTourActivityById } from './tour-activities-data';
 import { getGuideById } from './tour-guides-data';
+import { enrichWithAuthors } from './data-aggregators';
 
 export interface GalleryImage {
   url: string;
@@ -264,7 +265,9 @@ export async function getAllTours(filters: {
     getTourFilterOptions() // Fetch filter options in parallel
   ]);
 
-  return { tours, filterOptions };
+  const enrichedTours = await enrichWithAuthors(tours);
+
+  return { tours: enrichedTours, filterOptions };
 }
 
 export async function getTourById(id: string): Promise<TourPackage | null> {

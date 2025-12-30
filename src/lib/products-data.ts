@@ -4,6 +4,7 @@ import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
 import { getFreelancerProfile, getFreelancerProfilesByUserIds } from './user-profile-data'; // To enrich with vendor names
 import { findOrCreateProductTagsByNames } from './product-tags-data';
+import { enrichWithAuthors } from './data-aggregators';
 
 const PRODUCTS_COLLECTION = 'products';
 const ORDERS_COLLECTION = 'orders'; // Need this for top selling products
@@ -179,7 +180,7 @@ export async function getAllProducts(
   // Sales sorting is skipped for stability 
 
 
-  return enrichedProducts;
+  return enrichWithAuthors(enrichedProducts);
 }
 
 export async function getProductById(id: string): Promise<Product | null> {

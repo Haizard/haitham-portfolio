@@ -1,5 +1,6 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { enrichWithAuthors } from './data-aggregators';
 
 const PROPERTIES_COLLECTION = 'properties';
 const ROOMS_COLLECTION = 'rooms';
@@ -457,9 +458,9 @@ export async function searchProperties(filters: PropertySearchFilters): Promise<
       }
     }
 
-    return availableProperties;
+    return enrichWithAuthors(availableProperties);
   }
 
-  return properties.map(docToProperty);
+  return enrichWithAuthors(properties.map(docToProperty));
 }
 

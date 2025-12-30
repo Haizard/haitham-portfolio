@@ -128,8 +128,8 @@ export default function UniversalFeed() {
                         rating: item.averageRating || item.rating || 4.5,
                         reviewCount: item.reviewCount || 12,
                         author: {
-                            name: item.vendorName || item.author || 'Creator',
-                            avatar: `https://i.pravatar.cc/150?u=${item.id || item.userId}`,
+                            name: item.authorName || item.vendorName || item.author || 'Creator',
+                            avatar: item.authorAvatar || `https://i.pravatar.cc/150?u=${item.id || item.userId}`,
                             location: item.location?.city || 'Global'
                         },
                         likedBy: ['Pamela', 'Hayes', 'Adams']

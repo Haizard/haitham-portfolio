@@ -1,5 +1,6 @@
 import { ObjectId, type Filter } from 'mongodb';
 import { getCollection } from './mongodb';
+import { enrichWithAuthors } from './data-aggregators';
 
 const VEHICLES_COLLECTION = 'vehicles';
 const CAR_RENTALS_COLLECTION = 'car_rentals';
@@ -163,7 +164,7 @@ export async function getVehicleById(id: string): Promise<Vehicle | null> {
 export async function getVehiclesByOwnerId(ownerId: string): Promise<Vehicle[]> {
   const collection = await getCollection<Vehicle>(VEHICLES_COLLECTION);
   const docs = await collection.find({ ownerId }).toArray();
-  return docs.map(docToVehicle);
+  return enrichWithAuthors(docs.map(docToVehicle));
 }
 
 export async function updateVehicle(id: string, updates: Partial<Vehicle>): Promise<Vehicle | null> {
@@ -348,6 +349,6 @@ export async function searchVehicles(filters: VehicleSearchFilters): Promise<Veh
     return availableVehicles;
   }
 
-  return vehicles.map(docToVehicle);
+  return enrichWithAuthors(vehicles.map(docToVehicle));
 }
 
