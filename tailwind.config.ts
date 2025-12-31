@@ -5,7 +5,7 @@ const config = {
   content: [
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-	],
+  ],
   prefix: "",
   theme: {
     container: {
@@ -16,12 +16,15 @@ const config = {
       },
     },
     extend: {
-       fontFamily: {
+      fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'sans-serif'],
         code: ['Source Code Pro', 'monospace'],
       },
       colors: {
+        'background-light': '#f8f6f5',
+        'background-dark': '#221410',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

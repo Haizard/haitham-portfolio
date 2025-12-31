@@ -5,6 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileManagementHeader } from '../layout/mobile-management-header';
+import { MobileManagementNav } from '../layout/mobile-management-nav';
+import { cn } from '@/lib/utils';
 import type { UserRole } from '@/lib/auth-data';
 
 interface RoleDashboardProps {
@@ -22,6 +26,137 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
   const isCreator = roles.includes('creator');
   const isTransferProvider = roles.includes('transfer_provider') || roles.includes('transport_partner');
   const isAdmin = roles.includes('admin');
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark pb-24">
+        <MobileManagementHeader
+          title="Dashboard"
+          subtitle={`Welcome back, ${userName}`}
+        />
+
+        <div className="flex-1 px-5 py-6 space-y-6 overflow-y-auto no-scrollbar">
+          {/* Main Stat Card - Gradient */}
+          <div className="bg-gradient-to-br from-primary to-orange-600 rounded-[2rem] p-6 text-white shadow-lg shadow-primary/20">
+            <div className="flex justify-between items-start mb-6">
+              <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                <span className="material-symbols-outlined text-[28px]">payments</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md border border-white/10">
+                <span className="material-symbols-outlined text-[16px]">trending_up</span>
+                <span>+12.5%</span>
+              </div>
+            </div>
+            <div>
+              <p className="opacity-80 text-sm font-bold mb-1 font-display tracking-wide uppercase">Performance</p>
+              <h3 className="text-4xl font-black font-display tracking-tight">$24,592.80</h3>
+            </div>
+          </div>
+
+          {/* Secondary Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white dark:bg-white/5 rounded-[2rem] p-5 border border-gray-100 dark:border-white/5 shadow-sm transition-all hover:shadow-md">
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400">
+                  <span className="material-symbols-outlined text-[24px]">shopping_bag</span>
+                </div>
+              </div>
+              <h4 className="text-2xl font-black mb-1 font-display tracking-tight">148</h4>
+              <p className="text-xs text-muted-foreground font-black uppercase tracking-widest opacity-70">New Orders</p>
+            </div>
+            <div className="bg-white dark:bg-white/5 rounded-[2rem] p-5 border border-gray-100 dark:border-white/5 shadow-sm transition-all hover:shadow-md">
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-2xl text-green-600 dark:text-green-400">
+                  <span className="material-symbols-outlined text-[24px]">storefront</span>
+                </div>
+              </div>
+              <h4 className="text-2xl font-black mb-1 font-display tracking-tight">42</h4>
+              <p className="text-xs text-muted-foreground font-black uppercase tracking-widest opacity-70">Active Vendors</p>
+            </div>
+          </div>
+
+          {/* Quick Actions Scroll */}
+          <div>
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h3 className="text-lg font-black font-display tracking-tight">Quick Actions</h3>
+              <span className="text-[10px] items-center font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-full flex gap-1 animate-pulse">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                LIVE
+              </span>
+            </div>
+            <div className="flex gap-4 overflow-x-auto no-scrollbar py-2 -mx-5 px-5">
+              {[
+                { label: 'Add Vendor', icon: 'add_business', href: '/become-a-vendor' },
+                { label: 'Inventory', icon: 'inventory_2', href: '/account/my-properties' },
+                { label: 'Coupons', icon: 'confirmation_number', href: '/admin/dashboard' },
+                { label: 'Reports', icon: 'bar_chart', href: '/admin/dashboard' },
+                { label: 'Settings', icon: 'settings', href: '/account/settings' }
+              ].map((action) => (
+                <Link key={action.label} href={action.href} className="flex flex-col items-center gap-2 min-w-[90px] group">
+                  <div className="h-16 w-16 rounded-[1.5rem] bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm group-active:scale-95 transition-all group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/5">
+                    <span className="material-symbols-outlined text-primary text-[28px]">{action.icon}</span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-center opacity-80 whitespace-nowrap">{action.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div>
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h3 className="text-lg font-black font-display tracking-tight">Recent Activity</h3>
+              <button className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline hover:opacity-80 transition-all">View All</button>
+            </div>
+            <div className="bg-white dark:bg-white/5 rounded-[2.5rem] p-2 border border-gray-100 dark:border-white/5 shadow-sm space-y-1">
+              {[
+                { title: 'New Vendor', desc: 'Sushi Master needs review', time: '2m ago', icon: 'restaurant', color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
+                { title: 'Order #8291', desc: '$340.00 from Burger Joint', time: '15m ago', icon: 'shopping_cart', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+                { title: 'Stock Alert', desc: 'Low inventory: Spicy Tuna', time: '1h ago', icon: 'warning', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' }
+              ].map((activity, idx) => (
+                <div key={idx} className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-white/5 rounded-[1.8rem] transition-colors">
+                  <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner", activity.color)}>
+                    <span className="material-symbols-outlined text-[22px]">{activity.icon}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black font-display truncate text-foreground">{activity.title}</p>
+                    <p className="text-[11px] text-muted-foreground font-medium truncate mt-0.5">{activity.desc}</p>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">{activity.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Pending Reviews Section */}
+          <div className="pb-4">
+            <h3 className="text-lg font-black font-display tracking-tight mb-4 px-1">Critical Tasks</h3>
+            <div className="bg-white dark:bg-white/5 rounded-[2.5rem] p-5 border border-gray-100 dark:border-white/5 shadow-sm flex items-start gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-gray-200 dark:bg-gray-700 bg-cover bg-center shrink-0 shadow-inner border border-white/10" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=100&q=80')" }}></div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start mb-1">
+                  <h4 className="text-sm font-black font-display tracking-tight truncate">Spicy Tuna Roll</h4>
+                  <div className="flex text-yellow-500 gap-0.5 scale-90 -mr-2">
+                    {[1, 2, 3, 4, 5].map(s => <span key={s} className="material-symbols-outlined text-[16px] filled">star</span>)}
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground font-medium line-clamp-2 leading-relaxed italic border-l-2 border-primary/20 pl-2">
+                  "Absolutely delicious! The fish was fresh and the spice level was perfect."
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <button className="flex-1 h-9 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95 transition-all">Approve</button>
+                  <button className="flex-1 h-9 rounded-xl bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">Reject</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <MobileManagementNav />
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-6xl mx-auto py-8 px-4">

@@ -8,6 +8,10 @@ import { useUser } from "@/hooks/use-user";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import CreatorDashboardPage from "@/components/dashboard/page"; // Import the creator dashboard
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileManagementHeader } from "@/components/layout/mobile-management-header";
+import { MobileManagementNav } from "@/components/layout/mobile-management-nav";
+import { cn } from "@/lib/utils";
 
 const allFeatures = [
   {
@@ -69,6 +73,53 @@ export default function DashboardHubPage() {
   // If the user is ONLY a creator, show the dedicated creator dashboard directly.
   if (userRoles.length === 1 && userRoles[0] === 'creator') {
     return <CreatorDashboardPage />;
+  }
+
+  const isMobile = useIsMobile();
+
+  if (isMobile && user) {
+    const features = allFeatures.filter(feature => userRoles.includes(feature.role as any));
+    return (
+      <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark pb-24 font-display">
+        <MobileManagementHeader
+          title="Ajira Online"
+          subtitle="Management Console"
+        />
+
+        <div className="flex-1 px-5 py-6 space-y-6 overflow-y-auto no-scrollbar">
+          <div className="bg-white dark:bg-white/5 rounded-[2.5rem] p-6 border border-gray-100 dark:border-white/5 shadow-sm text-center mb-8">
+            <div className="h-20 w-20 rounded-full bg-primary/10 mx-auto flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-primary text-[40px]">person</span>
+            </div>
+            <h2 className="text-2xl font-black tracking-tight">{user.name}</h2>
+            <p className="text-xs text-muted-foreground font-black uppercase tracking-widest mt-1 opacity-60">Suite Access Control</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {features.map((feature) => (
+              <Link
+                key={feature.title}
+                href={feature.href}
+                className="bg-white dark:bg-white/5 rounded-[2rem] p-6 border border-gray-100 dark:border-white/5 shadow-sm flex items-center gap-5 active:scale-[0.98] transition-all hover:border-primary/30"
+              >
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <feature.icon className="h-8 w-8" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-lg font-black tracking-tight truncate">{feature.title}</h4>
+                  <p className="text-xs text-muted-foreground font-medium line-clamp-1">{feature.cta}</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-gray-50 dark:bg-white/10 flex items-center justify-center">
+                  <ArrowRight className="h-5 w-5 opacity-40" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <MobileManagementNav />
+      </div>
+    );
   }
 
   const features = allFeatures.filter(feature => userRoles.includes(feature.role as any));

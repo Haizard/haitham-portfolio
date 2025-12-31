@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileManagementHeader } from "@/components/layout/mobile-management-header";
+import { MobileManagementNav } from "@/components/layout/mobile-management-nav";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -186,6 +190,104 @@ export default function MyToursPage() {
     return (
       <div className="container mx-auto py-8 px-4 flex justify-center items-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark pb-24 font-display">
+        <MobileManagementHeader
+          title="My Tours"
+          subtitle="Manage your experiences"
+        />
+
+        <div className="flex-1 px-5 py-6 space-y-6 overflow-y-auto no-scrollbar">
+          {/* Mobile Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-[#3b82f6] to-[#60a5fa] rounded-[2rem] p-5 text-white shadow-lg shadow-blue-500/20 col-span-2">
+              <p className="opacity-80 text-[10px] font-black uppercase tracking-widest mb-1">Total Revenue</p>
+              <h3 className="text-3xl font-black tracking-tight">${stats.totalRevenue.toFixed(2)}</h3>
+            </div>
+            <div className="bg-white dark:bg-white/5 rounded-[2rem] p-5 border border-gray-100 dark:border-white/5 shadow-sm">
+              <h4 className="text-2xl font-black tracking-tight">{stats.totalTours}</h4>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-70">Tours</p>
+            </div>
+            <div className="bg-white dark:bg-white/5 rounded-[2rem] p-5 border border-gray-100 dark:border-white/5 shadow-sm">
+              <h4 className="text-2xl font-black tracking-tight">{stats.totalBookings}</h4>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-70">Bookings</p>
+            </div>
+          </div>
+
+          {/* Action Bar */}
+          <div className="flex gap-3">
+            <Button asChild className="flex-1 h-12 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
+              <Link href="/account/my-tours/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Tour
+              </Link>
+            </Button>
+          </div>
+
+          {/* Tours List */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.15em] opacity-40 px-1">Your Packages</h3>
+            {tours.length === 0 ? (
+              <div className="bg-white dark:bg-white/5 rounded-[2.5rem] p-12 text-center border border-dashed border-gray-200 dark:border-white/10">
+                <span className="material-symbols-outlined text-4xl text-muted-foreground mb-2">explore</span>
+                <p className="text-xs font-bold text-muted-foreground">No tours found</p>
+              </div>
+            ) : (
+              tours.map((tour) => {
+                return (
+                  <div key={tour.id} className="bg-white dark:bg-white/5 rounded-[2.5rem] p-3 border border-gray-100 dark:border-white/5 shadow-sm flex gap-4">
+                    <div className="h-24 w-24 rounded-[1.8rem] overflow-hidden shrink-0 shadow-inner relative">
+                      <Image
+                        src={tour.featuredImageUrl}
+                        alt={tour.name}
+                        fill
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
+                      <div className="flex justify-between items-start">
+                        <Badge className="bg-blue-500/10 text-blue-600 border-none text-[8px] font-black uppercase tracking-widest h-5 px-2 mb-1">
+                          {tour.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                        <span className="text-[9px] font-black text-primary uppercase tracking-widest">${tour.price}</span>
+                      </div>
+                      <h4 className="text-sm font-black tracking-tight truncate mb-0.5">{tour.name}</h4>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium truncate">
+                        <span className="material-symbols-outlined text-[12px]">schedule</span>
+                        {tour.duration}
+                      </div>
+
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={() => router.push(`/account/my-tours/${tour.id}/edit`)}
+                          className="h-8 w-8 rounded-xl bg-gray-50 dark:bg-white/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <Link
+                          href={`/tours/${tour.slug}`}
+                          className="flex-1 h-8 rounded-xl bg-gray-50 dark:bg-white/10 text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">visibility</span>
+                          Preview
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <MobileManagementNav />
       </div>
     );
   }

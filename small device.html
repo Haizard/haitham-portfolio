@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f45925",
+                        "background-light": "#f8f6f5",
+                        "background-dark": "#221410",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#1c110d] dark:text-[#f8f6f5] font-display min-h-screen flex flex-col antialiased selection:bg-primary/30">
+<div class="sticky top-0 z-50 flex items-center justify-between px-5 py-4 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">admin_panel_settings</span>
+</div>
+<div>
+<h1 class="text-xl font-bold leading-none">Dashboard</h1>
+<p class="text-xs text-gray-500 font-medium">Welcome back, Admin</p>
+</div>
+</div>
+<button class="relative p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+<span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-background-light dark:border-background-dark"></span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto pb-24 px-5 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 bg-gradient-to-br from-primary to-orange-600 rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+<span class="material-symbols-outlined text-[24px]">payments</span>
+</div>
+<div class="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>+12.5%</span>
+</div>
+</div>
+<div>
+<p class="opacity-80 text-sm font-medium mb-1">Total Sales</p>
+<h3 class="text-3xl font-bold">$24,592.00</h3>
+</div>
+</div>
+<div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-gray-100 dark:border-white/5 shadow-sm">
+<div class="flex justify-between items-start mb-3">
+<div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">shopping_bag</span>
+</div>
+</div>
+<h4 class="text-2xl font-bold mb-1">148</h4>
+<p class="text-xs text-gray-500 dark:text-gray-400 font-medium">New Orders</p>
+</div>
+<div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-gray-100 dark:border-white/5 shadow-sm">
+<div class="flex justify-between items-start mb-3">
+<div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined text-[20px]">storefront</span>
+</div>
+</div>
+<h4 class="text-2xl font-bold mb-1">42</h4>
+<p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Active Vendors</p>
+</div>
+</div>
+<div>
+<h3 class="text-lg font-bold mb-3">Quick Actions</h3>
+<div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+<button class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary">add_business</span>
+</div>
+<span class="text-xs font-medium text-center">Add Vendor</span>
+</button>
+<button class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary">inventory_2</span>
+</div>
+<span class="text-xs font-medium text-center">Products</span>
+</button>
+<button class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary">confirmation_number</span>
+</div>
+<span class="text-xs font-medium text-center">Coupons</span>
+</button>
+<button class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary">bar_chart</span>
+</div>
+<span class="text-xs font-medium text-center">Reports</span>
+</button>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-lg font-bold">Recent Activity</h3>
+<button class="text-primary text-sm font-semibold hover:underline">View All</button>
+</div>
+<div class="bg-white dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 divide-y divide-gray-100 dark:divide-white/5">
+<div class="p-4 flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-[20px]">restaurant</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold truncate">New Vendor Application</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 truncate">Sushi Master requesting approval</p>
+</div>
+<span class="text-xs font-medium text-gray-400 whitespace-nowrap">2m ago</span>
+</div>
+<div class="p-4 flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold truncate">Large Order #8291</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 truncate">$340.00 from Burger Joint</p>
+</div>
+<span class="text-xs font-medium text-gray-400 whitespace-nowrap">15m ago</span>
+</div>
+<div class="p-4 flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0 text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold truncate">Stock Alert</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 truncate">Low inventory for Spicy Tuna</p>
+</div>
+<span class="text-xs font-medium text-gray-400 whitespace-nowrap">1h ago</span>
+</div>
+</div>
+</div>
+<div class="pb-6">
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-lg font-bold">Pending Reviews</h3>
+</div>
+<div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-gray-100 dark:border-white/5 shadow-sm flex items-start gap-4">
+<div class="h-12 w-12 rounded-lg bg-gray-200 dark:bg-gray-700 bg-cover bg-center shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAIgZ31AXoO-XcfeuOeg4yX7LODLlpPn_T3KoqyyH18bd8gJuOD63iAp0IfcR1HKzuFm45Ov-GmVBKUZg9HO2Ny-MzXTOq_FW6YNUO4D-pggEmLBQ4D6-E_QdadYCgEkhmU-c-pHUo1Q6NawppZp4GtwcBPoRWd-F-tXmY6zb_webh9d71d5hjAkmcElDn9MvD19CNinq1C54wrzBzfysWoN_c_G0--FMqiaZtiUUxYGK3t7OL9kj-yfgsgahswyfLIvpSsBRNwxiM8');"></div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="text-sm font-bold">Spicy Tuna Roll</h4>
+<div class="flex text-yellow-400 text-[10px]">
+<span class="material-symbols-outlined text-[14px] fill-current">star</span>
+<span class="material-symbols-outlined text-[14px] fill-current">star</span>
+<span class="material-symbols-outlined text-[14px] fill-current">star</span>
+<span class="material-symbols-outlined text-[14px] fill-current">star</span>
+<span class="material-symbols-outlined text-[14px] fill-current">star_half</span>
+</div>
+</div>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">"Absolutely delicious! The fish was fresh and the spice level was perfect. Highly recommend..."</p>
+<div class="mt-3 flex gap-2">
+<button class="flex-1 py-1.5 rounded-lg bg-green-500 text-white text-xs font-bold hover:bg-green-600">Approve</button>
+<button class="flex-1 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 dark:hover:bg-white/20">Reject</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 w-full bg-white dark:bg-[#1a0f0b] border-t border-gray-200 dark:border-white/5 pb-5 pt-2 px-6 z-40 flex justify-between items-end">
+<button class="flex flex-col items-center gap-1 text-primary group">
+<span class="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform filled">dashboard</span>
+<span class="text-[10px] font-bold">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">store</span>
+<span class="text-[10px] font-medium">Vendors</span>
+</button>
+<div class="relative -top-6">
+<button class="h-14 w-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+</div>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">shopping_bag</span>
+<span class="text-[10px] font-medium">Orders</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</button>
+</div>
+
+</body></html>

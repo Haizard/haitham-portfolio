@@ -188,3 +188,23 @@
 .ProseMirror h1 { @apply text-3xl; }
 .ProseMirror h2 { @apply text-2xl; }
 .ProseMirror h3 { @apply text-xl; }
+ 
+ .material-symbols-outlined {
+   font-variation-settings:
+   'FILL' 0,
+   'wght' 400,
+   'GRAD' 0,
+   'opsz' 24
+ }
+ 
+ .material-symbols-outlined.filled {
+   font-variation-settings: 'FILL' 1;
+ }
+ 
+ .no-scrollbar::-webkit-scrollbar {
+     display: none;
+ }
+ .no-scrollbar {
+     -ms-overflow-style: none;
+     scrollbar-width: none;
+ }

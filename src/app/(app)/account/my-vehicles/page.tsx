@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileManagementHeader } from "@/components/layout/mobile-management-header";
+import { MobileManagementNav } from "@/components/layout/mobile-management-nav";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -191,6 +195,107 @@ export default function MyVehiclesPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark pb-24 font-display">
+        <MobileManagementHeader
+          title="My Vehicles"
+          subtitle="Manage your fleet"
+        />
+
+        <div className="flex-1 px-5 py-6 space-y-6 overflow-y-auto no-scrollbar">
+          {/* Mobile Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-[2rem] p-5 text-white shadow-lg shadow-blue-600/20 col-span-2">
+              <p className="opacity-80 text-[10px] font-black uppercase tracking-widest mb-1">Total Revenue</p>
+              <h3 className="text-3xl font-black tracking-tight">${getTotalRevenue().toFixed(2)}</h3>
+            </div>
+            <div className="bg-white dark:bg-white/5 rounded-[2rem] p-5 border border-gray-100 dark:border-white/5 shadow-sm">
+              <h4 className="text-2xl font-black tracking-tight">{vehicles.length}</h4>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-70">Vehicles</p>
+            </div>
+            <div className="bg-white dark:bg-white/5 rounded-[2rem] p-5 border border-gray-100 dark:border-white/5 shadow-sm">
+              <h4 className="text-2xl font-black tracking-tight">{getActiveRentals().length}</h4>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-70">Active</p>
+            </div>
+          </div>
+
+          {/* Action Bar */}
+          <div className="flex gap-3">
+            <Button
+              onClick={() => router.push('/account/my-vehicles/new')}
+              className="flex-1 h-12 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Vehicle
+            </Button>
+          </div>
+
+          {/* Vehicles List */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.15em] opacity-40 px-1">Active Fleet</h3>
+            {vehicles.length === 0 ? (
+              <div className="bg-white dark:bg-white/5 rounded-[2.5rem] p-12 text-center border border-dashed border-gray-200 dark:border-white/10">
+                <span className="material-symbols-outlined text-4xl text-muted-foreground mb-2">directions_car</span>
+                <p className="text-xs font-bold text-muted-foreground">No vehicles found</p>
+              </div>
+            ) : (
+              vehicles.map((vehicle) => {
+                const primaryImage = vehicle.images.find((img) => img.isPrimary) || vehicle.images[0];
+                return (
+                  <div key={vehicle.id} className="bg-white dark:bg-white/5 rounded-[2.5rem] p-3 border border-gray-100 dark:border-white/5 shadow-sm flex gap-4">
+                    <div className="h-24 w-24 rounded-[1.8rem] overflow-hidden shrink-0 shadow-inner bg-gray-100 dark:bg-white/5">
+                      {primaryImage ? (
+                        <img src={primaryImage.url} alt={`${vehicle.make} ${vehicle.model}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                          <span className="material-symbols-outlined text-2xl">image</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
+                      <div className="flex justify-between items-start">
+                        <Badge className="bg-blue-500/10 text-blue-600 border-none text-[8px] font-black uppercase tracking-widest h-5 px-2 mb-1">
+                          {vehicle.category}
+                        </Badge>
+                        <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">{vehicle.status}</span>
+                      </div>
+                      <h4 className="text-sm font-black tracking-tight truncate mb-0.5">{vehicle.make} {vehicle.model}</h4>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium truncate">
+                        <span className="material-symbols-outlined text-[12px]">payments</span>
+                        ${vehicle.pricing.dailyRate}/day
+                      </div>
+
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={() => router.push(`/account/my-vehicles/${vehicle.id}/edit`)}
+                          className="h-8 w-8 rounded-xl bg-gray-50 dark:bg-white/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <button
+                          onClick={() => router.push(`/cars/${vehicle.id}`)}
+                          className="flex-1 h-8 rounded-xl bg-gray-50 dark:bg-white/10 text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">visibility</span>
+                          Live View
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <MobileManagementNav />
       </div>
     );
   }
