@@ -27,7 +27,6 @@ export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
   const isCreator = roles.includes('creator');
   const isTransferProvider = roles.includes('transfer_provider') || roles.includes('transport_partner');
   const isAdmin = roles.includes('admin');
-  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (
