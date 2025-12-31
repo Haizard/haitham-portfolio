@@ -50,6 +50,7 @@ interface DashboardStats {
 export default function MyToursPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
   const [tours, setTours] = useState<TourPackage[]>([]);
   const [bookings, setBookings] = useState<TourBooking[]>([]);
@@ -193,8 +194,6 @@ export default function MyToursPage() {
       </div>
     );
   }
-
-  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (

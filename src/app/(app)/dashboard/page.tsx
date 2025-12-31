@@ -65,19 +65,26 @@ const allFeatures = [
 ];
 
 export default function DashboardHubPage() {
-  const { user } = useUser();
   const router = useRouter();
+  const isMobile = useIsMobile();
+  const { user, isLoading: isUserLoading } = useUser();
 
   const userRoles = user?.roles || [];
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // If the user is ONLY a creator, show the dedicated creator dashboard directly.
   if (userRoles.length === 1 && userRoles[0] === 'creator') {
     return <CreatorDashboardPage />;
   }
 
-  const isMobile = useIsMobile();
-
-  if (isMobile && user) {
+  if (isMobile) {
     const features = allFeatures.filter(feature => userRoles.includes(feature.role as any));
     return (
       <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark pb-24 font-display">

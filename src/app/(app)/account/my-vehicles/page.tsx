@@ -72,6 +72,7 @@ interface VehicleRental {
 export default function MyVehiclesPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [rentals, setRentals] = useState<VehicleRental[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -198,8 +199,6 @@ export default function MyVehiclesPage() {
       </div>
     );
   }
-
-  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (

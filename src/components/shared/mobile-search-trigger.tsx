@@ -49,6 +49,9 @@ export function MobileSearchTrigger({ title, summary, children, className }: Mob
                 >
                     <SheetHeader className="mb-10 text-center">
                         <SheetTitle className="text-3xl font-black tracking-tight mb-2">{title}</SheetTitle>
+                        <SheetDescription className="sr-only">
+                            Search and filter {title}
+                        </SheetDescription>
                         <div className="w-12 h-1.5 bg-primary/20 rounded-full mx-auto" />
                     </SheetHeader>
                     <div className="max-w-xl mx-auto">

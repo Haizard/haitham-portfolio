@@ -80,6 +80,7 @@ interface TransferBooking {
 export default function MyTransfersPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [vehicles, setVehicles] = useState<TransferVehicle[]>([]);
   const [bookings, setBookings] = useState<Record<string, TransferBooking[]>>({});
   const [loading, setLoading] = useState(true);
@@ -231,8 +232,6 @@ export default function MyTransfersPage() {
       </div>
     );
   }
-
-  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (

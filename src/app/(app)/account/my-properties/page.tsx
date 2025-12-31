@@ -70,6 +70,7 @@ interface PropertyBooking {
 export default function MyPropertiesPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [properties, setProperties] = useState<Property[]>([]);
   const [bookings, setBookings] = useState<PropertyBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -200,8 +201,6 @@ export default function MyPropertiesPage() {
       </div>
     );
   }
-
-  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (

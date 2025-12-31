@@ -28,6 +28,9 @@ export function CartSheet() {
             <ShoppingCart className="h-6 w-6" />
             My Cart ({cartItems.length})
           </SheetTitle>
+          <SheetDescription className="sr-only">
+            Review your cart items and proceed to checkout.
+          </SheetDescription>
           <Separator className="my-2" />
         </SheetHeader>
 
@@ -47,12 +50,12 @@ export function CartSheet() {
                   <p>${cartTotal.toFixed(2)}</p>
                 </div>
                 <div className="flex justify-between">
-                    <Button variant="outline" onClick={clearCart}>Clear Cart</Button>
-                    <SheetClose asChild>
-                      <Button asChild className="w-full max-w-xs bg-primary text-primary-foreground hover:bg-primary/90">
-                          <Link href="/checkout">Proceed to Checkout</Link>
-                      </Button>
-                    </SheetClose>
+                  <Button variant="outline" onClick={clearCart}>Clear Cart</Button>
+                  <SheetClose asChild>
+                    <Button asChild className="w-full max-w-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                      <Link href="/checkout">Proceed to Checkout</Link>
+                    </Button>
+                  </SheetClose>
                 </div>
               </div>
             </SheetFooter>

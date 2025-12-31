@@ -56,6 +56,7 @@ const StatCard: React.FC<{ title: string; value: string; trend?: string; trendDi
 
 
 export default function AdminDashboardPage() {
+  const isMobile = useIsMobile();
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -97,8 +98,6 @@ export default function AdminDashboardPage() {
     { id: "products", title: "Products", value: stats ? stats.totalProducts.toLocaleString() : "0", trend: "", icon: Package, color: "bg-orange-500", isLoading: isLoading },
     { id: "visitors", title: "Visitors", value: "35,678", trend: "+20.1%", trendDirection: "up" as const, icon: Users, color: "bg-purple-500", isLoading: false }, // Visitors is still mock
   ];
-
-  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (

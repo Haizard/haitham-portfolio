@@ -17,6 +17,7 @@ interface RoleDashboardProps {
 }
 
 export function RoleDashboard({ roles, userName }: RoleDashboardProps) {
+  const isMobile = useIsMobile();
   const isCustomer = roles.includes('customer');
   const isClient = roles.includes('client');
   const isPropertyOwner = roles.includes('property_owner');
