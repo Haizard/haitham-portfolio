@@ -41,12 +41,11 @@ const MobileBottomNav = ({ user }: { user: SessionUser | null }) => {
     ]
     : [
       { href: "/", label: t('home'), icon: Zap, color: 'bg-primary' },
-      { href: "/restaurants", label: t('restaurants'), icon: Utensils, color: 'bg-rose-600' },
       { href: "/hotels", label: t('hotels'), icon: Hotel, color: 'bg-blue-600' },
       { href: "/tours", label: t('tours'), icon: Compass, color: 'bg-orange-600' },
-      { href: "/blog", label: t('blog'), icon: Newspaper, color: 'bg-slate-700' },
       { href: "/shop", label: t('shop'), icon: ShoppingBag, color: 'bg-cyan-600' },
       { href: "/find-work", label: t('freelancers'), icon: UserCheck, color: 'bg-indigo-600' },
+      { href: "/login", label: t('login') || 'Login', icon: UserCircle, color: 'bg-slate-700' },
     ];
 
   const gridColsClass = mobileNavItems.length === 6 ? 'grid-cols-6' : 'grid-cols-7';
@@ -200,9 +199,9 @@ export function GlobalNav() {
                 </DropdownMenu>
               </>
             ) : (
-              <div className="hidden md:flex items-center gap-1">
-                <Button variant="ghost" asChild><Link href="/login">{isMounted ? tCommon('signIn') : ''}</Link></Button>
-                <Button asChild><Link href="/signup">{isMounted ? tCommon('signUp') : ''}</Link></Button>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" asChild className="hidden sm:flex px-2 text-xs"><Link href="/login">{isMounted ? tCommon('signIn') : ''}</Link></Button>
+                <Button size="sm" asChild className="px-3 text-xs h-9"><Link href="/signup">{isMounted ? tCommon('signUp') : ''}</Link></Button>
               </div>
             )}
             <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(true)} className="relative">
