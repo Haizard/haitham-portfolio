@@ -16,11 +16,11 @@ export async function GET(
     if (!vendorId) {
       return NextResponse.json({ message: "Vendor ID is required." }, { status: 400 });
     }
-    
+
     // Fetch all data concurrently for efficiency
     const [profile, products, financeSummary, orders] = await Promise.all([
       getFreelancerProfile(vendorId),
-      getAllProducts(undefined, undefined, vendorId),
+      getAllProducts({ vendorId }),
       getVendorFinanceSummary(vendorId),
       getOrdersByVendorId(vendorId)
     ]);
